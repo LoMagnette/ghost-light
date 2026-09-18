@@ -373,9 +373,18 @@ const receptionStairs: Link[] = [
   { id: 'concourse-stair', from: 0, to: 1, bounds: rect(-13.6, -57.5, 3.0, 5.2), rise: 6.2, axis: 'y', ascending: true },
 ];
 
+/**
+ * The two flights out of the hall climb SOUTHWARD — foot at the north end,
+ * against the hall's north wall, rising back out over the floor.
+ *
+ * The plan's own symbols pull in two directions here: the travel arrow on
+ * `exhibition-floor.jpg` points south, while the break line on `booth-map.png`
+ * sits at the south end, which usually marks the part of a flight below the
+ * cut. Taking the arrow, which is the less ambiguous of the two.
+ */
 const staircases: Link[] = [
-  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2, axis: 'y', ascending: true },
-  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2, axis: 'y', ascending: true },
+  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2, axis: 'y', ascending: false },
+  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2, axis: 'y', ascending: false },
   ...receptionStairs,
 ];
 
@@ -397,7 +406,35 @@ const staircases: Link[] = [
  * These are INTERIM. When floor traversal lands, a robot climbs the treads
  * instead of stopping at them, and this function goes away.
  */
-const TREADS = 9;
+/**
+ * Riser height, metres. A building-regulations stair is 0.17–0.19 m, and it is
+ * the number that decides how many treads a flight has: nine steps for a 6.2 m
+ * floor would be 0.69 m each, which is a climbing wall. At 0.18 a full floor
+ * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
+ */
+const RISER = 0.18;
+
+/**
+ * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.
+ *
+ * A 6.2 m flight drawn at true height is entirely above the cut, so it comes
+ * out as a flat-topped slab with a sawtooth along one edge and reads as a
+ * loading dock rather than a staircase. Squashing the rise under the cut shows
+ * the whole flight stepping away from you, which is what the shape is for.
+ *
+ * The Link keeps the true 6.2 m rise; this only affects the bulk that is drawn
+ * and collided with, and that bulk is interim anyway.
+ */
+const DRAWN_RISE = 2.4;
+
+/**
+ * Treads per flight.
+ *
+ * A real 6.2 m floor takes 34 risers at 0.18 m, and at this zoom 34 steps are
+ * 10 px apart and 2 px high — visual noise, not a staircase. 18 reads as a
+ * flight. Capped rather than computed for that reason alone.
+ */
+const MAX_TREADS = 18;
 
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
@@ -407,19 +444,21 @@ function stairMass(links: Link[]): Obstacle[] {
     if (link.id === 'wheelchair-ramp') continue;
 
     const { bounds: b, rise, axis, ascending } = link;
+    const treads = Math.min(MAX_TREADS, Math.max(3, Math.round(rise / RISER)));
+    const drawnRise = Math.min(rise, DRAWN_RISE);
     const run = axis === 'y' ? b.h : b.w;
-    const step = run / TREADS;
+    const step = run / treads;
 
-    for (let i = 0; i < TREADS; i += 1) {
-      const fraction = (i + 1) / TREADS;
-      const height = rise * (ascending ? fraction : 1 - fraction + 1 / TREADS);
+    for (let i = 0; i < treads; i += 1) {
+      // `i` counts along +axis; height follows the climb direction.
+      const fraction = (ascending ? i + 1 : treads - i) / treads;
       solid.push({
         floor: link.from,
         bounds:
           axis === 'y'
             ? rect(b.x, b.y + i * step, b.w, step)
             : rect(b.x + i * step, b.y, step, b.h),
-        height,
+        height: drawnRise * fraction,
       });
     }
   }
