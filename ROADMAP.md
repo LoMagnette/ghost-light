@@ -78,20 +78,20 @@ Nine items. The first three block everything else.
 
 ### Blocking
 
-1. **Create the public repo and push.** The agent has no GitHub credentials.
+1. ~~**Create the public repo and push.**~~ **Done 18 Sep** —
+   <https://github.com/LoMagnette/ghost-light>.
 
-   ```bash
-   gh repo create ghost-light --public --source=. --remote=origin --push
-   ```
-
-2. **Turn on Pages.** Settings → Pages → Source: **GitHub Actions**. The
-   workflow in `.github/workflows/deploy.yml` is committed and already sets the
-   base path a project page needs. Paste the resulting URL into `README.md`
-   where the placeholder sits.
+2. **Confirm Pages is live and paste the URL into `README.md`.** The workflow
+   now passes `enablement: true`, so it turns Pages on itself rather than
+   needing Settings → Pages → Source: GitHub Actions set by hand. Check the
+   Actions tab is green, then put the URL where the placeholder sits — the
+   agent cannot read the Actions API from its sandbox (the proxy credentials
+   cover git over HTTPS only, and `origin` is an SSH remote).
 
    Judges try a hosted build before cloning. This is the first impression.
 
-3. **Download the reference assets into `references/`.** The agent's sandbox
+3. **Download the reference assets into `references/`.** Now the top blocker.
+   The agent's sandbox
    reaches only package registries and GitHub, so it cannot fetch from
    `game.devoxx.be`. See `docs/ASSETS.md` for the file list.
 
