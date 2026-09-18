@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+.vite/
+.env
+.env.*
+!.env.example
+
+# Generated art working files — keep the committed sprites in public/assets,
+# not the multi-hundred-MB intermediates.
+art/_work/
+*.psd
+*.blend1
