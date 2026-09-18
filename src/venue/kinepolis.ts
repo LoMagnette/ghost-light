@@ -409,17 +409,8 @@ const STAIR_EAST = rect(HALL.x + 29.28, -6.44, 3.24, 12.38);
  * matters more now that Biggy cannot use any of them.
  */
 const receptionStairs: Link[] = [
-  /**
-   * Concourse → hall, descending northward. 23.2 m wide, the full opening.
-   *
-   * 1.35 m deep, counted off the plan at high magnification: six nosings for
-   * 1.2 m of drop. That is a steep little flight — 0.2 m risers on 0.22 m
-   * treads — and it is why it reads as a wall rather than as steps. At 2:1
-   * isometric a tread only shows if it is more than twice as deep as it is
-   * tall, and no real staircase is. The long flights upstairs read as stairs
-   * only because their drawn rise is squashed under the cutaway height.
-   */
-  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -38.75, 23.2, 1.35), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
+  // Concourse → hall, descending northward. ~23 m wide, the full opening.
+  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
   /**
    * The ramp beside the steps, and Biggy's only way between the two levels.
    *
@@ -468,8 +459,7 @@ const staircases: Link[] = [
  *
  * Each flight becomes a run of treads whose height steps up along the link's
  * climb axis, so it blocks correctly AND draws as a staircase with no change
- * to the renderer. Ramps get the same treatment with finer slices, so they
- * read as a slope. The renderer's 2.7 m cutaway height slices the top of a
+ * to the renderer. The renderer's 2.7 m cutaway height slices the top of a
  * full-floor flight, which is exactly what an architectural cutaway does to a
  * stair passing through the cut plane.
  *
@@ -504,20 +494,15 @@ const DRAWN_RISE = 2.4;
  */
 const MAX_TREADS = 18;
 
-function linkMass(links: Link[]): Obstacle[] {
+function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
   for (const link of links) {
-    const { bounds: b, rise, axis, ascending } = link;
+    // A ramp is the accessible route by definition — leave it drivable. It is
+    // also the only way between the hall and the concourse until stairs work.
+    if (link.id === 'wheelchair-ramp') continue;
 
-    // A ramp gets slices rather than treads — enough of them to read as a
-    // slope instead of a staircase. It used to get nothing at all, which left
-    // a 10 m hole in the only level change in the building: the steps beside
-    // it looked like a wall that stopped short, and the concourse looked like
-    // it was reachable through thin air.
-    const treads =
-      link.riser > 0
-        ? Math.min(MAX_TREADS, Math.max(3, Math.round(rise / RISER)))
-        : Math.max(8, Math.round((axis === 'y' ? b.h : b.w) / 0.5));
+    const { bounds: b, rise, axis, ascending } = link;
+    const treads = Math.min(MAX_TREADS, Math.max(3, Math.round(rise / RISER)));
     const drawnRise = Math.min(rise, DRAWN_RISE);
     const run = axis === 'y' ? b.h : b.w;
     const step = run / treads;
@@ -551,7 +536,7 @@ export const KINEPOLIS: Venue = {
     ...exhibitionColumns(),
     ...HALL_CUTAWAYS,
     ...auditoriumSeating,
-    ...linkMass(staircases),
+    ...stairMass(staircases),
   ],
   links: staircases,
   extents: {
