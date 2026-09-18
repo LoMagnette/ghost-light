@@ -362,27 +362,80 @@ const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
  * for Chapter III: three robots and a full house need more than one staircase.
  */
 const receptionStairs: Link[] = [
-  // Hall ↔ concourse. ~23 m wide, the full width of the opening.
-  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2 },
+  // Hall ↔ concourse. ~23 m wide, the full width of the opening. You come in
+  // at street level and climb into the hall, so it ascends northward.
+  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2, axis: 'y', ascending: true },
   // The ramp beside it, east of the steps. Same rise, gentler, much longer.
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2 },
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'y', ascending: true },
   // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
-  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2 },
+  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2, axis: 'y', ascending: true },
   // The narrow one against the west wall of the concourse.
-  { id: 'concourse-stair', from: 0, to: 1, bounds: rect(-13.6, -57.5, 3.0, 5.2), rise: 6.2 },
+  { id: 'concourse-stair', from: 0, to: 1, bounds: rect(-13.6, -57.5, 3.0, 5.2), rise: 6.2, axis: 'y', ascending: true },
 ];
 
 const staircases: Link[] = [
-  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2 },
-  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2 },
+  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2, axis: 'y', ascending: true },
+  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2, axis: 'y', ascending: true },
   ...receptionStairs,
 ];
+
+/**
+ * Staircases as physical bulk.
+ *
+ * A link was pure data: nothing drew it and nothing collided with it, so the
+ * two flights standing in the middle of the exhibition hall were holes in the
+ * room. From the hall floor a staircase is mostly an obstruction — you can see
+ * past it and you certainly cannot drive through it — and that mass is the
+ * part the player meets first, long before anybody climbs anything.
+ *
+ * Each flight becomes a run of treads whose height steps up along the link's
+ * climb axis, so it blocks correctly AND draws as a staircase with no change
+ * to the renderer. The renderer's 2.7 m cutaway height slices the top of a
+ * full-floor flight, which is exactly what an architectural cutaway does to a
+ * stair passing through the cut plane.
+ *
+ * These are INTERIM. When floor traversal lands, a robot climbs the treads
+ * instead of stopping at them, and this function goes away.
+ */
+const TREADS = 9;
+
+function stairMass(links: Link[]): Obstacle[] {
+  const solid: Obstacle[] = [];
+  for (const link of links) {
+    // A ramp is the accessible route by definition — leave it drivable. It is
+    // also the only way between the hall and the concourse until stairs work.
+    if (link.id === 'wheelchair-ramp') continue;
+
+    const { bounds: b, rise, axis, ascending } = link;
+    const run = axis === 'y' ? b.h : b.w;
+    const step = run / TREADS;
+
+    for (let i = 0; i < TREADS; i += 1) {
+      const fraction = (i + 1) / TREADS;
+      const height = rise * (ascending ? fraction : 1 - fraction + 1 / TREADS);
+      solid.push({
+        floor: link.from,
+        bounds:
+          axis === 'y'
+            ? rect(b.x, b.y + i * step, b.w, step)
+            : rect(b.x + i * step, b.y, step, b.h),
+        height,
+      });
+    }
+  }
+  return solid;
+}
 
 // ---------------------------------------------------------------------------
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
-  obstacles: [...exhibitionColumns(), ...HALL_CUTAWAYS, ...auditoriumSeating],
+  obstacles: [
+    ...exhibitionColumns(),
+    ...HALL_CUTAWAYS,
+    ...auditoriumSeating,
+    ...stairMass(staircases),
+  ],
   links: staircases,
   extents: {
     0: rect(HALL.x, -62, HALL.w + 13, 74),

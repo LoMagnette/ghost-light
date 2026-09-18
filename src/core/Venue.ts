@@ -58,8 +58,19 @@ export interface Link {
   from: 0 | 1;
   to: 0 | 1;
   bounds: Rect;
-  /** Rise in metres. The grand staircase is the full floor height. */
+  /** Rise in metres. A full floor is 6.2. */
   rise: number;
+
+  /**
+   * The axis the flight CLIMBS along — not necessarily its longer side. The
+   * grand staircase out of the reception concourse is 15.7 m wide and 5.6 m
+   * deep, so its long axis is the one you walk across, not the one you walk
+   * up. Guessing from the bounds gets that backwards.
+   */
+  axis: 'x' | 'y';
+
+  /** True when height increases with that coordinate. */
+  ascending: boolean;
 }
 
 export interface Venue {

@@ -298,6 +298,26 @@ at 45° to it, so holding right or left tracks a line of columns and meets one
 every 8.9 m. True to the building, and it made the screenshot harness useless
 until it was taught to drive due east (W+D) between the rows instead.
 
+**Follow-up, same session:**
+> One thing missing from the exposion room is the the two stairs. There
+> technically almost invisible expect for the bulk space they block
+
+Correct, and the phrasing named the fix. A `Link` was pure data — nothing drew
+it and nothing collided with it — so the two flights standing in the middle of
+the exhibition hall were holes in the room rather than objects in it. From the
+hall floor a staircase is mostly an obstruction, and that mass is what a player
+meets long before anyone climbs anything.
+
+Each flight now generates a run of nine treads whose height steps up along the
+link's climb axis. That blocks correctly *and* draws as a staircase with no
+change to the renderer at all, and the 2.7 m cutaway height slices the top off
+a full-floor flight exactly as an architectural section would. Interim: when
+floor traversal lands, robots climb the treads instead of stopping at them.
+
+It also forced an honest addition to the `Link` type. The climb axis cannot be
+inferred from the bounds — the grand staircase out of the concourse is 15.7 m
+wide and 5.6 m deep, so its long axis is the one you walk *across*.
+
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —
 the fan lives in the seating instead, which tapers toward the screen and is
