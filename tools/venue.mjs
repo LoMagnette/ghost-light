@@ -244,6 +244,44 @@ for (const room of auditoria) {
   );
 }
 
+// --- the way in and the way through must be the same side ------------------
+// An aisle on the far side of the seating from the doors means you walk in and
+// immediately meet the back of a seat block. Checked rather than eyeballed,
+// because the door is decided in the wall builder and the aisle in the seating
+// builder, and nothing else would notice them disagreeing.
+for (const room of auditoria) {
+  const b = room.bounds;
+  const edgeX = Math.abs(b.x) < Math.abs(b.x + b.w) ? b.x : b.x + b.w;
+  const mid = b.y + b.h / 2;
+
+  let gapSum = 0, gapN = 0;
+  const step = 0.2;
+  for (let y = b.y + step / 2; y < b.y + b.h; y += step) {
+    const blocked = KINEPOLIS.obstacles.some(
+      (o) => o.floor === 1 &&
+        o.bounds.x - 0.05 <= edgeX && edgeX <= o.bounds.x + o.bounds.w + 0.05 &&
+        o.bounds.y <= y && y <= o.bounds.y + o.bounds.h,
+    );
+    if (!blocked) { gapSum += y; gapN += 1; }
+  }
+  const doorAt = gapN ? gapSum / gapN : mid;
+
+  // Seating centroid across the frontage.
+  const seats = KINEPOLIS.obstacles.filter(
+    (o) => o.floor === 1 && o.height < 1.5 &&
+      o.bounds.x >= b.x - 0.1 && o.bounds.x + o.bounds.w <= b.x + b.w + 0.1 &&
+      o.bounds.y >= b.y - 0.1 && o.bounds.y + o.bounds.h <= b.y + b.h + 0.1,
+  );
+  if (!seats.length) continue;
+  const area = seats.reduce((t, o) => t + o.bounds.w * o.bounds.h, 0);
+  const seatAt = seats.reduce((t, o) => t + (o.bounds.y + o.bounds.h / 2) * o.bounds.w * o.bounds.h, 0) / area;
+
+  check(
+    Math.sign(doorAt - mid) === -Math.sign(seatAt - mid),
+    `${room.label}: doors at ${(doorAt - mid).toFixed(1)} m from centre but the seating sits ${(seatAt - mid).toFixed(1)} m the same way — you walk in behind the seats`,
+  );
+}
+
 // --- every link must actually join the two places it claims to join --------
 // Two staircases out of the hall, the grand flight out of the concourse, plus
 // the steps and the ramp down from the concourse into the hall.

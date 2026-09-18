@@ -282,23 +282,25 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
       const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF;
       const bounds = rect(x, y, aud.depth, aud.frontage);
 
+      // Odd rooms are entered at one end of their frontage, even rooms at the
+      // other — the alternation this building actually uses. Decided once:
+      // the wall builder puts the door here and the seating leaves its wide
+      // aisle here, and those two must never disagree.
+      const doorSide: 'low' | 'high' = aud.number % 2 === 1 ? 'high' : 'low';
+
       rooms.push({
         id: `aud-${aud.number}`,
         label: `Room ${aud.number}`,
         kind: 'auditorium',
         floor: 1,
         bounds,
-        // Odd rooms are entered at one end of their frontage, even rooms at
-        // the other — the alternation this building actually uses. Flip the
-        // comparison if it turns out to be the wrong way round; it is the
-        // only thing deciding it.
-        doorSide: aud.number % 2 === 1 ? 'high' : 'low',
+        doorSide,
         // Deeper rooms rake harder: the back row of Room 8 is most of a storey
         // above its screen.
         rake: 2.2 + aud.depth * 0.09,
       });
 
-      seating.push(...seatBanks(bounds, side));
+      seating.push(...seatBanks(bounds, side, doorSide));
       y += aud.frontage;
       if (aud.number === gapAfter) y += WEST_GAP;
     }
@@ -329,8 +331,15 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
   return { rooms, seating };
 }
 
-/** Walkway left against each side wall of an auditorium, metres. */
-const SIDE_AISLE = 1.7;
+/**
+ * Aisles down the sides of an auditorium, metres.
+ *
+ * Not equal, because the way in and the way through are the same thing: the
+ * wide one is on the side the doors are on, so walking in puts you straight
+ * into the aisle rather than into the back of the seating.
+ */
+const DOOR_AISLE = 3.2;
+const FAR_AISLE = 1.2;
 
 /**
  * Seating: ONE block per room, narrowing toward the screen, with the aisles
@@ -346,24 +355,40 @@ const SIDE_AISLE = 1.7;
  * the real ones are fans. The taper lives here, in the thing a robot actually
  * drives around, so the silhouette costs nothing.
  */
-function seatBanks(room: { x: number; y: number; w: number; h: number }, side: -1 | 1): Obstacle[] {
+function seatBanks(
+  room: { x: number; y: number; w: number; h: number },
+  side: -1 | 1,
+  doorSide: 'low' | 'high',
+): Obstacle[] {
   const banks: Obstacle[] = [];
   const stages = 3;
 
   const doorEdge = side === -1 ? room.x + room.w : room.x;
   const stageDepth = (room.w - 4.5) / stages;
-  const midY = room.y + room.h / 2;
+
+  // The seating sits away from the doors, so the wide aisle and the entrance
+  // are on the same side of the room.
+  const full = room.h - DOOR_AISLE - FAR_AISLE;
 
   for (let s = 0; s < stages; s += 1) {
     // Widest by the doors, narrowest at the screen.
     const taper = 1 - s * 0.17;
-    const bankH = (room.h - SIDE_AISLE * 2) * taper;
+    const bankH = full * taper;
     if (bankH <= 0.6) continue;
 
     const x = side === -1 ? doorEdge - 2.5 - (s + 1) * stageDepth : doorEdge + 2.5 + s * stageDepth;
+    // Pin each stage's FAR edge, so every time the fan narrows it is the
+    // door-side aisle that grows. Pin the door side instead — which is what
+    // this did first — and the taper opens the far aisle while the way in
+    // stays the same width, which is backwards and which the venue check
+    // caught on the two big rooms.
+    const y =
+      doorSide === 'low'
+        ? room.y + room.h - FAR_AISLE - bankH
+        : room.y + FAR_AISLE;
     banks.push({
       floor: 1,
-      bounds: rect(x, midY - bankH / 2, stageDepth - 0.4, bankH),
+      bounds: rect(x, y, stageDepth - 0.4, bankH),
       height: 0.95,
     });
   }
@@ -455,8 +480,24 @@ function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
         const ox = edge.horizontal ? px : px + edge.outward * 0.25;
         const oy = edge.horizontal ? py + edge.outward * 0.25 : py;
 
-        // A link crossing the edge is a way through, always.
-        if (links.some((l) => (l.from === room.floor || l.to === room.floor) && rectContains(l.bounds, px, py))) {
+        // A link crossing the edge is a way through — but only a link that
+        // actually crosses it.
+        //
+        // Two conditions, and both were learned the hard way. A flight between
+        // storeys arrives VERTICALLY: it never needs a hole in a wall on
+        // either floor, and letting it punch one opened the party walls
+        // between Rooms 3 and 4 and between 9 and 10, so a robot could drive
+        // from one cinema straight into the next. And a link only crosses a
+        // wall if it climbs ACROSS it, so an edge of constant y can only be
+        // opened by a link whose axis is y.
+        const crossing = links.some(
+          (l) =>
+            l.from === l.to &&
+            l.from === room.floor &&
+            (edge.horizontal ? l.axis === 'y' : l.axis === 'x') &&
+            rectContains(l.bounds, px, py),
+        );
+        if (crossing) {
           kind.push(0);
           continue;
         }

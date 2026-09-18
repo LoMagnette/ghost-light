@@ -464,6 +464,32 @@ an auditorium means committing to one side of it.
 corridor, which is precisely the failure that got through: the geometry was
 self-consistent, the rooms were sealed, and nothing else noticed.
 
+**Corrected again:**
+> some walls are still kind missing part and the path in too the room should be
+> on the same side than the entrance
+
+**The missing walls were worse than gaps.** The rule "a link crossing an edge
+is a way through" was letting the floor 0→1 staircases punch holes in floor 1,
+wherever their footprint happened to overlap an upstairs wall. That opened the
+party walls between Rooms 3 and 4 and between 9 and 10 — you could drive from
+one cinema into the next. A flight between storeys arrives *vertically* and
+never needs a hole in a wall on either floor, so only same-floor links punch
+now, and only when their climb axis actually crosses that edge.
+
+**The aisle was on the wrong side, and then on the right side for the wrong
+reason.** The way in and the way through have to be the same side, or you walk
+through the door into the back of a seat block. The fix is which edge of the
+seating gets pinned: pin the FAR edge and every narrowing of the fan widens the
+aisle by the doors; pin the door edge — which is what I wrote first — and the
+taper opens the far aisle instead while the way in stays a slot.
+
+That second one is the entry worth keeping, because it looked right in a
+drawing. The two big rooms were off by 0.3 m of centroid, which no eye catches.
+`npm run venue` now measures where each room's doorway is and where its seating
+sits and fails if they are on the same side of centre — the door is decided in
+the wall builder and the aisle in the seating builder, and nothing else would
+ever notice the two disagreeing.
+
 ### The grid was generated, so everything on it was wrong
 **Date:** 2026-09-18
 
