@@ -151,7 +151,7 @@ export class Sim {
     const link = this.venue.links.find((l) => l.id === linkId);
     if (!link) return false;
     const { body } = actor;
-    return canStepOnto(body.spec, link, body.x, body.y, body.z);
+    return canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor);
   }
 
   /**
@@ -164,16 +164,17 @@ export class Sim {
   private resolveSurfaces(): void {
     for (const actor of this.actors) {
       const { body } = actor;
+      const was = actor.onLink ? this.venue.links.find((l) => l.id === actor.onLink) : undefined;
       const link = linkAt(this.venue, actor.floor, body.x, body.y);
 
-      if (link && canStepOnto(body.spec, link, body.x, body.y, body.z)) {
+      if (link && canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) {
         const f = climbFraction(link, body.x, body.y);
-        body.z = surfaceHeight(link, body.x, body.y);
+        body.z = surfaceHeight(link, body.x, body.y, actor.floor);
         actor.onLink = link.id;
 
-        // Stepping off the top of a flight that changes storey puts the actor
-        // on the other floor. Done on exit rather than on arrival so a robot
-        // can stand on a staircase without teleporting.
+        // Reaching an end while still ON the flight settles the storey, so a
+        // robot that stops on the top step is upstairs rather than hovering
+        // over the floor it left.
         if (link.from !== link.to) {
           const arriving = f >= 0.999 ? link.to : f <= 0.001 ? link.from : undefined;
           if (arriving !== undefined && arriving !== actor.floor) {
@@ -185,6 +186,24 @@ export class Sim {
       }
 
       actor.onLink = undefined;
+
+      /*
+       * Stepping OFF the end of a flight is the other way a storey changes,
+       * and it has to be caught here rather than trusted to the test above.
+       * A robot crosses the last centimetre of a staircase in one 1/120 s
+       * step, so a fraction threshold checked at the boundary gets stepped
+       * clean over — which is how a robot climbed a full flight and arrived
+       * back on the floor it started from, every time but the lucky ones.
+       *
+       * `climbFraction` clamps, so asking it where the robot is now answers
+       * with the end it left by. Leaving sideways answers with the middle and
+       * changes nothing, which is also right.
+       */
+      if (was && was.from !== was.to) {
+        const f = climbFraction(was, body.x, body.y);
+        if (f > 0.9) actor.floor = was.to;
+        else if (f < 0.1) actor.floor = was.from;
+      }
       body.z = groundAt(this.venue, actor.floor, body.x, body.y);
     }
 
@@ -203,7 +222,7 @@ export class Sim {
     const { body } = actor;
     const link = linkAt(this.venue, actor.floor, body.x, body.y);
     if (!link || link.riser > 0) return { x: 0, y: 0 };
-    if (!canStepOnto(body.spec, link, body.x, body.y, body.z)) return { x: 0, y: 0 };
+    if (!canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) return { x: 0, y: 0 };
     return downhill(link);
   }
 
@@ -224,7 +243,7 @@ export class Sim {
     const { body } = actor;
     const link = linkAt(this.venue, actor.floor, body.x, body.y);
     if (!link || link.riser <= 0) return;
-    if (!canStepOnto(body.spec, link, body.x, body.y, body.z)) return;
+    if (!canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) return;
 
     const cap = body.spec.maxSpeed * STAIR_PACE;
     const speed = body.speed;

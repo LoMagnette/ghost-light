@@ -21,7 +21,7 @@ import Phaser from 'phaser';
 import { depthKey, ISO_SQUASH, PPM, project } from '@/core/Iso';
 import type { Actor } from '@/core/Sim';
 import { renderPos } from '@/core/Sim';
-import { groundAt, type Room, type Venue } from '@/core/Venue';
+import { groundAt, rect, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 
 interface Drawable {
@@ -140,6 +140,7 @@ export class BlockoutRenderer {
       if (obstacle.floor !== floor) continue;
       const { bounds } = obstacle;
       const base = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+      const bottom = base + (obstacle.base ?? 0);
       queue.push({
         depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h, base),
         draw: (gfx) =>
@@ -150,6 +151,8 @@ export class BlockoutRenderer {
             bounds.w,
             bounds.h,
             base + Math.min(obstacle.height, MAX_DRAWN_HEIGHT),
+            undefined,
+            bottom,
           ),
       });
     }
@@ -183,7 +186,6 @@ export class BlockoutRenderer {
     const z = room.elevation ?? 0;
     const a = project(x, y, z);
     const b = project(x + w, y, z);
-    const c = project(x + w, y + h, z);
     const d = project(x, y + h, z);
 
     // Auditoriums sit a shade darker than circulation space, which reads as
@@ -191,17 +193,25 @@ export class BlockoutRenderer {
     const isRoom = room.kind === 'auditorium';
     const fill = isRoom ? shade(this.palette.floor, 0.82) : this.palette.floor;
 
+    // A stairwell is an absence of floor. Drawn as one quad, the corridor
+    // paints straight over the flight coming up through it — which is how a
+    // staircase manages to be missing on the very floor it serves.
     g.fillStyle(this.lit(fill), 1);
-    g.beginPath();
-    g.moveTo(a.sx, a.sy);
-    g.lineTo(b.sx, b.sy);
-    g.lineTo(c.sx, c.sy);
-    g.lineTo(d.sx, d.sy);
-    g.closePath();
-    g.fillPath();
-
     g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
-    g.strokePath();
+    for (const tile of floorTiles(room)) {
+      const corners = [
+        project(tile.x, tile.y, z),
+        project(tile.x + tile.w, tile.y, z),
+        project(tile.x + tile.w, tile.y + tile.h, z),
+        project(tile.x, tile.y + tile.h, z),
+      ];
+      g.beginPath();
+      g.moveTo(corners[0].sx, corners[0].sy);
+      for (const pt of corners.slice(1)) g.lineTo(pt.sx, pt.sy);
+      g.closePath();
+      g.fillPath();
+      g.strokePath();
+    }
 
     // An elevated plate needs its edge drawn or it reads as floating. Only the
     // two faces toward the viewer, same as every other box.
@@ -231,6 +241,7 @@ export class BlockoutRenderer {
     h: number,
     height: number,
     tint?: number,
+    bottom = 0,
   ): void {
     const top = tint ?? this.palette.wall;
     const side = tint ? shade(tint, 0.66) : this.palette.wallShade;
@@ -242,9 +253,11 @@ export class BlockoutRenderer {
     const topB = project(x + w, y, height);
     const topC = project(x + w, y + h, height);
     const topD = project(x, y + h, height);
-    const botA = project(x, y, 0);
-    const botB = project(x + w, y, 0);
-    const botD = project(x, y + h, 0);
+    // Not always the floor: a flight of stairs seen from the floor it arrives
+    // on hangs below the datum rather than standing on it.
+    const botA = project(x, y, bottom);
+    const botB = project(x + w, y, bottom);
+    const botD = project(x, y + h, bottom);
 
     // South face
     g.fillStyle(this.lit(side), 1);
@@ -407,6 +420,39 @@ export class BlockoutRenderer {
   private lit(colour: number): number {
     return shade(colour, 0.35 + this.lightLevel * 0.65);
   }
+}
+
+/**
+ * A room's floor plate as solid rectangles, with its stairwells taken out.
+ *
+ * Rectangle minus rectangle is up to four rectangles — the bands beyond each
+ * end of the hole, then the strips either side of it. Applied hole by hole, so
+ * a corridor with two flights coming up through it still comes out as a
+ * handful of quads.
+ */
+function floorTiles(room: Room): Rect[] {
+  if (!room.voids?.length) return [room.bounds];
+  let tiles: Rect[] = [room.bounds];
+  for (const hole of room.voids) {
+    const next: Rect[] = [];
+    for (const tile of tiles) next.push(...subtract(tile, hole));
+    tiles = next;
+  }
+  return tiles;
+}
+
+function subtract(a: Rect, b: Rect): Rect[] {
+  const x0 = Math.max(a.x, b.x);
+  const x1 = Math.min(a.x + a.w, b.x + b.w);
+  const y0 = Math.max(a.y, b.y);
+  const y1 = Math.min(a.y + a.h, b.y + b.h);
+  if (x1 <= x0 || y1 <= y0) return [a]; // misses this tile entirely
+  const out: Rect[] = [];
+  if (y0 > a.y) out.push(rect(a.x, a.y, a.w, y0 - a.y));
+  if (y1 < a.y + a.h) out.push(rect(a.x, y1, a.w, a.y + a.h - y1));
+  if (x0 > a.x) out.push(rect(a.x, y0, x0 - a.x, y1 - y0));
+  if (x1 < a.x + a.w) out.push(rect(x1, y0, a.x + a.w - x1, y1 - y0));
+  return out;
 }
 
 /** Multiply a packed 0xRRGGBB colour by a factor. */

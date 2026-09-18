@@ -50,6 +50,7 @@ import {
   rectContains,
   type Link,
   type Obstacle,
+  type Rect,
   type Room,
   type RoomKind,
   type Venue,
@@ -272,6 +273,80 @@ const CORRIDOR_HALF = 7.15;
 /** South end of the southernmost pair of auditoriums. */
 const SOUTH_END = -60;
 
+// ---------------------------------------------------------------------------
+// The staircases — two of them, side by side
+// ---------------------------------------------------------------------------
+
+/**
+ * The annotated ground-floor plan labels these "Stairs to Cinema Rooms" and
+ * draws two, parallel, each about 4.7 m wide and 12 m long, near the hall's
+ * north end. The original blockout had a single grand staircase, which is both
+ * wrong and a worse level: two routes up is a choice the player can get wrong,
+ * and in Chapter III it is the difference between three robots moving and
+ * three robots queueing.
+ *
+ * Positioned from where they ARRIVE, not from where they leave. They had been
+ * placed from the ground-floor plan, at x -10.25..-6.70 and 5.78..9.02 —
+ * inside Rooms 4 and 9. That is why holes kept appearing in upstairs walls: a
+ * staircase was standing in an auditorium, and every rule written to stop it
+ * punching through was treating the symptom. The auditorium plan shows them
+ * hugging the corridor's west and east walls, about 2.3 m wide, leaving the
+ * middle 9.7 m clear — which is how a corridor with stairs in it works, and
+ * what Chapter III needs when three robots and a full house are trying to get
+ * past each other. The two drawings cannot both be right; where a flight lands
+ * is what the level is built around, so the arrival wins.
+ *
+ * They are declared up here, ahead of the rooms, because the corridor has to
+ * know where its stairwells are: a floor plate drawn over one hides the flight
+ * coming up through it.
+ */
+const STAIR_RUN = 11.2;
+const STAIR_WIDTH = 2.3;
+
+/**
+ * Where the flights meet the HALL floor, at their north end.
+ *
+ * They climb southward, away from the hall and toward the reception end of the
+ * building, so the upper landing is at y -21.0 and the foot is here. That is
+ * also the better view: the high end is the near end on screen, so the flight
+ * steps away from the camera instead of hiding its own descent behind the
+ * landing.
+ */
+const STAIR_FOOT_Y = -9.8;
+
+const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
+const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
+
+/** The grand flight out of the reception concourse — see the Link below. */
+const GRAND_STAIR = rect(-CORRIDOR_HALF, -59.5, CORRIDOR_HALF * 2, 5.6);
+
+/**
+ * Every flight that lands on the auditorium level.
+ *
+ * The corridor has to know all three: a doorway with a staircase in front of
+ * it is not a doorway, and which end of a room's frontage is free depends on
+ * where the flights land.
+ */
+const ARRIVALS = [STAIR_WEST, STAIR_EAST, GRAND_STAIR];
+
+/**
+ * Is the corridor immediately outside this end of a room's frontage occupied
+ * by a flight of stairs?
+ *
+ * Tested 0.9 m out — about a robot's width into the corridor, which is what a
+ * door needs in front of it to be a door.
+ */
+function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): boolean {
+  const y =
+    doorSide === 'low'
+      ? bounds.y + 1.2 + DOOR_WIDTH / 2
+      : bounds.y + bounds.h - 1.2 - DOOR_WIDTH / 2;
+  // West rooms (side -1) face the corridor across their east edge, east rooms
+  // across their west one.
+  const x = side === -1 ? bounds.x + bounds.w + 0.9 : bounds.x - 0.9;
+  return ARRIVALS.some((flight) => rectContains(flight, x, y));
+}
+
 function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
   const rooms: Room[] = [];
   const seating: Obstacle[] = [];
@@ -286,7 +361,16 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
       // other — the alternation this building actually uses. Decided once:
       // the wall builder puts the door here and the seating leaves its wide
       // aisle here, and those two must never disagree.
-      const doorSide: 'low' | 'high' = aud.number % 2 === 1 ? 'high' : 'low';
+      //
+      // Unless a staircase is parked against that end. The flights run the
+      // length of the corridor walls, and the west one lands right across the
+      // south end of Room 4's frontage — a doorway with 2.3 m of staircase in
+      // front of it is not a way in. The alternation is a pattern, not a law;
+      // a building puts the door where there is room for one.
+      let doorSide: 'low' | 'high' = aud.number % 2 === 1 ? 'high' : 'low';
+      if (doorBlocked(bounds, side, doorSide)) {
+        doorSide = doorSide === 'low' ? 'high' : 'low';
+      }
 
       rooms.push({
         id: `aud-${aud.number}`,
@@ -582,45 +666,6 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
 // The staircases — two of them, side by side
 // ---------------------------------------------------------------------------
 
-/**
- * The annotated ground-floor plan labels these "Stairs to Cinema Rooms" and
- * draws two, parallel, each about 4.7 m wide and 12 m long, near the hall's
- * north end. The original blockout had a single grand staircase, which is both
- * wrong and a worse level: two routes up is a choice the player can get wrong,
- * and in Chapter III it is the difference between three robots moving and
- * three robots queueing.
- *
- * Their surveyed spacing is wider than the corridor above, which the plans
- * cannot reconcile — see the note at the top of this file. They are placed to
- * land in the corridor.
- */
-/*
- * Positioned from where they ARRIVE, not from where they leave.
- *
- * These had been placed from the ground-floor plan, which put them at
- * x -10.25..-6.70 and 5.78..9.02 — inside Rooms 4 and 9. That is the real
- * reason holes kept appearing in upstairs walls: a staircase was standing in
- * an auditorium, and every rule written to stop it punching through was
- * treating the symptom.
- *
- * The auditorium plan shows them clearly once you look for them: two flights
- * hugging the corridor's west and east walls, about 2.3 m wide, arriving
- * around y -15. They run inside the corridor for their whole length, so the
- * middle 9.7 m stays clear — which is how a corridor with stairs in it
- * actually works, and what Chapter III needs when three robots and a full
- * house are trying to get past each other.
- *
- * Extended south to 11.2 m of run, because the plan draws only the part above
- * the cut and 5.3 m of visible flight for 6.2 m of rise is not a staircase.
- * The two drawings put these in different places and cannot both be right;
- * where they land is what matters, so the arrival wins.
- */
-const STAIR_RUN = 11.2;
-const STAIR_WIDTH = 2.3;
-const STAIR_TOP_Y = -9.8;
-
-const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_TOP_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
-const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_TOP_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
  * Everything vertical in the reception concourse.
@@ -659,26 +704,47 @@ const receptionStairs: Link[] = [
    * simplification of a thing the plan shows, not an invented feature.
    */
   { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -49.4, 10.0, 12.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: 0 },
-  // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
-  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: RISER },
+  /**
+   * "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
+   *
+   * Surveyed at 15.7 m wide starting 3.5 m west of centre, which puts five
+   * metres of it past the east wall of the 14.3 m corridor it arrives in. That
+   * was invisible while nothing drew the flight upstairs and is a staircase
+   * hanging in mid-air now that something does. Same rule as the other two:
+   * where a flight LANDS is what the level is built around, and a flight
+   * cannot be wider than the corridor it lands in, so it takes the corridor's
+   * full width and loses the surveyed 1.4 m.
+   */
+  { id: 'grand-stair', from: 0, to: 1, bounds: GRAND_STAIR, base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: RISER },
 ];
 
 /**
- * Both flights climb NORTHWARD, arriving at their north end.
+ * Both flights climb SOUTHWARD: foot at the north end, landing at the south.
  *
- * On an upper-floor plan a stair from below shows only the part above the cut
- * — the top landing and its last treads — and that is what is drawn here, at
- * the north end of each flight. So the top is north and the foot is south.
- *
- * This reverses an earlier reading, and it should: that one was about a
- * staircase standing in the wrong place entirely. One boolean per flight if
- * it is still the wrong way round.
+ * `ascending` is "height rises with the coordinate", so climbing toward
+ * smaller y is `false`. It has been flipped once in each direction now, which
+ * is one flip too many — the reading that changed direction was about a
+ * staircase standing somewhere else entirely, and this is the direction the
+ * building has.
  */
 const staircases: Link[] = [
-  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: true, riser: RISER },
-  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: true, riser: RISER },
+  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
+  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   ...receptionStairs,
 ];
+
+/**
+ * Open a stairwell in the floor each flight arrives on.
+ *
+ * Done here rather than where the rooms are built, because a room cannot know
+ * about a link that does not exist yet and a link should not have to know
+ * which room it comes up through. Render-only — the flight's own treads are
+ * what a robot collides with.
+ */
+for (const room of floor1Rooms) {
+  if (room.kind !== 'corridor') continue;
+  room.voids = staircases.filter((l) => l.to === 1 && l.from !== l.to).map((l) => l.bounds);
+}
 
 /**
  * Staircases as physical bulk.
@@ -726,6 +792,18 @@ const DRAWN_RISE = 2.4;
  */
 const MAX_TREADS = 18;
 
+/**
+ * Thickness of a tread drawn in a stairwell, metres.
+ *
+ * Thin, and that is the whole trick. A painter's-algorithm floor is drawn
+ * before everything standing on it, so anything hanging BELOW it paints over
+ * the floor in front of the hole rather than being hidden by it — fill the
+ * well with a solid mass and the stairwell reads as a wall standing on the
+ * carpet. Slabs one riser thick spill four pixels instead of seventy, and the
+ * dark between them is what makes the well look deep.
+ */
+const TREAD_SLAB = 0.2;
+
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
   for (const link of links) {
@@ -739,20 +817,71 @@ function stairMass(links: Link[]): Obstacle[] {
     const run = axis === 'y' ? b.h : b.w;
     const step = run / treads;
 
+    if (link.to !== link.from) {
+      /*
+       * Line the two sides of the well you can actually see.
+       *
+       * The flight descends away from the floor it arrives on, leaving the
+       * upper part of the shaft open — and the renderer paints only the south
+       * and west faces of a box, so the shaft's north and east walls are the
+       * only ones in view and nothing was drawing them. The gap came out as
+       * background: a black hole in the carpet rather than a stairwell.
+       *
+       * A wafer standing on each of those two rims shows exactly that face and
+       * nothing else. Emitted before the treads so they sort in front of it,
+       * and given the link's id so it obeys the same stair rule — a wall to
+       * whoever the flight is a wall to, and nothing to anyone else.
+       */
+      const t = 0.05;
+      for (const liner of [
+        rect(b.x, b.y + b.h - t, b.w, t), // north rim: its south face lines the well
+        rect(b.x + b.w - t, b.y, t, b.h), // east rim: its west face does
+      ]) {
+        solid.push({ floor: link.to, bounds: liner, height: 0, base: -drawnRise, linkId: link.id });
+      }
+    }
+
     for (let i = 0; i < treads; i += 1) {
       // `i` counts along +axis; height follows the climb direction.
       const fraction = (ascending ? i + 1 : treads - i) / treads;
+      const tread =
+        axis === 'y'
+          ? rect(b.x, b.y + i * step, b.w, step)
+          : rect(b.x + i * step, b.y, step, b.h);
+
       solid.push({
         floor: link.from,
-        bounds:
-          axis === 'y'
-            ? rect(b.x, b.y + i * step, b.w, step)
-            : rect(b.x + i * step, b.y, step, b.h),
+        bounds: tread,
         // Drawn from the link's own base, so the grand flight starts at
         // concourse level rather than sinking through it.
         height: link.base + drawnRise * fraction,
         // Solid to anything that cannot climb this flight, walkable to
         // anything that can. Sim.resolveObstacles reads it.
+        linkId: link.id,
+      });
+
+      if (link.to === link.from) continue;
+
+      /*
+       * The same flight, seen from the floor it ARRIVES on.
+       *
+       * Upstairs a staircase is not a block standing on the carpet, it is a
+       * stepped mass hanging in a well — the landing is flush with the floor
+       * and every tread below it is under your feet. Emitting only the `from`
+       * side is why the flights were invisible on the auditorium level and why
+       * a robot standing up there drove over the stairwell as though the floor
+       * were solid.
+       *
+       * These are the same rectangles, so they carry the same linkId and the
+       * stair rule applies unchanged: Voxxy steps onto the landing and walks
+       * down, Biggy meets the well as a wall.
+       */
+      const below = -drawnRise * (1 - fraction);
+      solid.push({
+        floor: link.to,
+        bounds: tread,
+        height: below,
+        base: below - TREAD_SLAB,
         linkId: link.id,
       });
     }
@@ -808,7 +937,7 @@ export const SPAWNS = {
    */
   stairFoot: { floor: 0 as const, x: -6.0, y: -23.5 },
   /** The south end of the corridor, between Rooms 6 and 7. */
-  corridorSouth: { floor: 1 as const, x: 0, y: -54 },
+  corridorSouth: { floor: 1 as const, x: 0, y: -51.5 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
   // In the corridor outside Room 8, not inside its seating — the cast lines

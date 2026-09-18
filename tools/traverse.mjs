@@ -76,11 +76,13 @@ function drive(robotId, from, dir, seconds, floor = 0) {
   Object.assign(actor.input, { dirX: dir.x / mag, dirY: dir.y / mag, throttle: 1, braking: false });
 
   let peakZ = 0;
+  let minZ = 0;
   for (let t = 0; t < seconds; t += FIXED_DT) {
     sim.advance(FIXED_DT);
     peakZ = Math.max(peakZ, body.z);
+    minZ = Math.min(minZ, body.z);
   }
-  return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, onLink: actor.onLink };
+  return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, minZ, onLink: actor.onLink };
 }
 
 const SOUTH = { x: 0, y: -1 };
@@ -98,7 +100,10 @@ function scenario(label, expectation, run) {
 // The hall floor is the datum; the concourse stands 1.2 m above it.
 const HALL = { x: 0, y: -24 };
 const RAMP = { x: 16.5, y: -30 };
-const STAIR_FOOT = { x: -6.0, y: -23.5 };
+// The west flight runs y -21.0 (landing) to -9.8 (foot), so it is climbed
+// SOUTHWARD. Approach the foot from the hall side, north of it.
+const STAIR_FOOT = { x: -6.0, y: -7.5 };
+const STAIR_LANDING = { x: -6.0, y: -23.0 };
 
 scenario(
   'Voxxy climbs the concourse steps',
@@ -130,13 +135,13 @@ scenario(
 scenario(
   'Voxxy climbs a full flight and arrives on floor 1',
   (r) => r.floor === 1 && r.peakZ > 6.0,
-  () => drive('voxxy', STAIR_FOOT, NORTH, 12),
+  () => drive('voxxy', STAIR_FOOT, SOUTH, 12),
 );
 
 scenario(
   'Biggy cannot use a full flight',
   (r) => r.floor === 0 && r.peakZ < 0.1,
-  () => drive('biggy', STAIR_FOOT, NORTH, 16),
+  () => drive('biggy', STAIR_FOOT, SOUTH, 16),
 );
 
 // The one that is easy to get wrong: walking into the TOP of a flight from the
@@ -144,7 +149,23 @@ scenario(
 scenario(
   'Voxxy cannot board a flight at its top from below',
   (r) => r.floor === 0 && r.peakZ < 0.5,
-  () => drive('voxxy', { x: -6.0, y: -4 }, SOUTH, 8),
+  () => drive('voxxy', { x: -6.0, y: -26 }, NORTH, 8),
+);
+
+// Stairs are not a one-way valve, and this is the direction that was broken
+// for as long as a link's heights were read from the floor it LEAVES: a robot
+// standing on the landing measured its own height as 0 and the flight's as
+// 6.2, so it drove over the stairwell as though the floor were solid.
+scenario(
+  'Voxxy walks back down and arrives on floor 0',
+  (r) => r.floor === 0 && r.minZ < -1.0,
+  () => drive('voxxy', STAIR_LANDING, NORTH, 12, 1),
+);
+
+scenario(
+  'Biggy is stopped by the stairwell upstairs',
+  (r) => r.floor === 1 && r.y < -21.0,
+  () => drive('biggy', STAIR_LANDING, NORTH, 14, 1),
 );
 
 // The building has to hold them in. This was a printed warning for as long as

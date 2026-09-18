@@ -58,14 +58,37 @@ export interface Room {
    * you cannot see is a level change the player will not believe.
    */
   elevation?: number;
+
+  /**
+   * Holes in this room's floor plate — stairwells, in practice.
+   *
+   * A corridor with a staircase coming up through it does not have floor
+   * there, and painting one over the flight arriving from below is how a
+   * staircase goes missing on the floor it serves. Render-only: the flight
+   * itself provides the collision, so nothing in the simulation reads these.
+   */
+  voids?: Rect[];
 }
 
 /** A solid the robots collide with: walls, columns, seat blocks, booths. */
 export interface Obstacle {
   floor: 0 | 1;
   bounds: Rect;
-  /** Height in metres. Under 0.5 m is a kerb Voxxy can hop. */
+  /**
+   * Top of this solid above its storey datum, metres. Under 0.5 m is a kerb
+   * Voxxy can hop. Negative for anything hanging below the floor.
+   */
   height: number;
+
+  /**
+   * Bottom of this solid above its storey datum, metres. Defaults to 0 —
+   * almost everything stands on the floor.
+   *
+   * Set for geometry that hangs: a flight of stairs seen from the floor it
+   * ARRIVES on is a stepped mass descending into a well, not a block standing
+   * on the carpet.
+   */
+  base?: number;
   /** Biggy can shove this out of the way if its momentum is high enough. */
   movable?: boolean;
   /** kg, only meaningful when movable. */

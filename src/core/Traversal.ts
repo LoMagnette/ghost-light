@@ -45,9 +45,30 @@ export function climbFraction(link: Link, x: number, y: number): number {
   return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
-/** Height of the link's walking surface at a point, above the `from` datum. */
-export function surfaceHeight(link: Link, x: number, y: number): number {
-  return link.base + link.rise * climbFraction(link, x, y);
+/**
+ * Datum of `floor` above the link's `from` floor, in metres.
+ *
+ * A link states its `base` and `rise` from the floor it LEAVES; an actor
+ * measures its own z from the floor it is STANDING ON. Going up those are the
+ * same number, and going down they are a storey apart. Without this correction
+ * a robot at the top of a flight reads its own height as 0 and the flight's as
+ * 6.2, decides it cannot step on, and walks over the stairwell as if the floor
+ * were solid — which is what "the stairs are not there upstairs" looks like
+ * from inside the code. A same-floor link (the concourse steps, the ramp) has
+ * no correction to make.
+ */
+function datumOf(link: Link, floor: 0 | 1): number {
+  return floor === link.from ? 0 : link.base + link.rise;
+}
+
+/** Height of the link's walking surface at a point, above `floor`'s datum. */
+export function surfaceHeight(
+  link: Link,
+  x: number,
+  y: number,
+  floor: 0 | 1 = link.from,
+): number {
+  return link.base + link.rise * climbFraction(link, x, y) - datumOf(link, floor);
 }
 
 /**
@@ -62,12 +83,19 @@ export function surfaceHeight(link: Link, x: number, y: number): number {
  * bottom because the surface is flush there, and meet a 1.2 m face if you
  * approach the top across the lower floor.
  */
-export function canStepOnto(spec: RobotSpec, link: Link, x: number, y: number, z: number): boolean {
+export function canStepOnto(
+  spec: RobotSpec,
+  link: Link,
+  x: number,
+  y: number,
+  z: number,
+  floor: 0 | 1 = link.from,
+): boolean {
   if (!canTraverse(spec, link)) return false;
   // A little slack above maxStepRise so a robot already tracking the surface
   // is never thrown off it by a rounding error mid-climb.
   const reach = spec.maxStepRise + 0.06;
-  return Math.abs(surfaceHeight(link, x, y) - z) <= reach;
+  return Math.abs(surfaceHeight(link, x, y, floor) - z) <= reach;
 }
 
 /** The link under a point on a given floor, if any. */
