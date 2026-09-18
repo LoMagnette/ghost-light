@@ -483,6 +483,32 @@ seating gets pinned: pin the FAR edge and every narrowing of the fan widens the
 aisle by the doors; pin the door edge — which is what I wrote first — and the
 taper opens the far aisle instead while the way in stays a slot.
 
+**And then the real cause surfaced:**
+> If the issue where the stair case. you can take a look at the map and see
+> that the stair pops in the hallway next to the room
+
+Correct, and it retired a rule. The hall staircases had been positioned from
+the GROUND-floor plan, which put them at x -10.25..-6.70 and 5.78..9.02 —
+inside Rooms 4 and 9. A staircase was standing in an auditorium, and every hole
+that kept appearing in an upstairs wall was that, showing through. The rule
+about which links may punch a wall was treating a symptom.
+
+The auditorium plan shows them plainly once you look for them in the corridor
+rather than in the rooms: two flights hugging the corridor's west and east
+walls, about 2.3 m wide, arriving around y -15, leaving the middle 9.7 m of the
+corridor clear. Which is how a corridor with stairs in it works, and what
+Chapter III needs when three robots and a full house are trying to get past
+each other.
+
+The two drawings put these staircases in different places and cannot both be
+right. Where a stair *lands* is what the level has to be built around, so the
+arrival wins and the ground-floor position is the one that gives.
+
+**Fixed by hand:** the relocated stairs stand in the middle of the hall, where
+the cast used to spawn. The first run put Voxxy inside a staircase and the
+collision solver threw it to x = -339994. `npm run venue` flagged the spawn;
+`npm run traverse` showed the consequence.
+
 That second one is the entry worth keeping, because it looked right in a
 drawing. The two big rooms were off by 0.3 m of centroid, which no eye catches.
 `npm run venue` now measures where each room's doorway is and where its seating

@@ -595,14 +595,32 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
  * land in the corridor.
  */
 /*
- * Measured off the annotated plan in the SAME frame as the column grid, which
- * is the point: the previous pair were placed by eye and sat a whole bay west
- * of where they belong, straddling a line of columns. Each flight stands
- * inside a structural bay — the west one between the 13.04 and 19.70 m grid
- * lines, the east one between 26.15 and 32.63.
+ * Positioned from where they ARRIVE, not from where they leave.
+ *
+ * These had been placed from the ground-floor plan, which put them at
+ * x -10.25..-6.70 and 5.78..9.02 — inside Rooms 4 and 9. That is the real
+ * reason holes kept appearing in upstairs walls: a staircase was standing in
+ * an auditorium, and every rule written to stop it punching through was
+ * treating the symptom.
+ *
+ * The auditorium plan shows them clearly once you look for them: two flights
+ * hugging the corridor's west and east walls, about 2.3 m wide, arriving
+ * around y -15. They run inside the corridor for their whole length, so the
+ * middle 9.7 m stays clear — which is how a corridor with stairs in it
+ * actually works, and what Chapter III needs when three robots and a full
+ * house are trying to get past each other.
+ *
+ * Extended south to 11.2 m of run, because the plan draws only the part above
+ * the cut and 5.3 m of visible flight for 6.2 m of rise is not a staircase.
+ * The two drawings put these in different places and cannot both be right;
+ * where they land is what matters, so the arrival wins.
  */
-const STAIR_WEST = rect(HALL.x + 13.25, -6.44, 3.55, 12.38);
-const STAIR_EAST = rect(HALL.x + 29.28, -6.44, 3.24, 12.38);
+const STAIR_RUN = 11.2;
+const STAIR_WIDTH = 2.3;
+const STAIR_TOP_Y = -9.8;
+
+const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_TOP_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
+const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_TOP_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
  * Everything vertical in the reception concourse.
@@ -646,17 +664,19 @@ const receptionStairs: Link[] = [
 ];
 
 /**
- * The two flights out of the hall climb SOUTHWARD — foot at the north end,
- * against the hall's north wall, rising back out over the floor.
+ * Both flights climb NORTHWARD, arriving at their north end.
  *
- * The plan's own symbols pull in two directions here: the travel arrow on
- * `exhibition-floor.jpg` points south, while the break line on `booth-map.png`
- * sits at the south end, which usually marks the part of a flight below the
- * cut. Taking the arrow, which is the less ambiguous of the two.
+ * On an upper-floor plan a stair from below shows only the part above the cut
+ * — the top landing and its last treads — and that is what is drawn here, at
+ * the north end of each flight. So the top is north and the foot is south.
+ *
+ * This reverses an earlier reading, and it should: that one was about a
+ * staircase standing in the wrong place entirely. One boolean per flight if
+ * it is still the wrong way round.
  */
 const staircases: Link[] = [
-  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
-  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
+  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: true, riser: RISER },
+  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: true, riser: RISER },
   ...receptionStairs,
 ];
 
@@ -770,22 +790,23 @@ export const SPAWNS = {
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
    * A chapter lines its whole cast up east of this point, so what has to be
-   * clear is the ROW, not the point. Column rows run at y = -31.1 + 6.3j;
-   * sitting at -15.35 is 3.15 m from the nearest of them, which clears Biggy's
-   * 0.72 m by a margin that holds for any x along the row.
+   * clear is the ROW, not the point. The column rows nearest here sit at
+   * y -20.87 and -27.05, so -24 is over 3 m from either and clears Biggy's
+   * 0.72 m for any x along the row. It is also 3 m south of the staircases,
+   * which stand in the middle of the hall — the cast used to spawn inside
+   * one of them, and the collision solver threw it 340 km.
    *
    * Worth knowing when driving: the grid is square and the isometric screen
    * axes sit at 45° to it, so holding right or left tracks a line of columns
    * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: 4.9, y: -17.5 },
+  hallCentre: { floor: 0 as const, x: 0, y: -24 },
   /**
-   * The actual foot of the west flight — its NORTH end, since both hall
-   * staircases climb southward. Approach from the south and you meet the top
-   * of the flight, which is a storey of wall.
+   * The foot of the west flight — its SOUTH end. Approach from the north and
+   * you meet the top of the flight, which is a storey of wall.
    */
-  stairFoot: { floor: 0 as const, x: -8.5, y: 8.5 },
+  stairFoot: { floor: 0 as const, x: -6.0, y: -23.5 },
   /** The south end of the corridor, between Rooms 6 and 7. */
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },

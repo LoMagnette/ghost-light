@@ -96,9 +96,9 @@ function scenario(label, expectation, run) {
 }
 
 // The hall floor is the datum; the concourse stands 1.2 m above it.
-const HALL = { x: 4.9, y: -15.35 };
+const HALL = { x: 0, y: -24 };
 const RAMP = { x: 16.5, y: -30 };
-const STAIR_FOOT = { x: -8.5, y: 8.5 };
+const STAIR_FOOT = { x: -6.0, y: -23.5 };
 
 scenario(
   'Voxxy climbs the concourse steps',
@@ -130,13 +130,13 @@ scenario(
 scenario(
   'Voxxy climbs a full flight and arrives on floor 1',
   (r) => r.floor === 1 && r.peakZ > 6.0,
-  () => drive('voxxy', STAIR_FOOT, SOUTH, 12),
+  () => drive('voxxy', STAIR_FOOT, NORTH, 12),
 );
 
 scenario(
   'Biggy cannot use a full flight',
   (r) => r.floor === 0 && r.peakZ < 0.1,
-  () => drive('biggy', STAIR_FOOT, SOUTH, 16),
+  () => drive('biggy', STAIR_FOOT, NORTH, 16),
 );
 
 // The one that is easy to get wrong: walking into the TOP of a flight from the
@@ -144,7 +144,7 @@ scenario(
 scenario(
   'Voxxy cannot board a flight at its top from below',
   (r) => r.floor === 0 && r.peakZ < 0.5,
-  () => drive('voxxy', { x: -8.5, y: -14 }, NORTH, 8),
+  () => drive('voxxy', { x: -6.0, y: -4 }, SOUTH, 8),
 );
 
 // The building has to hold them in. This was a printed warning for as long as
