@@ -17,6 +17,31 @@
 
 import type { Chapter } from './Chapter';
 
+/**
+ * Every colour below was measured off the competition photographs in
+ * `references/venue/photos/`, and each one carries the frame it came from.
+ * SPEC.md section 8 is explicit that the palettes come from the photographs
+ * rather than from taste, because "a judge who recognises the same corridor in
+ * three different lights believes the place exists" — and that only works if
+ * the lights are the building's own.
+ *
+ * These are MATERIAL colours, not lit ones. The renderer multiplies them by
+ * `0.35 + lightLevel * 0.65`, so Chapter I's darkness comes from its light
+ * level (0.18 → 47%) and not from a palette that has been pre-dimmed. Doing
+ * both, which is what the invented palettes did, made Chapter I a black
+ * rectangle you could not play.
+ *
+ * Measured surfaces, for anything added later:
+ *
+ *   corridor carpet, dark     #444c58   photo 54051896620
+ *   concourse carpet, grey    #777773   photo 54051697728
+ *   concrete + painted wall   #a7a7a1   photo 54051697728
+ *   white wall, lit           #dbe1e4   photo 54051896620
+ *   slatted warm wood         #744724   photo 54051914325
+ *   auditorium floor          #1f2231   photo 54835146677
+ *   hall floor under a crowd  #2a2e31   photo 54051774449
+ */
+
 export const CHAPTER_ONE: Chapter = {
   id: 'silence',
   numeral: 'I',
@@ -32,12 +57,16 @@ export const CHAPTER_ONE: Chapter = {
   lightLevel: 0.18,
   palette: {
     void: 0x06080a,
-    floor: 0x14191d,
-    floorLine: 0x1d2429,
-    wall: 0x232b31,
-    wallShade: 0x161c21,
-    accent: 0xb3402f, // the red LED step lighting, still running
-    text: 0x8b9398,
+    floor: 0x374250, // the dark corridor carpet, with the warmth taken out
+    floorLine: 0x44505f,
+    wall: 0x8d99a8, // concrete and painted wall under nothing but daylight leak
+    wallShade: 0x545f6d,
+    // The red LED step strips, measured at their brightest in the one
+    // photograph of the auditorium with everything else switched off. It is
+    // a hot crimson, not the brick orange this used to guess at — and SPEC
+    // calls it the single strongest image available for this chapter.
+    accent: 0xf24471,
+    text: 0x9fa8b0,
   },
   startFloor: 0,
   objective: 'Find the power',
@@ -57,13 +86,16 @@ export const CHAPTER_TWO: Chapter = {
   crowdDensity: 0.35,
   lightLevel: 0.62,
   palette: {
-    void: 0x0a0b0d,
-    floor: 0x2b2722,
-    floorLine: 0x363029,
-    wall: 0x4a423a,
-    wallShade: 0x2e2822,
-    accent: 0xd9a441, // warm, slightly dated, tungsten
-    text: 0xe8dcc8,
+    void: 0x0a0806,
+    floor: 0x6d6154, // an older, warmer carpet than the one there now
+    floorLine: 0x7d7062,
+    wall: 0xc4a878,
+    // The slatted warm wood behind the registration desk. Putting it on the
+    // shaded faces gives this era a timber feel the other two do not have,
+    // from one measured colour rather than a texture.
+    wallShade: 0x7a5231,
+    accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
+    text: 0xf2e8d8,
   },
   startFloor: 1,
   objective: 'Keep every room running',
@@ -83,12 +115,19 @@ export const CHAPTER_THREE: Chapter = {
   crowdDensity: 1,
   lightLevel: 0.85,
   palette: {
-    void: 0x0b0d10,
-    floor: 0x1f262c,
-    floorLine: 0x2b343c,
-    wall: 0x3c4750,
-    wallShade: 0x232b32,
-    accent: 0xff7a1a, // Devoxx orange
+    void: 0x0a0c0e,
+    // Warm, because the light is. Chapters I and III are the same rooms and
+    // must not read as the same grey at two brightnesses — the cove lighting
+    // photographed at capacity throws a peach cast over the white canopy, and
+    // `lightLevel` is only a multiplier, so the palette has to carry the hue.
+    floor: 0x33302c, // the hall floor, photographed under a full house
+    floorLine: 0x433d36,
+    wall: 0xbdb5a8, // the white canopy, warm under the cove
+    wallShade: 0x77706a,
+    // The hall's warm cove lighting at capacity. SPEC calls this era "Devoxx
+    // orange"; this is that orange as the building actually throws it, which
+    // is softer and peachier than a brand hex.
+    accent: 0xc8895f,
     text: 0xf2f5f7,
   },
   startFloor: 0,

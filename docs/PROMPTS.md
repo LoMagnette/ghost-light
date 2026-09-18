@@ -440,7 +440,45 @@ what a robot actually drives around. And ceiling heights are still invented:
 a floor plan cannot give volume, which is why watching the drone footage is
 still on the human's list.
 
-### _(pending)_ Palette extraction from the venue photographs
+### Palettes from the venue photographs
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-18
+
+**Prompt:**
+> Let's all ready do the palette
+
+Fourteen photographs, read directly. Surfaces were sampled as material colours;
+light sources by taking the brightest strongly-saturated pixels and splitting
+them by hue family, so a red strip and a blue wash in the same frame do not
+average into grey.
+
+**What the measurement changed:**
+
+- The red LED step strips are **`#f24471`**, a hot crimson. The invented value
+  was `#b3402f`, a brick orange — wrong hue, wrong temperature, and it is the
+  one image SPEC calls the strongest available to Chapter I.
+- Chapter II's era now comes from a measured material rather than a mood: the
+  slatted warm wood behind the registration desk, `#744724`, on every shaded
+  face. One colour buys a timber era with no texture at all.
+- Chapter III's "Devoxx orange" is `#c8895f` — the cove lighting as the
+  building actually throws it, softer and peachier than a brand hex.
+
+**The fix that mattered most was structural, not chromatic.** The palettes had
+been pre-dimmed *and* multiplied by the chapter light level, so Chapter I at
+0.18 rendered as a black rectangle. Palettes are now material colours and the
+light level does the darkening alone — Chapter I is dim and playable instead
+of dark and not.
+
+**Fixed by hand:** the first pass left Chapters I and III as the same grey at
+two brightnesses, which defeats the whole "one building, three lights" idea.
+`lightLevel` is only a multiplier, so it cannot carry a hue — the palettes have
+to. Chapter I is cooled to a dead blue-grey and Chapter III warmed to the peach
+the cove throws, and they now read as two eras of one room.
+
+**Still to come:** the accents are correct and almost invisible, because
+nothing draws light sources yet. The red step strips exist as a number, not as
+a thing glowing in a dark auditorium. That is the lighting pass, and it is
+worth more than any texture.
 
 ---
 

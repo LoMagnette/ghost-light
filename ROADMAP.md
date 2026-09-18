@@ -136,7 +136,8 @@ Needs no input beyond the three blockers above.
 - All gameplay code: objectives, win/lose states, the two remaining control
   modes, robot abilities, crowd simulation, camera, HUD, end cards.
 - Venue refinement from the floor plans, once on disk.
-- Palette extraction from the photographs, same condition.
+- ~~Palette extraction from the photographs.~~ **Done 18 Sep** — every colour
+  in `registry.ts` traces to a photograph. See `docs/ASSETS.md`.
 - Sprite integration once art exists — atlas packing, 8-direction facing
   logic, animation state machines.
 - Movement tuning to a description. "Biggy should feel like it is on ice" is

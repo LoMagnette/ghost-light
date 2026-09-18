@@ -43,6 +43,25 @@ into the next. A plan gives layout; the footage gives volume.
 
 ## Palette source
 
+**Done 18 Sep.** Every colour in `src/chapters/registry.ts` is measured off a
+photograph and carries the frame it came from. Surfaces were read as material
+colours and light sources as their brightest pixels, because the renderer
+multiplies the palette by the chapter's light level — pre-dimming the palette
+as well made Chapter I a black rectangle you could not play.
+
+| Measured | Colour | From |
+|---|---|---|
+| Corridor carpet, dark | `#444c58` | `54051896620` |
+| Concourse carpet, grey | `#777773` | `54051697728` |
+| Concrete + painted wall | `#a7a7a1` | `54051697728` |
+| White wall, lit | `#dbe1e4` | `54051896620` |
+| Slatted warm wood | `#744724` | `54051914325` |
+| Auditorium floor | `#1f2231` | `54835146677` |
+| Hall floor under a crowd | `#2a2e31` | `54051774449` |
+| **Red LED step strips** | `#f24471` | `54836329465` |
+| Registration lamp, tungsten | `#eb9760` | `54051914325` |
+| Hall cove at capacity | `#c8895f` | `54051774449` |
+
 Taken from the photographs, not invented:
 
 | Space | Reads as |
