@@ -13,8 +13,8 @@ version of the division of labour:
 
 ## Where things stand
 
-As of 18 Sep 2026, the scaffold is committed and verified running, not just
-building.
+As of 18 Sep 2026, the scaffold is committed and verified running, and movement
+is tuned and measured.
 
 - **Stack** — Phaser 4.2.1, TypeScript strict, Vite 6. Typecheck and
   production build both pass.
@@ -23,12 +23,25 @@ building.
 - **Venue** — the Kinepolis defined once in metres, both floors, as a
   blockout. See `src/venue/kinepolis.ts`.
 - **Chapters** — three, as data, sharing one gameplay scene.
+- **Movement** — measured, not assumed. Biggy carries 1366 kg·m/s at cruise,
+  needs 3.8 m to brake and 10.6 m to coast down, and carves a 4.05 m turn where
+  Voxxy pivots in 1.80 m. The first measurement found all three robots stopping
+  within 0.2 m of each other; see `docs/PROMPTS.md`.
 - **Verification** — `npm run shoot` boots the built game headless, drives all
-  three chapters and exits non-zero on any console error.
+  three chapters and exits non-zero on any console error. `npm run physics`
+  measures movement in the real sim with no browser at all and fails when the
+  cast stops being three distinguishable machines.
+- **Feel** — camera leads by the robot's own stopping distance, impact shake
+  and footfall kick scale with momentum, skid marks show the arc a robot
+  actually took, and a floor marker shows where it would stop if you braked now.
 - **Specs** — `SPEC.md` and `CLAUDE.md` written and committed.
 
 Not yet existing: any art, any audio, any objective logic, and any chapter you
 can actually finish.
+
+**Next human step:** press `L` at the menu and drive all three. The numbers say
+the robots differ; only you can say whether Biggy is *satisfying*, and that
+judgement is 20 points and is not delegable.
 
 ---
 
@@ -41,8 +54,8 @@ still days left to react.
 | Date | Focus | Who |
 |---|---|---|
 | Fri 18 Sep | Scaffold, specs, verification harness — **done** | Agent |
-| Sat 19 Sep | **Public repo + Pages live.** Then movement tuning starts | Human, then agent |
-| Sun 20 Sep | Movement feel against grey boxes — the 20 realism points | Agent, human judges |
+| Sat 19 Sep | **Public repo + Pages live.** Still the only real blocker | Human |
+| Sun 20 Sep | ~~Movement feel against grey boxes~~ — **done early.** Human to judge the feel in the lab and call the adjustments | Agent done, human judges |
 | Mon 21 Sep | Venue geometry refined from the real floor plans | Agent, needs downloads |
 | Tue 22 Sep | Chapter I objective and a finishable round | Agent |
 | Wed 23 Sep | Chapter I lighting, end card, first-run experience | Agent |

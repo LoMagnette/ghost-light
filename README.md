@@ -32,8 +32,11 @@ no account, no build step to run by hand.
 | `W` `A` `S` `D` / arrows | Move (screen-relative) |
 | `SHIFT` | Brake — a real brake, not just letting go |
 | `TAB` | Switch robot *(chapter II)* |
-| `F1` | Debug readout: mass, speed, momentum |
+| `1` `2` `3` | Take control of a robot, where more than one is present |
+| `R` | Put the cast back where it started |
+| `F1` | Debug readout: mass, speed, momentum, stopping distance |
 | `ESC` | Back to chapter select |
+| `L` *(menu)* | Movement lab — all three robots in one lit hall |
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.
@@ -48,11 +51,23 @@ differ by mass, and every acceleration in the game is `force ÷ mass`:
 | Mass | 45 kg | 190 kg | 430 kg |
 | Acceleration | 9.0 m/s² | 4.5 m/s² | 1.8 m/s² |
 | Braking | 12.0 m/s² | 5.0 m/s² | **1.2 m/s²** |
-| Stopping distance from top speed | 1.5 m | 1.8 m | **4.8 m** |
+| Momentum at cruise | 266 | 777 | **1366** kg·m/s |
+| Braking distance | 1.42 m | 1.62 m | **3.82 m** |
+| Coasting distance | 4.7 m | 5.2 m | **10.6 m** |
+| Turn radius | 1.80 m | 2.46 m | **4.05 m** |
 
 Biggy's braking force is deliberately *lower* than its drive force — the brief
 describes it as "slow to start and hard to stop once it is moving," and that
-sentence is written directly into the physics.
+sentence is written directly into the physics. Driving the opposite way does
+not rescue you either: pushing backwards against your own momentum *is*
+braking, so it is capped at the brakes.
+
+The lower half of that table is **measured, not calculated** — `npm run physics`
+runs the real simulation at its real timestep and fails if any robot drifts out
+of its design envelope, or if the three stop being three distinguishable
+machines. Press `L` at the menu to feel it: all three robots in one lit hall,
+`1`/`2`/`3` to swap between them, and the ring on the floor showing where the
+robot you are driving would stop if you hit the brake right now.
 
 **The building.** The exhibition hall, the corridor with auditoriums either
 side, the foyer and the grand staircase are one geometry defined once, in
@@ -91,9 +106,9 @@ Generative AI use is documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 ## Status
 
 Early. The game currently runs as a grey-box blockout: the venue, the
-simulation and the chapter shell are in place, and the art pass has not
-happened yet. Movement is tuned against coloured boxes deliberately — it is the
-right order to work in.
+simulation, the chapter shell and the movement tuning are in place; objectives
+and the art pass are not. Movement is tuned against coloured boxes
+deliberately — it is the right order to work in.
 
 See `SPEC.md` § 7 for the build order.
 

@@ -10,6 +10,12 @@
  *   npm run build
  *   node tools/shoot.mjs            # menu + each chapter
  *   node tools/shoot.mjs --hold 4   # drive for 4s before the action shot
+ *   node tools/shoot.mjs --lab      # the movement lab, all three robots
+ *
+ * --lab is the one that matters while tuning movement: it drives each robot
+ * in turn with telemetry on, so the stopping marker, the skid marks and the
+ * physics readout all land in a frame that can be read back. It is the closest
+ * thing available to watching someone play.
  *
  * Output lands in tools/shots/.
  */
@@ -73,6 +79,40 @@ await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
 await page.screenshot({ path: join(outDir, '00-menu.png') });
 
+const shot = (name) => page.screenshot({ path: join(outDir, `${name}.png`) });
+
+if (process.argv.includes('--lab')) {
+  await page.goto(`http://localhost:${port}/?lab`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  await page.keyboard.press('F1'); // telemetry on
+  await page.waitForTimeout(200);
+
+  for (const [index, name] of ['voxxy', 'droid', 'biggy'].entries()) {
+    await page.keyboard.press(`Digit${index + 1}`);
+    await page.keyboard.press('KeyR');
+    await page.waitForTimeout(300);
+
+    // At speed: the stopping marker shows how much floor this robot has
+    // already committed to.
+    await page.keyboard.down('KeyD');
+    await page.waitForTimeout(3000);
+    await shot(`lab-${index + 1}a-${name}-cruise`);
+
+    // Turn hard at speed. A robot with grip tracks it; a heavy one scrubs
+    // across the floor and leaves the arc it actually took.
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(500); // early enough to catch the turn at its worst
+    await shot(`lab-${index + 1}b-${name}-turn`);
+    await page.keyboard.up('KeyD');
+    await page.keyboard.up('KeyW');
+
+    // Released, not braked: coasting is where the heavy robots are most
+    // expressive and where a player learns to plan ahead.
+    await page.waitForTimeout(700);
+    await shot(`lab-${index + 1}c-${name}-coast`);
+  }
+} else {
+
 // Walk each chapter: select it, drive for a moment, capture.
 for (let index = 0; index < 3; index += 1) {
   await page.keyboard.press('Escape');
@@ -91,6 +131,8 @@ for (let index = 0; index < 3; index += 1) {
   await page.keyboard.up('KeyD');
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(outDir, `0${index + 1}b-chapter-${index + 1}-moved.png`) });
+}
+
 }
 
 await browser.close();

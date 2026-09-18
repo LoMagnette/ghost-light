@@ -15,8 +15,31 @@
 
 import type { RobotSpec } from './RobotSpec';
 
-/** Ambient rolling resistance as a fraction of weight. Keeps drift bounded. */
-const ROLLING_RESISTANCE = 0.06;
+/**
+ * Rolling resistance as a fraction of weight — a polished cinema floor, not
+ * asphalt.
+ *
+ * This number is far more load-bearing than it looks, because resistance is
+ * proportional to mass and therefore produces the SAME deceleration for every
+ * robot no matter how heavy. At the 0.06 this started on, that was 0.59 m/s^2
+ * for all three, which is half of Biggy's entire braking budget: the harness
+ * measured Biggy stopping in 1.45 m against Voxxy's 1.23 m, and the whole cast
+ * collapsed into one machine. Anything that affects all three equally erases
+ * the differences the game is built on. Keep it small.
+ */
+const ROLLING_RESISTANCE = 0.012;
+
+/**
+ * Drivetrain drag when the throttle is released, as a fraction of the robot's
+ * own braking force.
+ *
+ * Cutting power to a geared machine slows it noticeably — it does not glide
+ * like a puck. Scaling that with brakeForce rather than with mass is what
+ * makes coasting a per-robot characteristic: Voxxy coasts to a stop in about
+ * five metres, Biggy drifts more than twice as far. Without this term the low
+ * rolling resistance above lets Voxxy glide for 150 m, which reads as ice.
+ */
+const COAST_DRAG = 0.3;
 
 /** Gravity, m/s^2. Only used to scale friction against weight. */
 const G = 9.81;
@@ -52,6 +75,22 @@ export class Body {
   /** Set by the sim when a collision happened this step. Read by feedback. */
   lastImpactSpeed = 0;
 
+  /** True on the step a stride completed. Drives footfall audio and camera. */
+  footfall = false;
+
+  /**
+   * Sideways speed, m/s — the part of the velocity that is across the
+   * direction the player ASKED for, which is what lateral grip is fighting.
+   *
+   * Measuring it against the heading instead would always read near zero:
+   * heading chases velocity and easily keeps up, because a grip-limited turn
+   * changes the velocity slowly by construction. The gap that matters — and
+   * the one the player feels — is between the requested direction and the
+   * direction the robot is actually still travelling. Zero when coasting: ask
+   * for nothing and you are not fighting anything.
+   */
+  slipSpeed = 0;
+
   constructor(spec: RobotSpec, x: number, y: number) {
     this.spec = spec;
     this.x = x;
@@ -85,6 +124,7 @@ export class Body {
 
     let fx = 0;
     let fy = 0;
+    let slip = 0;
 
     const inputMag = Math.hypot(input.dirX, input.dirY);
     const hasInput = inputMag > 1e-4 && input.throttle > 1e-4;
@@ -99,7 +139,17 @@ export class Body {
       // reads as a machine running out of torque.
       const forwardSpeed = this.vx * ux + this.vy * uy;
       const headroom = Math.max(0, 1 - Math.max(0, forwardSpeed) / maxSpeed);
-      const drive = driveForce * throttle * headroom;
+
+      // Driving into your own momentum IS braking — the wheels are pushing
+      // backwards against the floor either way — so it cannot beat the brakes.
+      // Without this cap, Biggy sheds speed faster by holding the opposite
+      // direction (1.92 m/s^2) than by braking (1.32 m/s^2), and a player
+      // finds that in thirty seconds. "Hard to stop" then means nothing, and
+      // it is the sentence the whole heavy-robot design rests on. Note this
+      // only binds Biggy, the one robot whose brakes are weaker than its
+      // motors — which is exactly where the design intended the consequence.
+      const available = forwardSpeed < 0 ? Math.min(driveForce, brakeForce) : driveForce;
+      const drive = available * throttle * headroom;
       fx += ux * drive;
       fy += uy * drive;
 
@@ -110,6 +160,7 @@ export class Body {
       const lateralVx = this.vx - ux * forwardSpeed;
       const lateralVy = this.vy - uy * forwardSpeed;
       const lateralSpeed = Math.hypot(lateralVx, lateralVy);
+      slip = lateralSpeed;
       if (lateralSpeed > 1e-4) {
         const needed = (mass * lateralSpeed) / dt;
         const applied = Math.min(needed, lateralGrip);
@@ -129,9 +180,13 @@ export class Body {
       fy -= (this.vy / speed) * applied;
     }
 
-    // Rolling resistance, always present.
+    // Passive resistance: always rolling, plus drivetrain drag whenever the
+    // player is neither driving nor braking. Coasting is a third state with a
+    // feel of its own, and it is where the heavy robots are most expressive —
+    // Biggy released at speed keeps going somewhere you have to plan for.
+    const coasting = !hasInput && !input.braking;
     if (speed > 1e-4) {
-      const resistance = ROLLING_RESISTANCE * mass * G;
+      const resistance = ROLLING_RESISTANCE * mass * G + (coasting ? COAST_DRAG * brakeForce : 0);
       const needed = (mass * speed) / dt;
       const applied = Math.min(needed, resistance);
       fx -= (this.vx / speed) * applied;
@@ -153,12 +208,34 @@ export class Body {
       this.heading = approachAngle(this.heading, target, turnRate * dt);
     }
 
+    this.slipSpeed = slip;
+
     // Stride phase advances with distance travelled, not with time, so a robot
     // that is barely moving takes slow steps instead of jogging on the spot.
+    // Wrapping past 1 is a foot hitting the floor: the sim turns that into an
+    // event, and the camera and (later) the audio answer it. Footfall weight
+    // is the cheapest way to sell mass before a single sprite exists.
+    this.footfall = false;
     if (newSpeed > 0.05) {
       const stridesPerSecond = newSpeed / (this.spec.maxSpeed * this.spec.strideTime);
-      this.stridePhase = (this.stridePhase + stridesPerSecond * dt) % 1;
+      const advanced = this.stridePhase + stridesPerSecond * dt;
+      this.footfall = advanced >= 1;
+      this.stridePhase = advanced % 1;
     }
+  }
+
+  /**
+   * How far this robot would travel if the player hit the brake right now.
+   *
+   * Used by the renderer to draw the stopping marker, which is the single most
+   * useful thing on screen while tuning: it makes "hard to stop" something you
+   * can see rather than something you have to trust.
+   */
+  get stoppingDistance(): number {
+    const speed = this.speed;
+    if (speed < 1e-4) return 0;
+    const decel = (this.spec.brakeForce + ROLLING_RESISTANCE * this.spec.mass * G) / this.spec.mass;
+    return (speed * speed) / (2 * decel);
   }
 
   /** Apply an instantaneous impulse, in newton-seconds. Used by collisions. */
@@ -172,6 +249,8 @@ export class Body {
     this.vx = 0;
     this.vy = 0;
     this.lastImpactSpeed = 0;
+    this.slipSpeed = 0;
+    this.footfall = false;
   }
 }
 

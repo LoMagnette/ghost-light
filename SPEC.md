@@ -126,13 +126,39 @@ Mass is the design. See `src/core/RobotSpec.ts` for the authoritative numbers.
 | Mass | 45 kg | 190 kg | 430 kg |
 | Acceleration | 9.0 m/s² | 4.5 m/s² | **1.8 m/s²** |
 | Braking | 12.0 m/s² | 5.0 m/s² | **1.2 m/s²** |
-| Top speed | 6.0 m/s | 4.2 m/s | 3.4 m/s |
-| Momentum at top speed | 270 | 798 | **1462** kg·m/s |
-| Stopping distance | 1.5 m | 1.8 m | **4.8 m** |
+| Nominal top speed | 6.0 m/s | 4.2 m/s | 3.4 m/s |
 
 Biggy's braking force is *lower* than its drive force. That is not a bug: the
 brief describes Biggy as "slow to start and hard to stop once it is moving,"
 and this is that sentence written as physics.
+
+### What the player actually experiences
+
+The figures above are inputs. These are outputs, measured by running the real
+simulation at its real timestep — `npm run physics`. **Tune against these**,
+because they are what a judge feels; the table above only describes what was
+asked for.
+
+| | Voxxy | Droid | Biggy |
+|---|---|---|---|
+| Cruising speed | 5.92 m/s | 4.09 m/s | 3.18 m/s |
+| Momentum at cruise | 266 | 777 | **1366** kg·m/s |
+| Braking distance | 1.42 m | 1.62 m | **3.82 m** |
+| Coasting distance, throttle released | 4.7 m | 5.2 m | **10.6 m** |
+| Seconds to reverse direction | 0.66 | 0.90 | **2.42** |
+| Turn radius at cruise | 1.80 m | 2.46 m | **4.05 m** |
+
+The two tables disagree, and they always will, because the simulation includes
+rolling resistance and tapers the drive force to zero near top speed — so a
+robot approaches `maxSpeed` without ever arriving. Anything derived from
+`maxSpeed` with a textbook formula is therefore a design intention, not a
+prediction. The gap is only safe while it is measured.
+
+That measurement is not optional bookkeeping. The first run of the harness
+found that all three robots stopped within 0.2 m of each other: the rolling
+resistance term was proportional to mass, so it subtracted the *same*
+deceleration from every robot and quietly erased the difference the whole cast
+is built on. Nothing about the code looked wrong. See `docs/PROMPTS.md`.
 
 **Each robot must do something only it can do** (10 points). The current
 division of labour:

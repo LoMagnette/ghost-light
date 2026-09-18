@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { MOVEMENT_LAB } from '@/chapters/lab';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -20,6 +21,14 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     document.getElementById('boot-fallback')?.remove();
+
+    // ?lab goes straight to the movement rig. Tuning means reloading dozens of
+    // times, and two keystrokes of menu each time is two keystrokes too many.
+    if (new URLSearchParams(window.location.search).has('lab')) {
+      this.scene.start('chapter', { chapterId: MOVEMENT_LAB.id });
+      return;
+    }
+
     this.scene.start('menu');
   }
 }

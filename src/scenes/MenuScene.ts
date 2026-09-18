@@ -8,6 +8,7 @@
 
 import Phaser from 'phaser';
 import { CHAPTERS } from '@/chapters/registry';
+import { MOVEMENT_LAB } from '@/chapters/lab';
 import { GAME_SUBTITLE, GAME_TITLE, VIEW_HEIGHT, VIEW_WIDTH } from '@/config';
 
 export class MenuScene extends Phaser.Scene {
@@ -79,6 +80,14 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
+    this.add
+      .text(VIEW_WIDTH / 2, VIEW_HEIGHT - 44, 'L   movement lab (dev)', {
+        fontFamily: 'ui-monospace, monospace',
+        fontSize: '11px',
+        color: '#2f3538',
+      })
+      .setOrigin(0.5);
+
     const keyboard = this.input.keyboard;
     if (keyboard) {
       keyboard.on('keydown-LEFT', () => {
@@ -91,6 +100,10 @@ export class MenuScene extends Phaser.Scene {
       });
       keyboard.on('keydown-ENTER', () => this.launch(this.selected));
       keyboard.on('keydown-SPACE', () => this.launch(this.selected));
+      // The movement lab is a tuning rig, not a chapter. It is reachable but
+      // not offered: it never appears as a card, because a judge choosing it
+      // by accident would be choosing a debug screen over the game.
+      keyboard.on('keydown-L', () => this.scene.start('chapter', { chapterId: MOVEMENT_LAB.id }));
     }
 
     this.refresh();

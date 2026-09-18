@@ -96,12 +96,27 @@ export const ROBOTS: Record<RobotId, RobotSpec> = {
   biggy: BIGGY,
 };
 
-/** Derived: how long this robot needs to reach top speed, in seconds. */
-export function timeToTopSpeed(spec: RobotSpec): number {
+/**
+ * Derived: the acceleration TIME CONSTANT, in seconds.
+ *
+ * Not the time to reach top speed — there isn't one. Body.ts tapers the drive
+ * force to zero as the robot approaches `maxSpeed`, so speed approaches it
+ * exponentially and never arrives. This returns tau; the robot passes 63% of
+ * top speed at tau, 95% at roughly 3 tau. `npm run physics` measures the real
+ * figures, and those are the ones to tune against.
+ */
+export function accelTimeConstant(spec: RobotSpec): number {
   return spec.maxSpeed / (spec.driveForce / spec.mass);
 }
 
-/** Derived: how far this robot travels braking from top speed, in metres. */
+/**
+ * Derived: braking distance from top speed in metres, ignoring resistance.
+ *
+ * This is the design-intent figure — the one in SPEC.md's table. The number a
+ * player actually experiences is shorter, because rolling resistance helps and
+ * because the robot cruises a little under `maxSpeed`. Body.stoppingDistance
+ * is the honest in-game figure; use this one only for comparing the specs.
+ */
 export function stoppingDistance(spec: RobotSpec): number {
   const decel = spec.brakeForce / spec.mass;
   return (spec.maxSpeed * spec.maxSpeed) / (2 * decel);

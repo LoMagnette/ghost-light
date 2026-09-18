@@ -30,7 +30,14 @@ npm run dev         # vite dev server on http://localhost:8080
 npm run typecheck   # tsc --noEmit
 npm run build       # typecheck + production build to dist/
 npm run preview     # serve dist/ locally
+npm run physics     # measure movement in the real sim, check the design envelope
+npm run shoot       # build, drive the game headless, screenshot, fail on console errors
+npm run shoot -- --lab   # same, but the movement lab with telemetry on
 ```
+
+`npm run physics` needs no browser and no native binaries — it compiles
+`src/core` with tsc and runs it in node. That works because `core/` imports
+nothing outside itself. Keep it that way.
 
 `npm run build` runs the typechecker first and fails on any type error. Keep it
 that way — a broken Pages deploy on the last day is an unforced loss.
@@ -69,13 +76,18 @@ for a scoring criterion.
 | I want to… | Edit |
 |---|---|
 | Make a robot feel heavier/lighter | `src/core/RobotSpec.ts` — nothing else |
+| Change how resistance or grip behaves | `src/core/Body.ts` — affects ALL robots |
+| Change camera lead, shake, footfall weight | `src/config.ts` — presentation only |
 | Change what an era looks like | `palette` / `lightLevel` in `registry.ts` |
 | Change the building | `src/venue/kinepolis.ts` |
 | Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScene` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 
-`src/config.ts` is for **build** constants. Gameplay tuning does not go there.
+`src/config.ts` is for **build and presentation** constants — resolution, and
+how the game is *shown* (camera lead, shake weights). Gameplay tuning does not
+go there, and nothing in `config.ts` may ever be read by `src/core`: if a
+constant can change where a robot ends up, it belongs in `core/`.
 
 ## Code conventions
 
@@ -95,13 +107,23 @@ for a scoring criterion.
 You cannot see the game. Close that gap rather than guessing:
 
 1. `npm run typecheck` after every change that touches types.
-2. `npm run dev`, then drive the page with the browser tools — screenshot the
+2. **`npm run physics` after every change that touches movement.** It measures
+   what a player experiences rather than what the spec table claims, and it
+   fails the build when a robot leaves its design envelope or when the cast
+   stops being three distinguishable machines. It caught the constant that had
+   flattened all three robots into one, which no amount of reading the code
+   would have.
+3. `npm run dev`, then drive the page with the browser tools — screenshot the
    canvas and read the console. A screenshot of the running game is worth more
    than any amount of reasoning about whether the draw order is right.
-3. Watch for console errors on scene transitions specifically. Menu → chapter
+   `npm run shoot -- --lab` does this unattended for all three robots.
+4. Watch for console errors on scene transitions specifically. Menu → chapter
    → ESC → menu is the path most likely to leak objects.
-4. When tuning movement, turn on the debug readout (`F1`) and read the actual
-   speed and momentum numbers rather than judging by eye.
+5. When tuning movement, press `L` at the menu for the movement lab — all
+   three robots, one lit hall, `1`/`2`/`3` to swap between them mid-run. Turn
+   on the readout (`F1`) and read the actual numbers rather than judging by
+   eye. The agent cannot feel the difference; the lab is what lets a human
+   judge it in four seconds instead of playing three chapters.
 
 ## Things that will cost points — do not do them
 

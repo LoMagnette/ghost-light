@@ -61,6 +61,17 @@ export class Sim {
   /** Collision events from the most recent step, for audio and camera shake. */
   readonly impacts: { actor: Actor; speed: number; momentum: number }[] = [];
 
+  /**
+   * Footfalls from the most recent frame, for camera kick and (later) audio.
+   *
+   * Collected here rather than read off the body because several fixed steps
+   * run per rendered frame: a foot that lands on the first of them is gone by
+   * the time the scene looks. Footfall weight is the cheapest way to sell mass
+   * before there is a sprite, so losing two out of three of them is not an
+   * option.
+   */
+  readonly footfalls: { actor: Actor; momentum: number }[] = [];
+
   constructor(venue: Venue) {
     this.venue = venue;
   }
@@ -79,6 +90,7 @@ export class Sim {
     // every robot across the building on the next frame.
     this.accumulator += Math.min(frameDelta, 0.25);
     this.impacts.length = 0;
+    this.footfalls.length = 0;
 
     let steps = 0;
     while (this.accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
@@ -102,6 +114,9 @@ export class Sim {
       actor.prevZ = actor.body.z;
       actor.body.lastImpactSpeed = 0;
       actor.body.step(dt, actor.input);
+      if (actor.body.footfall) {
+        this.footfalls.push({ actor, momentum: actor.body.momentum });
+      }
     }
 
     this.resolveObstacles();
