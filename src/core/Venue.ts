@@ -38,6 +38,16 @@ export interface Room {
   bounds: Rect;
   /** Auditorium seating rake, in metres of rise across the room. 0 for flat. */
   rake?: number;
+
+  /**
+   * Height of this room's floor above its storey datum, in metres.
+   *
+   * A storey is not one flat plane. The reception concourse sits 1.2 m above
+   * the exhibition hall and you go DOWN into the hall — same floor number,
+   * different level. Without this the drop is invisible, and a level change
+   * you cannot see is a level change the player will not believe.
+   */
+  elevation?: number;
 }
 
 /** A solid the robots collide with: walls, columns, seat blocks, booths. */
@@ -50,6 +60,15 @@ export interface Obstacle {
   movable?: boolean;
   /** kg, only meaningful when movable. */
   mass?: number;
+
+  /**
+   * Set when this solid is a tread of a staircase or ramp.
+   *
+   * A flight is solid to a robot that cannot climb it and walkable to one that
+   * can, which is the whole of the stair rule: Biggy meets a wall exactly
+   * where Voxxy meets a route. Same geometry, different answer per robot.
+   */
+  linkId?: string;
 }
 
 /** A walkable link between floors. Robots climb it; Biggy climbs it slowly. */
@@ -71,6 +90,26 @@ export interface Link {
 
   /** True when height increases with that coordinate. */
   ascending: boolean;
+
+  /**
+   * Height of the link's LOW end above its `from` floor's datum, in metres.
+   *
+   * Not every flight starts at zero. The grand staircase begins in the
+   * reception concourse, which is itself 1.2 m up, so it climbs 5.0 m to reach
+   * the auditorium level rather than the full 6.2. Stating it beats inferring
+   * it: at a link's ends two rooms always overlap, and asking the geometry
+   * which one you are standing on there has no reliable answer.
+   */
+  base: number;
+
+  /**
+   * Riser height in metres, or 0 for a ramp.
+   *
+   * This is what `RobotSpec.maxStepRise` is measured against, so it is the
+   * number that decides who may use this link at all. 0 means there is no step
+   * to get over and the gradient alone decides — see `maxSlope`.
+   */
+  riser: number;
 }
 
 export interface Venue {
@@ -96,4 +135,21 @@ export function rectCentre(r: Rect): { x: number; y: number } {
 /** Find the room containing a point, or undefined if the point is outside. */
 export function roomAt(venue: Venue, floor: 0 | 1, x: number, y: number): Room | undefined {
   return venue.rooms.find((r) => r.floor === floor && rectContains(r.bounds, x, y));
+}
+
+/**
+ * Height of the walkable surface at a point, ignoring links.
+ *
+ * Rooms overlap — the corridor and an auditorium share a doorway's worth of
+ * floor — so this takes the HIGHEST elevation found rather than the first.
+ * Picking the first would make a robot's height depend on the order the venue
+ * happens to list its rooms in.
+ */
+export function groundAt(venue: Venue, floor: 0 | 1, x: number, y: number): number {
+  let best = 0;
+  for (const room of venue.rooms) {
+    if (room.floor !== floor || !room.elevation) continue;
+    if (rectContains(room.bounds, x, y)) best = Math.max(best, room.elevation);
+  }
+  return best;
 }

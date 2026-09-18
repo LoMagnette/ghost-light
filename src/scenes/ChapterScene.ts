@@ -131,6 +131,13 @@ export class ChapterScene extends Phaser.Scene {
 
     this.sim.advance(dt);
 
+    // A robot that walks up a flight changes storey underneath us; the view has
+    // to go with it or the player is left looking at the floor they left.
+    if (this.controlled.floor !== this.floor) {
+      this.floor = this.controlled.floor;
+      this.blockout.clearMarks();
+    }
+
     this.applyFeedback();
     this.followControlled(dt);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);

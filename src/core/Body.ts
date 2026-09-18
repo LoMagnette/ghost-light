@@ -118,8 +118,15 @@ export class Body {
    *   2. braking against velocity (capped by brakeForce)
    *   3. lateral grip resisting sideways slip (capped by lateralGrip)
    *   4. rolling resistance, always
+   *   5. gravity down any slope the body is standing on
+   *
+   * `slopeX`/`slopeY` point downhill with a LENGTH of sin(slope angle), so
+   * `mass * G * slope` is exactly the component of the body's own weight
+   * pulling it down the hill. Nothing about climbing is clamped or special-
+   * cased: a heavy machine slows going up and runs away from itself coming
+   * down because that is what its weight does to it.
    */
-  step(dt: number, input: DriveInput): void {
+  step(dt: number, input: DriveInput, slopeX = 0, slopeY = 0): void {
     const { mass, driveForce, brakeForce, maxSpeed, lateralGrip } = this.spec;
 
     let fx = 0;
@@ -191,6 +198,13 @@ export class Body {
       const applied = Math.min(needed, resistance);
       fx -= (this.vx / speed) * applied;
       fy -= (this.vy / speed) * applied;
+    }
+
+    // Gravity along the surface. Applied last so nothing above it has to know
+    // whether the body is on a stair.
+    if (slopeX !== 0 || slopeY !== 0) {
+      fx += slopeX * mass * G;
+      fy += slopeY * mass * G;
     }
 
     // Integrate.

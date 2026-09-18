@@ -13,7 +13,8 @@
  */
 
 import { Body, NO_INPUT, type DriveInput } from './Body';
-import type { Obstacle, Venue } from './Venue';
+import { groundAt, type Obstacle, type Venue } from './Venue';
+import { canStepOnto, climbFraction, downhill, linkAt, surfaceHeight } from './Traversal';
 
 export const FIXED_DT = 1 / 120;
 
@@ -22,6 +23,9 @@ const MAX_STEPS_PER_FRAME = 8;
 
 /** Coefficient of restitution for robot/wall and robot/robot contacts. */
 const RESTITUTION = 0.18;
+
+/** Fraction of top speed a robot manages on stairs. See limitStairSpeed. */
+const STAIR_PACE = 0.28;
 
 export interface Actor {
   body: Body;
@@ -33,6 +37,8 @@ export interface Actor {
   prevX: number;
   prevY: number;
   prevZ: number;
+  /** Id of the link this actor is currently on, if any. Written by the sim. */
+  onLink?: string;
 }
 
 export function makeActor(body: Body, floor: 0 | 1): Actor {
@@ -113,7 +119,8 @@ export class Sim {
       actor.prevY = actor.body.y;
       actor.prevZ = actor.body.z;
       actor.body.lastImpactSpeed = 0;
-      actor.body.step(dt, actor.input);
+      const slope = this.slopeFor(actor);
+      actor.body.step(dt, actor.input, slope.x, slope.y);
       if (actor.body.footfall) {
         this.footfalls.push({ actor, momentum: actor.body.momentum });
       }
@@ -121,6 +128,7 @@ export class Sim {
 
     this.resolveObstacles();
     this.resolveActorPairs();
+    this.resolveSurfaces();
 
     this.elapsed += dt;
   }
@@ -130,9 +138,100 @@ export class Sim {
     for (const actor of this.actors) {
       for (const obstacle of this.venue.obstacles) {
         if (obstacle.floor !== actor.floor) continue;
+        // A stair tread is solid only to a machine that cannot climb it. This
+        // one line is the whole stair rule in the collision system: Biggy
+        // meets a wall exactly where Voxxy meets a route.
+        if (obstacle.linkId && this.passable(actor, obstacle.linkId)) continue;
         this.resolveCircleRect(actor, obstacle);
       }
     }
+  }
+
+  private passable(actor: Actor, linkId: string): boolean {
+    const link = this.venue.links.find((l) => l.id === linkId);
+    if (!link) return false;
+    const { body } = actor;
+    return canStepOnto(body.spec, link, body.x, body.y, body.z);
+  }
+
+  /**
+   * Put every actor at the height of whatever it is standing on, and move it
+   * between floors when it walks off the top or bottom of a flight.
+   *
+   * Runs after collision, because collision is the thing that decides where
+   * the actor actually ended up this step.
+   */
+  private resolveSurfaces(): void {
+    for (const actor of this.actors) {
+      const { body } = actor;
+      const link = linkAt(this.venue, actor.floor, body.x, body.y);
+
+      if (link && canStepOnto(body.spec, link, body.x, body.y, body.z)) {
+        const f = climbFraction(link, body.x, body.y);
+        body.z = surfaceHeight(link, body.x, body.y);
+        actor.onLink = link.id;
+
+        // Stepping off the top of a flight that changes storey puts the actor
+        // on the other floor. Done on exit rather than on arrival so a robot
+        // can stand on a staircase without teleporting.
+        if (link.from !== link.to) {
+          const arriving = f >= 0.999 ? link.to : f <= 0.001 ? link.from : undefined;
+          if (arriving !== undefined && arriving !== actor.floor) {
+            actor.floor = arriving;
+            body.z = groundAt(this.venue, arriving, body.x, body.y);
+          }
+        }
+        continue;
+      }
+
+      actor.onLink = undefined;
+      body.z = groundAt(this.venue, actor.floor, body.x, body.y);
+    }
+
+    for (const actor of this.actors) this.limitStairSpeed(actor);
+  }
+
+  /**
+   * Downhill pull on an actor, as the fraction of weight acting along the floor.
+   *
+   * Ramps only. A robot ROLLS up a ramp, so its weight fights its drive force
+   * and the heavy machines struggle exactly as they should. A robot WALKS up
+   * stairs, which is a different gait with a different limit — see
+   * `limitStairSpeed`.
+   */
+  private slopeFor(actor: Actor): { x: number; y: number } {
+    const { body } = actor;
+    const link = linkAt(this.venue, actor.floor, body.x, body.y);
+    if (!link || link.riser > 0) return { x: 0, y: 0 };
+    if (!canStepOnto(body.spec, link, body.x, body.y, body.z)) return { x: 0, y: 0 };
+    return downhill(link);
+  }
+
+  /**
+   * Stairs are cadence-limited, not traction-limited.
+   *
+   * Applying gravity down a staircase the way we do down a ramp says Droid
+   * cannot climb one: a 12 m flight to a 6.2 m floor is a 51% gradient, which
+   * takes 4.44 m/s² out of Droid's 4.5 m/s² of drive and leaves it balancing
+   * rather than climbing. That is the right answer for a machine trying to
+   * ROLL up, and the wrong question — these robots walk up, and a walking
+   * machine on stairs is limited by how fast it can place a foot.
+   *
+   * So a stair caps speed instead. It is a clamp, deliberately, and it is the
+   * only one in the simulation.
+   */
+  private limitStairSpeed(actor: Actor): void {
+    const { body } = actor;
+    const link = linkAt(this.venue, actor.floor, body.x, body.y);
+    if (!link || link.riser <= 0) return;
+    if (!canStepOnto(body.spec, link, body.x, body.y, body.z)) return;
+
+    const cap = body.spec.maxSpeed * STAIR_PACE;
+    const speed = body.speed;
+    if (speed <= cap) return;
+    const scale = cap / speed;
+    body.vx *= scale;
+    body.vy *= scale;
   }
 
   private resolveCircleRect(actor: Actor, obstacle: Obstacle): void {

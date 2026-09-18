@@ -44,10 +44,19 @@
  *     the drone footage is for, and it has not been watched yet.
  */
 
-import { rect, type Link, type Obstacle, type Room, type Venue } from '@/core/Venue';
+import { FLOOR_HEIGHT, rect, type Link, type Obstacle, type Room, type Venue } from '@/core/Venue';
 
 /** Clear height under the auditorium level, metres. Not yet from any source. */
 const FLOOR_CLEAR = 5.4;
+
+/**
+ * Riser height throughout the building, metres — building-regulations stair.
+ *
+ * Load-bearing beyond geometry: this is the number each robot's `maxStepRise`
+ * is measured against. Voxxy clears it, Droid matches it exactly and can climb
+ * these stairs and nothing steeper, and Biggy cannot climb at all.
+ */
+export const RISER = 0.18;
 
 // ---------------------------------------------------------------------------
 // Floor 0 — the exhibition hall, "Hollywood"
@@ -143,16 +152,24 @@ function exhibitionColumns(): Obstacle[] {
  */
 const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
 
+/**
+ * How far the concourse stands above the exhibition hall, in metres.
+ *
+ * You come in at street level and go down into the hall. Small, and the only
+ * reason the broad flight and the ramp at the boundary exist at all.
+ */
+const CONCOURSE_LEVEL = 1.2;
+
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
-  { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION },
+  { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION, elevation: CONCOURSE_LEVEL },
   // BOF rooms, south-east of the concourse.
   //
   // There is no seminar suite here. An earlier pass read the plan's "∧ Rooms ∧"
   // as labelling a room; it labels the grand stair BELOW it, and means "this
   // way up to the cinema rooms". See `receptionStairs`.
-  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6) },
-  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7) },
+  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6), elevation: CONCOURSE_LEVEL },
+  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7), elevation: CONCOURSE_LEVEL },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
 ];
 
@@ -363,15 +380,27 @@ const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
  */
 const receptionStairs: Link[] = [
   // Concourse → hall, descending northward. ~23 m wide, the full opening.
-  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2, axis: 'y', ascending: false },
-  // The ramp beside it, east of the steps. Same drop, gentler, much longer —
-  // it runs along its 10 m side, not across it, which is the only way 1.2 m is
-  // a ramp and not a wall. One rectangle standing in for what is really a
-  // switchback; a true 1:12 needs 14.4 m of run and the plan has no straight
-  // line of it. This is Biggy's only way between the two levels.
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'x', ascending: false },
+  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
+  /**
+   * The ramp beside the steps, and Biggy's only way between the two levels.
+   *
+   * It has to climb NORTH–SOUTH, because that is the direction the levels
+   * change in. An earlier pass turned it east–west to make the gradient look
+   * realistic, which gave a beautiful 12% ramp running along a wall and
+   * connecting nothing — the traversal harness caught it by walking Biggy
+   * straight over the top and out of the building.
+   *
+   * The plan shows 3.6 m of depth, which at 1.2 m of rise is a 33% ramp — and
+   * Biggy cannot climb 33%: 774 N of motor loses to 1333 N of gravity. A ramp
+   * it cannot use is not a ramp. The real one must therefore switch back,
+   * since 1:12 needs 14.4 m of run and no straight line of it exists here, so
+   * this is modelled with the 12 m of run the gradient requires rather than
+   * the 3.6 m of footprint the switchback folds into. A documented
+   * simplification of a thing the plan shows, not an invented feature.
+   */
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -49.4, 10.0, 12.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: 0 },
   // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
-  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2, axis: 'y', ascending: true },
+  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: RISER },
 ];
 
 /**
@@ -384,8 +413,8 @@ const receptionStairs: Link[] = [
  * cut. Taking the arrow, which is the less ambiguous of the two.
  */
 const staircases: Link[] = [
-  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2, axis: 'y', ascending: false },
-  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2, axis: 'y', ascending: false },
+  { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
+  { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   ...receptionStairs,
 ];
 
@@ -413,15 +442,6 @@ const staircases: Link[] = [
  * floor would be 0.69 m each, which is a climbing wall. At 0.18 a full floor
  * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
  */
-/**
- * Riser height throughout the building, metres — building-regulations stair.
- *
- * Load-bearing beyond geometry: this is the number each robot's `maxStepRise`
- * is measured against. Voxxy clears it, Droid matches it exactly and can climb
- * these stairs and nothing steeper, and Biggy cannot climb at all.
- */
-export const RISER = 0.18;
-
 /**
  * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.
  *
@@ -466,7 +486,12 @@ function stairMass(links: Link[]): Obstacle[] {
           axis === 'y'
             ? rect(b.x, b.y + i * step, b.w, step)
             : rect(b.x + i * step, b.y, step, b.h),
-        height: drawnRise * fraction,
+        // Drawn from the link's own base, so the grand flight starts at
+        // concourse level rather than sinking through it.
+        height: link.base + drawnRise * fraction,
+        // Solid to anything that cannot climb this flight, walkable to
+        // anything that can. Sim.resolveObstacles reads it.
+        linkId: link.id,
       });
     }
   }
@@ -494,7 +519,7 @@ export const KINEPOLIS: Venue = {
 export const SPAWNS = {
   /** Inside the main entrance, looking north up the reception concourse. */
   /** Inside the main entrance, east of the grand stair. */
-  mainEntrance: { floor: 0 as const, x: 18, y: -57 },
+  mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
   /** Where the concourse opens into the hall. */
   hallEntrance: { floor: 0 as const, x: 2, y: -33 },
   /**
@@ -511,7 +536,12 @@ export const SPAWNS = {
    * a straight screen-axis run is never the fast way across.
    */
   hallCentre: { floor: 0 as const, x: 4.9, y: -15.35 },
-  stairFoot: { floor: 0 as const, x: -2.5, y: -9 },
+  /**
+   * The actual foot of the west flight — its NORTH end, since both hall
+   * staircases climb southward. Approach from the south and you meet the top
+   * of the flight, which is a storey of wall.
+   */
+  stairFoot: { floor: 0 as const, x: -3.6, y: 8.5 },
   /** The south end of the corridor, between Rooms 6 and 7. */
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },

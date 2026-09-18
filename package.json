@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "shoot": "npm run build && node tools/shoot.mjs",
     "physics": "node tools/physics.mjs",
-    "venue": "node tools/venue.mjs"
+    "venue": "node tools/venue.mjs",
+    "traverse": "node tools/traverse.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"

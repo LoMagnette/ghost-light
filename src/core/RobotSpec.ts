@@ -61,9 +61,16 @@ export interface RobotSpec {
   /**
    * Steepest gradient this robot can drive, as rise over run.
    *
-   * What the wheelchair ramp is for. Every robot can manage it, including the
-   * one that can manage no stairs at all — which makes the accessible route
-   * the route that always works, and that is a good note for this game to hit.
+   * DERIVED, not chosen. A body on a slope gets `mass * g * sin(theta)` of its
+   * own weight pulling it back down, so the steepest gradient a robot can hold
+   * at all is `driveForce / (mass * g)` — 0.92 for Voxxy, 0.46 for Droid, 0.18
+   * for Biggy. These are 60% of that, leaving enough force over to actually
+   * make progress rather than balance.
+   *
+   * Set them by taste and they become a lie the simulation quietly refuses to
+   * honour: the first version had Biggy cleared for a 33% ramp it could not
+   * climb, because 774 N of motor loses to 1333 N of gravity every time.
+   * `npm run traverse` is what caught it.
    */
   maxSlope: number;
 
@@ -83,7 +90,7 @@ export const VOXXY: RobotSpec = {
   height: 1.15,
   strideTime: 0.28,
   maxStepRise: 0.20, // clears the building's 0.18 m risers with room to spare
-  maxSlope: 0.45,
+  maxSlope: 0.55, //  60% of 405 N / (45 kg · g)
   tint: 0xff7a1a,
 };
 
@@ -99,7 +106,7 @@ export const DROID: RobotSpec = {
   height: 2.05,
   strideTime: 0.46,
   maxStepRise: 0.18, // exactly the building's riser: these stairs and nothing steeper
-  maxSlope: 0.38,
+  maxSlope: 0.27, //  60% of 855 N / (190 kg · g)
   tint: 0x6b7378,
 };
 
@@ -115,7 +122,7 @@ export const BIGGY: RobotSpec = {
   height: 1.35,
   strideTime: 0.62,
   maxStepRise: 0.0, // never. 430 kg on a staircase is an accident, not a route
-  maxSlope: 0.35,
+  maxSlope: 0.11, //  60% of 774 N / (430 kg · g) — Biggy needs a gentle ramp
   tint: 0x7d94a8,
 };
 

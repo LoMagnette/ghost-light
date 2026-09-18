@@ -351,10 +351,54 @@ route being the route that always works is a good note for this game to hit,
 and it was an accident of the geometry before it was a decision.
 
 **Fixed by hand:** the ramp was modelled climbing across its short side, which
-made a 1.2 m rise into a 33% slope — a wall with a friendly label. It climbs
-along its 10 m side at 12%, and even that is one rectangle standing in for what
-must really be a switchback: a true 1:12 needs 14.4 m of run and the plan has
-no straight line of it.
+made a 1.2 m rise into a 33% slope — a wall with a friendly label.
+
+### Building the traversal, and what the harness caught
+**Date:** 2026-09-18
+
+**Prompt:**
+> we still have an issue the stairs between the reception take the full
+> opening. and btw at the moment the robot cannot climb them and we don't see
+> visually the level difference
+
+Three observations that are one feature: the steps sealed the only opening,
+nothing could climb them, and the 1.2 m drop was invisible. So: room
+elevations, links as walkable surfaces, and floor-to-floor movement.
+
+`tools/traverse.mjs` was written before the feature was finished, and it earned
+that twice over. The stair rule is decided in four places at once — the riser
+on a `Link`, `maxStepRise` on a `RobotSpec`, whether a tread collides, and
+whether the surface is reachable from where the robot stands — and any one can
+be right while the behaviour is wrong. The failure mode is never an exception.
+
+**What it caught that reading the code did not:**
+
+1. **A teleport.** Walk into the *top* of a staircase from the floor below and
+   the robot was lifted to the upper landing, because "can climb this flight"
+   had been conflated with "can join it here". The fix is physical rather than
+   a special case: you may step onto a surface within `maxStepRise` of your
+   feet. From the bottom of a flight the top tread is a storey up, so it is a
+   wall — and ramps get their behaviour from the same rule for free.
+
+2. **A ramp that connected nothing.** Making the gradient realistic had turned
+   it 90°, so it ran beautifully along a wall and crossed no boundary. The
+   harness walked Biggy straight over it and out of the building.
+
+3. **`maxSlope` was a lie.** It had been chosen by taste, and cleared Biggy for
+   a 33% ramp it cannot climb: 774 N of motor loses to 1333 N of gravity every
+   time. The values are now *derived* — `driveForce / (mass · g)` is the
+   steepest a robot can hold at all, and the spec carries 60% of it.
+
+4. **Droid could not climb stairs either**, once gravity was applied down them:
+   a 12 m flight to a 6.2 m floor is a 51% gradient, taking 4.44 m/s² out of
+   Droid's 4.5 m/s². That is the right answer to the wrong question — these
+   robots *walk* up stairs rather than rolling, and a walking machine is
+   limited by how fast it can place a foot. Ramps keep the honest gravity;
+   stairs cap pace instead, and it is the only clamp in the simulation.
+
+**Still open, and the harness prints it:** nothing bounds the building. Rooms
+are floor plates, not enclosures, so a robot held at full throttle drives out
+of the Kinepolis entirely. Perimeter walls are their own job.
 
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —

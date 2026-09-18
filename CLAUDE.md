@@ -32,6 +32,7 @@ npm run build       # typecheck + production build to dist/
 npm run preview     # serve dist/ locally
 npm run physics     # measure movement in the real sim, check the design envelope
 npm run venue       # check the building against the plans and against itself
+npm run traverse    # drive real robots at real stairs; assert who gets where
 npm run venue -- --svg   # draw both floors as a plan, to hold against the real one
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
@@ -92,6 +93,8 @@ for a scoring criterion.
 | Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScene` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
+| Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |
+| Change how climbing behaves | `src/core/Traversal.ts` |
 
 `src/config.ts` is for **build and presentation** constants — resolution, and
 how the game is *shown* (camera lead, shake weights). Gameplay tuning does not
@@ -116,19 +119,25 @@ constant can change where a robot ends up, it belongs in `core/`.
 You cannot see the game. Close that gap rather than guessing:
 
 1. `npm run typecheck` after every change that touches types.
-2. **`npm run physics` after every change that touches movement.** It measures
+2. **`npm run traverse` after every change that touches stairs, ramps or
+   levels.** The stair rule is decided in four places at once — the riser on a
+   `Link`, `maxStepRise` on a `RobotSpec`, whether a tread collides, and
+   whether the surface is reachable from where the robot stands — and any one
+   of them can be right while the behaviour is wrong. The failure is never an
+   exception; it is Biggy quietly gliding up a staircase.
+3. **`npm run physics` after every change that touches movement.** It measures
    what a player experiences rather than what the spec table claims, and it
    fails the build when a robot leaves its design envelope or when the cast
    stops being three distinguishable machines. It caught the constant that had
    flattened all three robots into one, which no amount of reading the code
    would have.
-3. `npm run dev`, then drive the page with the browser tools — screenshot the
+4. `npm run dev`, then drive the page with the browser tools — screenshot the
    canvas and read the console. A screenshot of the running game is worth more
    than any amount of reasoning about whether the draw order is right.
    `npm run shoot -- --lab` does this unattended for all three robots.
-4. Watch for console errors on scene transitions specifically. Menu → chapter
+5. Watch for console errors on scene transitions specifically. Menu → chapter
    → ESC → menu is the path most likely to leak objects.
-5. When tuning movement, press `L` at the menu for the movement lab — all
+6. When tuning movement, press `L` at the menu for the movement lab — all
    three robots, one lit hall, `1`/`2`/`3` to swap between them mid-run. Turn
    on the readout (`F1`) and read the actual numbers rather than judging by
    eye. The agent cannot feel the difference; the lab is what lets a human

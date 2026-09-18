@@ -21,7 +21,7 @@ import Phaser from 'phaser';
 import { depthKey, ISO_SQUASH, PPM, project } from '@/core/Iso';
 import type { Actor } from '@/core/Sim';
 import { renderPos } from '@/core/Sim';
-import type { Room, Venue } from '@/core/Venue';
+import { groundAt, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 
 interface Drawable {
@@ -118,7 +118,9 @@ export class BlockoutRenderer {
     for (const room of this.venue.rooms) {
       if (room.floor !== floor) continue;
       queue.push({
-        depth: -1e6, // floors always draw first
+        // Floors draw first, but a raised plate has to draw after the one it
+        // stands above or its edge is buried under the lower floor.
+        depth: -1e6 + (room.elevation ?? 0),
         draw: (gfx) => this.drawFloorPlate(gfx, room),
       });
     }
@@ -137,8 +139,9 @@ export class BlockoutRenderer {
     for (const obstacle of this.venue.obstacles) {
       if (obstacle.floor !== floor) continue;
       const { bounds } = obstacle;
+      const base = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
       queue.push({
-        depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h),
+        depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h, base),
         draw: (gfx) =>
           this.drawBox(
             gfx,
@@ -146,7 +149,7 @@ export class BlockoutRenderer {
             bounds.y,
             bounds.w,
             bounds.h,
-            Math.min(obstacle.height, MAX_DRAWN_HEIGHT),
+            base + Math.min(obstacle.height, MAX_DRAWN_HEIGHT),
           ),
       });
     }
@@ -174,10 +177,14 @@ export class BlockoutRenderer {
 
   private drawFloorPlate(g: Phaser.GameObjects.Graphics, room: Room): void {
     const { x, y, w, h } = room.bounds;
-    const a = project(x, y);
-    const b = project(x + w, y);
-    const c = project(x + w, y + h);
-    const d = project(x, y + h);
+    // A storey is not one flat plane: the concourse stands 1.2 m over the hall.
+    // Draw the plate at its own level or the drop is invisible, and a level
+    // change the player cannot see is one they will not believe.
+    const z = room.elevation ?? 0;
+    const a = project(x, y, z);
+    const b = project(x + w, y, z);
+    const c = project(x + w, y + h, z);
+    const d = project(x, y + h, z);
 
     // Auditoriums sit a shade darker than circulation space, which reads as
     // carpet against the lighter corridor floor in the reference photographs.
@@ -195,6 +202,25 @@ export class BlockoutRenderer {
 
     g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
     g.strokePath();
+
+    // An elevated plate needs its edge drawn or it reads as floating. Only the
+    // two faces toward the viewer, same as every other box.
+    if (z > 0) {
+      const a0 = project(x, y, 0);
+      const b0 = project(x + w, y, 0);
+      const d0 = project(x, y + h, 0);
+      g.fillStyle(this.lit(shade(this.palette.wall, 0.7)), 1);
+      for (const face of [
+        [a, b, b0, a0],
+        [a, d, d0, a0],
+      ]) {
+        g.beginPath();
+        g.moveTo(face[0].sx, face[0].sy);
+        for (const pt of face.slice(1)) g.lineTo(pt.sx, pt.sy);
+        g.closePath();
+        g.fillPath();
+      }
+    }
   }
 
   private drawBox(
