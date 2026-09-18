@@ -26,8 +26,10 @@ Multi-angle orthographic turnarounds — the correct input for generating
 | `references/venue/maps/cinema-venue-devoxx.png` | Auditoriums, raw |
 | `references/venue/maps/devoxx-rooms.jpg` | Auditoriums, annotated |
 
-`src/venue/kinepolis.ts` must be refined against these before the art pass.
-The current geometry is a plausible blockout, not a survey.
+**Done 18 Sep.** `src/venue/kinepolis.ts` is now built from these rather than
+invented. Neither plan has a scale bar — `hollywood-area.png` says "no scale"
+— so the hall is scaled from its printed area (2411.41 m²) and every
+auditorium from its printed seat count. `npm run venue` re-checks it.
 
 ### Photographs and footage
 

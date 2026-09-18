@@ -31,6 +31,7 @@ npm run typecheck   # tsc --noEmit
 npm run build       # typecheck + production build to dist/
 npm run preview     # serve dist/ locally
 npm run physics     # measure movement in the real sim, check the design envelope
+npm run venue       # check the building against the plans and against itself
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
 ```
@@ -79,7 +80,7 @@ for a scoring criterion.
 | Change how resistance or grip behaves | `src/core/Body.ts` — affects ALL robots |
 | Change camera lead, shake, footfall weight | `src/config.ts` — presentation only |
 | Change what an era looks like | `palette` / `lightLevel` in `registry.ts` |
-| Change the building | `src/venue/kinepolis.ts` |
+| Change the building | `src/venue/kinepolis.ts` — then `npm run venue` |
 | Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScene` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |

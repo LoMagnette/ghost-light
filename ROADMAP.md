@@ -56,7 +56,7 @@ still days left to react.
 | Fri 18 Sep | Scaffold, specs, verification harness, **movement feel, title, repo + Pages live** — all done | Both |
 | Sat 19 Sep | **Public repo + Pages live.** Still the only real blocker | Human |
 | Sun 20 Sep | ~~Movement feel against grey boxes~~ — **done early.** Human to judge the feel in the lab and call the adjustments | Agent done, human judges |
-| Mon 21 Sep | Venue geometry refined from the real floor plans | Agent, needs downloads |
+| Mon 21 Sep | ~~Venue geometry refined from the real floor plans~~ — **done early** | Agent |
 | Tue 22 Sep | Chapter I objective and a finishable round | Agent |
 | Wed 23 Sep | Chapter I lighting, end card, first-run experience | Agent |
 | Thu 24 Sep | Chapter III direct-order mode — the differentiator | Agent |
@@ -92,8 +92,12 @@ the palettes stay guesses until the files are on disk.
    Judges try a hosted build before cloning. This is the first impression, and
    it now exists on day one of twelve rather than day twelve.
 
-3. **Download the reference assets into `references/`.** Now the top blocker.
-   The agent's sandbox
+3. ~~**Download the reference assets into `references/`.**~~ **Done 18 Sep** —
+   plans, photographs and model sheets all on disk, and the venue has been
+   rebuilt from the plans. The photographs are still unread; palettes are next.
+
+   The original note, kept because it explains why this mattered: the agent's
+   sandbox
    reaches only package registries and GitHub, so it cannot fetch from
    `game.devoxx.be`. See `docs/ASSETS.md` for the file list.
 

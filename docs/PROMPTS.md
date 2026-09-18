@@ -137,7 +137,65 @@ the 40 originality points. Robots are generated from the model sheets only.
 
 ## Venue
 
-### _(pending)_ Auditorium and corridor geometry from the floor plans
+### The building, surveyed from the competition floor plans
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-18
+
+**Prompt:**
+> I've provided the files
+
+**Iterations:** one pass. The plans did the arguing.
+
+**What the model had got wrong, unprompted and unknowingly:**
+The scaffold's venue was written from a verbal description of the Kinepolis
+and it was confidently, specifically wrong. Reading the actual plans:
+
+| | invented | on the plan |
+|---|---|---|
+| Exhibition hall | 70 × 50 m, 3500 m² | 2411.41 m², ≈49 × 49 m |
+| Column grid | 11.5 m bays | ≈6 m bays |
+| Staircases | one, central | **two**, side by side |
+| BOF rooms | west side | south-east |
+| Auditoriums | staggered down alternate sides | facing **pairs** |
+
+The column grid being wrong by 2× is the one that actually mattered: SPEC calls
+it "the single most recognisable feature of the hall", and at 11.5 m it was
+scenery you drove past rather than a slalom you had to read ahead for. Biggy
+needs 3.8 m to stop; that only becomes interesting at 6 m spacing.
+
+**The useful technique — scaling a plan that says "no scale":**
+Neither drawing carries a scale bar. Both carry *printed numbers*:
+
+- `hollywood-area.png` labels the hall "Receptieruimte 'Hollywood' — opp:
+  2411.41 m²". Measuring the hall's pixel extent on each of the two
+  ground-floor plans independently and solving for scale gave 47 × 51 m and
+  49 × 49 m — agreeing within 4%, which is what makes it trustworthy rather
+  than a single guess.
+- `cinema-venue-devoxx.png` prints a **seat count on every auditorium**. So
+  room frontage is measured off the drawing and depth is *derived*: seats ×
+  0.9 m²/seat ÷ frontage. Room 8 is the biggest room in the game because 746
+  people really fit in it.
+
+A structural fact fell out of the seat counts that no description would have
+given: the rooms pair across the corridor and **every pair sums to 13** —
+(1,12) (2,11) (3,10) (4,9) (5,8) (6,7) — with 13 and 14 extending north past
+12 on the east side only. And ZAAL 8, at 746 seats, is the largest room in the
+building, which independently justifies the keynote room the whole third
+chapter aims at.
+
+**Fixed by hand:**
+`tools/venue.mjs`, for the same reason as the physics harness: these numbers
+are *derived*, and derived numbers drift silently when someone edits a
+constant. It fails on a hall that stops matching the printed area, an
+auditorium overlapping the corridor, a spawn point inside a wall, or Room 8
+no longer being the largest room in the building.
+
+Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
+these are rectangles, because `Rect` is what the collision system speaks —
+the fan lives in the seating instead, which tapers toward the screen and is
+what a robot actually drives around. And ceiling heights are still invented:
+a floor plan cannot give volume, which is why watching the drone footage is
+still on the human's list.
 
 ### _(pending)_ Palette extraction from the venue photographs
 

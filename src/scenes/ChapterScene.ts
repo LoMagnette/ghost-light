@@ -75,7 +75,7 @@ export class ChapterScene extends Phaser.Scene {
     this.actors = [];
     this.spawns = [];
 
-    const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorWest;
+    const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorSouth;
     chapter.cast.forEach((robotId, index) => {
       const spec = ROBOTS[robotId];
       // Spaced by more than the widest robot so nobody starts inside anyone.

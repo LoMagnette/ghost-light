@@ -31,7 +31,7 @@ These are pass/fail. Check them before every submission.
 | Requirement | Where it is satisfied |
 |---|---|
 | All three robots appear and **matter** | Ch.1 Voxxy, Ch.2 +Droid, Ch.3 all three with distinct roles |
-| Venue is recognisably the Kinepolis | One shared geometry, `src/venue/kinepolis.ts` |
+| Venue is recognisably the Kinepolis | One shared geometry, `src/venue/kinepolis.ts`, **surveyed from the competition plans** |
 | Exhibition hall, auditoriums, corridors, staircase | All modelled; both levels used |
 | Playable start-to-finish by a stranger | Chapter select → 3–6 min chapter → end card |
 | Runnable from the repo | `README.md`, clone → `npm i` → `npm run dev` |
@@ -266,7 +266,14 @@ Deliberate ordering notes:
 - 14 venue photographs, copyleft — the palette source
 - Four drone flights through the venue — scale, ceiling heights, sightlines
 
-Put downloads under `references/` (git-ignored if large; see `docs/ASSETS.md`).
+Put downloads under `references/`, which is git-ignored — those are Devoxx's
+files and this repository is public and MIT, so they are not ours to
+relicense. See `docs/ASSETS.md`.
+
+**The plans are on disk and the venue is built from them.** Neither carries a
+scale bar, so both were scaled from a printed figure: the exhibition hall from
+the "Receptieruimte 'Hollywood' — opp: 2411.41 m²" label, and every auditorium
+from its printed seat count. `npm run venue` holds the geometry against both.
 
 ### To generate
 
