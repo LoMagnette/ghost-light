@@ -36,8 +36,8 @@ These are pass/fail. Check them before every submission.
 | Playable start-to-finish by a stranger | Chapter select → 3–6 min chapter → end card |
 | Runnable from the repo | `README.md`, clone → `npm i` → `npm run dev` |
 | MIT `LICENSE` file | Present at repo root |
-| Public GitHub repository | — |
-| Live playable build | GitHub Pages, linked in README and in the submission |
+| Public GitHub repository | <https://github.com/LoMagnette/ghost-light> |
+| Live playable build | <https://lomagnette.github.io/ghost-light/> — live since 18 Sep |
 
 > **Judges will try a live build before cloning.** The hosted URL is not a
 > nice-to-have. It is the first impression, and it must load in seconds.

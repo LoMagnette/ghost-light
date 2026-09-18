@@ -11,7 +11,7 @@ Belgium competition. Voxxy, Droid and Biggy walk the Kinepolis Antwerp across
 three chapters of the same building — and the way you control them changes with
 each one.
 
-> **▶ Play it now: _(Pages URL goes here once the first deploy runs)_**
+> **▶ Play it now: <https://lomagnette.github.io/ghost-light/>**
 
 ---
 

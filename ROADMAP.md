@@ -53,7 +53,7 @@ still days left to react.
 
 | Date | Focus | Who |
 |---|---|---|
-| Fri 18 Sep | Scaffold, specs, verification harness — **done** | Agent |
+| Fri 18 Sep | Scaffold, specs, verification harness, **movement feel, title, repo + Pages live** — all done | Both |
 | Sat 19 Sep | **Public repo + Pages live.** Still the only real blocker | Human |
 | Sun 20 Sep | ~~Movement feel against grey boxes~~ — **done early.** Human to judge the feel in the lab and call the adjustments | Agent done, human judges |
 | Mon 21 Sep | Venue geometry refined from the real floor plans | Agent, needs downloads |
@@ -78,17 +78,19 @@ Nine items. The first three block everything else.
 
 ### Blocking
 
+Both of the original blockers cleared on 18 Sep. Only the reference downloads
+remain, and they gate real work: the agent can read images, so the venue and
+the palettes stay guesses until the files are on disk.
+
 1. ~~**Create the public repo and push.**~~ **Done 18 Sep** —
    <https://github.com/LoMagnette/ghost-light>.
 
-2. **Confirm Pages is live and paste the URL into `README.md`.** The workflow
-   now passes `enablement: true`, so it turns Pages on itself rather than
-   needing Settings → Pages → Source: GitHub Actions set by hand. Check the
-   Actions tab is green, then put the URL where the placeholder sits — the
-   agent cannot read the Actions API from its sandbox (the proxy credentials
-   cover git over HTTPS only, and `origin` is an SSH remote).
+2. ~~**Turn on Pages.**~~ **Done 18 Sep** —
+   <https://lomagnette.github.io/ghost-light/> serves HTTP 200 and the bundle
+   hash matches a local `VITE_BASE=/ghost-light/` build.
 
-   Judges try a hosted build before cloning. This is the first impression.
+   Judges try a hosted build before cloning. This is the first impression, and
+   it now exists on day one of twelve rather than day twelve.
 
 3. **Download the reference assets into `references/`.** Now the top blocker.
    The agent's sandbox
