@@ -48,10 +48,13 @@ export class KeyboardController {
       out.dirY = 0;
       out.throttle = 0;
     } else {
-      // Screen right  => world (+x, -y)
-      // Screen down   => world (+x, +y)
-      const wx = (screenX + screenY) * INV_SQRT2;
-      const wy = (screenY - screenX) * INV_SQRT2;
+      // Derived from Iso.project, and it changes if that does. The viewer is
+      // south-west of the building, so:
+      //   screen right => world (+x, -y)   south-east
+      //   screen down  => world (-x, -y)   south-west
+      // W therefore walks you north-east, up the screen and up the plan.
+      const wx = (screenX - screenY) * INV_SQRT2;
+      const wy = -(screenX + screenY) * INV_SQRT2;
       const mag = Math.hypot(wx, wy);
       out.dirX = wx / mag;
       out.dirY = wy / mag;

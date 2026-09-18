@@ -67,6 +67,13 @@ for a scoring criterion.
    never imports from `src/render/`. The only code that calls `project()` is a
    renderer. Once gameplay reasons in pixels the physics stops being honest.
 
+   The viewer stands **south-west** of the building: north runs up-left on
+   screen, east up-right. Three things encode that and all three must agree —
+   `Iso.project`, `Iso.depthKey` and which two faces `drawBox` paints. Flip one
+   alone and the building turns inside out or renders 180° from every drawing
+   of it, which is exactly the bug a floor plan next to the screen catches and
+   nothing else does.
+
 5. **Physics is fixed-timestep, 120 Hz.** Call `sim.advance(delta)` once per
    frame and let the accumulator do its job. Never call `body.step()` with a
    frame delta. Heavy bodies with force-limited braking change their stopping

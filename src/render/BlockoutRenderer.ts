@@ -209,31 +209,34 @@ export class BlockoutRenderer {
     const top = tint ?? this.palette.wall;
     const side = tint ? shade(tint, 0.66) : this.palette.wallShade;
 
+    // The viewer is to the south-west (see Iso.project), so the two faces in
+    // sight are the SOUTH one and the WEST one. Draw the north or east faces
+    // and every box turns inside out.
     const topA = project(x, y, height);
     const topB = project(x + w, y, height);
     const topC = project(x + w, y + h, height);
     const topD = project(x, y + h, height);
-    const botC = project(x + w, y + h, 0);
-    const botD = project(x, y + h, 0);
+    const botA = project(x, y, 0);
     const botB = project(x + w, y, 0);
+    const botD = project(x, y + h, 0);
 
-    // South-east face
+    // South face
     g.fillStyle(this.lit(side), 1);
     g.beginPath();
-    g.moveTo(topB.sx, topB.sy);
-    g.lineTo(topC.sx, topC.sy);
-    g.lineTo(botC.sx, botC.sy);
+    g.moveTo(topA.sx, topA.sy);
+    g.lineTo(topB.sx, topB.sy);
     g.lineTo(botB.sx, botB.sy);
+    g.lineTo(botA.sx, botA.sy);
     g.closePath();
     g.fillPath();
 
-    // South-west face, a touch darker still
+    // West face, a touch darker still
     g.fillStyle(this.lit(shade(side, 0.82)), 1);
     g.beginPath();
-    g.moveTo(topD.sx, topD.sy);
-    g.lineTo(topC.sx, topC.sy);
-    g.lineTo(botC.sx, botC.sy);
+    g.moveTo(topA.sx, topA.sy);
+    g.lineTo(topD.sx, topD.sy);
     g.lineTo(botD.sx, botD.sy);
+    g.lineTo(botA.sx, botA.sy);
     g.closePath();
     g.fillPath();
 

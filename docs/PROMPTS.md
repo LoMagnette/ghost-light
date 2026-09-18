@@ -260,6 +260,44 @@ plan (746). Both are right: the drawing is dated 02-03-2012 and a cinema loses
 seats every time it re-seats. Recorded as `KEYNOTE_SEATS_TODAY` so crowd counts
 use the modern figure while geometry follows the plan.
 
+### The building rendered 180° from its own plan
+**Date:** 2026-09-18
+
+**Prompt:**
+> I think you flip the map for exposition hall. And I think you forgot the
+> stairs between the reception and the exposition hall. and the stair from the
+> reception to the first floor are missing
+
+Three observations, three real faults, and the first one had been sitting in
+the projection since the scaffold.
+
+`project` computed `sy = (x + y) * PPM * ISO_SQUASH`. Screen y grows downward,
+so +y — north — came out at the BOTTOM of the screen. The building rendered
+180° from every drawing of it: stairs at the bottom, main entrance at the top.
+Every numeric check passed, because the geometry was right; only a person
+holding a plan up to the screen could see it. The fix is one negation, but it
+has to propagate: `depthKey` has to negate too or far walls draw over near
+robots, `drawBox` has to paint the south and west faces instead of the north
+and east ones or every box turns inside out, and the keyboard basis has to be
+re-derived or W walks you south.
+
+The two missing staircases were worse than missing — the plan had been
+misread. "∧ Rooms ∧" does not label a seminar suite, it labels the ~16 m grand
+flight beneath it and means *this way up to the cinema rooms*. There is a
+second, narrower stair against the concourse's west wall. So the ground floor
+has **four** ways up, not two, and only two of them start in the hall — which
+matters for Chapter III, where three robots and a full house cannot share one
+staircase.
+
+And the concourse is not flush with the hall: a ~23 m flight spans the
+boundary. The proof is the label beside it — a plan does not write "wheelchair
+access" across a flat opening.
+
+**Worth keeping:** the column grid is square and the isometric screen axes sit
+at 45° to it, so holding right or left tracks a line of columns and meets one
+every 8.9 m. True to the building, and it made the screenshot harness useless
+until it was taught to drive due east (W+D) between the rows instead.
+
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —
 the fan lives in the seating instead, which tapers toward the screen and is

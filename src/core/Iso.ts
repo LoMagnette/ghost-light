@@ -28,11 +28,23 @@ export interface ScreenPoint {
   sy: number;
 }
 
-/** Project a world-space point (metres) to screen-space pixels. */
+/**
+ * Project a world-space point (metres) to screen-space pixels.
+ *
+ * The `(x + y)` term is NEGATED, and that matters. Screen y grows downward, so
+ * without the negation +y — north — lands at the BOTTOM of the screen and the
+ * building renders 180° from every drawing of it: stairs at the bottom, main
+ * entrance at the top. Anyone holding a floor plan next to the game sees a
+ * mirrored building.
+ *
+ * As written, the viewer stands to the south-west and looks north-east:
+ * north runs up-left, east up-right, and a plan with north at the top reads
+ * the way a plan with north at the top should.
+ */
 export function project(x: number, y: number, z = 0): ScreenPoint {
   return {
     sx: (x - y) * PPM,
-    sy: (x + y) * PPM * ISO_SQUASH - z * PPM,
+    sy: -(x + y) * PPM * ISO_SQUASH - z * PPM,
   };
 }
 
@@ -41,21 +53,24 @@ export function project(x: number, y: number, z = 0): ScreenPoint {
  * "where in the building did the player click".
  */
 export function unprojectFloor(sx: number, sy: number): { x: number; y: number } {
-  const a = sx / PPM;
-  const b = sy / (PPM * ISO_SQUASH);
+  const a = sx / PPM; //  x - y
+  const b = -sy / (PPM * ISO_SQUASH); //  x + y
   return { x: (b + a) / 2, y: (b - a) / 2 };
 }
 
 /**
  * Painter's-algorithm depth key. Larger draws later (in front).
  *
- * Depth is (x + y) so things further "down" the diamond occlude things behind
- * them, with z breaking ties so a robot on the staircase draws over the floor
- * it is above. Multiply rather than add so a tall room cannot invert the
- * floor ordering.
+ * "In front" means nearer the viewer, who stands to the south-west — so it is
+ * the SMALL values of (x + y) that are close, hence the negation. It has to
+ * track `project`: flip one and not the other and the building turns
+ * inside out, with far walls drawn over near robots.
+ *
+ * z breaks ties, so a robot on the staircase draws over the floor it is above.
+ * Multiply rather than add so a tall room cannot invert the floor ordering.
  */
 export function depthKey(x: number, y: number, z = 0): number {
-  return (x + y) * 16 + z * 0.5;
+  return -(x + y) * 16 + z * 0.5;
 }
 
 /** Convert a compass heading in radians to one of 8 sprite facings (0 = east). */

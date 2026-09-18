@@ -146,9 +146,11 @@ const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
   { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION },
-  // Seminar rooms off the reception concourse, and the BOF rooms south-east
-  // of it — both on the annotated plan, both south of the hall.
-  { id: 'seminar', label: 'Seminar Rooms', kind: 'service', floor: 0, bounds: rect(-13.6, -67.9, 20.0, 7.5) },
+  // BOF rooms, south-east of the concourse.
+  //
+  // There is no seminar suite here. An earlier pass read the plan's "∧ Rooms ∧"
+  // as labelling a room; it labels the grand stair BELOW it, and means "this
+  // way up to the cinema rooms". See `receptionStairs`.
   { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6) },
   { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7) },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
@@ -343,9 +345,37 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
 const STAIR_WEST = rect(-6.0, -6.2, 4.7, 12.2);
 const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
 
+/**
+ * Everything vertical in the reception concourse, and there is more of it than
+ * the first survey found.
+ *
+ * The concourse does not sit flush with the exhibition hall — a broad flight
+ * spans most of the boundary, with a wheelchair ramp beside it. That ramp is
+ * the proof: a plan does not label "wheelchair access" across a flat opening.
+ * It is a short rise, so it is a link from floor 0 to floor 0, which reads
+ * oddly in the type and is nonetheless what the building does.
+ *
+ * And the concourse reaches the auditorium level directly, by two more stairs:
+ * a ~16 m grand flight in the middle — the one the plan labels "∧ Rooms ∧" —
+ * and a narrow one against the west wall. So there are FOUR ways up from the
+ * ground floor, not two, and only two of them start in the hall. That matters
+ * for Chapter III: three robots and a full house need more than one staircase.
+ */
+const receptionStairs: Link[] = [
+  // Hall ↔ concourse. ~23 m wide, the full width of the opening.
+  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2 },
+  // The ramp beside it, east of the steps. Same rise, gentler, much longer.
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2 },
+  // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
+  { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2 },
+  // The narrow one against the west wall of the concourse.
+  { id: 'concourse-stair', from: 0, to: 1, bounds: rect(-13.6, -57.5, 3.0, 5.2), rise: 6.2 },
+];
+
 const staircases: Link[] = [
   { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2 },
   { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, rise: 6.2 },
+  ...receptionStairs,
 ];
 
 // ---------------------------------------------------------------------------
@@ -355,7 +385,7 @@ export const KINEPOLIS: Venue = {
   obstacles: [...exhibitionColumns(), ...HALL_CUTAWAYS, ...auditoriumSeating],
   links: staircases,
   extents: {
-    0: rect(HALL.x, -68, HALL.w + 13, 80),
+    0: rect(HALL.x, -62, HALL.w + 13, 74),
     1: rect(-46, SOUTH_END, 92, 150),
   },
 };
@@ -363,13 +393,24 @@ export const KINEPOLIS: Venue = {
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
   /** Inside the main entrance, looking north up the reception concourse. */
-  mainEntrance: { floor: 0 as const, x: 2, y: -56 },
+  /** Inside the main entrance, east of the grand stair. */
+  mainEntrance: { floor: 0 as const, x: 18, y: -57 },
   /** Where the concourse opens into the hall. */
   hallEntrance: { floor: 0 as const, x: 2, y: -33 },
-  // Mid-bay, not on a column line: the grid starts 6.3 m in from the hall's
-  // west and south walls, and a chapter spawns its whole cast in a row east of
-  // this point.
-  hallCentre: { floor: 0 as const, x: 4.9, y: -15.4 },
+  /**
+   * Centre of the hall, on the aisle midway between two rows of columns.
+   *
+   * A chapter lines its whole cast up east of this point, so what has to be
+   * clear is the ROW, not the point. Column rows run at y = -31.1 + 6.3j;
+   * sitting at -15.35 is 3.15 m from the nearest of them, which clears Biggy's
+   * 0.72 m by a margin that holds for any x along the row.
+   *
+   * Worth knowing when driving: the grid is square and the isometric screen
+   * axes sit at 45° to it, so holding right or left tracks a line of columns
+   * and meets one every 8.9 m. That is the hall doing its job — but it means
+   * a straight screen-axis run is never the fast way across.
+   */
+  hallCentre: { floor: 0 as const, x: 4.9, y: -15.35 },
   stairFoot: { floor: 0 as const, x: -2.5, y: -9 },
   /** The south end of the corridor, between Rooms 6 and 7. */
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },

@@ -92,19 +92,22 @@ if (process.argv.includes('--lab')) {
     await page.keyboard.press('KeyR');
     await page.waitForTimeout(300);
 
-    // At speed: the stopping marker shows how much floor this robot has
-    // already committed to.
+    // W+D together is due east in world space, which runs BETWEEN two rows of
+    // columns. Holding D alone drives exactly along a column diagonal and puts
+    // a pillar dead ahead every 8.9 m — true to the building, useless for a
+    // photograph of a robot at speed.
     await page.keyboard.down('KeyD');
+    await page.keyboard.down('KeyW');
     await page.waitForTimeout(3000);
     await shot(`lab-${index + 1}a-${name}-cruise`);
 
-    // Turn hard at speed. A robot with grip tracks it; a heavy one scrubs
+    // Release W: the request swings 45° to the south-east while the robot is
+    // still travelling east. A robot with grip tracks it; a heavy one scrubs
     // across the floor and leaves the arc it actually took.
-    await page.keyboard.down('KeyW');
+    await page.keyboard.up('KeyW');
     await page.waitForTimeout(500); // early enough to catch the turn at its worst
     await shot(`lab-${index + 1}b-${name}-turn`);
     await page.keyboard.up('KeyD');
-    await page.keyboard.up('KeyW');
 
     // Released, not braked: coasting is where the heavy robots are most
     // expressive and where a player learns to plan ahead.

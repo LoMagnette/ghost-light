@@ -218,12 +218,21 @@ for (const [name, spawn] of Object.entries(SPAWNS)) {
   }
 }
 
-// --- both staircases must stand on floor and land in the corridor ----------
-check(KINEPOLIS.links.length === 2, `expected 2 staircases, found ${KINEPOLIS.links.length}`);
+// --- every link must actually join the two places it claims to join --------
+// Two staircases out of the hall, two out of the concourse, plus the steps and
+// the ramp between hall and concourse.
+check(KINEPOLIS.links.length === 6, `expected 6 links, found ${KINEPOLIS.links.length}`);
 for (const link of KINEPOLIS.links) {
-  check(overlaps(link.bounds, hall.bounds), `${link.id} does not meet the exhibition hall`);
-  check(overlaps(link.bounds, corridor.bounds), `${link.id} does not reach the corridor`);
+  for (const floor of new Set([link.from, link.to])) {
+    const lands = KINEPOLIS.rooms.some((r) => r.floor === floor && overlaps(link.bounds, r.bounds));
+    check(lands, `${link.id} touches no room on floor ${floor} — it leads nowhere`);
+  }
+  check(link.rise > 0, `${link.id} has no rise`);
 }
+
+// A robot has to be able to get upstairs from where a chapter drops it.
+const upstairs = KINEPOLIS.links.filter((l) => l.from !== l.to);
+check(upstairs.length === 4, `expected 4 routes to the auditorium level, found ${upstairs.length}`);
 
 // ---------------------------------------------------------------------------
 
@@ -232,6 +241,7 @@ console.log(`obstacles   ${KINEPOLIS.obstacles.length}`);
 console.log(`hall        ${hall.bounds.w} × ${hall.bounds.h} m box, ${HALL_FLOOR_M2.toFixed(0)} m² floor (plan: ${HALL_AREA_M2})`);
 console.log(`corridor    ${corridor.bounds.w} × ${corridor.bounds.h.toFixed(1)} m`);
 console.log(`keynote     ${keynote.label}, ${area(keynote.bounds).toFixed(0)} m²`);
+console.log(`links       ${KINEPOLIS.links.map((l) => l.id).join(', ')}`);
 console.log('\nauditoriums, south to north:');
 for (const r of auditoria) {
   console.log(`  ${r.label.padEnd(8)} ${area(r.bounds).toFixed(0).padStart(4)} m²  ${r.bounds.w.toFixed(1).padStart(5)} deep × ${r.bounds.h.toFixed(1)} frontage`);
