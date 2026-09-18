@@ -29,6 +29,22 @@ interface Drawable {
   draw: (g: Phaser.GameObjects.Graphics) => void;
 }
 
+/**
+ * Tallest an obstacle is DRAWN, in metres, whatever its real height.
+ *
+ * The exhibition hall's columns are 5.4 m — the real clear height under the
+ * auditorium level — and drawn at full height they turn a 52 × 49 m room into
+ * a thicket of poles that hides the floor, the robot and any sense of how far
+ * away the far wall is. The room measures correct and reads far too small.
+ *
+ * This is not a fudge of the simulation: collision is two-dimensional and has
+ * never consulted `height`. It is the same decision as not drawing the
+ * ceiling, applied one level down — and a column holding up a floor we do not
+ * draw is the part that was inconsistent. Cutaway height is how isometric
+ * games have always drawn interiors.
+ */
+const MAX_DRAWN_HEIGHT = 2.7;
+
 /** Sideways speed, m/s, above which a robot is sliding rather than tracking. */
 const SLIP_THRESHOLD = 0.4;
 
@@ -123,7 +139,15 @@ export class BlockoutRenderer {
       const { bounds } = obstacle;
       queue.push({
         depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h),
-        draw: (gfx) => this.drawBox(gfx, bounds.x, bounds.y, bounds.w, bounds.h, obstacle.height),
+        draw: (gfx) =>
+          this.drawBox(
+            gfx,
+            bounds.x,
+            bounds.y,
+            bounds.w,
+            bounds.h,
+            Math.min(obstacle.height, MAX_DRAWN_HEIGHT),
+          ),
       });
     }
 

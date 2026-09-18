@@ -54,38 +54,45 @@ const FLOOR_CLEAR = 5.4;
 // ---------------------------------------------------------------------------
 
 /**
- * The hall's bounding box: 52.5 × 55.5 m.
+ * The hall: 52.3 × 49.4 m, and very nearly all of it open floor.
  *
- * Its FLOOR is 2411.41 m², which is only 83% of that box — the real room is a
- * rectangle with three bites taken out of it (see `hallCutaways`). The earlier
- * 49 × 49 m square had the right area and the wrong shape, which reads as a
- * bigger, emptier room than the one that exists.
+ * Both dimensions come off `booth-map.png`, which is the same ground floor
+ * drawn again with the Devoxx stand plan on it, and which scales itself: the
+ * large stands are 24 m² and stack at a 175 px pitch, so 175 px is 6 m and
+ * their 118 px width is 4.05 m — 4 × 6, exactly 24 m². At that scale the
+ * building interior measures 52.3 m across, and the hall's south wall — the
+ * line of doors into the reception concourse — sits 49.4 m down, carrying 91%
+ * ink coverage where nothing else comes near 45%.
+ *
+ * 52.3 × 49.4 = 2584 m² of bounding box against 2411.41 m² of printed floor,
+ * so only 172 m² is NOT hall. The previous pass cut away 500 m² and left an
+ * L-shaped room that drove much smaller than its area suggested. Ceilings and
+ * columns aside, this is now a clean rectangle you can cross.
  */
-const HALL = rect(-23.5, -43.5, 52.5, 55.5);
+const HALL = rect(-23.5, -37.4, 52.3, 49.4);
 
 /** Printed on the plan. tools/venue.mjs holds the geometry to it. */
 export const HALL_AREA_M2 = 2411.41;
 
 /**
- * The three pieces the bounding box has and the real hall does not.
+ * The 172 m² of the bounding box that is not exhibition floor.
  *
- * Read off the segmented plan: a notch out of the north-west where the toilets
- * are, a north-east corner set back from the east wall, and a quarter-round
- * sweeping away the south-west corner — the curved cast concrete that shows in
- * the reference photographs. Solid, so they shape how the room drives.
+ * Three pieces, and they have to stay small: the printed floor area is 93% of
+ * the box, so anything more than this is stealing room the building has. The
+ * budget is 21 + 78 + 72 = 171 m², which lands the floor at 2413 m² against a
+ * printed 2411.41.
  */
 function hallCutaways(): Obstacle[] {
   const solid: Obstacle[] = [
-    // North-west: toilets and the toilet entrance.
-    { floor: 0, bounds: rect(HALL.x, -5.0, 13.0, 9.5), height: 3.4 },
-    // North-east: the hall is narrower for its northern 26 m.
-    { floor: 0, bounds: rect(20.5, -14.0, 8.5, 26.0), height: 3.4 },
-    // South-east corner, past the wheelchair access.
-    { floor: 0, bounds: rect(17.2, HALL.y, 11.8, 6.0), height: 3.4 },
+    // North-west: the toilets, and the corridor in to them. 78 m².
+    { floor: 0, bounds: rect(HALL.x, 6.0, 13.0, 6.0), height: 3.4 },
+    // East: a service recess off the hall, by the polo pickup. 72 m².
+    { floor: 0, bounds: rect(20.8, -6.0, 8.0, 9.0), height: 3.4 },
   ];
 
-  // South-west quarter-round. Bands measured at their southern edge so the
-  // approximation stays outside the true curve rather than cutting into it.
+  // South-west quarter-round — the curved cast concrete in the photographs.
+  // 21 m², the last of the 172. Bands are measured at their southern edge so
+  // the approximation stays outside the true curve rather than cutting in.
   const radius = 10;
   const bands = 8;
   const band = radius / bands;
@@ -103,12 +110,13 @@ function hallCutaways(): Obstacle[] {
 /**
  * The column grid — the single most recognisable feature of the hall.
  *
- * 6.4 m, measured between column centres on the annotated plan. The original
+ * 6.3 m between centres, measured on the booth map at the scale its own 24 m²
+ * stands establish, and corroborated at 6.34 m on the annotated plan. The original
  * blockout guessed 11.5 m, which made the columns scenery you drove past
  * rather than a slalom you have to read ahead for. That distinction only
  * matters because Biggy needs 3.8 m to stop.
  */
-const COLUMN_SPACING = 6.4;
+const COLUMN_SPACING = 6.3;
 const COLUMN_SIZE = 0.6;
 
 function exhibitionColumns(): Obstacle[] {
@@ -133,17 +141,17 @@ function exhibitionColumns(): Obstacle[] {
  * reception inside the hall's own rectangle, which erased the threshold
  * entirely — and the threshold is the moment the building announces itself.
  */
-const RECEPTION = rect(-13.6, -66.5, 36.3, 23.0);
+const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
 
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
   { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION },
   // Seminar rooms off the reception concourse, and the BOF rooms south-east
   // of it — both on the annotated plan, both south of the hall.
-  { id: 'seminar', label: 'Seminar Rooms', kind: 'service', floor: 0, bounds: rect(-13.6, -74.0, 20.0, 7.5) },
-  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -66.9, 19.8, 7.6) },
-  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -59.0, 19.8, 7.7) },
-  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.5, -20.0, 8.5, 6.0) },
+  { id: 'seminar', label: 'Seminar Rooms', kind: 'service', floor: 0, bounds: rect(-13.6, -67.9, 20.0, 7.5) },
+  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6) },
+  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7) },
+  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
 ];
 
 // ---------------------------------------------------------------------------
@@ -189,7 +197,10 @@ const WEST_GAP = 4.5;
 /** South to north, east side. 13 and 14 have no western counterpart. */
 const EAST: Auditorium[] = [
   { number: 7, seats: 407, frontage: 17.9, depth: 25.0 },
-  { number: 8, seats: 746, frontage: 22.2, depth: 30.2 }, // the keynote room
+  // 746 is what the 2012 plan prints; Devoxx sells 694 today, the difference
+  // being twenty years of wider seats. Geometry follows the plan, crowds
+  // should follow the modern number.
+  { number: 8, seats: 746, frontage: 22.2, depth: 30.2 },
   { number: 9, seats: 426, frontage: 17.8, depth: 25.8 },
   { number: 10, seats: 364, frontage: 14.8, depth: 26.6 },
   { number: 11, seats: 224, frontage: 12.3, depth: 19.7 },
@@ -198,8 +209,11 @@ const EAST: Auditorium[] = [
   { number: 14, seats: 224, frontage: 12.5, depth: 19.4 },
 ];
 
-/** The keynote room, and the largest in the building at 746 seats. */
+/** The keynote room, and the largest in the building. */
 export const KEYNOTE_ROOM = 8;
+
+/** Seats Devoxx actually sells in Room 8 today, against 746 on the 2012 plan. */
+export const KEYNOTE_SEATS_TODAY = 694;
 
 /** Half of the measured 14.3 m corridor. A concourse, not a passage. */
 const CORRIDOR_HALF = 7.15;
@@ -341,7 +355,7 @@ export const KINEPOLIS: Venue = {
   obstacles: [...exhibitionColumns(), ...HALL_CUTAWAYS, ...auditoriumSeating],
   links: staircases,
   extents: {
-    0: rect(HALL.x, -74, HALL.w + 13, 86),
+    0: rect(HALL.x, -68, HALL.w + 13, 80),
     1: rect(-46, SOUTH_END, 92, 150),
   },
 };
@@ -349,10 +363,13 @@ export const KINEPOLIS: Venue = {
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
   /** Inside the main entrance, looking north up the reception concourse. */
-  mainEntrance: { floor: 0 as const, x: 2, y: -62 },
+  mainEntrance: { floor: 0 as const, x: 2, y: -56 },
   /** Where the concourse opens into the hall. */
-  hallEntrance: { floor: 0 as const, x: 2, y: -40 },
-  hallCentre: { floor: 0 as const, x: 2, y: -22 },
+  hallEntrance: { floor: 0 as const, x: 2, y: -33 },
+  // Mid-bay, not on a column line: the grid starts 6.3 m in from the hall's
+  // west and south walls, and a chapter spawns its whole cast in a row east of
+  // this point.
+  hallCentre: { floor: 0 as const, x: 4.9, y: -15.4 },
   stairFoot: { floor: 0 as const, x: -2.5, y: -9 },
   /** The south end of the corridor, between Rooms 6 and 7. */
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },

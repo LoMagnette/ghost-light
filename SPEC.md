@@ -270,10 +270,23 @@ Put downloads under `references/`, which is git-ignored — those are Devoxx's
 files and this repository is public and MIT, so they are not ours to
 relicense. See `docs/ASSETS.md`.
 
-**The plans are on disk and the venue is built from them.** Neither carries a
-scale bar, so both were scaled from a printed figure: the exhibition hall from
-the "Receptieruimte 'Hollywood' — opp: 2411.41 m²" label, and every auditorium
-from its printed seat count. `npm run venue` holds the geometry against both.
+**The plans are on disk and the venue is built from them.** None carries a
+scale bar, so each is scaled from something physical printed on it:
+
+| Drawing | Anchor |
+|---|---|
+| `booth-map.png` | Devoxx stands: 24 m² large, 6 m² small — 175 px pitch = 6 m |
+| `hollywood-area.png` | "Receptieruimte 'Hollywood' — opp: 2411.41 m²" |
+| `cinema-venue-devoxx.png` | drawn seat rows, 10 px pitch ≈ 1.0 m |
+
+The booth map is the best of the three, because it scales itself and it is the
+only drawing that shows the hall's south wall unambiguously. `npm run venue`
+holds the geometry against all of it, and `npm run venue -- --svg` draws the
+result as a plan to put beside the originals.
+
+Room 8 is printed as **746 seats** on a 2012 drawing; Devoxx sells **694**
+today. Geometry follows the plan, crowd counts should follow the modern
+number.
 
 ### To generate
 

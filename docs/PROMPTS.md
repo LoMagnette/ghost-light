@@ -223,6 +223,43 @@ draws both floors as a plan, and holding that next to the actual drawing is
 what makes a mistake like this obvious in seconds. **A building cannot be
 checked by driving around inside it.**
 
+### The hall, third time — a drawing that scales itself
+**Date:** 2026-09-18
+
+**Prompt:**
+> so just to give you an idea of the size of the biggest room is 694 sitting
+> person. I feel that the exibition floot still feel too small it's maybe due
+> to the pillar. I've add a booth map image to help you. The smaller booth are
+> 6sq meter (2x3) the largest are 24sq meter
+
+The stand plan turned out to be the best drawing of the three, because it
+**scales itself**: the large stands are 24 m² and stack at a 175 px pitch, so
+175 px is 6 m and their 118 px width is 4.05 m — 4 × 6, exactly 24 m². No
+external figure needed. At that scale the building interior is 52.3 m across
+and the hall's south wall — the line of doors into reception — carries 91% ink
+coverage at 49.4 m, where nothing else on the drawing comes near 45%.
+
+That settled a question the earlier pass had got badly wrong. 52.3 × 49.4 =
+2584 m² of box against 2411.41 m² of printed floor, so only **172 m²** is not
+hall. The previous pass had cut away **500 m²** — a 221 m² block out of the
+north-east alone — and left an L-shaped room that drove far smaller than its
+area. Correcting it removed 330 m² of solid obstruction from the middle of the
+floor.
+
+The pillars were the other half, and the diagnosis was right for the wrong
+reason: the 6.3 m bay is correct, confirmed on two drawings. The fault was in
+the RENDERER. Columns were drawn at their true 5.4 m clear height, which in an
+isometric view turns a 52 × 49 m room into a thicket of poles that hides the
+floor and the far wall. They are now capped at 2.7 m drawn. That is not a fudge
+of the simulation — collision is two-dimensional and has never read `height` —
+it is the same decision as not drawing the ceiling, and a column holding up a
+floor we do not draw was the inconsistent part.
+
+**Fixed by hand:** the human's seat count for Room 8 (694) disagreed with the
+plan (746). Both are right: the drawing is dated 02-03-2012 and a cinema loses
+seats every time it re-seats. Recorded as `KEYNOTE_SEATS_TODAY` so crowd counts
+use the modern figure while geometry follows the plan.
+
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —
 the fan lives in the seating instead, which tapers toward the screen and is

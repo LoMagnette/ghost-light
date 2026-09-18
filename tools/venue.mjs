@@ -188,6 +188,13 @@ for (let i = 0; i < auditoria.length; i += 1) {
 // --- every spawn must be on its floor and out of the furniture -------------
 // Biggy's radius, the widest thing that ever stands on one of these.
 const CLEARANCE = 0.72;
+
+// ChapterScene lines its cast up east of the spawn at this pitch, so the two
+// places beside it have to be clear as well. Checking only the point itself
+// passes a spawn that puts Biggy inside a column.
+const CAST_PITCH = 2.6;
+const CAST_MAX = 3;
+
 for (const [name, spawn] of Object.entries(SPAWNS)) {
   const inside = KINEPOLIS.rooms.some(
     (r) =>
@@ -197,14 +204,17 @@ for (const [name, spawn] of Object.entries(SPAWNS)) {
   );
   check(inside, `SPAWNS.${name} is not inside any room on floor ${spawn.floor}`);
 
-  for (const o of KINEPOLIS.obstacles) {
-    if (o.floor !== spawn.floor) continue;
-    const cx = Math.min(Math.max(spawn.x, o.bounds.x), o.bounds.x + o.bounds.w);
-    const cy = Math.min(Math.max(spawn.y, o.bounds.y), o.bounds.y + o.bounds.h);
-    check(
-      Math.hypot(spawn.x - cx, spawn.y - cy) >= CLEARANCE,
-      `SPAWNS.${name} is inside or touching an obstacle — a robot would spawn in a wall`,
-    );
+  for (let slot = 0; slot < CAST_MAX; slot += 1) {
+    const px = spawn.x + slot * CAST_PITCH;
+    for (const o of KINEPOLIS.obstacles) {
+      if (o.floor !== spawn.floor) continue;
+      const cx = Math.min(Math.max(px, o.bounds.x), o.bounds.x + o.bounds.w);
+      const cy = Math.min(Math.max(spawn.y, o.bounds.y), o.bounds.y + o.bounds.h);
+      check(
+        Math.hypot(px - cx, spawn.y - cy) >= CLEARANCE,
+        `SPAWNS.${name}${slot ? ` (cast slot ${slot + 1})` : ''} is inside or touching an obstacle — a robot would spawn in a wall`,
+      );
+    }
   }
 }
 
