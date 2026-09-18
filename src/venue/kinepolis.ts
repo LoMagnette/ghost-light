@@ -119,19 +119,42 @@ function hallCutaways(): Obstacle[] {
 /**
  * The column grid — the single most recognisable feature of the hall.
  *
- * 6.3 m between centres, measured on the booth map at the scale its own 24 m²
- * stands establish, and corroborated at 6.34 m on the annotated plan. The original
- * blockout guessed 11.5 m, which made the columns scenery you drove past
- * rather than a slalom you have to read ahead for. That distinction only
- * matters because Biggy needs 3.8 m to stop.
+ * About 6.5 m between centres, and the grid is now MEASURED COLUMN BY COLUMN
+ * rather than stepped out from a wall. Generating it with a loop produced one
+ * line too many on each axis and put every one of them slightly out of step,
+ * which is what made the staircases look wrong: they were placed by eye
+ * against a grid that was itself invented.
+ *
+ * The original blockout guessed 11.5 m, which made the columns scenery you
+ * drove past rather than a slalom you have to read ahead for. That distinction
+ * only matters because Biggy needs 3.8 m to stop.
  */
-const COLUMN_SPACING = 6.3;
-const COLUMN_SIZE = 0.6;
+const COLUMN_SIZE = 0.7;
+
+/**
+ * Column centres, metres from the hall's WEST wall.
+ *
+ * Seven lines. The outermost sit 6.68 m and 6.63 m off their respective walls
+ * — symmetric, which is the sign the reading is right.
+ */
+const COLUMN_X = [6.68, 13.04, 19.7, 26.15, 32.63, 39.09, 45.67];
+
+/**
+ * Column centres, metres from the hall's NORTH wall.
+ *
+ * SIX lines, not seven, and they start 13.13 m down rather than one bay in:
+ * the northern 13 m of the hall carries no columns at all, because that is
+ * where the two staircases stand. A loop from the wall invents a row straight
+ * through the stair zone.
+ */
+const COLUMN_Y = [13.13, 19.62, 26.07, 32.87, 39.05, 45.58];
 
 function exhibitionColumns(): Obstacle[] {
   const columns: Obstacle[] = [];
-  for (let x = HALL.x + COLUMN_SPACING; x < HALL.x + HALL.w - 1; x += COLUMN_SPACING) {
-    for (let y = HALL.y + COLUMN_SPACING; y < HALL.y + HALL.h - 1; y += COLUMN_SPACING) {
+  for (const cx of COLUMN_X) {
+    for (const cy of COLUMN_Y) {
+      const x = HALL.x + cx;
+      const y = HALL.y + HALL.h - cy; // measured from the north wall; +y is north
       columns.push({
         floor: 0,
         bounds: rect(x - COLUMN_SIZE / 2, y - COLUMN_SIZE / 2, COLUMN_SIZE, COLUMN_SIZE),
@@ -359,8 +382,15 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
  * cannot reconcile — see the note at the top of this file. They are placed to
  * land in the corridor.
  */
-const STAIR_WEST = rect(-6.0, -6.2, 4.7, 12.2);
-const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
+/*
+ * Measured off the annotated plan in the SAME frame as the column grid, which
+ * is the point: the previous pair were placed by eye and sat a whole bay west
+ * of where they belong, straddling a line of columns. Each flight stands
+ * inside a structural bay — the west one between the 13.04 and 19.70 m grid
+ * lines, the east one between 26.15 and 32.63.
+ */
+const STAIR_WEST = rect(HALL.x + 13.25, -6.44, 3.55, 12.38);
+const STAIR_EAST = rect(HALL.x + 29.28, -6.44, 3.24, 12.38);
 
 /**
  * Everything vertical in the reception concourse.
@@ -521,7 +551,8 @@ export const SPAWNS = {
   /** Inside the main entrance, east of the grand stair. */
   mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
   /** Where the concourse opens into the hall. */
-  hallEntrance: { floor: 0 as const, x: 2, y: -33 },
+  // Between the two southernmost column rows, which sit at y -27.05 and -33.58.
+  hallEntrance: { floor: 0 as const, x: 2, y: -30.3 },
   /**
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
@@ -532,16 +563,16 @@ export const SPAWNS = {
    *
    * Worth knowing when driving: the grid is square and the isometric screen
    * axes sit at 45° to it, so holding right or left tracks a line of columns
-   * and meets one every 8.9 m. That is the hall doing its job — but it means
+   * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: 4.9, y: -15.35 },
+  hallCentre: { floor: 0 as const, x: 4.9, y: -17.5 },
   /**
    * The actual foot of the west flight — its NORTH end, since both hall
    * staircases climb southward. Approach from the south and you meet the top
    * of the flight, which is a storey of wall.
    */
-  stairFoot: { floor: 0 as const, x: -3.6, y: 8.5 },
+  stairFoot: { floor: 0 as const, x: -8.5, y: 8.5 },
   /** The south end of the corridor, between Rooms 6 and 7. */
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },

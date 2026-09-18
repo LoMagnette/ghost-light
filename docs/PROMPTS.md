@@ -400,6 +400,39 @@ be right while the behaviour is wrong. The failure mode is never an exception.
 are floor plates, not enclosures, so a robot held at full throttle drives out
 of the Kinepolis entirely. Perimeter walls are their own job.
 
+### The grid was generated, so everything on it was wrong
+**Date:** 2026-09-18
+
+**Prompt:**
+> the stairs in the exposition hall are not correctly position relative to the
+> pillar btw there's I think one row too much pilar
+
+Both true, and they were the same fault. The column grid was being *stepped
+out from a wall in a loop* — start one bay in, add 6.3 m until you run out of
+hall — while everything else in this file is measured. A generated grid is
+wrong in two ways at once: it puts one line too many on each axis (8 × 7 where
+the plan has 7 × 6), and it puts every line slightly out of step, so anything
+positioned against it by eye inherits the error. The staircases had been placed
+that way and sat a whole bay west of where they belong, straddling a line of
+columns.
+
+Detecting the columns took three attempts. Connected-component filtering on the
+stand plan caught text boxes; template matching caught booth-chip corners. What
+worked was the annotated plan, where the marks are small dark squares on a pale
+blue field and the hall is already masked — 53 of them, clustering into seven
+lines across and six down.
+
+The measurement then explained itself. Across, the outermost lines sit 6.68 m
+and 6.63 m off their walls — symmetric, which is how you know the reading is
+right. Down, they start 13.13 m from the north wall rather than one bay in,
+because **the northern 13 m of the hall has no columns at all**: that is where
+the staircases stand. A loop from the wall cannot know that, and invents a row
+straight through the stair zone.
+
+Both are now literal lists of measured offsets, and the staircases are placed
+in the same frame — each inside a structural bay, the west one between the
+13.04 and 19.70 m lines, the east between 26.15 and 32.63.
+
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —
 the fan lives in the seating instead, which tapers toward the screen and is

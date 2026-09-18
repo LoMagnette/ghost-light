@@ -98,7 +98,7 @@ function scenario(label, expectation, run) {
 // The hall floor is the datum; the concourse stands 1.2 m above it.
 const HALL = { x: 4.9, y: -15.35 };
 const RAMP = { x: 16.5, y: -30 };
-const STAIR_FOOT = { x: -3.6, y: 8.5 };
+const STAIR_FOOT = { x: -8.5, y: 8.5 };
 
 scenario(
   'Voxxy climbs the concourse steps',
@@ -144,7 +144,7 @@ scenario(
 scenario(
   'Voxxy cannot board a flight at its top from below',
   (r) => r.floor === 0 && r.peakZ < 0.5,
-  () => drive('voxxy', { x: -3.6, y: -14 }, NORTH, 8),
+  () => drive('voxxy', { x: -8.5, y: -14 }, NORTH, 8),
 );
 
 console.log('');
