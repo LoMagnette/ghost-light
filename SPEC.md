@@ -1,6 +1,11 @@
 # Game specification
 
-Working title: **The Silence of Hall 8**
+Title: **Ghost Light**
+
+A ghost light is the one bulb left burning on an empty stage overnight — a
+theatre superstition and a safety practice at the same time. It is the right
+title because it is the tone: the building is empty, not wrecked, and somebody
+left a light on. Chapter I's accent colour is already that light.
 Entry for the Devoxx Belgium Robot Games — <https://game.devoxx.be/game.html>
 Deadline: **Wed 30 September 2026, 23:59 CEST**
 
@@ -311,7 +316,7 @@ thousand people. Nothing else does.
 
 ## 10. Open questions
 
-- [ ] Final title. *The Silence of Hall 8* is a working title.
+- [x] Final title. **Ghost Light** — settled 18 Sep 2026.
 - [ ] Chapter I: what is "the power", concretely, and what does finding it do?
 - [ ] Chapter III: what does issuing intent look like — click a destination,
       draw a route, or assign a standing role?

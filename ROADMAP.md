@@ -81,7 +81,7 @@ Nine items. The first three block everything else.
 1. **Create the public repo and push.** The agent has no GitHub credentials.
 
    ```bash
-   gh repo create devoxx-robot-games --public --source=. --remote=origin --push
+   gh repo create ghost-light --public --source=. --remote=origin --push
    ```
 
 2. **Turn on Pages.** Settings → Pages → Source: **GitHub Actions**. The
@@ -153,7 +153,7 @@ human answer is genuinely better than the agent's guess.
 | Does the player ever drive Biggy directly? | Thu 24 Sep | No. Biggy is always directed, which is what makes it feel heavy |
 | What is the failure state in Chapter II? | Sat 26 Sep | A room empties if untended; lose three and the round ends |
 | Audio: generated or library? | Mon 28 Sep | Generated, so it belongs in the prompt log |
-| Final title | Wed 30 Sep | *The Silence of Hall 8* stays |
+| ~~Final title~~ | ~~Wed 30 Sep~~ | **Settled 18 Sep: _Ghost Light_** |
 
 The Chapter III decision deserves real thought. It is the mechanic the entry
 bets its originality on, and "click a destination" is the safe version rather

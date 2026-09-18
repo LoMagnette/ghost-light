@@ -1,6 +1,10 @@
-# The Silence of Hall 8
+# Ghost Light
 
 **Three robots. One cinema. Three eras.**
+
+> A *ghost light* is the single bulb a theatre leaves burning on an empty
+> stage overnight, so the place is never completely dark. Part superstition,
+> part practicality, and entirely a kindness to whoever comes in next.
 
 An entry for [The Robot Games](https://game.devoxx.be/game.html), a Devoxx
 Belgium competition. Voxxy, Droid and Biggy walk the Kinepolis Antwerp across

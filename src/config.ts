@@ -1,8 +1,7 @@
 /** Build-wide constants. Gameplay tuning lives in core/RobotSpec.ts, not here. */
 
-export const GAME_TITLE = 'The Silence of Hall 8';
+export const GAME_TITLE = 'Ghost Light';
 
-/** Working title only — change in one place when the real title lands. */
 export const GAME_SUBTITLE = 'Three robots. One cinema. Three eras.';
 
 /** Set true to draw collision shapes and a physics readout. Toggle with F1. */
