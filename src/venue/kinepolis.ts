@@ -793,16 +793,16 @@ const DRAWN_RISE = 2.4;
 const MAX_TREADS = 18;
 
 /**
- * Thickness of a tread drawn in a stairwell, metres.
+ * How far below its lowest tread a stairwell is closed off, metres.
  *
- * Thin, and that is the whole trick. A painter's-algorithm floor is drawn
- * before everything standing on it, so anything hanging BELOW it paints over
- * the floor in front of the hole rather than being hidden by it — fill the
- * well with a solid mass and the stairwell reads as a wall standing on the
- * carpet. Slabs one riser thick spill four pixels instead of seventy, and the
- * dark between them is what makes the well look deep.
+ * A flight upstairs is a solid, not a stack of floating slabs. Slabs were the
+ * first attempt — they keep the well from painting over the floor in front of
+ * it — but a thin plate has nothing under it, so between one tread and the
+ * next you see straight through the staircase to the carpet beyond. The
+ * renderer covers the spill by repainting the rim instead, which leaves the
+ * flight free to be what it is.
  */
-const TREAD_SLAB = 0.2;
+const WELL_FLOOR = 0.4;
 
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
@@ -837,7 +837,7 @@ function stairMass(links: Link[]): Obstacle[] {
         rect(b.x, b.y + b.h - t, b.w, t), // north rim: its south face lines the well
         rect(b.x + b.w - t, b.y, t, b.h), // east rim: its west face does
       ]) {
-        solid.push({ floor: link.to, bounds: liner, height: 0, base: -drawnRise, linkId: link.id });
+        solid.push({ floor: link.to, bounds: liner, height: 0, base: -(drawnRise + WELL_FLOOR), linkId: link.id });
       }
     }
 
@@ -876,12 +876,11 @@ function stairMass(links: Link[]): Obstacle[] {
        * stair rule applies unchanged: Voxxy steps onto the landing and walks
        * down, Biggy meets the well as a wall.
        */
-      const below = -drawnRise * (1 - fraction);
       solid.push({
         floor: link.to,
         bounds: tread,
-        height: below,
-        base: below - TREAD_SLAB,
+        height: -drawnRise * (1 - fraction),
+        base: -(drawnRise + WELL_FLOOR),
         linkId: link.id,
       });
     }

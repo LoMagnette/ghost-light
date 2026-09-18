@@ -21,7 +21,7 @@ import Phaser from 'phaser';
 import { depthKey, ISO_SQUASH, PPM, project } from '@/core/Iso';
 import type { Actor } from '@/core/Sim';
 import { renderPos } from '@/core/Sim';
-import { groundAt, rect, type Rect, type Room, type Venue } from '@/core/Venue';
+import { groundAt, rect, rectContains, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 
 interface Drawable {
@@ -44,6 +44,12 @@ interface Drawable {
  * games have always drawn interiors.
  */
 const MAX_DRAWN_HEIGHT = 2.7;
+
+/**
+ * How far a stairwell's contents may paint over the floor in front of it,
+ * metres. Deeper than this and the rim redraw stops covering the spill.
+ */
+const WELL_REACH = 3.2;
 
 /** Sideways speed, m/s, above which a robot is sliding rather than tracking. */
 const SLIP_THRESHOLD = 0.4;
@@ -115,6 +121,10 @@ export class BlockoutRenderer {
 
     const queue: Drawable[] = [];
 
+    // Where each stairwell's rim lands in the sort, so a robot down in the
+    // well can be put in front of it. See the rim pass below.
+    const rims: { hole: Rect; depth: number }[] = [];
+
     for (const room of this.venue.rooms) {
       if (room.floor !== floor) continue;
       queue.push({
@@ -123,6 +133,37 @@ export class BlockoutRenderer {
         depth: -1e6 + (room.elevation ?? 0),
         draw: (gfx) => this.drawFloorPlate(gfx, room),
       });
+
+      /*
+       * The near rim of a stairwell, painted back over what climbed out of it.
+       *
+       * Everything in a well is BELOW the floor, and below the floor means
+       * lower on screen — so the flight paints across the carpet in front of
+       * the hole, which is why a stairwell read as a wall standing in the
+       * corridor. There is no depth buffer to stop it: floors are drawn first
+       * and in one pass, by design.
+       *
+       * So the strip of floor the well can reach is drawn a second time, once
+       * the well is done with. It sorts after everything inside the hole and
+       * before anything nearer than the hole, because nearer means a larger
+       * key — which is the same ordering the rest of the scene already relies
+       * on, not a special case bolted on for this.
+       */
+      for (const hole of room.voids ?? []) {
+        const tiles = this.rimTiles(room, hole);
+        const depth = depthKey(hole.x, hole.y, room.elevation ?? 0) + 0.5;
+        rims.push({ hole, depth });
+        queue.push({
+          depth,
+          draw: (gfx) => {
+            this.drawTiles(gfx, room, tiles, false);
+            // The repair covers the outline the floor pass drew round the
+            // hole, and without a line at the lip a stairwell reads as a
+            // pattern in the carpet rather than an opening in it.
+            this.strokeRect(gfx, hole, room.elevation ?? 0);
+          },
+        });
+      }
     }
 
     // Each mark sorts on its own position rather than as one batch on the
@@ -160,8 +201,15 @@ export class BlockoutRenderer {
     for (const actor of actors) {
       if (actor.floor !== floor) continue;
       const pos = renderPos(actor, alpha);
+      // A robot down in a stairwell is drawn OVER the rim that hides the
+      // well, on purpose. Strictly the floor in front of the hole is between
+      // the camera and the robot, and strictly the player would then be
+      // driving something they cannot see. Same call as the 2.7 m cutaway:
+      // the building gives way to the machine.
+      const rim = rims.find((r) => rectContains(r.hole, pos.x, pos.y));
+      const own = depthKey(pos.x, pos.y, pos.z) + 1;
       queue.push({
-        depth: depthKey(pos.x, pos.y, pos.z) + 1,
+        depth: rim ? Math.max(own, rim.depth + 0.25) : own,
         draw: (gfx) => this.drawRobot(gfx, actor, pos),
       });
       if (this.telemetry) {
@@ -188,30 +236,10 @@ export class BlockoutRenderer {
     const b = project(x + w, y, z);
     const d = project(x, y + h, z);
 
-    // Auditoriums sit a shade darker than circulation space, which reads as
-    // carpet against the lighter corridor floor in the reference photographs.
-    const isRoom = room.kind === 'auditorium';
-    const fill = isRoom ? shade(this.palette.floor, 0.82) : this.palette.floor;
-
     // A stairwell is an absence of floor. Drawn as one quad, the corridor
     // paints straight over the flight coming up through it — which is how a
     // staircase manages to be missing on the very floor it serves.
-    g.fillStyle(this.lit(fill), 1);
-    g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
-    for (const tile of floorTiles(room)) {
-      const corners = [
-        project(tile.x, tile.y, z),
-        project(tile.x + tile.w, tile.y, z),
-        project(tile.x + tile.w, tile.y + tile.h, z),
-        project(tile.x, tile.y + tile.h, z),
-      ];
-      g.beginPath();
-      g.moveTo(corners[0].sx, corners[0].sy);
-      for (const pt of corners.slice(1)) g.lineTo(pt.sx, pt.sy);
-      g.closePath();
-      g.fillPath();
-      g.strokePath();
-    }
+    this.drawTiles(g, room, floorTiles(room));
 
     // An elevated plate needs its edge drawn or it reads as floating. Only the
     // two faces toward the viewer, same as every other box.
@@ -231,6 +259,87 @@ export class BlockoutRenderer {
         g.fillPath();
       }
     }
+  }
+
+  /** Outline one rectangle on a floor plane. */
+  private strokeRect(g: Phaser.GameObjects.Graphics, r: Rect, z: number): void {
+    const corners = [
+      project(r.x, r.y, z),
+      project(r.x + r.w, r.y, z),
+      project(r.x + r.w, r.y + r.h, z),
+      project(r.x, r.y + r.h, z),
+    ];
+    g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
+    g.beginPath();
+    g.moveTo(corners[0].sx, corners[0].sy);
+    for (const pt of corners.slice(1)) g.lineTo(pt.sx, pt.sy);
+    g.closePath();
+    g.strokePath();
+  }
+
+  /** Paint a set of floor rectangles at a room's own level. */
+  private drawTiles(
+    g: Phaser.GameObjects.Graphics,
+    room: Room,
+    tiles: Rect[],
+    outline = true,
+  ): void {
+    const z = room.elevation ?? 0;
+    // Auditoriums sit a shade darker than circulation space, which reads as
+    // carpet against the lighter corridor floor in the reference photographs.
+    const isRoom = room.kind === 'auditorium';
+    const fill = isRoom ? shade(this.palette.floor, 0.82) : this.palette.floor;
+
+    g.fillStyle(this.lit(fill), 1);
+    g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
+    for (const tile of tiles) {
+      const corners = [
+        project(tile.x, tile.y, z),
+        project(tile.x + tile.w, tile.y, z),
+        project(tile.x + tile.w, tile.y + tile.h, z),
+        project(tile.x, tile.y + tile.h, z),
+      ];
+      g.beginPath();
+      g.moveTo(corners[0].sx, corners[0].sy);
+      for (const pt of corners.slice(1)) g.lineTo(pt.sx, pt.sy);
+      g.closePath();
+      g.fillPath();
+      // The rim pass repaints floor that is already outlined; stroking it
+      // again draws the seams of the repair onto the carpet.
+      if (outline) g.strokePath();
+    }
+  }
+
+  /**
+   * The floor a hole's contents can paint over: the strip south and west of
+   * it, less the holes themselves.
+   *
+   * WELL_REACH metres in each of x and y is worth WELL_REACH metres of screen
+   * drop, because the two axes each contribute half of it — so this covers a
+   * well that deep and no more. It is measured in the world rather than in
+   * pixels so it stays right if the projection is ever re-tuned.
+   */
+  private rimTiles(room: Room, hole: Rect): Rect[] {
+    const band = rect(
+      hole.x - WELL_REACH,
+      hole.y - WELL_REACH,
+      hole.w + WELL_REACH,
+      hole.h + WELL_REACH,
+    );
+    const b = room.bounds;
+    const x0 = Math.max(band.x, b.x);
+    const y0 = Math.max(band.y, b.y);
+    const x1 = Math.min(band.x + band.w, b.x + b.w);
+    const y1 = Math.min(band.y + band.h, b.y + b.h);
+    if (x1 <= x0 || y1 <= y0) return [];
+
+    let tiles: Rect[] = [rect(x0, y0, x1 - x0, y1 - y0)];
+    for (const other of room.voids ?? []) {
+      const next: Rect[] = [];
+      for (const tile of tiles) next.push(...subtract(tile, other));
+      tiles = next;
+    }
+    return tiles;
   }
 
   private drawBox(
@@ -308,6 +417,10 @@ export class BlockoutRenderer {
     // walking robot has gait and a stationary one is dead still.
     const bob = Math.abs(Math.sin(actor.body.stridePhase * Math.PI)) * 0.035 * actor.body.speedFraction;
 
+    // Standing ON whatever it is standing on, not on the storey datum. A box
+    // drawn from zero makes a robot on the 1.2 m concourse two metres tall and
+    // one halfway up a flight a six-metre pillar — and one descending a
+    // stairwell an inside-out smear, which is what made this visible.
     this.drawBox(
       g,
       pos.x - r,
@@ -316,6 +429,7 @@ export class BlockoutRenderer {
       r * 2,
       pos.z + spec.height + bob,
       spec.tint,
+      pos.z,
     );
 
     // Facing pip: a short bar in the heading direction. Placeholder for what
