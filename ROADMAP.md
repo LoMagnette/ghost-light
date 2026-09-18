@@ -56,7 +56,7 @@ still days left to react.
 | Fri 18 Sep | Scaffold, specs, verification harness, **movement feel, title, repo + Pages live** — all done | Both |
 | Sat 19 Sep | **Public repo + Pages live.** Still the only real blocker | Human |
 | Sun 20 Sep | ~~Movement feel against grey boxes~~ — **done early.** Human to judge the feel in the lab and call the adjustments | Agent done, human judges |
-| Mon 21 Sep | ~~Venue geometry refined from the real floor plans~~ — **done early** | Agent |
+| Mon 21 Sep | ~~Venue geometry refined from the real floor plans~~ — **done early**, then re-measured after review | Agent, human caught it |
 | Tue 22 Sep | Chapter I objective and a finishable round | Agent |
 | Wed 23 Sep | Chapter I lighting, end card, first-run experience | Agent |
 | Thu 24 Sep | Chapter III direct-order mode — the differentiator | Agent |

@@ -32,6 +32,7 @@ npm run build       # typecheck + production build to dist/
 npm run preview     # serve dist/ locally
 npm run physics     # measure movement in the real sim, check the design envelope
 npm run venue       # check the building against the plans and against itself
+npm run venue -- --svg   # draw both floors as a plan, to hold against the real one
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
 ```

@@ -183,12 +183,45 @@ given: the rooms pair across the corridor and **every pair sums to 13** —
 building, which independently justifies the keynote room the whole third
 chapter aims at.
 
+**Corrected after review — and this is the entry worth reading:**
+The first pass passed every numeric check and was still visibly wrong. The
+human looked at the game next to the map and said so: *"I think you forget to
+modelize the reception part and I think you mis evaluate the sizes since
+everything is bigger that what the maps shows."* Both correct.
+
+The mistake was method, not arithmetic. Room frontage had been eyeballed off
+the drawing and depth *derived* from seat counts, so two soft numbers
+multiplied and the errors compounded in opposite directions: rooms came out
+too wide and too shallow at once — Room 6 by 20% on one axis and 32% on the
+other. Reception had been placed inside the hall's own rectangle, which
+deleted the threshold between arriving and being inside.
+
+The fix was to stop deriving and start measuring. Segment the shaded hall on
+the annotated plan and solve the printed 2411.41 m² over its pixel count for a
+ground-floor scale. Autocorrelate the drawn seat rows for a first-floor one —
+Rooms 5, 7 and 8 all return a 10 px pitch, and a cinema row is ~1.0 m. Then
+find party walls as rows and columns of near-solid ink and measure every room.
+The seat counts became a *check* instead of a source: every room now lands
+between 0.9 and 1.3 m² per seat, which is what a raked multiplex really is.
+
+|  | derived | measured |
+|---|---|---|
+| Corridor | 16.0 m | 14.3 m |
+| Room 6 | 21.5 × 17.1 m | 17.9 × 25.1 m |
+| Room 5 | 23.7 × 26.0 m | 22.2 × 30.1 m |
+| Column bay | 6.00 m | 6.4 m |
+| Hall | 49 × 49 solid | 52.5 × 55.5 box, 83% filled |
+
 **Fixed by hand:**
-`tools/venue.mjs`, for the same reason as the physics harness: these numbers
-are *derived*, and derived numbers drift silently when someone edits a
-constant. It fails on a hall that stops matching the printed area, an
-auditorium overlapping the corridor, a spawn point inside a wall, or Room 8
-no longer being the largest room in the building.
+`tools/venue.mjs`. It checks the hall against its printed area, every room
+against its printed seat count, Room 8 against being the largest room in the
+building, and every spawn point against standing in a wall.
+
+But the lesson of this entry is that none of those caught the real error,
+because the geometry was self-consistently wrong. `npm run venue -- --svg`
+draws both floors as a plan, and holding that next to the actual drawing is
+what makes a mistake like this obvious in seconds. **A building cannot be
+checked by driving around inside it.**
 
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —

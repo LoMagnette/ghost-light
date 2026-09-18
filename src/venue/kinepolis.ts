@@ -1,51 +1,52 @@
 /**
- * Kinepolis Antwerp — surveyed from the competition floor plans.
+ * Kinepolis Antwerp — measured off the competition floor plans.
  *
- * STATUS: every dimension here traces to something printed on a plan. Neither
- * plan carries a scale bar — `hollywood-area.png` says "no scale" outright —
- * so both are scaled from a published number instead:
+ * Neither plan carries a scale bar; `hollywood-area.png` says "no scale"
+ * outright. Both were therefore scaled from something physical printed on
+ * them, and each floor got its own independent anchor:
  *
- *   references/venue/maps/hollywood-area.png       "Receptieruimte 'Hollywood'
- *                                                   opp: 2411.41 m²"
- *   references/venue/maps/exhibition-floor.jpg      the same floor, annotated
- *   references/venue/maps/cinema-venue-devoxx.png   per-room SEAT COUNTS
- *   references/venue/maps/devoxx-rooms.jpg          the same level, annotated
+ *   FLOOR 0 — the hall is labelled "Receptieruimte 'Hollywood' opp: 2411.41 m²"
+ *   on `hollywood-area.png`. Segmenting the shaded hall on the annotated plan
+ *   and solving that area over the filled pixel count gives 0.0789 m/px.
  *
- * The exhibition hall comes from that 2411.41 m² label: measuring the hall's
- * extent in pixels on each of the two ground-floor plans independently and
- * solving for the scale gives 47 × 51 m and 49 × 49 m, agreeing to within 4%,
- * with a structural bay of 5.9 m and 6.1 m. We take 49 × 49 m on a 6 m grid.
+ *   FLOOR 1 — `cinema-venue-devoxx.png` draws individual seat rows.
+ *   Autocorrelating them inside Rooms 5, 7 and 8 gives the same 10 px pitch in
+ *   all three; a cinema row pitch is ~1.0 m, so 0.100 m/px.
  *
- * The auditoriums come from the seat counts, which are printed on every room.
- * Frontage along the corridor is measured off the plan; DEPTH is then derived
- * as seats × 0.9 m² ÷ frontage, 0.9 m²/seat being standard for a raked
- * multiplex auditorium including aisles. So a room's size on screen is a
- * consequence of how many people really fit in it.
+ * Every dimension below was then MEASURED at those scales — party walls found
+ * by looking for rows and columns of near-solid ink — rather than derived from
+ * a rule of thumb. The previous pass derived auditorium depth from seat counts
+ * and got the proportions wrong in both directions at once: rooms came out too
+ * wide and too shallow, Room 6 by 20% on one axis and 32% on the other. The
+ * seat counts are still printed on the plan and still worth keeping, but now
+ * they are a CHECK on the geometry rather than its source — see tools/venue.mjs,
+ * which holds every room to a sane m²/seat.
  *
- * What the previous blockout got wrong, and it was not close:
- *   - the hall was 70 × 50 m (3500 m²) against a real 2411 m²
- *   - the column grid was 11.5 m, twice the real 6 m spacing, and the grid is
- *     the single most recognisable thing about that room
- *   - one grand staircase in the middle; there are TWO, side by side
- *   - the BOF rooms were on the west side; they are south-east
- *   - auditoriums were staggered down alternating sides; they are in facing
- *     PAIRS, and the pairs sum to 13 — (1,12) (2,11) (3,10) (4,9) (5,8) (6,7)
- *     — with 13 and 14 extending north past 12 on the east side only
+ *   references/venue/maps/hollywood-area.png        exhibition hall, raw
+ *   references/venue/maps/exhibition-floor.jpg      exhibition hall, annotated
+ *   references/venue/maps/cinema-venue-devoxx.png   auditoriums, raw
+ *   references/venue/maps/devoxx-rooms.jpg          auditoriums, annotated
  *
- * Origin (0, 0) is the centre of the corridor at the stair landing, the point
- * both floors have in common. +x east, +y north, +z up. Floor 0 is the
- * exhibition hall, floor 1 the auditorium level, 6.2 m above it.
+ * Origin (0, 0) is the centre of the two staircases, at the north end of the
+ * exhibition hall — the one point both floors share. +x east, +y north, +z up.
+ * Floor 0 is the exhibition hall, floor 1 the auditorium level 6.2 m above.
  *
- * Known simplification: the real auditoriums are fan-shaped, narrow at the
- * corridor door and wide at the screen. Rooms here are rectangles, because
- * `Rect` is what `Sim`'s circle-rect collision speaks and polygons would
- * change every layer. The fan is expressed in the SEATING instead, which
- * tapers toward the screen — that is what the player actually drives around.
+ * Deliberate simplifications, both documented rather than hidden:
+ *   - auditoriums are rectangles; the real ones are fans, narrow at the door
+ *     and wide at the screen. `Rect` is what Sim's collision speaks, so the
+ *     taper lives in the SEATING, which is what a robot drives around anyway.
+ *   - the two floors are registered by eye. The plans do not share a datum and
+ *     the staircases measure further apart on floor 0 than the corridor is
+ *     wide, so the stairs are placed to land in the corridor rather than at
+ *     their surveyed spacing. A player cannot see the discrepancy; a surveyor
+ *     could.
+ *   - ceiling heights are invented. A plan cannot give volume; that is what
+ *     the drone footage is for, and it has not been watched yet.
  */
 
 import { rect, type Link, type Obstacle, type Room, type Venue } from '@/core/Venue';
 
-/** Clear height under the auditorium level, metres. */
+/** Clear height under the auditorium level, metres. Not yet from any source. */
 const FLOOR_CLEAR = 5.4;
 
 // ---------------------------------------------------------------------------
@@ -53,44 +54,62 @@ const FLOOR_CLEAR = 5.4;
 // ---------------------------------------------------------------------------
 
 /**
- * 49 × 49 m = 2401 m², against the 2411.41 m² printed on the plan.
+ * The hall's bounding box: 52.5 × 55.5 m.
  *
- * Positioned so its north edge meets the foot of the stairs at the origin,
- * which puts the main entrance 44 m due south — the walk a judge sees first.
+ * Its FLOOR is 2411.41 m², which is only 83% of that box — the real room is a
+ * rectangle with three bites taken out of it (see `hallCutaways`). The earlier
+ * 49 × 49 m square had the right area and the wrong shape, which reads as a
+ * bigger, emptier room than the one that exists.
  */
-const HALL = rect(-24.5, -44, 49, 49);
+const HALL = rect(-23.5, -43.5, 52.5, 55.5);
 
-/** Printed on the plan. Kept here so the geometry can be checked against it. */
+/** Printed on the plan. tools/venue.mjs holds the geometry to it. */
 export const HALL_AREA_M2 = 2411.41;
 
-const floor0Rooms: Room[] = [
-  { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
-  {
-    id: 'reception',
-    label: 'Reception',
-    kind: 'service',
-    floor: 0,
-    bounds: rect(-14, -44, 28, 9),
-  },
-  // South-east of the hall, past the wheelchair access — not west, as the
-  // blockout had them.
-  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(24.5, -44, 14, 11) },
-  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(24.5, -32, 14, 11) },
-  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(24.5, -19, 11, 9) },
-  { id: 'toilets-nw', label: 'Toilets', kind: 'service', floor: 0, bounds: rect(-36, -6, 11, 11) },
-];
+/**
+ * The three pieces the bounding box has and the real hall does not.
+ *
+ * Read off the segmented plan: a notch out of the north-west where the toilets
+ * are, a north-east corner set back from the east wall, and a quarter-round
+ * sweeping away the south-west corner — the curved cast concrete that shows in
+ * the reference photographs. Solid, so they shape how the room drives.
+ */
+function hallCutaways(): Obstacle[] {
+  const solid: Obstacle[] = [
+    // North-west: toilets and the toilet entrance.
+    { floor: 0, bounds: rect(HALL.x, -5.0, 13.0, 9.5), height: 3.4 },
+    // North-east: the hall is narrower for its northern 26 m.
+    { floor: 0, bounds: rect(20.5, -14.0, 8.5, 26.0), height: 3.4 },
+    // South-east corner, past the wheelchair access.
+    { floor: 0, bounds: rect(17.2, HALL.y, 11.8, 6.0), height: 3.4 },
+  ];
+
+  // South-west quarter-round. Bands measured at their southern edge so the
+  // approximation stays outside the true curve rather than cutting into it.
+  const radius = 10;
+  const bands = 8;
+  const band = radius / bands;
+  const cy = HALL.y + radius;
+  for (let i = 0; i < bands; i += 1) {
+    const y = HALL.y + i * band;
+    const dy = y - cy;
+    const width = radius - Math.sqrt(Math.max(0, radius * radius - dy * dy));
+    if (width < 0.15) continue;
+    solid.push({ floor: 0, bounds: rect(HALL.x, y, width, band), height: 3.2 });
+  }
+  return solid;
+}
 
 /**
- * The column grid — the single most recognisable feature of the hall, and the
- * thing the previous blockout got most wrong at 11.5 m.
+ * The column grid — the single most recognisable feature of the hall.
  *
- * At 6 m the hall carries roughly eight bays each way, which is what both
- * ground-floor plans show, and it completely changes how the room drives:
- * columns stop being scenery and become a slalom you have to read ahead for.
- * That matters most for Biggy, which needs 3.8 m to stop.
+ * 6.4 m, measured between column centres on the annotated plan. The original
+ * blockout guessed 11.5 m, which made the columns scenery you drove past
+ * rather than a slalom you have to read ahead for. That distinction only
+ * matters because Biggy needs 3.8 m to stop.
  */
-const COLUMN_SPACING = 6.0;
-const COLUMN_SIZE = 0.75;
+const COLUMN_SPACING = 6.4;
+const COLUMN_SIZE = 0.6;
 
 function exhibitionColumns(): Obstacle[] {
   const columns: Obstacle[] = [];
@@ -107,101 +126,96 @@ function exhibitionColumns(): Obstacle[] {
 }
 
 /**
- * The hall's south-west corner is a quarter-round, not a corner — it is the
- * curved cast concrete in the reference photographs, and it reads immediately.
- * Stepped blocks approximate it well enough to drive against.
+ * The reception concourse — a SEPARATE room south of the hall, not part of it.
+ *
+ * This is the walk a judge sees first: in through the main entrance at the
+ * south, past the desk, then north into the hall proper. The previous pass put
+ * reception inside the hall's own rectangle, which erased the threshold
+ * entirely — and the threshold is the moment the building announces itself.
  */
-function curvedSouthWestCorner(): Obstacle[] {
-  const steps: Obstacle[] = [];
-  const radius = 9;
-  const bands = 8;
-  const band = radius / bands;
+const RECEPTION = rect(-13.6, -66.5, 36.3, 23.0);
 
-  // The quarter circle is centred `radius` in from both edges. Floor inside it
-  // is walkable; the sliver between the circle and the square corner is solid.
-  const cy = HALL.y + radius;
-
-  for (let i = 0; i < bands; i += 1) {
-    const y = HALL.y + i * band;
-    // Widest point of this band is its southern edge, so measure there and the
-    // approximation stays outside the true curve rather than cutting into it.
-    const dy = y - cy;
-    const width = radius - Math.sqrt(Math.max(0, radius * radius - dy * dy));
-    if (width < 0.15) continue;
-    steps.push({ floor: 0, bounds: rect(HALL.x, y, width, band), height: 3.2 });
-  }
-  return steps;
-}
+const floor0Rooms: Room[] = [
+  { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
+  { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION },
+  // Seminar rooms off the reception concourse, and the BOF rooms south-east
+  // of it — both on the annotated plan, both south of the hall.
+  { id: 'seminar', label: 'Seminar Rooms', kind: 'service', floor: 0, bounds: rect(-13.6, -74.0, 20.0, 7.5) },
+  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -66.9, 19.8, 7.6) },
+  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -59.0, 19.8, 7.7) },
+  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.5, -20.0, 8.5, 6.0) },
+];
 
 // ---------------------------------------------------------------------------
 // Floor 1 — the auditoriums
 // ---------------------------------------------------------------------------
 
 /**
- * The fourteen auditoriums, as the plan labels them.
+ * The fourteen auditoriums, measured.
  *
- * `seats` is printed on `cinema-venue-devoxx.png`. `frontage` is measured off
- * the same drawing. Depth is derived from the two, so nothing here is a taste
- * decision — Room 8 is the biggest room in the game because 746 people really
- * do fit in it, and Room 2 is a cupboard by comparison because 198 do.
+ * `seats` is printed on the plan; `frontage` and `depth` are measured from it.
+ * The seat count is kept because it is the check that the measurement is sane
+ * — every room lands between 0.9 and 1.3 m² per seat, which is what a raked
+ * multiplex auditorium really is.
+ *
+ * The structure the plan gave up, which no description would have: the rooms
+ * face each other in PAIRS across the corridor and every pair sums to 13 —
+ * (1,12) (2,11) (3,10) (4,9) (5,8) (6,7) — with 13 and 14 running on north
+ * past 12 on the east side only. Paired rooms share a frontage exactly.
  */
 interface Auditorium {
   number: number;
   seats: number;
-  /** Metres of wall along the corridor. */
+  /** Metres of wall along the corridor. Measured. */
   frontage: number;
+  /** Metres from the corridor door to the screen. Measured. */
+  depth: number;
 }
 
-/** Square metres of floor per seat in a raked auditorium, including aisles. */
-const M2_PER_SEAT = 0.9;
-
-/** South to north, west side of the corridor. */
+/** South to north, west side. The 4.5 m gap before Room 1 is on the plan. */
 const WEST: Auditorium[] = [
-  { number: 6, seats: 408, frontage: 21.5 },
-  { number: 5, seats: 684, frontage: 23.7 },
-  { number: 4, seats: 364, frontage: 17.2 },
-  { number: 3, seats: 345, frontage: 15.1 },
-  { number: 2, seats: 198, frontage: 13.5 },
-  { number: 1, seats: 224, frontage: 13.5 },
+  { number: 6, seats: 408, frontage: 17.9, depth: 25.1 },
+  { number: 5, seats: 684, frontage: 22.2, depth: 30.1 },
+  { number: 4, seats: 364, frontage: 17.8, depth: 25.2 },
+  { number: 3, seats: 345, frontage: 14.8, depth: 21.2 },
+  { number: 2, seats: 198, frontage: 12.3, depth: 16.5 },
+  { number: 1, seats: 224, frontage: 12.9, depth: 18.8 },
 ];
 
-/** South to north, east side. Rooms 13 and 14 have no western counterpart. */
+/** A service shaft breaks the west run between Rooms 2 and 1. */
+const WEST_GAP_AFTER = 2;
+const WEST_GAP = 4.5;
+
+/** South to north, east side. 13 and 14 have no western counterpart. */
 const EAST: Auditorium[] = [
-  { number: 7, seats: 407, frontage: 21.5 },
-  { number: 8, seats: 746, frontage: 23.7 }, // the keynote room
-  { number: 9, seats: 426, frontage: 17.2 },
-  { number: 10, seats: 364, frontage: 15.1 },
-  { number: 11, seats: 224, frontage: 13.5 },
-  { number: 12, seats: 224, frontage: 13.5 },
-  { number: 13, seats: 345, frontage: 15.1 },
-  { number: 14, seats: 224, frontage: 14.0 },
+  { number: 7, seats: 407, frontage: 17.9, depth: 25.0 },
+  { number: 8, seats: 746, frontage: 22.2, depth: 30.2 }, // the keynote room
+  { number: 9, seats: 426, frontage: 17.8, depth: 25.8 },
+  { number: 10, seats: 364, frontage: 14.8, depth: 26.6 },
+  { number: 11, seats: 224, frontage: 12.3, depth: 19.7 },
+  { number: 12, seats: 224, frontage: 12.9, depth: 18.8 },
+  { number: 13, seats: 345, frontage: 15.3, depth: 26.1 },
+  { number: 14, seats: 224, frontage: 12.5, depth: 19.4 },
 ];
 
-/** The keynote room. Chapter III exists to fill it. */
+/** The keynote room, and the largest in the building at 746 seats. */
 export const KEYNOTE_ROOM = 8;
 
-/**
- * Corridor half-width, metres.
- *
- * The central spine is 16 m across, which is not a corridor in the domestic
- * sense — it is a concourse, and at crowd density 1.0 that width is the only
- * reason three robots can move through it at all.
- */
-const CORRIDOR_HALF = 8;
+/** Half of the measured 14.3 m corridor. A concourse, not a passage. */
+const CORRIDOR_HALF = 7.15;
 
-/** Where the southernmost pair of auditoriums begins. */
-const SOUTH_END = -52;
+/** South end of the southernmost pair of auditoriums. */
+const SOUTH_END = -60;
 
 function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
   const rooms: Room[] = [];
   const seating: Obstacle[] = [];
 
-  const place = (list: Auditorium[], side: -1 | 1): number => {
+  const place = (list: Auditorium[], side: -1 | 1, gapAfter = 0): number => {
     let y = SOUTH_END;
     for (const aud of list) {
-      const depth = (aud.seats * M2_PER_SEAT) / aud.frontage;
-      const x = side === -1 ? -CORRIDOR_HALF - depth : CORRIDOR_HALF;
-      const bounds = rect(x, y, depth, aud.frontage);
+      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF;
+      const bounds = rect(x, y, aud.depth, aud.frontage);
 
       rooms.push({
         id: `aud-${aud.number}`,
@@ -209,18 +223,19 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
         kind: 'auditorium',
         floor: 1,
         bounds,
-        // Rise across the room. Bigger rooms rake harder, which is why the
-        // back row of Room 8 is a storey above its screen.
-        rake: 2.2 + depth * 0.09,
+        // Deeper rooms rake harder: the back row of Room 8 is most of a storey
+        // above its screen.
+        rake: 2.2 + aud.depth * 0.09,
       });
 
       seating.push(...seatBanks(bounds, side));
       y += aud.frontage;
+      if (aud.number === gapAfter) y += WEST_GAP;
     }
     return y;
   };
 
-  const westEnd = place(WEST, -1);
+  const westEnd = place(WEST, -1, WEST_GAP_AFTER);
   const northEnd = place(EAST, 1);
 
   rooms.push({
@@ -231,39 +246,37 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
     bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF * 2, northEnd - SOUTH_END),
   });
 
-  // The curved concession foyer sits at the north-west, past Room 1 — the arc
-  // of counters at the top left of both auditorium-level plans.
+  // The curved concession foyer, north-west past Room 1 — the arc of counters
+  // at the top left of both auditorium-level plans.
   rooms.push({
     id: 'foyer',
     label: 'The Foyer',
     kind: 'foyer',
     floor: 1,
-    bounds: rect(-40, westEnd, 32, 26),
+    bounds: rect(-38, westEnd, 30.9, 24),
   });
 
   return { rooms, seating };
 }
 
 /**
- * Seat banks: two blocks with a central aisle, stepped in three stages that
+ * Seat banks: two blocks either side of a central aisle, in three stages that
  * narrow toward the screen.
  *
- * This is where the fan shape of a real auditorium lives. The room itself is a
+ * This is where the fan shape of a real auditorium lives. The room is a
  * rectangle because the collision system speaks rectangles, but what a robot
- * actually drives around is the seating — so putting the taper here buys the
- * silhouette at no cost to the physics.
+ * actually drives around is the seating — so the taper costs nothing and buys
+ * the silhouette.
  */
 function seatBanks(room: { x: number; y: number; w: number; h: number }, side: -1 | 1): Obstacle[] {
   const banks: Obstacle[] = [];
   const aisle = 2.0;
   const stages = 3;
 
-  // The screen is on the far wall from the corridor; seats fan out toward it.
   const doorEdge = side === -1 ? room.x + room.w : room.x;
   const stageDepth = (room.w - 4.5) / stages;
 
   for (let s = 0; s < stages; s += 1) {
-    // Widest at the back (by the door), narrowest at the screen.
     const taper = 1 - s * 0.17;
     const bankH = ((room.h - aisle) / 2) * taper - 1.2;
     if (bankH <= 0.4) continue;
@@ -282,6 +295,19 @@ function seatBanks(room: { x: number; y: number; w: number; h: number }, side: -
   return banks;
 }
 
+const HALL_CUTAWAYS = hallCutaways();
+
+/**
+ * Walkable floor of the hall: the bounding box less the pieces that are not
+ * really in it. This is the number that should match the 2411.41 m² printed on
+ * the plan, and tools/venue.mjs checks that it does.
+ *
+ * Assumes the cutaways do not overlap each other, which is true by
+ * construction — keep it that way, or this silently under-counts.
+ */
+export const HALL_FLOOR_M2 =
+  HALL.w * HALL.h - HALL_CUTAWAYS.reduce((sum, o) => sum + o.bounds.w * o.bounds.h, 0);
+
 const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
 
 // ---------------------------------------------------------------------------
@@ -289,14 +315,19 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
 // ---------------------------------------------------------------------------
 
 /**
- * The annotated ground-floor plan labels these "Stairs to Cinema Rooms", and
- * there are two, parallel, a few metres apart. The blockout had a single grand
- * staircase, which is both wrong and a worse level: two routes up means the
- * player has a choice to get wrong, and in Chapter III it means three robots
- * are not queueing behind each other.
+ * The annotated ground-floor plan labels these "Stairs to Cinema Rooms" and
+ * draws two, parallel, each about 4.7 m wide and 12 m long, near the hall's
+ * north end. The original blockout had a single grand staircase, which is both
+ * wrong and a worse level: two routes up is a choice the player can get wrong,
+ * and in Chapter III it is the difference between three robots moving and
+ * three robots queueing.
+ *
+ * Their surveyed spacing is wider than the corridor above, which the plans
+ * cannot reconcile — see the note at the top of this file. They are placed to
+ * land in the corridor.
  */
-const STAIR_WEST = rect(-7.5, -2, 5, 11);
-const STAIR_EAST = rect(2.5, -2, 5, 11);
+const STAIR_WEST = rect(-6.0, -6.2, 4.7, 12.2);
+const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
 
 const staircases: Link[] = [
   { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, rise: 6.2 },
@@ -307,24 +338,26 @@ const staircases: Link[] = [
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
-  obstacles: [...exhibitionColumns(), ...curvedSouthWestCorner(), ...auditoriumSeating],
+  obstacles: [...exhibitionColumns(), ...HALL_CUTAWAYS, ...auditoriumSeating],
   links: staircases,
   extents: {
-    0: HALL,
-    1: rect(-48, SOUTH_END, 96, 148),
+    0: rect(HALL.x, -74, HALL.w + 13, 86),
+    1: rect(-46, SOUTH_END, 92, 150),
   },
 };
 
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
-  /** Just inside the main entrance, looking up the length of the hall. */
-  hallEntrance: { floor: 0 as const, x: 0, y: -40 },
-  hallCentre: { floor: 0 as const, x: 0, y: -22 },
-  stairFoot: { floor: 0 as const, x: -5, y: -4 },
+  /** Inside the main entrance, looking north up the reception concourse. */
+  mainEntrance: { floor: 0 as const, x: 2, y: -62 },
+  /** Where the concourse opens into the hall. */
+  hallEntrance: { floor: 0 as const, x: 2, y: -40 },
+  hallCentre: { floor: 0 as const, x: 2, y: -22 },
+  stairFoot: { floor: 0 as const, x: -2.5, y: -9 },
   /** The south end of the corridor, between Rooms 6 and 7. */
-  corridorSouth: { floor: 1 as const, x: 0, y: -46 },
-  corridorNorth: { floor: 1 as const, x: 0, y: 74 },
+  corridorSouth: { floor: 1 as const, x: 0, y: -54 },
+  corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
-  keynoteDoor: { floor: 1 as const, x: 10, y: -19 },
-  foyer: { floor: 1 as const, x: -26, y: 60 },
+  keynoteDoor: { floor: 1 as const, x: 5, y: -31 },
+  foyer: { floor: 1 as const, x: -24, y: 55 },
 };
