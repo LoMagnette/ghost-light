@@ -198,6 +198,10 @@ src/
 
 Twelve days. Build the risky thing early and the pretty thing late.
 
+This is the milestone view — what "done" means at each stage. `ROADMAP.md`
+carries the same plan against real dates, plus which tasks need a human and
+which the agent can take unattended.
+
 | Day | Milestone | Done when |
 |---|---|---|
 | 1 | Scaffold + deploy pipeline + **live URL** | An empty canvas is on the public URL |

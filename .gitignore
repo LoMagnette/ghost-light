@@ -12,3 +12,8 @@ dist/
 art/_work/
 *.psd
 *.blend1
+
+# Editor / IDE
+.idea/
+.vscode/
+*.iml

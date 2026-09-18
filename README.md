@@ -75,7 +75,8 @@ src/scenes/    boot, chapter select, and the one gameplay scene
 ```
 
 `SPEC.md` is the design specification. `CLAUDE.md` is the build convention.
-`docs/PROMPTS.md` documents the generative AI work.
+`ROADMAP.md` is the dated plan and who owns what. `docs/PROMPTS.md` documents
+the generative AI work.
 
 ## Built with
 
