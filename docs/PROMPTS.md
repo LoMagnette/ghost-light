@@ -283,15 +283,20 @@ re-derived or W walks you south.
 
 The two missing staircases were worse than missing — the plan had been
 misread. "∧ Rooms ∧" does not label a seminar suite, it labels the ~16 m grand
-flight beneath it and means *this way up to the cinema rooms*. There is a
-second, narrower stair against the concourse's west wall. So the ground floor
-has **four** ways up, not two, and only two of them start in the hall — which
-matters for Chapter III, where three robots and a full house cannot share one
-staircase.
+flight beneath it and means *this way up to the cinema rooms*. So the ground floor has **three**
+ways up, not two, and one of them starts in the concourse rather than the hall
+— which matters for Chapter III, where three robots and a full house cannot
+share one staircase.
 
 And the concourse is not flush with the hall: a ~23 m flight spans the
-boundary. The proof is the label beside it — a plan does not write "wheelchair
-access" across a flat opening.
+boundary, and the concourse is the higher of the two — you come in at street
+level and go *down* into the hall. The proof the level change is real is the
+label beside it: a plan does not write "wheelchair access" across a flat
+opening.
+
+*(Both of those took a second correction from the human. The first pass had the
+steps climbing the wrong way, and invented a stair on the concourse's west wall
+out of a hatched run that belongs to another part of the building.)*
 
 **Worth keeping:** the column grid is square and the isometric screen axes sit
 at 45° to it, so holding right or left tracks a line of columns and meets one

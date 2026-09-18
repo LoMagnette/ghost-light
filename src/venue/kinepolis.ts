@@ -346,35 +346,32 @@ const STAIR_WEST = rect(-6.0, -6.2, 4.7, 12.2);
 const STAIR_EAST = rect(1.3, -6.2, 4.7, 12.2);
 
 /**
- * Everything vertical in the reception concourse, and there is more of it than
- * the first survey found.
+ * Everything vertical in the reception concourse.
  *
- * The concourse does not sit flush with the exhibition hall — a broad flight
- * spans most of the boundary, with a wheelchair ramp beside it. That ramp is
- * the proof: a plan does not label "wheelchair access" across a flat opening.
- * It is a short rise, so it is a link from floor 0 to floor 0, which reads
- * oddly in the type and is nonetheless what the building does.
+ * The concourse does not sit flush with the exhibition hall, and it is the
+ * HIGHER of the two: you come in at street level and go DOWN a broad flight
+ * into the hall. A wheelchair ramp runs beside it, and that ramp is the proof
+ * the level change is real — a plan does not label "wheelchair access" across
+ * a flat opening. Both are short rises, so they are links from floor 0 to
+ * floor 0, which reads oddly in the type and is what the building does.
  *
- * And the concourse reaches the auditorium level directly, by two more stairs:
- * a ~16 m grand flight in the middle — the one the plan labels "∧ Rooms ∧" —
- * and a narrow one against the west wall. So there are FOUR ways up from the
- * ground floor, not two, and only two of them start in the hall. That matters
- * for Chapter III: three robots and a full house need more than one staircase.
+ * Going UP, the concourse reaches the auditorium level by the ~16 m grand
+ * flight the plan labels "∧ Rooms ∧". So there are THREE ways to floor 1: two
+ * out of the hall and one out of the concourse. That matters for Chapter III,
+ * where three robots and a full house need more than one staircase — and it
+ * matters more now that Biggy cannot use any of them.
  */
 const receptionStairs: Link[] = [
-  // Hall ↔ concourse. ~23 m wide, the full width of the opening. You come in
-  // at street level and climb into the hall, so it ascends northward.
-  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2, axis: 'y', ascending: true },
-  // The ramp beside it, east of the steps. Same rise, gentler, much longer —
-  // it climbs along its 10 m side, not across it, which is the only way 1.2 m
-  // is a ramp and not a wall. One rectangle standing in for what is really a
-  // switchback; a true 1:12 needs 14.4 m of run and the plan does not have it
-  // in a straight line.
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'x', ascending: true },
+  // Concourse → hall, descending northward. ~23 m wide, the full opening.
+  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2, axis: 'y', ascending: false },
+  // The ramp beside it, east of the steps. Same drop, gentler, much longer —
+  // it runs along its 10 m side, not across it, which is the only way 1.2 m is
+  // a ramp and not a wall. One rectangle standing in for what is really a
+  // switchback; a true 1:12 needs 14.4 m of run and the plan has no straight
+  // line of it. This is Biggy's only way between the two levels.
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'x', ascending: false },
   // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
   { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2, axis: 'y', ascending: true },
-  // The narrow one against the west wall of the concourse.
-  { id: 'concourse-stair', from: 0, to: 1, bounds: rect(-13.6, -57.5, 3.0, 5.2), rise: 6.2, axis: 'y', ascending: true },
 ];
 
 /**

@@ -219,9 +219,9 @@ for (const [name, spawn] of Object.entries(SPAWNS)) {
 }
 
 // --- every link must actually join the two places it claims to join --------
-// Two staircases out of the hall, two out of the concourse, plus the steps and
-// the ramp between hall and concourse.
-check(KINEPOLIS.links.length === 6, `expected 6 links, found ${KINEPOLIS.links.length}`);
+// Two staircases out of the hall, the grand flight out of the concourse, plus
+// the steps and the ramp down from the concourse into the hall.
+check(KINEPOLIS.links.length === 5, `expected 5 links, found ${KINEPOLIS.links.length}`);
 for (const link of KINEPOLIS.links) {
   for (const floor of new Set([link.from, link.to])) {
     const lands = KINEPOLIS.rooms.some((r) => r.floor === floor && overlaps(link.bounds, r.bounds));
@@ -232,7 +232,7 @@ for (const link of KINEPOLIS.links) {
 
 // A robot has to be able to get upstairs from where a chapter drops it.
 const upstairs = KINEPOLIS.links.filter((l) => l.from !== l.to);
-check(upstairs.length === 4, `expected 4 routes to the auditorium level, found ${upstairs.length}`);
+check(upstairs.length === 3, `expected 3 routes to the auditorium level, found ${upstairs.length}`);
 
 // Who can use what. maxStepRise is measured against the building's riser, so
 // this is the stair rule from SPEC section 5 read straight off the geometry.

@@ -201,9 +201,14 @@ The same number governs kerbs and the lip of a seat block, so it keeps paying
 out beyond the staircases.
 
 **Still open:** whether Biggy ever reaches the auditorium level at all. The
-ramp on the plans only links the hall to the reception concourse, 1.2 m. Either
-a goods lift goes in — every cinema has one, though none is drawn — or Biggy
-stays on the exhibition floor, which is where a heavy hauler belongs anyway.
+only ramp links the reception concourse down to the hall, 1.2 m. All three
+routes to floor 1 are stairs, so as it stands Biggy is confined to the ground
+floor. Either a goods lift goes in — every cinema has one, though none is
+drawn — or Biggy stays on the exhibition floor, which is where a heavy hauler
+belongs anyway.
+
+Note the levels: the concourse is the HIGHER of the two ground-floor spaces.
+You come in at street level and go down into the hall.
 
 If a puzzle can be solved by two different robots, it is not pulling its
 weight. Fix the puzzle, not the robots.
