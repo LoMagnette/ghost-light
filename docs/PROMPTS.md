@@ -396,9 +396,43 @@ be right while the behaviour is wrong. The failure mode is never an exception.
    limited by how fast it can place a foot. Ramps keep the honest gravity;
    stairs cap pace instead, and it is the only clamp in the simulation.
 
-**Still open, and the harness prints it:** nothing bounds the building. Rooms
-are floor plates, not enclosures, so a robot held at full throttle drives out
-of the Kinepolis entirely. Perimeter walls are their own job.
+**Closed since:** the building now has walls, derived from the rooms. See
+below.
+
+### Walls, derived rather than listed
+**Date:** 2026-09-18
+
+**Prompt:**
+> Can you add some boundary to the space and you should probably do that
+> between rooms too
+
+The traversal harness had been printing this as a warning for a while: rooms
+were floor plates, not enclosures, so a robot at full throttle drove out of the
+Kinepolis. It is an assertion now, and three of them.
+
+**Derived, not listed.** This file has been re-measured three separate times,
+and a hand-written wall list would have drifted out of step on the first
+correction — walls are the kind of thing nobody re-checks. So each room's edges
+are sampled at 0.25 m, every sample is classified, and the runs are merged back
+into long rectangles. 93 wall obstacles, and they move whenever a room does.
+
+A sample is an opening when a link crosses it — so no flight or ramp can be
+walled shut — or when both sides are circulation **at the same level**.
+
+That last qualification is the part worth keeping. The concourse stands 1.2 m
+over the hall and both are circulation, so the obvious rule leaves them open —
+and then a robot crossing anywhere except the steps gets snapped 1.2 m upward
+by `groundAt`, which is a teleport dressed as a floor. Walls everywhere except
+the links is not a restriction bolted on; it is the geometry finally saying
+what the building already meant. The steps and the ramp are the only ways
+between those levels.
+
+Everything else gets a wall, with a 2.6 m door punched through any run
+separating a room from circulation. Two auditoriums side by side get no door,
+because cinemas do not open into each other.
+
+**Fixed by hand:** `npm run venue` caught a spawn point that the new walls put
+inside Room 8's front seat bank.
 
 ### The grid was generated, so everything on it was wrong
 **Date:** 2026-09-18

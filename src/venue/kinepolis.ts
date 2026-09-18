@@ -44,7 +44,16 @@
  *     the drone footage is for, and it has not been watched yet.
  */
 
-import { FLOOR_HEIGHT, rect, type Link, type Obstacle, type Room, type Venue } from '@/core/Venue';
+import {
+  FLOOR_HEIGHT,
+  rect,
+  rectContains,
+  type Link,
+  type Obstacle,
+  type Room,
+  type RoomKind,
+  type Venue,
+} from '@/core/Venue';
 
 /** Clear height under the auditorium level, metres. Not yet from any source. */
 const FLOOR_CLEAR = 5.4;
@@ -364,6 +373,142 @@ const HALL_CUTAWAYS = hallCutaways();
 export const HALL_FLOOR_M2 =
   HALL.w * HALL.h - HALL_CUTAWAYS.reduce((sum, o) => sum + o.bounds.w * o.bounds.h, 0);
 
+
+// ---------------------------------------------------------------------------
+// Walls
+// ---------------------------------------------------------------------------
+
+/** Wall thickness and height, metres. Height is cut by the renderer anyway. */
+const WALL_THICKNESS = 0.3;
+const WALL_HEIGHT = 3.2;
+
+/** A double door's worth of opening. */
+const DOOR_WIDTH = 2.6;
+
+/** How finely each room edge is tested before runs are merged back together. */
+const EDGE_SAMPLE = 0.25;
+
+/** Rooms you pass through rather than into. */
+const CIRCULATION = new Set<RoomKind>(['hall', 'corridor', 'foyer', 'stairs']);
+
+/**
+ * Walls, derived from the rooms rather than listed by hand.
+ *
+ * Until now the building had none: rooms were floor plates and a robot at full
+ * throttle drove straight out of the Kinepolis. `npm run traverse` had been
+ * printing that for a while.
+ *
+ * Deriving beats listing because the rooms move — this file has been
+ * re-measured three times — and a hand-written wall list would have drifted
+ * out of step on the first correction. Each room's edges are sampled, every
+ * sample is classified, and the runs are merged back into long rectangles so
+ * the result is a few dozen obstacles rather than a few thousand.
+ *
+ * An edge sample is an opening when:
+ *   - a link crosses it, so stairs and ramps are never walled shut; or
+ *   - both sides are circulation AT THE SAME LEVEL, because a foyer flows
+ *     into a corridor and putting a wall between them would be a lie.
+ *
+ * That level qualification is load-bearing. The concourse stands 1.2 m over
+ * the hall, and both are circulation — leave them open and a robot crossing
+ * the boundary anywhere except the steps gets snapped 1.2 m upward by
+ * `groundAt`, which is a teleport dressed as a floor. The steps and the ramp
+ * are the only ways between those two levels, and now the geometry says so.
+ *
+ * Everything else gets a wall, with a door punched in the middle of any run
+ * that separates a room from circulation. Two auditoriums side by side get no
+ * door, because cinemas do not open into each other.
+ */
+function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
+  const walls: Obstacle[] = [];
+  const seen = new Set<string>();
+
+  for (const room of rooms) {
+    const b = room.bounds;
+    const edges = [
+      { horizontal: true, at: b.y, from: b.x, to: b.x + b.w, outward: -1 },
+      { horizontal: true, at: b.y + b.h, from: b.x, to: b.x + b.w, outward: 1 },
+      { horizontal: false, at: b.x, from: b.y, to: b.y + b.h, outward: -1 },
+      { horizontal: false, at: b.x + b.w, from: b.y, to: b.y + b.h, outward: 1 },
+    ];
+
+    for (const edge of edges) {
+      const span = edge.to - edge.from;
+      const steps = Math.max(1, Math.ceil(span / EDGE_SAMPLE));
+      // 0 = open, 1 = wall, 2 = wall that a door may be punched through
+      const kind: number[] = [];
+
+      for (let i = 0; i < steps; i += 1) {
+        const t = edge.from + ((i + 0.5) * span) / steps;
+        const px = edge.horizontal ? t : edge.at;
+        const py = edge.horizontal ? edge.at : t;
+        const ox = edge.horizontal ? px : px + edge.outward * 0.25;
+        const oy = edge.horizontal ? py + edge.outward * 0.25 : py;
+
+        // A link crossing the edge is a way through, always.
+        if (links.some((l) => (l.from === room.floor || l.to === room.floor) && rectContains(l.bounds, px, py))) {
+          kind.push(0);
+          continue;
+        }
+
+        const neighbour = rooms.find(
+          (r) => r !== room && r.floor === room.floor && rectContains(r.bounds, ox, oy),
+        );
+        if (!neighbour) {
+          kind.push(1); // outside air
+          continue;
+        }
+
+        const bothCirculation = CIRCULATION.has(room.kind) && CIRCULATION.has(neighbour.kind);
+        const sameLevel = (room.elevation ?? 0) === (neighbour.elevation ?? 0);
+        if (bothCirculation && sameLevel) {
+          kind.push(0);
+        } else if (bothCirculation || (!CIRCULATION.has(room.kind) && !CIRCULATION.has(neighbour.kind))) {
+          kind.push(1); // a level change, or two rooms that do not connect
+        } else {
+          kind.push(2); // room onto circulation — this one earns a door
+        }
+      }
+
+      // Merge runs of the same classification, then punch the doors.
+      let i = 0;
+      while (i < steps) {
+        if (kind[i] === 0) { i += 1; continue; }
+        let j = i;
+        while (j < steps && kind[j] === kind[i]) j += 1;
+
+        let a = edge.from + (i * span) / steps;
+        let z = edge.from + (j * span) / steps;
+        const doored = kind[i] === 2;
+        i = j;
+
+        const pieces: [number, number][] = [];
+        if (doored && z - a > DOOR_WIDTH * 1.6) {
+          const mid = (a + z) / 2;
+          pieces.push([a, mid - DOOR_WIDTH / 2], [mid + DOOR_WIDTH / 2, z]);
+        } else if (doored) {
+          continue; // too short to wall AND door — leave it as the doorway
+        } else {
+          pieces.push([a, z]);
+        }
+
+        for (const [p0, p1] of pieces) {
+          if (p1 - p0 < 0.2) continue;
+          const bounds = edge.horizontal
+            ? rect(p0, edge.at - WALL_THICKNESS / 2, p1 - p0, WALL_THICKNESS)
+            : rect(edge.at - WALL_THICKNESS / 2, p0, WALL_THICKNESS, p1 - p0);
+          // Two rooms sharing an edge each produce the same wall. Keep one.
+          const key = `${room.floor}:${bounds.x.toFixed(2)}:${bounds.y.toFixed(2)}:${bounds.w.toFixed(2)}:${bounds.h.toFixed(2)}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
+        }
+      }
+    }
+  }
+  return walls;
+}
+
 const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
 
 // ---------------------------------------------------------------------------
@@ -537,6 +682,7 @@ export const KINEPOLIS: Venue = {
     ...HALL_CUTAWAYS,
     ...auditoriumSeating,
     ...stairMass(staircases),
+    ...derivedWalls([...floor0Rooms, ...floor1Rooms], staircases),
   ],
   links: staircases,
   extents: {
@@ -577,6 +723,8 @@ export const SPAWNS = {
   corridorSouth: { floor: 1 as const, x: 0, y: -54 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
-  keynoteDoor: { floor: 1 as const, x: 5, y: -31 },
+  // In the corridor outside Room 8, not inside its seating — the cast lines
+  // up eastward from here and Room 8's first seat bank starts 2.5 m in.
+  keynoteDoor: { floor: 1 as const, x: -3, y: -31 },
   foyer: { floor: 1 as const, x: -24, y: 55 },
 };

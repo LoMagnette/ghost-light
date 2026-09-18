@@ -147,6 +147,25 @@ scenario(
   () => drive('voxxy', { x: -8.5, y: -14 }, NORTH, 8),
 );
 
+// The building has to hold them in. This was a printed warning for as long as
+// rooms were floor plates rather than enclosures, and a robot at full throttle
+// drove clean out of the Kinepolis. Now it is an assertion.
+scenario(
+  'Voxxy cannot drive out of the south wall',
+  (r) => r.y > -62,
+  () => drive('voxxy', HALL, SOUTH, 25),
+);
+scenario(
+  'Voxxy cannot drive out of the north wall',
+  (r) => r.y < 13,
+  () => drive('voxxy', HALL, NORTH, 25),
+);
+scenario(
+  'Biggy cannot drive out of the east wall',
+  (r) => r.x < 30,
+  () => drive('biggy', HALL, { x: 1, y: 0 }, 25),
+);
+
 console.log('');
 for (const { label, r, ok } of rows) {
   const where = `x ${r.x.toFixed(1)} y ${r.y.toFixed(1)} z ${r.z.toFixed(2)} floor ${r.floor}`;
@@ -156,16 +175,6 @@ for (const { label, r, ok } of rows) {
 if (failures.length) {
   console.error(`\n${failures.length} traversal failure(s).`);
   process.exit(1);
-}
-// Not a failure, but the harness keeps walking robots through it: rooms are
-// floor plates, not enclosures, so nothing stops a machine driving out of the
-// building entirely. Perimeter walls are their own job.
-const escapes = [
-  drive('voxxy', HALL, SOUTH, 20),
-  drive('voxxy', HALL, NORTH, 20),
-];
-if (escapes.some((r) => r.z === 0 && (r.y < -62 || r.y > 14))) {
-  console.log('note: robots can still drive out of the building — no perimeter walls yet.');
 }
 
 console.log('\nOK — every robot goes where the stair rule says it should.\n');
