@@ -20,6 +20,7 @@
 import Phaser from 'phaser';
 import { depthKey, ISO_SQUASH, PPM, project } from '@/core/Iso';
 import type { Actor } from '@/core/Sim';
+import { climbFraction } from '@/core/Traversal';
 import { renderPos } from '@/core/Sim';
 import { groundAt, rect, rectContains, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
@@ -207,15 +208,16 @@ export class BlockoutRenderer {
       // driving something they cannot see. Same call as the 2.7 m cutaway:
       // the building gives way to the machine.
       const rim = rims.find((r) => rectContains(r.hole, pos.x, pos.y));
-      const own = depthKey(pos.x, pos.y, pos.z) + 1;
+      const at = { ...pos, z: this.drawnZ(actor, pos, floor) };
+      const own = depthKey(at.x, at.y, at.z) + 1;
       queue.push({
         depth: rim ? Math.max(own, rim.depth + 0.25) : own,
-        draw: (gfx) => this.drawRobot(gfx, actor, pos),
+        draw: (gfx) => this.drawRobot(gfx, actor, at),
       });
       if (this.telemetry) {
         queue.push({
           depth: -1e6 + 2, // floor decal: under the robots, over the skid marks
-          draw: (gfx) => this.drawStopMarker(gfx, actor, pos),
+          draw: (gfx) => this.drawStopMarker(gfx, actor, at),
         });
       }
     }
@@ -259,6 +261,24 @@ export class BlockoutRenderer {
         g.fillPath();
       }
     }
+  }
+
+  /**
+   * Where to DRAW an actor vertically: on the flight as drawn, not as climbed.
+   *
+   * A full-storey flight is squashed to 2.4 m so it reads under the cutaway,
+   * while the robot climbing it gains the true 6.2. Left alone the two
+   * disagree by the difference, and a machine halfway up hangs in the air over
+   * its own staircase. The simulation is untouched — this moves pixels.
+   */
+  private drawnZ(actor: Actor, pos: { x: number; y: number; z: number }, floor: 0 | 1): number {
+    if (!actor.onLink) return pos.z;
+    const link = this.venue.links.find((l) => l.id === actor.onLink);
+    if (!link || link.drawnRise === undefined || link.drawnRise === link.rise) return pos.z;
+    const f = climbFraction(link, pos.x, pos.y);
+    return floor === link.from
+      ? link.base + link.drawnRise * f
+      : -link.drawnRise * (1 - f);
   }
 
   /** Outline one rectangle on a floor plane. */

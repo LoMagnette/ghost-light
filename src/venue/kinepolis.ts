@@ -683,6 +683,19 @@ const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
  * where three robots and a full house need more than one staircase — and it
  * matters more now that Biggy cannot use any of them.
  */
+/**
+ * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.
+ *
+ * A 6.2 m flight drawn at true height is entirely above the cut, so it comes
+ * out as a flat-topped slab with a sawtooth along one edge and reads as a
+ * loading dock rather than a staircase. Squashing the rise under the cut shows
+ * the whole flight stepping away from you, which is what the shape is for.
+ *
+ * The Link keeps the true 6.2 m rise; this only affects the bulk that is drawn
+ * and collided with, and that bulk is interim anyway.
+ */
+const DRAWN_RISE = 2.4;
+
 const receptionStairs: Link[] = [
   // Concourse → hall, descending northward. ~23 m wide, the full opening.
   { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
@@ -747,6 +760,17 @@ for (const room of floor1Rooms) {
 }
 
 /**
+ * How much of each flight is drawn, so the renderer can stand a robot on the
+ * staircase it drew rather than on the one it climbed.
+ *
+ * A robot climbs the true 6.2 m; the flight is squashed to 2.4 so it reads
+ * under the cutaway. Without this the two disagree and a machine halfway up is
+ * three metres in the air over its own steps — and halfway DOWN a stairwell it
+ * is a metre under the treads.
+ */
+for (const link of staircases) link.drawnRise = Math.min(link.rise, DRAWN_RISE);
+
+/**
  * Staircases as physical bulk.
  *
  * A link was pure data: nothing drew it and nothing collided with it, so the
@@ -770,18 +794,6 @@ for (const room of floor1Rooms) {
  * floor would be 0.69 m each, which is a climbing wall. At 0.18 a full floor
  * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
  */
-/**
- * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.
- *
- * A 6.2 m flight drawn at true height is entirely above the cut, so it comes
- * out as a flat-topped slab with a sawtooth along one edge and reads as a
- * loading dock rather than a staircase. Squashing the rise under the cut shows
- * the whole flight stepping away from you, which is what the shape is for.
- *
- * The Link keeps the true 6.2 m rise; this only affects the bulk that is drawn
- * and collided with, and that bulk is interim anyway.
- */
-const DRAWN_RISE = 2.4;
 
 /**
  * Treads per flight.
@@ -793,16 +805,15 @@ const DRAWN_RISE = 2.4;
 const MAX_TREADS = 18;
 
 /**
- * How far below its lowest tread a stairwell is closed off, metres.
+ * Metres of well depth the camera gains per metre back from its near lip.
  *
- * A flight upstairs is a solid, not a stack of floating slabs. Slabs were the
- * first attempt — they keep the well from painting over the floor in front of
- * it — but a thin plate has nothing under it, so between one tread and the
- * next you see straight through the staircase to the carpet beyond. The
- * renderer covers the spill by repainting the rim instead, which leaves the
- * flight free to be what it is.
+ * The projection drops half a metre of screen for every metre of x and of y,
+ * so a point a metre back from the lip and half a metre down lands exactly on
+ * the lip: that is the limit of what can be drawn inside a hole. 0.35 keeps
+ * the well's bottom clear of that limit, where a surface would be edge-on and
+ * project to nothing.
  */
-const WELL_FLOOR = 0.4;
+const WELL_SIGHT = 0.35;
 
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
@@ -816,30 +827,6 @@ function stairMass(links: Link[]): Obstacle[] {
     const drawnRise = Math.min(rise, DRAWN_RISE);
     const run = axis === 'y' ? b.h : b.w;
     const step = run / treads;
-
-    if (link.to !== link.from) {
-      /*
-       * Line the two sides of the well you can actually see.
-       *
-       * The flight descends away from the floor it arrives on, leaving the
-       * upper part of the shaft open — and the renderer paints only the south
-       * and west faces of a box, so the shaft's north and east walls are the
-       * only ones in view and nothing was drawing them. The gap came out as
-       * background: a black hole in the carpet rather than a stairwell.
-       *
-       * A wafer standing on each of those two rims shows exactly that face and
-       * nothing else. Emitted before the treads so they sort in front of it,
-       * and given the link's id so it obeys the same stair rule — a wall to
-       * whoever the flight is a wall to, and nothing to anyone else.
-       */
-      const t = 0.05;
-      for (const liner of [
-        rect(b.x, b.y + b.h - t, b.w, t), // north rim: its south face lines the well
-        rect(b.x + b.w - t, b.y, t, b.h), // east rim: its west face does
-      ]) {
-        solid.push({ floor: link.to, bounds: liner, height: 0, base: -(drawnRise + WELL_FLOOR), linkId: link.id });
-      }
-    }
 
     for (let i = 0; i < treads; i += 1) {
       // `i` counts along +axis; height follows the climb direction.
@@ -875,14 +862,59 @@ function stairMass(links: Link[]): Obstacle[] {
        * These are the same rectangles, so they carry the same linkId and the
        * stair rule applies unchanged: Voxxy steps onto the landing and walks
        * down, Biggy meets the well as a wall.
+       *
+       * How deep it may be DRAWN is decided by the camera, not by the
+       * building. A 2:1 isometric view can see half a metre down a well for
+       * every metre back from its near lip and no further — past that the
+       * floor in front of the opening is in the way, and a painter's floor
+       * pass has already been and gone, so the geometry comes out in front of
+       * the carpet instead of behind it. That is what put a staircase in the
+       * air outside the building at the south end of the corridor.
+       *
+       * So the well is a wedge, cut to what the camera can see, at 70% of the
+       * limit so the bottom is never edge-on. Where the flight is below that
+       * wedge — a flight descending TOWARD the viewer, which is most of the
+       * grand stair — it is simply not visible from up here, and the wedge is
+       * what shows.
        */
+      const along = (axis === 'y' ? tread.y : tread.x) - (axis === 'y' ? b.y : b.x);
+      const visible = -WELL_SIGHT * along;
+      const surface = -drawnRise * (1 - fraction);
       solid.push({
         floor: link.to,
         bounds: tread,
-        height: -drawnRise * (1 - fraction),
-        base: -(drawnRise + WELL_FLOOR),
+        height: Math.max(surface, visible),
+        base: visible,
         linkId: link.id,
       });
+
+      /*
+       * The east wall of the shaft, above the flight.
+       *
+       * Only the south and west faces of a box are ever painted, so the two
+       * walls of a well in view are its north and east ones — and nothing was
+       * drawing them, which left the part of the hole the flight has dropped
+       * out of as pure background. A wafer on the rim, standing on the flight
+       * and reaching up to the floor, is exactly that face and nothing else.
+       */
+      const skin = 0.05;
+      solid.push({
+        floor: link.to,
+        bounds: rect(tread.x + tread.w - skin, tread.y, skin, tread.h),
+        height: 0,
+        base: Math.max(surface, visible),
+        linkId: link.id,
+      });
+      if (i === treads - 1) {
+        // And the north wall, once, across the far end.
+        solid.push({
+          floor: link.to,
+          bounds: rect(tread.x, tread.y + tread.h - skin, tread.w, skin),
+          height: 0,
+          base: Math.max(surface, visible),
+          linkId: link.id,
+        });
+      }
     }
   }
   return solid;
