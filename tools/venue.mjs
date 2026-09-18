@@ -218,6 +218,32 @@ for (const [name, spawn] of Object.entries(SPAWNS)) {
   }
 }
 
+// --- every auditorium must have a way in ----------------------------------
+// This is the check that would have caught the walls swallowing thirteen of
+// the fourteen doors: the geometry was consistent, the rooms were sealed, and
+// nothing else noticed.
+const DOOR_MIN = 2.0;
+for (const room of auditoria) {
+  const b = room.bounds;
+  // Corridor-facing edge: the one nearer x = 0.
+  const edgeX = Math.abs(b.x) < Math.abs(b.x + b.w) ? b.x : b.x + b.w;
+  let open = 0;
+  const step = 0.2;
+  for (let y = b.y + step / 2; y < b.y + b.h; y += step) {
+    const blocked = KINEPOLIS.obstacles.some(
+      (o) =>
+        o.floor === 1 &&
+        o.bounds.x - 0.05 <= edgeX && edgeX <= o.bounds.x + o.bounds.w + 0.05 &&
+        o.bounds.y <= y && y <= o.bounds.y + o.bounds.h,
+    );
+    if (!blocked) open += step;
+  }
+  check(
+    open >= DOOR_MIN,
+    `${room.label} has ${open.toFixed(1)} m of doorway onto the corridor — it is sealed in`,
+  );
+}
+
 // --- every link must actually join the two places it claims to join --------
 // Two staircases out of the hall, the grand flight out of the concourse, plus
 // the steps and the ramp down from the concourse into the hall.

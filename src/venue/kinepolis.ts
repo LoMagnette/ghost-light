@@ -288,6 +288,11 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
         kind: 'auditorium',
         floor: 1,
         bounds,
+        // Odd rooms are entered at one end of their frontage, even rooms at
+        // the other — the alternation this building actually uses. Flip the
+        // comparison if it turns out to be the wrong way round; it is the
+        // only thing deciding it.
+        doorSide: aud.number % 2 === 1 ? 'high' : 'low',
         // Deeper rooms rake harder: the back row of Room 8 is most of a storey
         // above its screen.
         rake: 2.2 + aud.depth * 0.09,
@@ -324,38 +329,43 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
   return { rooms, seating };
 }
 
+/** Walkway left against each side wall of an auditorium, metres. */
+const SIDE_AISLE = 1.7;
+
 /**
- * Seat banks: two blocks either side of a central aisle, in three stages that
- * narrow toward the screen.
+ * Seating: ONE block per room, narrowing toward the screen, with the aisles
+ * against the side walls.
  *
- * This is where the fan shape of a real auditorium lives. The room is a
- * rectangle because the collision system speaks rectangles, but what a robot
- * actually drives around is the seating — so the taper costs nothing and buys
- * the silhouette.
+ * Not two blocks with a gangway up the middle, which is what this used to
+ * build and what a multiplex does not do — the rows here run unbroken and you
+ * reach them from the sides. It changes how the room drives, too: there is no
+ * shortcut through the centre, so crossing an auditorium means committing to
+ * one side of it.
+ *
+ * The room is a rectangle because the collision system speaks rectangles, but
+ * the real ones are fans. The taper lives here, in the thing a robot actually
+ * drives around, so the silhouette costs nothing.
  */
 function seatBanks(room: { x: number; y: number; w: number; h: number }, side: -1 | 1): Obstacle[] {
   const banks: Obstacle[] = [];
-  const aisle = 2.0;
   const stages = 3;
 
   const doorEdge = side === -1 ? room.x + room.w : room.x;
   const stageDepth = (room.w - 4.5) / stages;
+  const midY = room.y + room.h / 2;
 
   for (let s = 0; s < stages; s += 1) {
+    // Widest by the doors, narrowest at the screen.
     const taper = 1 - s * 0.17;
-    const bankH = ((room.h - aisle) / 2) * taper - 1.2;
-    if (bankH <= 0.4) continue;
+    const bankH = (room.h - SIDE_AISLE * 2) * taper;
+    if (bankH <= 0.6) continue;
 
     const x = side === -1 ? doorEdge - 2.5 - (s + 1) * stageDepth : doorEdge + 2.5 + s * stageDepth;
-    const midY = room.y + room.h / 2;
-
-    for (const dir of [-1, 1] as const) {
-      banks.push({
-        floor: 1,
-        bounds: rect(x, midY + dir * (aisle / 2) - (dir < 0 ? bankH : 0), stageDepth - 0.4, bankH),
-        height: 0.95,
-      });
-    }
+    banks.push({
+      floor: 1,
+      bounds: rect(x, midY - bankH / 2, stageDepth - 0.4, bankH),
+      height: 0.95,
+    });
   }
   return banks;
 }
@@ -459,14 +469,23 @@ function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
           continue;
         }
 
-        const bothCirculation = CIRCULATION.has(room.kind) && CIRCULATION.has(neighbour.kind);
+        const mine = CIRCULATION.has(room.kind);
+        const theirs = CIRCULATION.has(neighbour.kind);
         const sameLevel = (room.elevation ?? 0) === (neighbour.elevation ?? 0);
-        if (bothCirculation && sameLevel) {
+
+        if (mine && theirs && sameLevel) {
+          kind.push(0); // a foyer flows into a corridor
+        } else if (mine && !theirs) {
+          // The ROOM owns this wall, not the corridor. Letting circulation
+          // emit it is what swallowed every auditorium door: the corridor's
+          // west edge is one unbroken run of fourteen rooms, so it punched a
+          // single doorway in the middle of the building and walled off the
+          // thirteen doors the rooms had each opened for themselves.
           kind.push(0);
-        } else if (bothCirculation || (!CIRCULATION.has(room.kind) && !CIRCULATION.has(neighbour.kind))) {
-          kind.push(1); // a level change, or two rooms that do not connect
-        } else {
+        } else if (!mine && theirs) {
           kind.push(2); // room onto circulation — this one earns a door
+        } else {
+          kind.push(1); // a level change, or two rooms that do not connect
         }
       }
 
@@ -484,8 +503,15 @@ function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
 
         const pieces: [number, number][] = [];
         if (doored && z - a > DOOR_WIDTH * 1.6) {
-          const mid = (a + z) / 2;
-          pieces.push([a, mid - DOOR_WIDTH / 2], [mid + DOOR_WIDTH / 2, z]);
+          // At one END of the frontage, not the middle. These rooms are fans:
+          // the middle of the corridor wall is behind the seating, and the
+          // doors are at the sides, alternating room by room.
+          const margin = 1.2;
+          if ((room.doorSide ?? 'low') === 'low') {
+            pieces.push([a, a + margin], [a + margin + DOOR_WIDTH, z]);
+          } else {
+            pieces.push([a, z - margin - DOOR_WIDTH], [z - margin, z]);
+          }
         } else if (doored) {
           continue; // too short to wall AND door — leave it as the doorway
         } else {

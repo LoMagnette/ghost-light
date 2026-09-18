@@ -434,6 +434,36 @@ because cinemas do not open into each other.
 **Fixed by hand:** `npm run venue` caught a spawn point that the new walls put
 inside Room 8's front seat bank.
 
+**Corrected after review:**
+> The wall are kind are fucked up upstairs and some doors are missing. In this
+> location the doors are usually like this room 1 on the right side, room 2 on
+> the left side, room 3 on the right side, room 4 on the left side. And there
+> no middle coridor in the room all goes through the side
+
+Three faults, one of them a bug the "derived, not listed" principle had walked
+straight into.
+
+**Thirteen of the fourteen doors were missing.** Both sides of a shared edge
+were emitting walls, so the corridor emitted its own — and the corridor's west
+edge is a single unbroken run past six auditoriums. One continuous run gets one
+door punched in it, in the middle of the building, and it sat on top of the six
+doors the rooms had each opened for themselves. The room now owns the wall
+between itself and circulation; circulation never emits one.
+
+**The doors were centred, and they cannot be.** These rooms are fans: the
+middle of the corridor wall is behind the seating. Doors go at one END of the
+frontage and alternate room by room, which is what the building does and what
+the review said. `Room.doorSide` carries it as data.
+
+**There is no central aisle.** The seating was two blocks with a gangway up the
+middle; it is one unbroken block with the aisles against the side walls. That
+also changes how the room drives — no shortcut through the centre, so crossing
+an auditorium means committing to one side of it.
+
+`npm run venue` now checks every auditorium has at least 2 m of doorway onto the
+corridor, which is precisely the failure that got through: the geometry was
+self-consistent, the rooms were sealed, and nothing else noticed.
+
 ### The grid was generated, so everything on it was wrong
 **Date:** 2026-09-18
 

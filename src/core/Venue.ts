@@ -40,6 +40,16 @@ export interface Room {
   rake?: number;
 
   /**
+   * Which end of its corridor frontage this room's doors sit at.
+   *
+   * Auditoriums here are entered from one side, not the middle, and
+   * consecutive rooms alternate. Centring a door — which is what a generic
+   * wall builder does — puts it behind the screen wall of a fan-shaped room,
+   * which is the one place a door cannot be.
+   */
+  doorSide?: 'low' | 'high';
+
+  /**
    * Height of this room's floor above its storey datum, in metres.
    *
    * A storey is not one flat plane. The reception concourse sits 1.2 m above
