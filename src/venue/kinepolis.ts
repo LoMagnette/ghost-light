@@ -365,8 +365,12 @@ const receptionStairs: Link[] = [
   // Hall ↔ concourse. ~23 m wide, the full width of the opening. You come in
   // at street level and climb into the hall, so it ascends northward.
   { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), rise: 1.2, axis: 'y', ascending: true },
-  // The ramp beside it, east of the steps. Same rise, gentler, much longer.
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'y', ascending: true },
+  // The ramp beside it, east of the steps. Same rise, gentler, much longer —
+  // it climbs along its 10 m side, not across it, which is the only way 1.2 m
+  // is a ramp and not a wall. One rectangle standing in for what is really a
+  // switchback; a true 1:12 needs 14.4 m of run and the plan does not have it
+  // in a straight line.
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -41.0, 10.0, 3.6), rise: 1.2, axis: 'x', ascending: true },
   // "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
   { id: 'grand-stair', from: 0, to: 1, bounds: rect(-3.5, -59.5, 15.7, 5.6), rise: 6.2, axis: 'y', ascending: true },
   // The narrow one against the west wall of the concourse.
@@ -412,7 +416,14 @@ const staircases: Link[] = [
  * floor would be 0.69 m each, which is a climbing wall. At 0.18 a full floor
  * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
  */
-const RISER = 0.18;
+/**
+ * Riser height throughout the building, metres — building-regulations stair.
+ *
+ * Load-bearing beyond geometry: this is the number each robot's `maxStepRise`
+ * is measured against. Voxxy clears it, Droid matches it exactly and can climb
+ * these stairs and nothing steeper, and Biggy cannot climb at all.
+ */
+export const RISER = 0.18;
 
 /**
  * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.

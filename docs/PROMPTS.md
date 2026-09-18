@@ -318,6 +318,39 @@ It also forced an honest addition to the `Link` type. The climb axis cannot be
 inferred from the bounds — the grand staircase out of the concourse is 15.7 m
 wide and 5.6 m deep, so its long axis is the one you walk *across*.
 
+### Settling the stair rule
+**Date:** 2026-09-18
+
+**Prompt:**
+> btw how the robot are supposed to climb the stairs ?
+
+The best question of the session, because the answer was worth 10 points and
+nobody had asked it. Four options were put up — everyone climbs at a
+mass-scaled speed; nobody climbs and a lift is the only way up; only Voxxy
+climbs; or climbing is decided by a dimension. The human picked the dimension.
+
+`maxStepRise` per robot, measured against the building's 0.18 m risers. Voxxy
+clears them at 0.20, Droid matches them exactly at 0.18 and can climb these
+stairs and nothing steeper, Biggy is 0.00 and never climbs anything.
+
+Why a dimension rather than a `canClimbStairs` flag: the same number decides
+kerbs and the lip of a seat block, so the answer to "can this robot get over
+that" falls out of the building instead of a list of exceptions. And it makes
+Chapter III's `direct-order` mode have a real problem the first time it runs —
+you cannot send all three up the nearest flight, so Biggy has to be routed the
+long way while the others take the stairs.
+
+A second number, `maxSlope`, covers ramps, and every robot clears the
+wheelchair ramp including the one that can climb nothing at all. The accessible
+route being the route that always works is a good note for this game to hit,
+and it was an accident of the geometry before it was a decision.
+
+**Fixed by hand:** the ramp was modelled climbing across its short side, which
+made a 1.2 m rise into a 33% slope — a wall with a friendly label. It climbs
+along its 10 m side at 12%, and even that is one rectangle standing in for what
+must really be a switchback: a true 1:12 needs 14.4 m of run and the plan has
+no straight line of it.
+
 Two things stayed deliberately wrong. The real auditoriums are fan-shaped and
 these are rectangles, because `Rect` is what the collision system speaks —
 the fan lives in the seating instead, which tapers toward the screen and is

@@ -234,6 +234,30 @@ for (const link of KINEPOLIS.links) {
 const upstairs = KINEPOLIS.links.filter((l) => l.from !== l.to);
 check(upstairs.length === 4, `expected 4 routes to the auditorium level, found ${upstairs.length}`);
 
+// Who can use what. maxStepRise is measured against the building's riser, so
+// this is the stair rule from SPEC section 5 read straight off the geometry.
+const RISER = 0.18;
+const ROBOTS = {
+  Voxxy: { maxStepRise: 0.2, maxSlope: 0.45 },
+  Droid: { maxStepRise: 0.18, maxSlope: 0.38 },
+  Biggy: { maxStepRise: 0.0, maxSlope: 0.35 },
+};
+console.log('\nwho can use what:');
+for (const link of KINEPOLIS.links) {
+  const run = link.axis === 'y' ? link.bounds.h : link.bounds.w;
+  const ramp = link.id.includes('ramp');
+  const slope = link.rise / run;
+  const who = Object.entries(ROBOTS)
+    .filter(([, r]) => (ramp ? slope <= r.maxSlope : r.maxStepRise >= RISER))
+    .map(([n]) => n);
+  console.log(`  ${link.id.padEnd(17)} ${ramp ? `ramp ${(slope * 100).toFixed(0)}%` : `stairs`.padEnd(9)}  ${who.join(', ') || 'NOBODY'}`);
+}
+
+// Biggy climbs nothing, so it must have at least one route somewhere, or it is
+// sealed into whichever room it spawns in.
+const biggyRoutes = KINEPOLIS.links.filter((l) => l.id.includes('ramp'));
+check(biggyRoutes.length > 0, 'Biggy cannot climb, and there is no ramp anywhere — it would be sealed in');
+
 // ---------------------------------------------------------------------------
 
 console.log(`\nrooms       ${KINEPOLIS.rooms.length}`);

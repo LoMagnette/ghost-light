@@ -157,6 +157,8 @@ human answer is genuinely better than the agent's guess.
 | What is "the power" in Chapter I? | Tue 22 Sep | A cached session recording in a projection booth; finding it opens the other chapters |
 | How does issuing intent work in Chapter III? | Thu 24 Sep | Click a destination; the robot paths to it under its own momentum |
 | Does the player ever drive Biggy directly? | Thu 24 Sep | No. Biggy is always directed, which is what makes it feel heavy |
+| ~~How do robots climb stairs?~~ | ~~—~~ | **Settled 18 Sep: by `maxStepRise`. Voxxy 0.20 m, Droid 0.18 m, Biggy 0.00 — Biggy never climbs.** See SPEC § 5 |
+| Does Biggy ever reach floor 1? | Thu 24 Sep | No — it stays on the exhibition floor, unless a goods lift goes in |
 | What is the failure state in Chapter II? | Sat 26 Sep | A room empties if untended; lose three and the round ends |
 | Audio: generated or library? | Mon 28 Sep | Generated, so it belongs in the prompt log |
 | ~~Final title~~ | ~~Wed 30 Sep~~ | **Settled 18 Sep: _Ghost Light_** |

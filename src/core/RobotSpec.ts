@@ -44,6 +44,29 @@ export interface RobotSpec {
   /** Seconds per footfall at top speed. Drives step audio and camera shake. */
   strideTime: number;
 
+  /**
+   * Tallest single step this robot can get over, in metres.
+   *
+   * This is the stair rule, and it is deliberately a dimension rather than a
+   * `canClimbStairs` flag: the same number decides kerbs, the lip of a seat
+   * block and the 0.18 m risers throughout the Kinepolis. A robot either
+   * clears the step in front of it or it does not, and the answer falls out of
+   * the building rather than out of a list of exceptions.
+   *
+   * It is also the sharpest thing the three robots do differently, which is
+   * worth 10 points on its own — see SPEC.md section 5.
+   */
+  maxStepRise: number;
+
+  /**
+   * Steepest gradient this robot can drive, as rise over run.
+   *
+   * What the wheelchair ramp is for. Every robot can manage it, including the
+   * one that can manage no stairs at all — which makes the accessible route
+   * the route that always works, and that is a good note for this game to hit.
+   */
+  maxSlope: number;
+
   /** Silhouette colour used by the placeholder renderer and UI accents. */
   tint: number;
 }
@@ -59,6 +82,8 @@ export const VOXXY: RobotSpec = {
   radius: 0.34,
   height: 1.15,
   strideTime: 0.28,
+  maxStepRise: 0.20, // clears the building's 0.18 m risers with room to spare
+  maxSlope: 0.45,
   tint: 0xff7a1a,
 };
 
@@ -73,6 +98,8 @@ export const DROID: RobotSpec = {
   radius: 0.46,
   height: 2.05,
   strideTime: 0.46,
+  maxStepRise: 0.18, // exactly the building's riser: these stairs and nothing steeper
+  maxSlope: 0.38,
   tint: 0x6b7378,
 };
 
@@ -87,6 +114,8 @@ export const BIGGY: RobotSpec = {
   radius: 0.72,
   height: 1.35,
   strideTime: 0.62,
+  maxStepRise: 0.0, // never. 430 kg on a staircase is an accident, not a route
+  maxSlope: 0.35,
   tint: 0x7d94a8,
 };
 

@@ -175,6 +175,36 @@ division of labour:
 - **Biggy** — momentum as a tool. The only robot that can move something
   heavy, force a jammed route, or hold a line. It cannot be precise, ever
 
+### Stairs — settled 18 Sep 2026
+
+Climbing is decided by `maxStepRise`, a dimension rather than a flag, measured
+against the building's 0.18 m risers:
+
+| | Voxxy | Droid | Biggy |
+|---|---|---|---|
+| `maxStepRise` | 0.20 m | 0.18 m | **0.00 m** |
+| Stairs | yes | exactly these, nothing steeper | **never** |
+| Ramps (`maxSlope`) | 0.45 | 0.38 | 0.35 |
+
+**Biggy cannot use a staircase.** 430 kg on a flight of stairs is an accident,
+not a route. It gets between levels by ramp or not at all, and that single
+constraint does most of the work of the 10 points for "unsolvable without the
+right robot":
+
+- **Chapter I** — Voxxy alone, so "find a way up" is about finding *which*
+  stair in the dark, not about being able to climb one.
+- **Chapter III** — you cannot send all three up the nearest flight. Biggy has
+  to be routed the long way round while the others take the stairs, which is
+  the first problem `direct-order` mode has that is worth solving.
+
+The same number governs kerbs and the lip of a seat block, so it keeps paying
+out beyond the staircases.
+
+**Still open:** whether Biggy ever reaches the auditorium level at all. The
+ramp on the plans only links the hall to the reception concourse, 1.2 m. Either
+a goods lift goes in — every cinema has one, though none is drawn — or Biggy
+stays on the exhibition floor, which is where a heavy hauler belongs anyway.
+
 If a puzzle can be solved by two different robots, it is not pulling its
 weight. Fix the puzzle, not the robots.
 
