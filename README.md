@@ -105,7 +105,10 @@ the generative AI work.
   at a fixed 30° angle, rather than from a projection function. It is the same
   view it always was; what changed is that the depth buffer now does the
   sorting, so a staircase can hang in its own stairwell without being clipped
-  to it by hand.
+  to it by hand. When the building gets between the camera and a robot, the
+  wall fades in a soft disc rather than the robot being drawn over the top of
+  it — a shader pass, because "which of six thousand boxes is in the way" is
+  not a question worth asking on the CPU sixty times a second.
 - **TypeScript** (strict) and **Vite 6**
 - A **custom fixed-timestep, mass-based physics simulation** rather than an
   off-the-shelf one. No physics engine of any kind is involved: mass is the

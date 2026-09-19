@@ -103,7 +103,12 @@ export class ChapterScreen implements Screen {
     });
     this.controlled = this.actors[0];
 
-    this.blockout = new BlockoutRenderer(KINEPOLIS, chapter.palette, chapter.lightLevel);
+    this.blockout = new BlockoutRenderer(
+      this.isoCamera,
+      KINEPOLIS,
+      chapter.palette,
+      chapter.lightLevel,
+    );
     this.blockout.telemetry = this.debug;
 
     this.controller = new KeyboardController(game.keyboard);

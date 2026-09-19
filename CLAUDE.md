@@ -27,6 +27,10 @@ Two three.js facts that are not obvious and have already cost time:
 - **Lights are physically scaled.** A Lambert surface reflects `intensity / π`,
   so an intensity of 1 is a face at a third of its own colour. See
   `LAMBERT_SCALE` in `BlockoutRenderer`.
+- **`onBeforeCompile` does not change the program cache key.** Two materials
+  of the same type with different injected code are handed the SAME compiled
+  program unless you set `customProgramCacheKey`. That is how the cutaway's
+  solid and ghost passes would silently become the same pass.
 - **The scene is linear, the palette is sRGB.** Every colour in
   `chapters/registry.ts` was measured off a photograph and tuned against a
   renderer that multiplied sRGB bytes. Multiplying a light by `lightLevel`
@@ -108,6 +112,7 @@ for a scoring criterion.
 | Change camera lead, shake, footfall weight | `src/config.ts` — presentation only |
 | Change the view angle or the zoom | `ISO_SQUASH` / `PPM` in `src/core/Iso.ts` — the camera is derived from them |
 | Change how the building is lit | `AMBIENT`, `KEY`, `KEY_DIRECTION` in `BlockoutRenderer` |
+| Change how much a wall fades to show a robot | `CUTAWAY_*` in `src/render/Cutaway.ts` |
 | Change what an era looks like | `palette` / `lightLevel` in `registry.ts` |
 | Change the building | `src/venue/kinepolis.ts` — then `npm run venue` |
 | Put a piece of floor at another height | `elevation` on a `Room`. It may be negative |

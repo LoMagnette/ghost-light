@@ -975,6 +975,69 @@ of `src/app/`. The production bundle is 564 kB, 145 kB gzipped. And
 `lightLevel` drives an actual light, which is what the art pass needs it to
 be.
 
+### Fading a wall that is hiding a robot
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> That's way better. Could be possible to make a the wall partially
+> transparent when the robot his hidden by one ?
+
+**Iterations:** 3
+
+The bill for the depth buffer, and it came due immediately. The 2D renderer
+drew robots over everything — "the building gives way to the machine", a
+comment in the old `BlockoutRenderer` — which a painter's algorithm allows
+because it has no depth to argue with. With real depth the wall wins, which is
+correct and which loses the player their robot behind the concourse parapet.
+
+**The shape of the fix.** Not the whole wall: a wall in this building is 125 m
+long and fading one dissolves half the floor to show one machine. A soft disc
+around each robot, in which anything BETWEEN the camera and the robot drops to
+22% opacity. Every robot on the storey gets one, because in Chapter III you are
+directing three and the one you need to see is the one you are not holding.
+
+It has to be a shader. Working out on the CPU which of six thousand boxes
+occlude which robot is the screen-space bookkeeping the migration just deleted,
+and the answer would be unusable anyway: the building is one InstancedMesh, and
+an InstancedMesh has one material and therefore one opacity. So the storey is
+drawn twice — a solid pass that discards the disc and writes depth as usual,
+and a ghost pass that draws only the disc, translucent, without writing depth,
+after the robots. At the rim the ghost is fully opaque, which is exactly where
+the solid pass stopped, so the two meet with no seam.
+
+**What went wrong.**
+
+1. *It cut a hole in the floor.* The camera looks DOWN at thirty degrees, so
+   the carpet between the viewer and a robot is in front of it in precisely the
+   sense the test asks about — and the first version dissolved a disc of floor
+   ahead of every machine, which looked like the building had a hole in it.
+   Floor plates are now built into their own mesh and are the one thing exempt.
+   Nothing else is: a kerb or a seat tier lower than a robot's feet can still
+   stand in front of them.
+
+2. *The disc was too generous.* At a radius scaled to comfortably clear the
+   robot plus a margin, a column a metre and a half to one SIDE of Voxxy — not
+   occluding anything — lost its top and read as a rendering bug. Tightened to
+   a little over the robot's own silhouette. The effect is at its best when the
+   player does not notice it is there.
+
+3. *`onBeforeCompile` does not change the program cache key.* Two
+   `MeshLambertMaterial`s with different injected GLSL are handed the same
+   compiled program, so the solid and ghost passes would have been the same
+   pass. `customProgramCacheKey` is the fix and there is nothing in the symptom
+   that points at it.
+
+**Fixed by hand.** The verification. Driving a robot at a wall and looking at
+the screenshot proves nothing when the frame is timing-dependent — the first
+attempt at an A/B diff reported the whole screen changing, which was the robot
+having travelled a different distance in the two runs. Parking it hard against
+the concourse wall first makes the frame deterministic, and the diff then says
+what it should: one 102 x 108 pixel region differs and the rest of the frame is
+identical to the bit. Without the cutaway the robot is not merely dim in that
+frame, it is entirely absent.
+
 ---
 
 ## Audio

@@ -47,11 +47,19 @@ import {
   Scene,
   SphereGeometry,
   Vector3,
+  type OrthographicCamera,
 } from 'three';
 import type { Actor } from '@/core/Sim';
 import { renderPos } from '@/core/Sim';
 import { groundAt, rect, type Level, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
+import {
+  createCutawayUniforms,
+  cutawayMaterial,
+  cutawayRadius,
+  CUTAWAY_MAX,
+  type CutawayUniforms,
+} from './Cutaway';
 
 /**
  * Tallest an obstacle is DRAWN, in metres, whatever its real height.
@@ -170,6 +178,7 @@ interface RobotView {
 
 const SCRATCH = new Object3D();
 const SCRATCH_COLOUR = new Color();
+const SCRATCH_VIEW = new Vector3();
 
 export class BlockoutRenderer {
   /** The scene this renderer owns. The screen points a camera at it. */
@@ -177,6 +186,13 @@ export class BlockoutRenderer {
 
   private readonly venue: Venue;
   private readonly palette: Palette;
+  /**
+   * The camera, because the cutaway is a screen-space effect and has to be
+   * told where the screen is. Nothing else here looks at it: the building is
+   * built at its own coordinates and three does the rest.
+   */
+  private readonly camera: OrthographicCamera;
+  private readonly cutaway: CutawayUniforms = createCutawayUniforms();
 
   /** Static building geometry, one group per storey. Only one is ever shown. */
   private readonly storeys = new Map<Level, Group>();
@@ -198,7 +214,13 @@ export class BlockoutRenderer {
    */
   telemetry = false;
 
-  constructor(venue: Venue, palette: Palette, lightLevel: number) {
+  constructor(
+    camera: OrthographicCamera,
+    venue: Venue,
+    palette: Palette,
+    lightLevel: number,
+  ) {
+    this.camera = camera;
     this.venue = venue;
     this.palette = palette;
 
@@ -265,6 +287,8 @@ export class BlockoutRenderer {
       view.group.visible = actor.floor === floor;
       if (view.group.visible) this.placeRobot(actor, view, alpha);
     }
+
+    this.aimCutaway(floor, actors, alpha);
   }
 
   /** Forget every mark. Call on reset so a tuning run starts on clean floor. */
@@ -298,6 +322,18 @@ export class BlockoutRenderer {
    */
   private buildStorey(floor: Level): Group {
     const group = new Group();
+    /**
+     * Floor plates, kept apart from everything else because they are the one
+     * thing that must never fade.
+     *
+     * The camera looks DOWN at 30 degrees, so the carpet between the viewer
+     * and a robot is in front of it in exactly the sense the cutaway tests
+     * for — and the first version of this dissolved a disc of floor in front
+     * of every machine. A floor is never what is hiding a robot. Nothing else
+     * in the building gets that exemption: a kerb or a seat tier lower than
+     * the robot's feet can still stand in the way of them.
+     */
+    const plates: Box[] = [];
     const boxes: Box[] = [];
     const seams: number[] = [];
 
@@ -317,7 +353,7 @@ export class BlockoutRenderer {
         // as a step: the concourse stands 1.2 m over the hall and you go DOWN
         // into the hall, and a level change you cannot see is one the player
         // will not believe.
-        boxes.push({ bounds: tile, bottom: z > 0 ? 0 : z - PLATE_THICKNESS, top: z, colour });
+        plates.push({ bounds: tile, bottom: z > 0 ? 0 : z - PLATE_THICKNESS, top: z, colour });
         pushOutline(seams, tile, z + DECAL_LIFT);
       }
     }
@@ -352,7 +388,24 @@ export class BlockoutRenderer {
       });
     }
 
-    group.add(instanceBoxes(boxes));
+    group.add(instanceBoxes(plates, new MeshLambertMaterial()));
+
+    // Two meshes over ONE set of instance buffers and one geometry. The solid
+    // pass discards the cutaway disc and writes depth; the ghost pass draws
+    // only the disc, translucent, after the robots. See render/Cutaway.ts.
+    const solid = instanceBoxes(boxes, cutawayMaterial(this.cutaway, false));
+    const ghost = new InstancedMesh(
+      solid.geometry,
+      cutawayMaterial(this.cutaway, true),
+      solid.count,
+    );
+    ghost.instanceMatrix = solid.instanceMatrix;
+    ghost.instanceColor = solid.instanceColor;
+    ghost.count = solid.count;
+    // After the floor decals: they lie under the robot, and so under any wall
+    // standing in front of it. Marks are 1, the contact shadow 2, the ring 3.
+    ghost.renderOrder = 4;
+    group.add(solid, ghost);
 
     if (seams.length) {
       const geometry = new BufferGeometry();
@@ -393,6 +446,42 @@ export class BlockoutRenderer {
       default:
         return this.palette.wall;
     }
+  }
+
+  /**
+   * Point the cutaway at whoever is standing on this floor.
+   *
+   * Every robot on the visible storey gets a disc, not just the one being
+   * driven: in Chapter III you are directing three machines and the one you
+   * need to see is usually the one you are not holding.
+   */
+  private aimCutaway(floor: Level, actors: Actor[], alpha: number): void {
+    // `matrixWorldInverse` is written by three when it draws, so reading it
+    // here would be reading last frame's camera — and one frame of lag drags
+    // the hole visibly behind a robot at 6 m/s. One inversion, and the
+    // renderer redoing it a moment later costs nothing.
+    this.camera.updateMatrixWorld();
+    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
+
+    let count = 0;
+    for (const actor of actors) {
+      if (actor.floor !== floor || count >= CUTAWAY_MAX) continue;
+      const { spec } = actor.body;
+      const pos = renderPos(actor, alpha);
+      // Centred on the robot's middle rather than its feet, so the disc is
+      // about the machine and not about the floor under it.
+      SCRATCH_VIEW.set(pos.x, pos.y, pos.z + spec.height / 2).applyMatrix4(
+        this.camera.matrixWorldInverse,
+      );
+      this.cutaway.uCutaway.value[count].set(
+        SCRATCH_VIEW.x,
+        SCRATCH_VIEW.y,
+        SCRATCH_VIEW.z,
+        cutawayRadius(spec.radius, spec.height),
+      );
+      count += 1;
+    }
+    this.cutaway.uCutawayCount.value = count;
   }
 
   // -- robots ---------------------------------------------------------------
@@ -582,10 +671,10 @@ function storeysOf(venue: Venue): Level[] {
  * `instanceColor` carries the palette, which is the whole reason the building
  * can be five thousand seats and still cost one draw.
  */
-function instanceBoxes(boxes: Box[]): InstancedMesh {
+function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {
   const mesh = new InstancedMesh(
     new BoxGeometry(1, 1, 1),
-    new MeshLambertMaterial(),
+    material,
     Math.max(boxes.length, 1),
   );
 
