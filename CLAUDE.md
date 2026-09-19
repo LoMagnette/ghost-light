@@ -90,6 +90,10 @@ for a scoring criterion.
 | Change camera lead, shake, footfall weight | `src/config.ts` — presentation only |
 | Change what an era looks like | `palette` / `lightLevel` in `registry.ts` |
 | Change the building | `src/venue/kinepolis.ts` — then `npm run venue` |
+| Put a piece of floor at another height | `elevation` on a `Room`. It may be negative |
+| Join two levels | a `Link` — stepped if `riser > 0`, a ramp if 0 — then `npm run traverse` |
+| Add something drawn but not collided | `decor` in `kinepolis.ts`, and a `Material` |
+| Change what the furniture looks like | `seat` / `desk` / `sign` in a chapter palette |
 | Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScene` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
@@ -124,7 +128,8 @@ You cannot see the game. Close that gap rather than guessing:
    `Link`, `maxStepRise` on a `RobotSpec`, whether a tread collides, and
    whether the surface is reachable from where the robot stands — and any one
    of them can be right while the behaviour is wrong. The failure is never an
-   exception; it is Biggy quietly gliding up a staircase.
+   exception; it is Biggy quietly gliding up a staircase, or reaching a stage
+   it is supposed to be shut out of.
 3. **`npm run physics` after every change that touches movement.** It measures
    what a player experiences rather than what the spec table claims, and it
    fails the build when a robot leaves its design envelope or when the cast

@@ -22,6 +22,7 @@ import { project } from '@/core/Iso';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
+import type { Level } from '@/core/Venue';
 import { BlockoutRenderer } from '@/render/BlockoutRenderer';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
@@ -46,7 +47,7 @@ export class ChapterScene extends Phaser.Scene {
 
   private actors: Actor[] = [];
   private controlled!: Actor;
-  private floor: 0 | 1 = 0;
+  private floor: Level = 0;
   private spawns: { x: number; y: number }[] = [];
 
   private hud!: Phaser.GameObjects.Text;

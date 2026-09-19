@@ -87,6 +87,7 @@ function drive(robotId, from, dir, seconds, floor = 0) {
 
 const SOUTH = { x: 0, y: -1 };
 const NORTH = { x: 0, y: 1 };
+const EAST = { x: 1, y: 0 };
 
 const failures = [];
 const rows = [];
@@ -166,6 +167,36 @@ scenario(
   'Biggy is stopped by the stairwell upstairs',
   (r) => r.floor === 1 && r.y < -21.0,
   () => drive('biggy', STAIR_LANDING, NORTH, 14, 1),
+);
+
+// --- the rake ---------------------------------------------------------------
+// An auditorium floor is a staircase twenty-five steps long, so the stair rule
+// decides who reaches the stage. This is what the level change was built for
+// and it cannot be read off the geometry: the rake is one link, the seat banks
+// are three obstacles, and whether a robot threads the aisle between them and
+// keeps its feet on the treads is a question only the sim answers.
+//
+// Room 8 runs x 7.15..37.35. Its back strip — flush with the corridor you walk
+// in from — is the first 3.2 m, the rake drops 4.5 m across the next 25, and
+// the stage is the last 2. The wide aisle is at the south end of the frontage.
+const KEYNOTE_BACK = { x: 8.7, y: -40.5 };
+
+scenario(
+  'Voxxy walks down the keynote rake to the stage',
+  (r) => r.z < -4.3 && r.x > 34 && r.floor === 1,
+  () => drive('voxxy', KEYNOTE_BACK, EAST, 40, 1),
+);
+scenario(
+  'Droid walks down the keynote rake to the stage',
+  (r) => r.z < -4.3 && r.x > 34 && r.floor === 1,
+  () => drive('droid', KEYNOTE_BACK, EAST, 44, 1),
+);
+// The point of the exercise. Biggy gets into every auditorium in the building
+// and reaches the back row of all fourteen, and never reaches a stage.
+scenario(
+  'Biggy reaches the back row and no further',
+  (r) => r.z > -0.19 && r.x > 8 && r.x < 11.5,
+  () => drive('biggy', KEYNOTE_BACK, EAST, 20, 1),
 );
 
 // The building has to hold them in. This was a printed warning for as long as

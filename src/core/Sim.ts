@@ -13,8 +13,8 @@
  */
 
 import { Body, NO_INPUT, type DriveInput } from './Body';
-import { groundAt, type Obstacle, type Venue } from './Venue';
-import { canStepOnto, climbFraction, downhill, linkAt, surfaceHeight } from './Traversal';
+import { groundAt, type Level, type Link, type Obstacle, type Venue } from './Venue';
+import { canStepOnto, climbFraction, footingAt, type Footing } from './Traversal';
 
 export const FIXED_DT = 1 / 120;
 
@@ -30,7 +30,7 @@ const STAIR_PACE = 0.28;
 export interface Actor {
   body: Body;
   /** Which floor this actor is on. Collision only considers the same floor. */
-  floor: 0 | 1;
+  floor: Level;
   /** Filled each step by the controller driving this actor. */
   input: DriveInput;
   /** Interpolation snapshot, written by the sim. Renderers read these. */
@@ -41,7 +41,7 @@ export interface Actor {
   onLink?: string;
 }
 
-export function makeActor(body: Body, floor: 0 | 1): Actor {
+export function makeActor(body: Body, floor: Level): Actor {
   return {
     body,
     floor,
@@ -119,8 +119,10 @@ export class Sim {
       actor.prevY = actor.body.y;
       actor.prevZ = actor.body.z;
       actor.body.lastImpactSpeed = 0;
-      const slope = this.slopeFor(actor);
-      actor.body.step(dt, actor.input, slope.x, slope.y);
+      // Where its feet are NOW, before it moves. The surface it ends the step
+      // on is a different question and is asked again in resolveSurfaces.
+      const footing = this.footingFor(actor);
+      actor.body.step(dt, actor.input, footing.slopeX, footing.slopeY);
       if (actor.body.footfall) {
         this.footfalls.push({ actor, momentum: actor.body.momentum });
       }
@@ -165,11 +167,12 @@ export class Sim {
     for (const actor of this.actors) {
       const { body } = actor;
       const was = actor.onLink ? this.venue.links.find((l) => l.id === actor.onLink) : undefined;
-      const link = linkAt(this.venue, actor.floor, body.x, body.y);
+      const footing = this.footingFor(actor);
+      const link = footing.link;
 
-      if (link && canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) {
+      if (link) {
         const f = climbFraction(link, body.x, body.y);
-        body.z = surfaceHeight(link, body.x, body.y, actor.floor);
+        body.z = footing.z;
         actor.onLink = link.id;
 
         // Reaching an end while still ON the flight settles the storey, so a
@@ -182,6 +185,7 @@ export class Sim {
             body.z = groundAt(this.venue, arriving, body.x, body.y);
           }
         }
+        this.limitStairSpeed(actor, link);
         continue;
       }
 
@@ -204,26 +208,16 @@ export class Sim {
         if (f > 0.9) actor.floor = was.to;
         else if (f < 0.1) actor.floor = was.from;
       }
+      // Not the footing's own z: leaving a flight may have changed the storey,
+      // and the answer above was worked out on the one it left.
       body.z = groundAt(this.venue, actor.floor, body.x, body.y);
     }
-
-    for (const actor of this.actors) this.limitStairSpeed(actor);
   }
 
-  /**
-   * Downhill pull on an actor, as the fraction of weight acting along the floor.
-   *
-   * Ramps only. A robot ROLLS up a ramp, so its weight fights its drive force
-   * and the heavy machines struggle exactly as they should. A robot WALKS up
-   * stairs, which is a different gait with a different limit — see
-   * `limitStairSpeed`.
-   */
-  private slopeFor(actor: Actor): { x: number; y: number } {
+  /** What this actor is standing on, where it is standing right now. */
+  private footingFor(actor: Actor): Footing {
     const { body } = actor;
-    const link = linkAt(this.venue, actor.floor, body.x, body.y);
-    if (!link || link.riser > 0) return { x: 0, y: 0 };
-    if (!canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) return { x: 0, y: 0 };
-    return downhill(link);
+    return footingAt(this.venue, body.spec, actor.floor, body.x, body.y, body.z);
   }
 
   /**
@@ -239,11 +233,9 @@ export class Sim {
    * So a stair caps speed instead. It is a clamp, deliberately, and it is the
    * only one in the simulation.
    */
-  private limitStairSpeed(actor: Actor): void {
+  private limitStairSpeed(actor: Actor, link: Link): void {
     const { body } = actor;
-    const link = linkAt(this.venue, actor.floor, body.x, body.y);
-    if (!link || link.riser <= 0) return;
-    if (!canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor)) return;
+    if (link.riser <= 0) return;
 
     const cap = body.spec.maxSpeed * STAIR_PACE;
     const speed = body.speed;

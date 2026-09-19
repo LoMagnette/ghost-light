@@ -48,6 +48,7 @@ import {
   FLOOR_HEIGHT,
   rect,
   rectContains,
+  type Decor,
   type Link,
   type Obstacle,
   type Rect,
@@ -347,15 +348,34 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   return ARRIVALS.some((flight) => rectContains(flight, x, y));
 }
 
-function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
+function auditoriums(): {
+  rooms: Room[];
+  solids: Obstacle[];
+  decor: Decor[];
+  links: Link[];
+} {
   const rooms: Room[] = [];
-  const seating: Obstacle[] = [];
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const links: Link[] = [];
 
   const place = (list: Auditorium[], side: -1 | 1, gapAfter = 0): number => {
     let y = SOUTH_END;
     for (const aud of list) {
       const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF;
       const bounds = rect(x, y, aud.depth, aud.frontage);
+
+      /**
+       * A band of the room `d0` to `d1` deep from the SCREEN wall, running the
+       * full frontage. Depth from the screen rather than from the corridor
+       * because everything in here — stage, rake, seating — is laid out from
+       * the screen back, and the two ends swap sides between the west rooms
+       * and the east ones.
+       */
+      const depthAt = (d0: number, d1: number): Rect =>
+        side === -1
+          ? rect(bounds.x + d0, bounds.y, d1 - d0, bounds.h)
+          : rect(bounds.x + bounds.w - d1, bounds.y, d1 - d0, bounds.h);
 
       // Odd rooms are entered at one end of their frontage, even rooms at the
       // other — the alternation this building actually uses. Decided once:
@@ -372,6 +392,25 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
         doorSide = doorSide === 'low' ? 'high' : 'low';
       }
 
+      // One riser per row, so a deeper room does not rake more STEEPLY — every
+      // auditorium in the building runs at 18% — it just falls further. Room 8
+      // drops 4.50 m from its doors to its stage; Room 2 drops 2.16 m.
+      const rake = rakeOf(bounds);
+
+      /*
+       * Everything from the screen wall back to the cross-aisle is NOT this
+       * room's flat plate — it is the rake, and the stage at the bottom of it.
+       * Cut it out of the plate so the flat floor is not painted over the
+       * steps descending through it; `voids` is render-only, and what stands
+       * in for the floor there is the rake's own treads.
+       */
+      const raked = depthAt(2.0, 2.0 + seatRows(bounds) * ROW_PITCH);
+      // The plate is cut from the screen wall right back to the cross-aisle —
+      // the stage as well as the rake. Cutting only the rake left this room's
+      // flat floor still painted across its stage, four and a half metres in
+      // the air over the stage's own plate and the letters standing on it.
+      const dropped = depthAt(0, 2.0 + seatRows(bounds) * ROW_PITCH);
+
       rooms.push({
         id: `aud-${aud.number}`,
         label: `Room ${aud.number}`,
@@ -379,12 +418,63 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
         floor: 1,
         bounds,
         doorSide,
-        // Deeper rooms rake harder: the back row of Room 8 is most of a storey
-        // above its screen.
-        rake: 2.2 + aud.depth * 0.09,
+        rake,
+        voids: [dropped],
       });
 
-      seating.push(...seatBanks(bounds, side, doorSide));
+      /*
+       * The stage: a flat plate a whole rake BELOW the corridor you came in
+       * from. This is the thing the evaluation was really about — a level
+       * change inside a storey, expressed the way the building expresses it,
+       * with the same two primitives the reception concourse already uses. A
+       * plate at a height, and a flight of steps down to it.
+       */
+      rooms.push({
+        id: `aud-${aud.number}-stage`,
+        label: `Room ${aud.number} stage`,
+        kind: 'stage',
+        floor: 1,
+        bounds: depthAt(0, 2.0),
+        elevation: -rake,
+      });
+
+      /*
+       * The rake itself, as a flight of steps one tread per row of seats.
+       *
+       * It covers the whole seating footprint rather than just the aisles,
+       * which is not a simplification: the seat banks are solid, so the only
+       * part of this rectangle a robot can ever stand in IS the aisles. One
+       * link does what twenty-eight would.
+       *
+       * Riser 0.18, so the stair rule decides who gets to the front: Voxxy and
+       * Droid walk down, and Biggy — which climbs nothing — can reach the back
+       * row of every auditorium in the building and no further.
+       */
+      links.push({
+        id: `rake-${aud.number}`,
+        from: 1,
+        to: 1,
+        bounds: raked,
+        // Measured from the storey datum, which is the top of the rake: the
+        // corridor is flush with the back row and the stage is DOWN from it.
+        base: -rake,
+        rise: rake,
+        axis: 'x',
+        // Height rises toward the corridor, and the corridor is east of the
+        // west rooms and west of the east ones.
+        ascending: side === -1,
+        riser: RISER,
+      });
+
+      const fitOut = seatingFor(bounds, side, doorSide);
+      solids.push(...fitOut.banks);
+      decor.push(...fitOut.decor);
+      solids.push(...presenterDesk(bounds, side));
+      if (SIGNED_ROOMS.has(aud.number)) {
+        const sign = devoxxSign(bounds, side);
+        solids.push(...sign.solids);
+        decor.push(...sign.decor);
+      }
       y += aud.frontage;
       if (aud.number === gapAfter) y += WEST_GAP;
     }
@@ -412,7 +502,7 @@ function auditoriums(): { rooms: Room[]; seating: Obstacle[] } {
     bounds: rect(-38, westEnd, 30.9, 24),
   });
 
-  return { rooms, seating };
+  return { rooms, solids, decor, links };
 }
 
 /**
@@ -426,57 +516,488 @@ const DOOR_AISLE = 3.2;
 const FAR_AISLE = 1.2;
 
 /**
- * Seating: ONE block per room, narrowing toward the screen, with the aisles
- * against the side walls.
+ * Row pitch, metres — and not a free choice.
  *
- * Not two blocks with a gangway up the middle, which is what this used to
- * build and what a multiplex does not do — the rows here run unbroken and you
- * reach them from the sides. It changes how the room drives, too: there is no
- * shortcut through the centre, so crossing an auditorium means committing to
- * one side of it.
- *
- * The room is a rectangle because the collision system speaks rectangles, but
- * the real ones are fans. The taper lives here, in the thing a robot actually
- * drives around, so the silhouette costs nothing.
+ * The auditorium plan carries no scale bar and was scaled by assuming exactly
+ * this: 10 px between the drawn seat rows, a cinema row being ~1.0 m. Every
+ * dimension on floor 1 rests on it, so the seating has to be laid out at the
+ * same pitch or the building disagrees with the ruler used to measure it.
  */
-function seatBanks(
-  room: { x: number; y: number; w: number; h: number },
+export const ROW_PITCH = 1.0;
+
+/** Seat pitch across a row, metres, and the seat inside it. */
+export const SEAT_PITCH = 0.52;
+const SEAT_WIDTH = 0.46;
+/** Front to back. The rest of the row pitch is legroom. */
+const SEAT_DEPTH = 0.52;
+/**
+ * How thick a tread is DRAWN when it hangs below the storey datum, metres.
+ *
+ * A flight rising out of a floor is a solid mass standing on it — that is what
+ * a staircase looks like and it is what this drew. A rake descending BELOW the
+ * floor is not: filled down to the stage, the nearest step of an east-side
+ * auditorium becomes a 4.5 m wall across the room and you never see the
+ * seating behind it. Drawn as a slab instead you see what you would really
+ * see, which is the tread and the riser under it, with the next step showing
+ * above. Thicker than one riser, so consecutive slabs overlap and the terrace
+ * has no gaps in it.
+ */
+const TREAD_SLAB = 0.25;
+
+/** Height of a seat back above the tier it stands on, metres. */
+const SEAT_BACK = 0.85;
+
+/** Depth an auditorium spends on something other than seats: 2.5 m of cross
+ * aisle behind the back row, 2 m of stage in front of the first. */
+const SEATING_CLEAR = 4.5;
+
+/**
+ * How many rows of seats a room holds — and therefore how hard it rakes.
+ *
+ * One building riser per row, so a room's rake is `rows × RISER` and nothing
+ * else. Deriving it rather than picking it is what keeps the three things that
+ * must agree in step: the tier a seat stands on, the tread a robot climbs, and
+ * the depth the stage sits below the corridor. Room 8 comes out at 25 rows and
+ * 4.50 m, which is a 17.5% rake — a real multiplex number.
+ */
+function seatRows(room: Rect): number {
+  return Math.floor((room.w - SEATING_CLEAR) / ROW_PITCH);
+}
+
+function rakeOf(room: Rect): number {
+  return seatRows(room) * RISER;
+}
+
+/**
+ * Seating, in three parts that all come off ONE envelope.
+ *
+ * A robot meets a block of seating; a player sees seats. Those are different
+ * resolutions of the same thing and they must not be two descriptions of it —
+ * so `widthAt` is the auditorium's fan, and the collision banks, the terracing
+ * and the individual seats are all sampled from it. Move the taper and all
+ * three move together.
+ *
+ * What the player sees is `decor`: a tier per row and a box per seat, five
+ * thousand of them across the building. What a robot meets is `banks`: the
+ * same three blocks as before, now `hidden`, because a 120 Hz solver has no
+ * business testing five thousand rectangles to answer a question one rectangle
+ * already answers — and because nothing can ever get between two seats anyway.
+ * Biggy is 1.44 m across and a seat is 0.52 m wide.
+ *
+ * Rows run unbroken with the aisles against the side walls, which is what this
+ * multiplex does — no gangway up the middle. It changes how the room drives:
+ * crossing an auditorium means committing to one side of it.
+ */
+function seatingFor(
+  room: Rect,
   side: -1 | 1,
   doorSide: 'low' | 'high',
-): Obstacle[] {
+): { banks: Obstacle[]; decor: Decor[] } {
   const banks: Obstacle[] = [];
+  const decor: Decor[] = [];
   const stages = 3;
 
   const doorEdge = side === -1 ? room.x + room.w : room.x;
-  const stageDepth = (room.w - 4.5) / stages;
+  const rows = seatRows(room);
+  /** Depth of seating: exactly one row pitch per row, so a row is a tread. */
+  const depth = rows * ROW_PITCH;
+  /**
+   * Depth from the doors to the back row. Whatever the row pitch does not
+   * divide into goes here rather than into the rake — the cross-aisle is the
+   * flexible dimension in a real auditorium, and the rake is not: every one of
+   * its steps has to land on a row of seats.
+   */
+  const lead = room.w - 2.0 - depth;
+  const stageDepth = depth / stages;
 
   // The seating sits away from the doors, so the wide aisle and the entrance
   // are on the same side of the room.
   const full = room.h - DOOR_AISLE - FAR_AISLE;
 
-  for (let s = 0; s < stages; s += 1) {
-    // Widest by the doors, narrowest at the screen.
-    const taper = 1 - s * 0.17;
-    const bankH = full * taper;
-    if (bankH <= 0.6) continue;
+  /**
+   * How wide the seating is, `t` of the way from the back row to the screen.
+   *
+   * The room is a rectangle because the collision system speaks rectangles,
+   * but the real ones are fans. This is the fan, and it is the only place it
+   * is written down. The three collision banks sample it at t = 0, ⅓ and ⅔ —
+   * each one the WIDEST the seating gets anywhere inside it — so every seat
+   * drawn from the same curve lands inside the block a robot meets.
+   *
+   * The 0.26 is no longer a taste: the seat counts printed on the plan are the
+   * only independent measure of how much seating a room holds, and this is the
+   * fan that lands the modelled total within ten seats of the printed 5183. It
+   * was 0.51 — a front row half the width of the back — which cost 740 seats
+   * and made every room read far narrower at the screen than the drawn rows
+   * are: measured off `cinema-venue-devoxx.png`, Room 8's rows hold 208 px of
+   * a 223 px frontage and barely shorten at all.
+   */
+  const widthAt = (t: number): number => full * (1 - 0.26 * t);
 
-    const x = side === -1 ? doorEdge - 2.5 - (s + 1) * stageDepth : doorEdge + 2.5 + s * stageDepth;
-    // Pin each stage's FAR edge, so every time the fan narrows it is the
-    // door-side aisle that grows. Pin the door side instead — which is what
-    // this did first — and the taper opens the far aisle while the way in
-    // stays the same width, which is backwards and which the venue check
-    // caught on the two big rooms.
-    const y =
-      doorSide === 'low'
-        ? room.y + room.h - FAR_AISLE - bankH
-        : room.y + FAR_AISLE;
+  /**
+   * Pin each row's FAR edge, so every time the fan narrows it is the door-side
+   * aisle that grows. Pin the door side instead — which is what this did first
+   * — and the taper opens the far aisle while the way in stays the same width,
+   * which is backwards and which the venue check caught on the two big rooms.
+   */
+  const yOf = (width: number): number =>
+    doorSide === 'low' ? room.y + room.h - FAR_AISLE - width : room.y + FAR_AISLE;
+
+  // -- what a robot meets: three blocks, and no longer drawn ----------------
+  for (let s = 0; s < stages; s += 1) {
+    const bankH = widthAt(s / stages);
+    if (bankH <= 0.6) continue;
+    const x = side === -1 ? doorEdge - lead - (s + 1) * stageDepth : doorEdge + lead + s * stageDepth;
     banks.push({
       floor: 1,
-      bounds: rect(x, y, stageDepth - 0.4, bankH),
+      bounds: rect(x, yOf(bankH), stageDepth - 0.4, bankH),
       height: 0.95,
+      hidden: true,
     });
   }
-  return banks;
+
+  // -- what the player sees: a seat on every tread of the rake --------------
+  for (let r = 0; r < rows; r += 1) {
+    // 0 at the back row, 1 at the screen. Depth, width and height all read off
+    // this one number, so a row cannot be wide in one and narrow in another.
+    const t = (r + 0.5) / rows;
+    const width = widthAt(t);
+    if (width < SEAT_PITCH) continue;
+    const y = yOf(width);
+
+    /*
+     * One riser per row, down from the corridor.
+     *
+     * The rake used to be drawn as a climb of about a third of its real rise,
+     * because a 4.5 m mound of seating went straight through the renderer's
+     * 2.7 m cutaway. Reading it as a DESCENT — which is what walking into a
+     * cinema is — makes that problem disappear: the cut only ever trims what
+     * stands above the floor, and every row of this is below it.
+     *
+     * It also makes the number honest. The tread a robot walks on is at
+     * exactly this height, because both are `RISER` times the row index.
+     */
+    const tier = -r * RISER;
+
+    // The row's own band of floor, and the edge of it the seat backs stand on:
+    // the far edge from the screen, with the legroom in front of it.
+    const bandX = side === -1
+      ? doorEdge - lead - (r + 1) * ROW_PITCH
+      : doorEdge + lead + r * ROW_PITCH;
+    const seatX = side === -1 ? bandX + ROW_PITCH - SEAT_DEPTH : bandX;
+
+    /*
+     * The tread this row stands on, drawn only down the aisles.
+     *
+     * Between the aisles every row is hidden by the seats on the row in front
+     * of it — a seat back is 0.85 m and a row is 0.18 m lower and a metre
+     * nearer, so it covers its own legroom and then some. The aisles are the
+     * whole of what you see of an auditorium floor, and they are also the only
+     * part of it a robot can stand on.
+     */
+    for (const [from, to] of [
+      [room.y, y],
+      [y + width, room.y + room.h],
+    ]) {
+      if (to - from < 0.05) continue;
+      decor.push({
+        floor: 1,
+        bounds: rect(bandX, from, ROW_PITCH, to - from),
+        base: tier - TREAD_SLAB,
+        height: tier,
+        material: 'structure',
+      });
+    }
+
+    const seats = Math.floor(width / SEAT_PITCH);
+    // Centre the seats in the row: the half seat the pitch does not divide
+    // into becomes a little more elbow room at each end, not a gap at one.
+    const first = y + (width - seats * SEAT_PITCH) / 2 + (SEAT_PITCH - SEAT_WIDTH) / 2;
+    for (let n = 0; n < seats; n += 1) {
+      decor.push({
+        floor: 1,
+        bounds: rect(seatX, first + n * SEAT_PITCH, SEAT_DEPTH, SEAT_WIDTH),
+        base: tier,
+        height: tier + SEAT_BACK,
+        material: 'seat',
+      });
+    }
+  }
+
+  return { banks, decor };
+}
+
+// ---------------------------------------------------------------------------
+// The letters on the stage
+// ---------------------------------------------------------------------------
+
+/**
+ * `#DEVOXX` stands on the stage of the two biggest rooms, in letters about as
+ * tall as Voxxy — white, with the last X in the conference's orange.
+ *
+ * Photographed in `references/venue/photos/54836008506_68c9fc5562_k.jpg`:
+ * freestanding letters on the apron in front of the screen, lit from the
+ * screen behind them, the whole word a little over a third of the screen's
+ * width. It is the single most recognisable thing in the building after the
+ * column grid, and it is the object that tells a judge which conference this
+ * is without a line of text on the HUD.
+ *
+ * ANACHRONISM, deliberate and flagged: the venue is defined once and the
+ * chapters may only re-dress it, so the letters stand in Chapter II as well,
+ * where the conference was still called JavaPolis. The alternative is
+ * chapter-dependent geometry, which rule 2 forbids and which would cost far
+ * more than this costs.
+ */
+const SIGN_TEXT = '#DEVOXX';
+
+/** Rooms 5 and 8 — the two biggest, and the only two with a keynote stage. */
+const SIGNED_ROOMS = new Set([5, 8]);
+
+const GLYPH_HEIGHT = 1.5;
+const GLYPH_WIDTH = 1.25;
+const GLYPH_GAP = 0.25;
+/** Thickness of a letter front to back, metres. */
+const SIGN_DEPTH = 0.3;
+/** Width of the stroke a letter is drawn with, metres. */
+const SIGN_STROKE = 0.22;
+
+/** A stroke of a letter, in glyph space: u across (0..1), v up (0..1). */
+interface Bar {
+  u0: number;
+  u1: number;
+  v0: number;
+  v1: number;
+}
+
+/**
+ * A diagonal, as a stair of upright bars.
+ *
+ * The renderer extrudes plan rectangles and nothing else, which is the whole
+ * reason the building is cheap to draw — so a true diagonal is not available
+ * and a stepped one is. At this scale each step is about five pixels, which
+ * reads as a diagonal and is in any case a blockout: everything here is boxes.
+ */
+function diagonal(u0: number, v0: number, u1: number, v1: number, steps = 10): Bar[] {
+  const bars: Bar[] = [];
+  const half = SIGN_STROKE / GLYPH_WIDTH / 2;
+  for (let i = 0; i < steps; i += 1) {
+    const u = u0 + (u1 - u0) * ((i + 0.5) / steps);
+    bars.push({
+      u0: u - half,
+      u1: u + half,
+      v0: v0 + (v1 - v0) * (i / steps),
+      v1: v0 + (v1 - v0) * ((i + 1) / steps),
+    });
+  }
+  return bars;
+}
+
+/**
+ * The seven glyphs the sign needs, as strokes. Not a font — a font is a
+ * project, and `#DEVOXX` is seven letters that never change.
+ */
+function glyph(character: string): Bar[] {
+  const su = SIGN_STROKE / GLYPH_WIDTH; // stroke width, across
+  const sv = SIGN_STROKE / GLYPH_HEIGHT; // stroke width, up
+  switch (character) {
+    case '#':
+      return [
+        { u0: 0.22, u1: 0.22 + su, v0: 0.04, v1: 0.96 },
+        { u0: 0.62, u1: 0.62 + su, v0: 0.04, v1: 0.96 },
+        { u0: 0.04, u1: 0.96, v0: 0.3, v1: 0.3 + sv },
+        { u0: 0.04, u1: 0.96, v0: 0.64, v1: 0.64 + sv },
+      ];
+    case 'D':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.78, v0: 1 - sv, v1: 1 },
+        { u0: su, u1: 0.78, v0: 0, v1: sv },
+        { u0: 0.78, u1: 0.78 + su, v0: sv, v1: 1 - sv },
+      ];
+    case 'E':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.92, v0: 1 - sv, v1: 1 },
+        { u0: su, u1: 0.84, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+        { u0: su, u1: 0.92, v0: 0, v1: sv },
+      ];
+    case 'V':
+      return [...diagonal(0.08, 1, 0.46, 0), ...diagonal(0.54, 0, 0.92, 1)];
+    case 'O':
+      return [
+        { u0: 0, u1: su, v0: sv, v1: 1 - sv },
+        { u0: 1 - su, u1: 1, v0: sv, v1: 1 - sv },
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0, u1: 1, v0: 0, v1: sv },
+      ];
+    case 'X':
+      return [...diagonal(0.06, 0, 0.94, 1), ...diagonal(0.94, 0, 0.06, 1)];
+    default:
+      return [];
+  }
+}
+
+/**
+ * The sign, placed on the stage of one auditorium.
+ *
+ * Each letter is solid to a robot as one block; the strokes are dressing.
+ * Otherwise a robot could drive through the counter of a D.
+ */
+function devoxxSign(room: Rect, side: -1 | 1): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  const glyphs = [...SIGN_TEXT];
+  const length = glyphs.length * GLYPH_WIDTH + (glyphs.length - 1) * GLYPH_GAP;
+
+  // The screen end of the room, a metre off the wall, standing on the 2 m of
+  // stage the seating leaves in front of it.
+  const x = side === -1 ? room.x + 0.7 : room.x + room.w - 0.7 - SIGN_DEPTH;
+
+  /**
+   * Which way the word runs along the frontage — and the one place in this
+   * file where the camera wins over the building.
+   *
+   * The two rooms face each other across the corridor, so their audiences look
+   * in opposite directions, so honestly modelled their signs do too. The
+   * camera is fixed to the south-west and never moves: it reads Room 8's
+   * letters from the front and Room 5's from behind, for the whole game. A
+   * word that is mirrored in every frame it ever appears in does not read as a
+   * point of view, it reads as a bug.
+   *
+   * So both words run the way the screen reads, -y being screen right. Room 5
+   * pays for it: its letters are laid out for a viewer standing where its
+   * audience is not. Same call as `drawnRise` on the staircases and the 2.7 m
+   * cutaway — where the building and the camera disagree about something the
+   * player can see, the camera wins, and it is written down.
+   */
+  const run = -1;
+  const start = room.y + room.h / 2 - (run * length) / 2;
+
+  glyphs.forEach((character, index) => {
+    const at = start + run * (index * (GLYPH_WIDTH + GLYPH_GAP));
+    const uOf = (u: number): number => at + run * u * GLYPH_WIDTH;
+    // The last X is the one in the accent colour — the X of the wordmark.
+    const material = index === glyphs.length - 1 ? 'signAccent' : 'sign';
+
+    solids.push({
+      floor: 1,
+      bounds: rect(x, Math.min(at, uOf(1)), SIGN_DEPTH, GLYPH_WIDTH),
+      height: GLYPH_HEIGHT,
+      hidden: true,
+    });
+
+    for (const bar of glyph(character)) {
+      const y0 = Math.min(uOf(bar.u0), uOf(bar.u1));
+      const y1 = Math.max(uOf(bar.u0), uOf(bar.u1));
+      decor.push({
+        floor: 1,
+        bounds: rect(x, y0, SIGN_DEPTH, y1 - y0),
+        base: bar.v0 * GLYPH_HEIGHT,
+        height: bar.v1 * GLYPH_HEIGHT,
+        material,
+      });
+    }
+  });
+
+  return { solids, decor };
+}
+
+// ---------------------------------------------------------------------------
+// The presenter's desk
+// ---------------------------------------------------------------------------
+
+/**
+ * A draped trestle table with the branded lectern beside it, on the stage of
+ * every auditorium.
+ *
+ * Photographed in the same frame as the letters
+ * (`references/venue/photos/54836008506_68c9fc5562_k.jpg`): a cloth over the
+ * table reaching almost to the floor, and a slim folding lectern to the
+ * audience's left of it carrying the wordmark. Both were measured off that
+ * photograph against the seats in the foreground — a seat back gives the
+ * scale, and the ratio of a thing's height to its width survives the
+ * perspective even where its absolute size does not.
+ *
+ * In EVERY room, not just the two with letters. Fourteen rooms with a desk in
+ * each is what makes this a conference centre rather than a multiplex: it is
+ * the object that says a person stood here and talked, and Chapter I is about
+ * the fact that nobody does any more.
+ *
+ * Solid, and drawn from the same rectangle it collides with — unlike the seats
+ * and the letters, a table's shape and its collision shape are the same thing.
+ */
+const TABLE_WIDTH = 1.9;
+const TABLE_DEPTH = 0.8;
+const TABLE_HEIGHT = 0.75;
+const LECTERN_WIDTH = 0.7;
+const LECTERN_DEPTH = 0.5;
+const LECTERN_HEIGHT = 1.2;
+
+/** Gap between the lectern and the table, metres. They nearly touch. */
+const DESK_GAP = 0.15;
+
+/** How far the front of the desk stands off the screen wall, metres. */
+const DESK_STANDOFF = 1.35;
+
+/**
+ * How far the desk sits in from the side wall it stands by, metres.
+ *
+ * Wide enough that Biggy — 1.44 m across — can still get onto the stage past
+ * it in the rooms where this end is also the end the doors are on. A metre and
+ * a half looked fine on the plan and left three centimetres.
+ */
+const DESK_INSET = 2.0;
+
+/**
+ * The desk stands at the NORTH end of every stage, and that is the camera
+ * talking rather than the building.
+ *
+ * Isometric from the south-west: a room's north wall is the far one and its
+ * south wall stands between the stage and the viewer. A 1.2 m lectern needs
+ * three metres of clearance to show above a 2.7 m wall drawn in front of it,
+ * and against the south wall it has one and a half — so in the seven rooms
+ * whose doors are at that end, the lectern was simply gone. Not occluded
+ * interestingly: absent.
+ *
+ * The real building has no opinion here — a desk goes where the AV crew put
+ * it, and these rooms mirror each other anyway — so this costs no honesty and
+ * buys a presenter's desk you can see in all fourteen. Same call as the
+ * direction the letters read in.
+ */
+function presenterDesk(room: Rect, side: -1 | 1): Obstacle[] {
+  /** A box `d0` to `d1` deep from the screen wall, `span` wide from `y`. */
+  const at = (d0: number, d1: number, y: number, span: number): Rect =>
+    side === -1
+      ? rect(room.x + d0, y, d1 - d0, span)
+      : rect(room.x + room.w - d1, y, d1 - d0, span);
+
+  // Measured from the north wall, running back toward the centre of the stage.
+  const along = (a: number, span: number): number => room.y + room.h - a - span;
+
+  return [
+    {
+      floor: 1,
+      bounds: at(
+        DESK_STANDOFF - LECTERN_DEPTH,
+        DESK_STANDOFF,
+        along(DESK_INSET, LECTERN_WIDTH),
+        LECTERN_WIDTH,
+      ),
+      height: LECTERN_HEIGHT,
+      material: 'desk',
+    },
+    {
+      floor: 1,
+      bounds: at(
+        DESK_STANDOFF - TABLE_DEPTH,
+        DESK_STANDOFF,
+        along(DESK_INSET + LECTERN_WIDTH + DESK_GAP, TABLE_WIDTH),
+        TABLE_WIDTH,
+      ),
+      height: TABLE_HEIGHT,
+      material: 'desk',
+    },
+  ];
 }
 
 const HALL_CUTAWAYS = hallCutaways();
@@ -538,11 +1059,19 @@ const CIRCULATION = new Set<RoomKind>(['hall', 'corridor', 'foyer', 'stairs']);
  * that separates a room from circulation. Two auditoriums side by side get no
  * door, because cinemas do not open into each other.
  */
-function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
+function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor: Decor[] } {
   const walls: Obstacle[] = [];
+  const decor: Decor[] = [];
   const seen = new Set<string>();
 
   for (const room of rooms) {
+    // A stage is a PLATE, not an enclosure: a piece of floor lying inside the
+    // auditorium it belongs to, at the foot of that room's rake. The room
+    // around it already owns every wall it has, and letting it emit its own
+    // put a second, shorter wall on top of each of them — identical in space,
+    // different in extent, so the dedupe below could not see it.
+    if (room.kind === 'stage') continue;
+
     const b = room.bounds;
     const edges = [
       { horizontal: true, at: b.y, from: b.x, to: b.x + b.w, outward: -1 },
@@ -652,15 +1181,127 @@ function derivedWalls(rooms: Room[], links: Link[]): Obstacle[] {
           const key = `${room.floor}:${bounds.x.toFixed(2)}:${bounds.y.toFixed(2)}:${bounds.w.toFixed(2)}:${bounds.h.toFixed(2)}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
+
+          /*
+           * A wall running ALONG a flight has to step down with it.
+           *
+           * Every wall in the building used to be one rectangle standing on
+           * one height, looked up at its own centre — fine while a room was
+           * flat, and wrong the moment an auditorium floor started dropping
+           * 4.5 m from its doors to its stage. The two side walls of every
+           * room hung at corridor level over a floor that had gone, and you
+           * could see under them into the void.
+           *
+           * The rectangle stays, because collision does not care about height
+           * and one rectangle is cheaper than twenty-five. What is DRAWN is
+           * cut into the same bands the treads use — literally the same
+           * function — so the wall and the floor beside it cannot drift.
+           */
+          const rake = links.find(
+            (l) =>
+              l.from === l.to &&
+              l.from === room.floor &&
+              l.rise > 0 &&
+              l.axis === (edge.horizontal ? 'x' : 'y') &&
+              overlapping(bounds, l.bounds),
+          );
+          if (!rake) {
+            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
+            continue;
+          }
+
+          walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT, hidden: true });
+          for (const part of alongBands(bounds, edge.horizontal, coarsen(treadsOf(rake), WALL_STEP))) {
+            decor.push({
+              floor: room.floor,
+              bounds: part.bounds,
+              // Outside the flight the renderer finds the plate underneath on
+              // its own, which is right: those ends stand on the cross-aisle
+              // at the top and the stage at the bottom.
+              base: part.surface,
+              height: (part.surface ?? 0) + WALL_HEIGHT,
+            });
+          }
         }
       }
     }
   }
-  return walls;
+  return { walls, decor };
 }
 
-const { rooms: floor1Rooms, seating: auditoriumSeating } = auditoriums();
+/**
+ * Treads per drawn step of a wall running alongside a flight.
+ *
+ * The wall has to reach the floor or you see under it, and following every
+ * tread exactly costs 564 pieces and about 3 ms a frame on the auditorium
+ * level. Two treads to a step halves that for a bottom edge that sits at most
+ * one riser — five pixels — below the floor it meets, which is under the
+ * seating and the aisle slabs anyway. Four was cheaper again and started to
+ * show as a lip along the aisle.
+ */
+const WALL_STEP = 2;
+
+/** Group treads `n` at a time, keeping the LOWER surface so nothing floats. */
+function coarsen(
+  bands: { from: number; to: number; surface: number }[],
+  n: number,
+): { from: number; to: number; surface: number }[] {
+  const out = [];
+  for (let i = 0; i < bands.length; i += n) {
+    const group = bands.slice(i, i + n);
+    out.push({
+      from: group[0].from,
+      to: group[group.length - 1].to,
+      surface: Math.min(...group.map((b) => b.surface)),
+    });
+  }
+  return out;
+}
+
+/** Do these two rectangles share any area? */
+function overlapping(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/**
+ * Cut a wall into the bands of the flight it runs along, plus whatever sticks
+ * out at either end.
+ *
+ * The ends come back with no surface of their own — they stand on a plate and
+ * the renderer already knows how to find one. Only the part over the flight
+ * has to be told, because a flight is not a plate and `groundAt` cannot see it.
+ */
+function alongBands(
+  wall: Rect,
+  horizontal: boolean,
+  bands: { from: number; to: number; surface: number }[],
+): { bounds: Rect; surface?: number }[] {
+  const lo = horizontal ? wall.x : wall.y;
+  const hi = lo + (horizontal ? wall.w : wall.h);
+  const slice = (from: number, to: number): Rect =>
+    horizontal
+      ? rect(from, wall.y, to - from, wall.h)
+      : rect(wall.x, from, wall.w, to - from);
+
+  const out: { bounds: Rect; surface?: number }[] = [];
+  const first = Math.max(lo, bands[0].from);
+  const last = Math.min(hi, bands[bands.length - 1].to);
+  if (first - lo > 0.01) out.push({ bounds: slice(lo, first) });
+  for (const band of bands) {
+    const from = Math.max(band.from, lo);
+    const to = Math.min(band.to, hi);
+    if (to - from > 0.01) out.push({ bounds: slice(from, to), surface: band.surface });
+  }
+  if (hi - last > 0.01) out.push({ bounds: slice(last, hi) });
+  return out;
+}
+
+const {
+  rooms: floor1Rooms,
+  solids: auditoriumSolids,
+  decor: auditoriumDecor,
+  links: auditoriumRakes,
+} = auditoriums();
 
 // ---------------------------------------------------------------------------
 // The staircases — two of them, side by side
@@ -744,6 +1385,9 @@ const staircases: Link[] = [
   { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   ...receptionStairs,
+  // Fourteen more, one per auditorium. A rake is a staircase; it was only ever
+  // drawn as scenery because nothing could express a floor that goes down.
+  ...auditoriumRakes,
 ];
 
 /**
@@ -768,7 +1412,13 @@ for (const room of floor1Rooms) {
  * three metres in the air over its own steps — and halfway DOWN a stairwell it
  * is a metre under the treads.
  */
-for (const link of staircases) link.drawnRise = Math.min(link.rise, DRAWN_RISE);
+for (const link of staircases) {
+  // Only flights that cross a storey. Everything within one storey — the
+  // concourse steps, the ramp, the fourteen rakes — is short enough to draw at
+  // its true rise, and a rake MUST be: its steps have to meet the plates at
+  // both ends and the seats standing on them.
+  if (link.from !== link.to) link.drawnRise = Math.min(link.rise, DRAWN_RISE);
+}
 
 /**
  * Staircases as physical bulk.
@@ -805,6 +1455,19 @@ for (const link of staircases) link.drawnRise = Math.min(link.rise, DRAWN_RISE);
 const MAX_TREADS = 18;
 
 /**
+ * Shallowest tread worth drawing, metres.
+ *
+ * The cap above is really a statement about tread SIZE — 18 steps in an 11.2 m
+ * flight is 0.62 m each — and stated as a count it lies about long flights. An
+ * auditorium rake runs 25 m and wants a step every metre, one per row of
+ * seats, and getting 18 instead would put its steps out of register with the
+ * seating standing on them. So: eighteen treads, or as many as fit at 0.62 m
+ * apart, whichever is more. Every flight in the building is unchanged.
+ */
+const MIN_TREAD = 0.62;
+
+
+/**
  * Metres of well depth the camera gains per metre back from its near lip.
  *
  * The projection drops half a metre of screen for every metre of x and of y,
@@ -815,6 +1478,38 @@ const MAX_TREADS = 18;
  */
 const WELL_SIGHT = 0.35;
 
+/**
+ * The bands a flight is built from: where each tread starts along the climb
+ * axis, and how high its surface is above the `from` floor's datum.
+ *
+ * Extracted because two things need it and they must not disagree — the treads
+ * themselves, and any WALL running alongside them, which has to step down with
+ * the floor rather than hang over it.
+ */
+function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
+  const { bounds: b, rise, axis, ascending } = link;
+  const run = axis === 'y' ? b.h : b.w;
+  const treads = Math.min(
+    Math.max(3, Math.round(rise / (link.riser || RISER))),
+    Math.max(MAX_TREADS, Math.floor(run / MIN_TREAD)),
+  );
+  const drawnRise = link.drawnRise ?? rise;
+  const step = run / treads;
+  const start = axis === 'y' ? b.y : b.x;
+
+  const bands = [];
+  for (let i = 0; i < treads; i += 1) {
+    // `i` counts along +axis; height follows the climb direction.
+    const fraction = (ascending ? i + 1 : treads - i) / treads;
+    bands.push({
+      from: start + i * step,
+      to: start + (i + 1) * step,
+      surface: link.base + drawnRise * fraction,
+    });
+  }
+  return bands;
+}
+
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
   for (const link of links) {
@@ -822,26 +1517,38 @@ function stairMass(links: Link[]): Obstacle[] {
     // also the only way between the hall and the concourse until stairs work.
     if (link.id === 'wheelchair-ramp') continue;
 
-    const { bounds: b, rise, axis, ascending } = link;
-    const treads = Math.min(MAX_TREADS, Math.max(3, Math.round(rise / RISER)));
-    const drawnRise = Math.min(rise, DRAWN_RISE);
-    const run = axis === 'y' ? b.h : b.w;
-    const step = run / treads;
+    const { bounds: b, axis } = link;
+    const bands = treadsOf(link);
+    const treads = bands.length;
 
     for (let i = 0; i < treads; i += 1) {
-      // `i` counts along +axis; height follows the climb direction.
-      const fraction = (ascending ? i + 1 : treads - i) / treads;
+      const band = bands[i];
       const tread =
         axis === 'y'
-          ? rect(b.x, b.y + i * step, b.w, step)
-          : rect(b.x + i * step, b.y, step, b.h);
+          ? rect(b.x, band.from, b.w, band.to - band.from)
+          : rect(band.from, b.y, band.to - band.from, b.h);
 
+      // Drawn from the link's own base, so the grand flight starts at
+      // concourse level rather than sinking through it.
+      const surface = band.surface;
       solid.push({
         floor: link.from,
         bounds: tread,
-        // Drawn from the link's own base, so the grand flight starts at
-        // concourse level rather than sinking through it.
-        height: link.base + drawnRise * fraction,
+        height: surface,
+        /*
+         * A rake's treads collide but do not draw.
+         *
+         * They run the full frontage, because the seat banks are solid and
+         * that is the cheapest rectangle that stops Biggy — but a 22 m box per
+         * row is 22 m of fill per row, and all but the aisles at either end of
+         * it is behind a seat. Drawn where it is actually visible instead, by
+         * `seatingFor`, which is the only code that knows how wide the seating
+         * is on any given row. Worth 3 ms a frame on the auditorium level.
+         */
+        hidden: surface < 0,
+        // A step below the floor is a slab you look down onto; one above it is
+        // a mass standing on the floor. See TREAD_SLAB.
+        base: surface < 0 ? surface - TREAD_SLAB : Math.min(0, link.base),
         // Solid to anything that cannot climb this flight, walkable to
         // anything that can. Sim.resolveObstacles reads it.
         linkId: link.id,
@@ -879,11 +1586,15 @@ function stairMass(links: Link[]): Obstacle[] {
        */
       const along = (axis === 'y' ? tread.y : tread.x) - (axis === 'y' ? b.y : b.x);
       const visible = -WELL_SIGHT * along;
-      const surface = -drawnRise * (1 - fraction);
+      // How far up the flight this tread is, read back off its own surface so
+      // the two can never drift: the band already knows.
+      const drawnRise = link.drawnRise ?? link.rise;
+      const climbed = drawnRise > 0 ? (band.surface - link.base) / drawnRise : 1;
+      const fromAbove = -drawnRise * (1 - climbed);
       solid.push({
         floor: link.to,
         bounds: tread,
-        height: Math.max(surface, visible),
+        height: Math.max(fromAbove, visible),
         base: visible,
         linkId: link.id,
       });
@@ -902,7 +1613,7 @@ function stairMass(links: Link[]): Obstacle[] {
         floor: link.to,
         bounds: rect(tread.x + tread.w - skin, tread.y, skin, tread.h),
         height: 0,
-        base: Math.max(surface, visible),
+        base: Math.max(fromAbove, visible),
         linkId: link.id,
       });
       if (i === treads - 1) {
@@ -911,7 +1622,7 @@ function stairMass(links: Link[]): Obstacle[] {
           floor: link.to,
           bounds: rect(tread.x, tread.y + tread.h - skin, tread.w, skin),
           height: 0,
-          base: Math.max(surface, visible),
+          base: Math.max(fromAbove, visible),
           linkId: link.id,
         });
       }
@@ -922,20 +1633,20 @@ function stairMass(links: Link[]): Obstacle[] {
 
 // ---------------------------------------------------------------------------
 
+const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
+
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
   obstacles: [
     ...exhibitionColumns(),
     ...HALL_CUTAWAYS,
-    ...auditoriumSeating,
+    ...auditoriumSolids,
     ...stairMass(staircases),
-    ...derivedWalls([...floor0Rooms, ...floor1Rooms], staircases),
+    ...WALLS.walls,
   ],
+  decor: [...auditoriumDecor, ...WALLS.decor],
   links: staircases,
-  extents: {
-    0: rect(HALL.x, -62, HALL.w + 13, 74),
-    1: rect(-46, SOUTH_END, 92, 150),
-  },
+  extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };
 
 /** Named spawn points, so chapters do not hard-code coordinates. */

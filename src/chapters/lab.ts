@@ -44,6 +44,11 @@ export const MOVEMENT_LAB: Chapter = {
     floorLine: 0x333a40,
     wall: 0x454d54,
     wallShade: 0x2b3238,
+    // Flat and neutral, like everything else in here. The lab is for reading
+    // geometry, not for mood.
+    seat: 0x3c4650,
+    desk: 0x424b55,
+    sign: 0xc8d0d6,
     accent: 0x4ec9b0,
     text: 0xdfe5e9,
   },

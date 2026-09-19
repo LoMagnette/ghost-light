@@ -21,7 +21,15 @@ is tuned and measured.
 - **Physics** — custom fixed-timestep 120 Hz simulation with real mass.
   Not Arcade Physics. See `src/core/`.
 - **Venue** — the Kinepolis defined once in metres, both floors, as a
-  blockout. See `src/venue/kinepolis.ts`.
+  blockout. See `src/venue/kinepolis.ts`. Fitted out: 5171 seats laid out row
+  by row against the counts printed on the plan, a presenter's desk on all
+  fourteen stages, and `#DEVOXX` on the two big ones. Seating is drawn per seat
+  and collided as three blocks a room.
+- **Levels** — a storey is not a plane. The reception concourse stands 1.2 m
+  over the exhibition hall, and every auditorium floor DROPS from the corridor
+  to its stage, one 0.18 m riser per row of seats — 4.50 m in Room 8. Those
+  rakes are real staircases, so the stair rule decides who reaches a stage:
+  Biggy gets to the back row of all fourteen rooms and the front of none.
 - **Chapters** — three, as data, sharing one gameplay scene.
 - **Movement** — measured, not assumed. Biggy carries 1366 kg·m/s at cruise,
   needs 3.8 m to brake and 10.6 m to coast down, and carves a 4.05 m turn where

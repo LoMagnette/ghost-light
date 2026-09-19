@@ -596,6 +596,289 @@ nothing draws light sources yet. The red step strips exist as a number, not as
 a thing glowing in a dark auditorium. That is the lighting pass, and it is
 worth more than any texture.
 
+### A stairwell printed on the floor of the room next door
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-19
+
+**Prompt:**
+> There's an issue with the rendering of the stairs on the 1st floor. The
+> stairs kind clip throught the floor.
+
+**Iterations:** 3 — two of them rolled back.
+
+A flight upstairs hangs in a well below the floor, and below the floor means
+lower on screen, so it paints down across whatever lies in front of the
+opening. There is no depth buffer to stop it and there should not be one: the
+scene is one Graphics object in painter's order.
+
+Two mitigations were in place and both guessed at how far the spill could
+reach — the well trimmed to a wedge along the stair's own axis, and the strip
+of floor in front of the hole repainted afterwards. Both reason in ONE
+direction. Screen-down is south *and* west at once, and both corridor flights
+run flush against a corridor wall, so sideways there was no floor to trim
+against and none to repair with. The flights were printing themselves on the
+carpet of the auditorium next door.
+
+**The fix is one rule:** a hole shows exactly what is visible THROUGH the hole,
+so the contents of a well are clipped to its mouth — Sutherland–Hodgman against
+the projected opening, four edges, a few vector operations a quad. The wedge,
+the walls, the depth sort and the venue are all untouched; the flight is the
+same shape it always was and simply cannot leave the opening any more. The rim
+repaint goes, because it existed only to hide the spill — and with it goes a
+strip of corridor floor it had been painting over the building's south wall.
+
+**What went wrong — twice, and both were scope, not mechanism.**
+
+1. The first attempt took the clip as licence to rebuild the well "honestly":
+   treads as full-depth columns, an unlit shaft behind them, the wedge deleted.
+   All of it defensible, none of it asked for, and it made the stairs read
+   deeper and stranger than the ones being complained about.
+2. The second went after a wall lying across a flight, which is a *different*
+   fault — a thirty-metre party wall sorting by its far corner. Trying to fix
+   it by sorting on the near corner and segmenting long runs is more correct
+   and looks worse: with honest occlusion a 2.7 m wall hides almost all of a
+   2.3 m stairwell hugging it, and both flights vanish. Cutting the walls out
+   of the opening instead just moved the artefact into the walls.
+
+Both were reverted on the word "worse than it was". The lesson is not about
+isometric rendering: a report of one visible fault is not an invitation to
+re-do the subsystem around it, and "more correct" is not the same as "better"
+when the camera is fixed and the building is drawn as a cutaway.
+
+**Fixed by hand:** the judgement, and it took a rollback to get. Also the
+diagnosis, twice: reading the projection showed the well contained along the
+stair's axis, which is true and irrelevant. Tinting the well geometry magenta
+in a throwaway build and driving the real game to it took one screenshot to
+show the spill going sideways. Worth knowing when reading the diff of the
+harness: two runs of `npm run shoot` differ in ~53k pixels by themselves — the
+camera lands on a sub-pixel — so a screenshot diff is only evidence where it is
+solid, never at the hairlines.
+
+**Neither check could see this.** `npm run venue` passes on a building whose
+stairwells paint over the rooms next to them, and `npm run traverse` passes on
+one where you cannot see the stairs at all. They hold geometry and behaviour;
+nothing yet holds the picture.
+
+### Seats in every room, and the letters on the two big stages
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> can you modelize the seats in the rooms as well as the devoxx letter in the
+> two biggest room ?
+
+**Iterations:** 4
+
+Two things the building did not have. The seating existed only as three grey
+collision slabs per room, and the one object that says *Devoxx* rather than
+*a cinema* — the letters on the keynote stage — was not modelled at all.
+
+**What was built.** A `Decor` list beside the obstacles: drawn, never collided.
+The three slabs stay exactly where they were and are now `hidden`, because a
+120 Hz solver has no business testing five thousand rectangles to answer a
+question one rectangle already answers, and nothing 1.44 m wide gets between
+two seats 0.52 m apart anyway. What the player sees is a tier and a seat box
+per seat, 5192 of them, plus `#DEVOXX` in 1.5 m letters on the stages of Rooms
+5 and 8. The venue names *materials* and never colours, so a chapter still
+re-dresses the seating by changing its palette and nothing else.
+
+**What went wrong.** The seating inherited a taper that halved the row width
+between the back of the room and the screen, and nobody had ever checked it
+against anything — with seats laid out row by row it cost 740 seats across the
+building, 14% under the counts printed on the plan. Measuring the drawn rows
+settled it: in Room 8 they hold 208 px of a 223 px frontage and barely shorten
+at all. The fan is now the one number that makes the modelled seat count land
+on the printed one, and `npm run venue` holds it there to within 3%.
+
+Also mismeasured on the way: the plan shows a ~5 m strip between the corridor
+and each auditorium — projection booths and exit lobbies — that the survey
+folded into the room. The model stands in a 2.5 m cross-aisle for it. Worth
+knowing before anyone re-measures floor 1; the rooms are about 6% deep as a
+result, and every seat count still lands.
+
+**Fixed by hand.** Two judgements the model had made honestly and wrongly.
+
+1. Five thousand boxes a frame is a slideshow. The renderer now precomputes a
+   screen-space box per solid and per piece of dressing and skips whatever the
+   viewport cannot contain — the building is 150 m long and the view is 45 m
+   wide. Measured after: 16.7 ms a frame on both floors, which is vsync.
+2. The letters were laid out facing their own audiences, which is the only
+   thing a real sign does — and which means the fixed south-west camera reads
+   Room 5's word from behind, mirrored, in every frame of the game. It was
+   modelled correctly and looked like a bug. Both signs now run the way the
+   screen reads, written down next to `drawnRise` and the 2.7 m cutaway as one
+   more place where the camera wins.
+
+The screenshot harness is what caught both. Neither `npm run venue` nor
+`npm run traverse` can see a mirrored word or a dropped frame.
+
+### The presenter's desk, on every stage
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> Can you add the presenter desk
+
+**Iterations:** 3
+
+A draped trestle table and the branded lectern beside it, measured off the
+same photograph as the letters — 1.9 × 0.8 × 0.75 m and 0.7 × 0.5 × 1.2 m. The
+seats in the foreground of that frame give the scale: a thing's height against
+its own width survives the perspective even where its absolute size does not.
+
+In all fourteen rooms rather than the two with letters. Fourteen desks is what
+makes this a conference centre instead of a multiplex — it is the object that
+says a person stood here and talked, and Chapter I is about the fact that
+nobody does any more.
+
+Solid and drawn from the same rectangle, unlike the seats and the letters: a
+table's shape and its collision shape are the same thing. That needed
+`material` on `Obstacle` as well as on `Decor`, which is the better shape for
+it anyway — furniture is not a wall and should not be wall-coloured.
+
+**What went wrong.** The desk went where the photograph puts it, at the end of
+the stage away from the doors, and in seven of the fourteen rooms it vanished.
+Not subtly: the lectern was simply absent. Isometric from the south-west, a
+room's south wall stands between its stage and the viewer, and the arithmetic
+is unforgiving — a 1.2 m object needs three metres of clearance to show above a
+2.7 m wall drawn in front of it, and it had one and a half. The doors alternate
+room by room, so half the building put the desk against that wall.
+
+**Fixed by hand.** The diagnosis, which took dumping the venue to JSON and
+doing the projection by hand rather than squinting at a screenshot — the first
+read was "the lectern is drawn too short", which it was not. And then the
+call: the desk now stands at the NORTH end of every stage, where the wall is
+the far one. The building has no opinion about which side a desk goes (the AV
+crew decides, and the rooms mirror each other anyway), so this costs nothing
+and buys a desk you can see in all fourteen.
+
+Also caught here, and unrelated to the desk: `npm run shoot` was drawing 1217
+boxes a frame on the auditorium level and dropping one frame in five. The cull
+margin was 160 px, which sounds harmless and is an eighty percent increase in
+area — and at that level area is seats. At 64 px, which is still six times the
+camera shake, the frame holds sixty. Measure margins on the floor with the
+most geometry, not the one you happen to be looking at.
+
+### Levels, inclination and stairs — evaluated, then built
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> I think we need to evaluate on technical aspect. We need to be able to have
+> floor in the same scene with different levels but also some floor
+> inclination. and to connect different level we might use stares
+>
+> *(then, on the assessment)* do it
+
+**Iterations:** 1 evaluation, then 3 changes
+
+**The evaluation.** Two of the three already worked. Levels within a storey are
+`Room.elevation`, and the reception concourse has stood 1.2 m over the hall
+since the building got walls. Inclination is a `Link`: `surfaceHeight`
+interpolates z along it, `downhill` returns a vector of length sin θ, and
+`Body.step` adds `mass · G · slope` as a real force — the body has never known
+or cared where that vector came from, so the physics was already general.
+Stairs are the same primitive with `riser > 0`.
+
+What did NOT work, in cost order: the storey type was `0 | 1` in six files;
+inclination existed only inside a link rectangle, never as a floor; two
+separate functions answered "how high is the floor here" and were stitched
+together by hand; and two storeys are never drawn together, which is a renderer
+rewrite and was left alone.
+
+**What was built, in that order.**
+
+1. `footingAt` — one question, one answer. Three places used to ask "is there a
+   link under this robot and may it use it" with identical arguments: the slope
+   force, the surface height and the stair speed cap. They can no longer
+   disagree. `groundAt` changed with it: the SMALLEST plate containing a point
+   wins rather than the highest, which is deterministic, lets a plate nest
+   inside another, and — the reason it had to change — can answer with a
+   NEGATIVE height. Taking the highest seeded the answer with zero, so no floor
+   in this building could ever sit below its storey datum.
+2. `Level` — a storey index rather than a pair. Sixty-four sites, all of them
+   `!==` filters that carry on working and none of which would have carried on
+   compiling. Cheap now, expensive the moment a third storey exists.
+3. The rake, with no new engine concept at all. An auditorium floor is the
+   concourse pattern one level down: a plate at the top, a plate at the bottom,
+   and a flight of steps between them. So each of the fourteen rooms got a
+   stage plate at `-rake`, and a `Link` covering the seating footprint with a
+   0.18 m riser — one tread per row of seats, 25 of them in Room 8, dropping
+   4.50 m from the doors to the stage.
+
+**What it bought.** The stair rule now decides who reaches a stage. Voxxy and
+Droid walk down; Biggy, which climbs nothing, reaches the back row of all
+fourteen auditoriums and the front of none. That is a puzzle the building
+generated rather than one anybody designed, and `npm run traverse` asserts it.
+
+**What went wrong.** Three things, all caught by measuring rather than reading.
+
+1. The rake used to be drawn at a third of its real rise, because 4.5 m of
+   seating went straight through the 2.7 m cutaway. Modelling it as a DESCENT —
+   which is what walking into a cinema is — deleted that problem rather than
+   solving it: the cut only ever trims what stands above the floor. The squash
+   constant is gone.
+2. Treads are drawn as a solid mass standing on the floor, which is right for a
+   flight rising out of one and wrong for a rake dropping below it: filled down
+   to the stage, the nearest step of an east-side auditorium is a 4.5 m wall
+   across the room and you never see the seating. They are slabs now, thicker
+   than a riser so consecutive ones overlap.
+3. The rake treads run the full frontage, because that is the cheapest
+   rectangle that stops Biggy — and drawing 22 m of box per row cost 3 ms a
+   frame on the auditorium level, taking the p95 to 33 ms. Now they collide and
+   do not draw, and the seating draws the tread where it is actually visible,
+   which is the aisles: between them every row is hidden by the seats in front
+   of it. 17.5 ms mean, and a 16.7 ms median, which is vsync.
+
+**Fixed by hand.** The order. Doing the surface query first looked like a
+detour and was the only reason step 3 was small — a stage plate at a negative
+elevation is unexpressible against a `groundAt` that maxes against zero, and
+that would have been discovered somewhere much less pleasant. Also the
+diagnosis in (3): the frame budget was measured on the hall, which is the wrong
+floor to measure it on.
+
+### Walls that stand on a floor which is no longer there
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> Those changes introduce a bunch of visual glitches. Like the wall between
+> the room not really visible and at the right spot
+
+**Iterations:** 3
+
+Correct, and the cause was one line older than the rake. A wall was a single
+rectangle whose drawn base came from `groundAt` **at its own centre** — fine
+while every room was one flat plate, and wrong the moment an auditorium floor
+started dropping 4.5 m from its doors to its stage. The two side walls of all
+fourteen rooms hung at corridor level over a floor that had gone; against the
+building's outer walls you could see under them into the void.
+
+**The fix.** The collision rectangle stays whole — collision has never
+consulted height and one rectangle is cheaper than twenty-five — and is marked
+`hidden`. What is DRAWN is cut into the same bands the treads use, by literally
+the same function (`treadsOf`), so a wall and the floor beside it cannot drift
+apart. The ends that stick out past the flight carry no height of their own and
+the renderer finds their plate as it always did, which is how they end up
+standing correctly on the cross-aisle at the top and the stage at the bottom.
+
+**What went wrong.** Following every tread exactly is 564 wall pieces and about
+3 ms a frame on the auditorium level — the level that was already the expensive
+one. Two treads to a drawn step halves it, for a bottom edge sitting at most
+one riser (five pixels) below the floor it meets, under the aisle slabs where
+nothing can see it. Four treads was cheaper again and started to show as a lip
+along the aisle, which is how the constant got settled rather than guessed.
+
+**Fixed by hand.** The instinct to just extend every wall down to the lowest
+floor it touches, which is one field and no splitting. It is also wrong: floor
+plates are painted before any solid, so a wall drawn 4.5 m lower paints over
+the corridor lying in front of it. The cheap fix would have traded a hole under
+the walls for a smear across the floor.
+
 ---
 
 ## Audio
