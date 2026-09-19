@@ -53,6 +53,20 @@ npm run shoot       # build, drive the game headless, screenshot, fail on consol
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
 ```
 
+Two query parameters exist for looking at the game rather than playing it, and
+neither is reachable from inside it:
+
+| | |
+|---|---|
+| `?lab` | straight into the movement rig |
+| `?chapter=<id>` | straight into a chapter, no menu |
+| `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
+
+`?at=` is worth knowing about. Photographing a particular doorway thirty metres
+up a corridor by driving to it is several builds and a lot of guessed key
+timings, and every guess is a chance to photograph the wrong place and draw a
+confident conclusion from it. Coordinates are metres, as in `kinepolis.ts`.
+
 `npm run physics` needs no browser and no native binaries — it compiles
 `src/core` with tsc and runs it in node. That works because `core/` imports
 nothing outside itself. Keep it that way.

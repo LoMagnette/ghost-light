@@ -572,6 +572,39 @@ for (const link of KINEPOLIS.links) {
 const biggyRoutes = KINEPOLIS.links.filter((l) => l.id.includes('ramp'));
 check(biggyRoutes.length > 0, 'Biggy cannot climb, and there is no ramp anywhere — it would be sealed in');
 
+// --- a staircase you can actually put a foot on -----------------------------
+//
+// A flight's depth is not a free choice: it is the rise divided by the riser,
+// times the tread. Typed in off a drawing instead, the grand flight out of the
+// reception concourse came out 5.6 m deep for a 5.0 m rise — 28 steps of 20 cm
+// at an 89% gradient, which is not a staircase, and which drew as a cliff
+// standing in the middle of the room you enter the building through.
+//
+// Nothing else in the venue was wrong, and nothing in the simulation noticed:
+// `canTraverse` asks the link what its riser is and the link said 0.18, so
+// every robot that should climb it did. It is only wrong in metres.
+
+/**
+ * Shallowest tread worth calling a step, metres. Regulations put the
+ * comfortable figure near 0.28 and the legal minimum around 0.22; this is
+ * under both, because the point is to catch geometry that is impossible
+ * rather than to grade it.
+ */
+const MIN_GOING = 0.25;
+
+for (const link of KINEPOLIS.links) {
+  if (link.riser <= 0) continue; // a ramp has no tread; maxSlope judges those
+  const run = link.axis === 'y' ? link.bounds.h : link.bounds.w;
+  const steps = link.rise / link.riser;
+  const going = run / steps;
+  check(
+    going >= MIN_GOING,
+    `${link.id} climbs ${link.rise.toFixed(2)} m in ${run.toFixed(2)} m: ` +
+      `${steps.toFixed(0)} steps of ${(going * 100).toFixed(0)} cm tread, a ` +
+      `${((link.rise / run) * 100).toFixed(0)}% gradient. Not a staircase`,
+  );
+}
+
 // --- the flight a robot climbs and the flight it can see --------------------
 //
 // A robot's feet on a staircase are put at `Traversal.surfaceHeight`, measured

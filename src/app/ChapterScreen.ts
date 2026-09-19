@@ -21,7 +21,8 @@ import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
-import type { Level } from '@/core/Venue';
+import { groundAt, type Level } from '@/core/Venue';
+import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer } from '@/render/BlockoutRenderer';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
@@ -51,7 +52,9 @@ export class ChapterScreen implements Screen {
   private actors: Actor[] = [];
   private controlled!: Actor;
   private floor: Level = 0;
-  private spawns: { x: number; y: number }[] = [];
+  /** Storey the cast started on. Not the chapter's, once ?at= has had a say. */
+  private startFloor: Level = 0;
+  private spawns: { x: number; y: number; z: number }[] = [];
 
   private hud!: HTMLElement;
   private debugText!: HTMLElement;
@@ -87,18 +90,30 @@ export class ChapterScreen implements Screen {
     const { chapter } = this;
 
     game.setBackground(chapter.palette.void);
-    this.floor = chapter.startFloor;
 
     this.sim = new Sim(KINEPOLIS);
 
-    const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorSouth;
+    const spawn = startPoint(chapter);
+    this.floor = spawn.floor;
+    this.startFloor = spawn.floor;
     chapter.cast.forEach((robotId, index) => {
       const spec = ROBOTS[robotId];
       // Spaced by more than the widest robot so nobody starts inside anyone.
       const at = { x: spawn.x + index * 2.6, y: spawn.y };
       const body = new Body(spec, at.x, at.y);
-      const actor = makeActor(body, chapter.startFloor);
-      this.spawns.push(at);
+      // Put its feet on whatever is actually there. A spawn is a coordinate,
+      // not a height, and collision is resolved BEFORE the surface pass — so a
+      // robot dropped at z 0 onto a rake two metres down starts inside a solid
+      // tread, and the solver throws it several hundred kilometres out of the
+      // building. Harmless for the two hand-picked chapter spawns, which are
+      // both on flat floor; not harmless for ?at=, whose whole job is to put a
+      // robot somewhere nobody has stood before.
+      const surface = linkAt(KINEPOLIS, spawn.floor, at.x, at.y);
+      body.z = surface
+        ? surfaceHeight(surface, at.x, at.y, spawn.floor)
+        : groundAt(KINEPOLIS, spawn.floor, at.x, at.y);
+      const actor = makeActor(body, spawn.floor);
+      this.spawns.push({ ...at, z: body.z });
       this.actors.push(this.sim.add(actor));
     });
     this.controlled = this.actors[0];
@@ -181,9 +196,14 @@ export class ChapterScreen implements Screen {
       actor.body.halt();
       actor.body.x = spawn.x;
       actor.body.y = spawn.y;
+      actor.body.z = spawn.z;
       actor.prevX = spawn.x;
       actor.prevY = spawn.y;
+      actor.prevZ = spawn.z;
+      actor.floor = this.startFloor;
+      actor.onLink = undefined;
     });
+    this.floor = this.startFloor;
     this.blockout.clearMarks();
     this.snapCamera();
   }
@@ -349,11 +369,42 @@ export class ChapterScreen implements Screen {
       `brake max  ${(spec.brakeForce / spec.mass).toFixed(1)} m/s²`,
       '',
       `pos        ${body.x.toFixed(1)}, ${body.y.toFixed(1)}`,
+      // Height, and what it is standing on. A level fault never shows up as an
+      // exception — it is a robot floating over its own staircase, or a room
+      // that reads as a storey it is not on — and this is the number that
+      // tells you which, in one glance, without a harness.
+      `z          ${body.z.toFixed(2)} m${this.controlled.onLink ? `  on ${this.controlled.onLink}` : ''}`,
       `floor      ${this.floor}`,
       `sim        ${this.sim.elapsed.toFixed(1)} s`,
       `fps        ${this.fps.toFixed(0)}`,
     ].join('\n');
   }
+}
+
+/**
+ * Where the cast starts — and a way to override it while developing.
+ *
+ * `?at=x,y` drops them anywhere in the building, `?at=x,y,floor` on any storey.
+ * This is a tool, not a feature: nothing in the game reaches it and a judge
+ * cannot get to it by accident, the same arrangement `?lab` has.
+ *
+ * It exists because the agent working on this cannot see the game and has to
+ * photograph it instead, and DRIVING to a particular doorway thirty metres up
+ * a corridor is four builds and a lot of guessed key timings. Every one of
+ * those guesses is a chance to photograph the wrong thing and draw a
+ * confident conclusion from it, which is the expensive failure here — far
+ * more expensive than a query parameter.
+ */
+function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
+  const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorSouth;
+  const at = new URLSearchParams(window.location.search).get('at');
+  if (!at) return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
+
+  const [x, y, floor] = at.split(',').map(Number);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
+  }
+  return { x, y, floor: Number.isFinite(floor) ? floor : chapter.startFloor };
 }
 
 /** A ten-cell text meter. Readable in a screenshot, which is how it gets read. */

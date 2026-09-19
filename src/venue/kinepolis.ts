@@ -318,8 +318,39 @@ const STAIR_FOOT_Y = -9.8;
 const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
-/** The grand flight out of the reception concourse — see the Link below. */
-const GRAND_STAIR = rect(-CORRIDOR_HALF, -59.5, CORRIDOR_HALF * 2, 5.6);
+/**
+ * Tread depth, metres — how much floor each step of a flight takes up.
+ *
+ * With the building's 0.18 m riser this is a 31 degree stair, which is what
+ * every flight in here except one already was. The grand flight was typed in
+ * at 5.6 m deep for a 5.0 m rise, which is 28 steps of 20 cm: an 89% gradient
+ * and a tread you cannot get a foot on. It read as a cliff standing in the
+ * middle of the reception concourse, because that is what it was.
+ *
+ * So the run is DERIVED from the rise rather than measured off a drawing. A
+ * flight's depth is not a free choice — it is the rise divided by the riser,
+ * times this — and the plans do not carry a scale bar accurate enough to argue
+ * with arithmetic.
+ */
+const GOING = 0.3;
+
+/** How deep a flight has to be to climb `rise` metres at the building's riser. */
+function runFor(rise: number): number {
+  return Math.round(rise / RISER) * GOING;
+}
+
+/**
+ * The grand flight out of the reception concourse — see the Link below.
+ *
+ * Its long axis is the one you walk ACROSS: 14.3 m wide, the full width of the
+ * corridor it delivers you to, and 8.4 m deep for the 5.0 m it has to climb.
+ */
+const GRAND_STAIR = rect(
+  -CORRIDOR_HALF,
+  -59.5,
+  CORRIDOR_HALF * 2,
+  runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL),
+);
 
 /**
  * Every flight that lands on the auditorium level.
@@ -1634,8 +1665,14 @@ export const SPAWNS = {
    * you meet the top of the flight, which is a storey of wall.
    */
   stairFoot: { floor: 0 as const, x: -6.0, y: -23.5 },
-  /** The south end of the corridor, between Rooms 6 and 7. */
-  corridorSouth: { floor: 1 as const, x: 0, y: -51.5 },
+  /**
+   * The south end of the corridor, between Rooms 6 and 7.
+   *
+   * North of the grand stairwell, which now reaches y -51.1: this used to be
+   * 1.5 m inside it, and a chapter that starts here would have dropped its
+   * whole cast down the stairs before the player touched a key.
+   */
+  corridorSouth: { floor: 1 as const, x: 0, y: -48 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
   // In the corridor outside Room 8, not inside its seating — the cast lines

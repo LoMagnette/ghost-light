@@ -1090,6 +1090,54 @@ drifted in the first place. Reinstating the old rule makes it report all 41
 faults with their coordinates; this is the third bug in this family and the
 first one a machine will catch.
 
+### A staircase nobody could have climbed
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> So one thing is not correct is that when you enter one of the room you enter
+> via a flat surface but ended being in the middle of the room and stairs to go
+> up and down. So this corridor guide you in the middle of the room
+
+**Iterations:** 4, three of them spent measuring rather than changing anything
+
+Reported as a level fault, so the first job was to find out whether the levels
+were actually wrong — and for the auditoriums they were not. Walking the line a
+robot takes from the corridor into Room 7 and printing both the height it
+stands at and the height of whatever is DRAWN under it gives a clean single
+descent: flat at 0 for the three metres of cross-aisle, then twenty rows down
+to the stage at -3.60, the drawn floor tracking the walked one within 0.15 m
+the whole way, which is the difference between a flat tread and a continuous
+ramp and cannot be removed. Nothing anywhere on that storey goes up.
+
+What IS wrong is in the room you enter the BUILDING through. The grand flight
+out of the reception concourse was typed in at 5.6 m deep for a 5.0 m rise:
+28 steps of 20 cm tread at an 89% gradient. That is not a staircase, and once
+the 2D renderer's squash stopped hiding it, it drew as a cliff standing in the
+middle of the concourse — with the hall steps going DOWN off the same plate.
+A flat surface, in the middle, with stairs up and down.
+
+**Why nothing caught it.** The simulation asks a link what its riser is, and
+the link said 0.18, so every robot that should climb it did and `npm run
+traverse` was green. It was only ever wrong in metres.
+
+**The fix.** A flight's depth is not a free choice — it is the rise divided by
+the riser, times the tread — so the run is now derived rather than measured off
+a drawing that has no scale bar accurate enough to argue with arithmetic. 8.4 m
+for 28 steps of 0.30 m. The chapter II spawn moved with it: it had been 1.5 m
+inside where the deeper stairwell now is, which would have dropped the whole
+cast down the stairs before the player touched a key.
+
+**Fixed by hand.** Two things found on the way and both worth more than the
+bug. `?at=x,y,floor` puts the cast anywhere in the building, because driving
+blind to one doorway cost four builds and produced one screenshot of the wrong
+room. And spawning anywhere now seeds the robot's HEIGHT from the surface
+under it — a spawn is a coordinate, not a height, and collision is resolved
+before the surface pass, so the first use of `?at=` inside an auditorium put
+Voxxy inside a rake tread and the solver threw it 340 kilometres out of the
+building.
+
 ---
 
 ## Audio

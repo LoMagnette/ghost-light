@@ -38,10 +38,15 @@ const routes: Routes = {
 
 document.getElementById('boot-fallback')?.remove();
 
-// ?lab goes straight to the movement rig. Tuning means reloading dozens of
-// times, and two keystrokes of menu each time is two keystrokes too many.
-if (new URLSearchParams(window.location.search).has('lab')) {
+// ?lab goes straight to the movement rig, ?chapter=<id> straight to a chapter.
+// Tuning and photographing both mean reloading dozens of times, and two
+// keystrokes of menu each time is two keystrokes too many. See also ?at= in
+// ChapterScreen, which says WHERE in the building to start.
+const query = new URLSearchParams(window.location.search);
+if (query.has('lab')) {
   routes.chapter(MOVEMENT_LAB.id);
+} else if (query.has('chapter')) {
+  routes.chapter(query.get('chapter') ?? '');
 } else {
   routes.menu();
 }
