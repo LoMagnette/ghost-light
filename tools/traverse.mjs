@@ -193,26 +193,39 @@ scenario(
 // are three obstacles, and whether a robot threads the aisle between them and
 // keeps its feet on the treads is a question only the sim answers.
 //
-// Room 8 runs x 7.15..37.35. Its back strip — flush with the corridor you walk
-// in from — is the first 3.2 m, the rake drops 4.5 m across the next 25, and
-// the stage is the last 2. The wide aisle is at the south end of the frontage.
+/*
+ * Room 8: a back strip flush with the corridor, then the rake, then the stage.
+ *
+ * How deep the rake drops and where the stage starts are READ OFF THE VENUE.
+ * They were written in — "drops 4.5 m across the next 25", and an assertion
+ * that the robot ends below -4.3 — and both went stale the moment the rooms
+ * got a stage a person can stand on, which took Room 8 from 25 rows to 23 and
+ * its stage from 4.50 m down to 4.14. The test then failed for a change that
+ * was correct, which is the most expensive kind of test there is.
+ */
+const KEYNOTE_STAGE = KINEPOLIS.rooms.find((r) => r.id === 'aud-8-stage');
+/** On the stage plate, within a riser of its floor. */
+const onTheStage = (r) =>
+  r.floor === 1 && r.z < KEYNOTE_STAGE.elevation + 0.19 && r.x > KEYNOTE_STAGE.bounds.x + 0.5;
 const KEYNOTE_BACK = { x: 8.7, y: -40.5 };
 
 scenario(
   'Voxxy walks down the keynote rake to the stage',
-  (r) => r.z < -4.3 && r.x > 34 && r.floor === 1,
+  onTheStage,
   () => drive('voxxy', KEYNOTE_BACK, EAST, 40, 1),
 );
 scenario(
   'Droid walks down the keynote rake to the stage',
-  (r) => r.z < -4.3 && r.x > 34 && r.floor === 1,
+  onTheStage,
   () => drive('droid', KEYNOTE_BACK, EAST, 44, 1),
 );
 // The point of the exercise. Biggy gets into every auditorium in the building
 // and reaches the back row of all fourteen, and never reaches a stage.
 scenario(
   'Biggy reaches the back row and no further',
-  (r) => r.z > -0.19 && r.x > 8 && r.x < 11.5,
+  // Still on the flat cross aisle: it never got over the first riser, and it
+  // never got past the back of the seating.
+  (r) => r.z > -0.19 && r.x > 8 && r.x < KEYNOTE_STAGE.bounds.x,
   () => drive('biggy', KEYNOTE_BACK, EAST, 20, 1),
 );
 

@@ -446,12 +446,13 @@ function auditoriums(): {
        * steps descending through it; `voids` is render-only, and what stands
        * in for the floor there is the rake's own treads.
        */
-      const raked = depthAt(2.0, 2.0 + seatRows(bounds) * ROW_PITCH);
+      const stage = stageDepth(bounds);
+      const raked = depthAt(stage, stage + seatRows(bounds) * ROW_PITCH);
       // The plate is cut from the screen wall right back to the cross-aisle —
       // the stage as well as the rake. Cutting only the rake left this room's
       // flat floor still painted across its stage, four and a half metres in
       // the air over the stage's own plate and the letters standing on it.
-      const dropped = depthAt(0, 2.0 + seatRows(bounds) * ROW_PITCH);
+      const dropped = depthAt(0, stage + seatRows(bounds) * ROW_PITCH);
 
       rooms.push({
         id: `aud-${aud.number}`,
@@ -476,7 +477,7 @@ function auditoriums(): {
         label: `Room ${aud.number} stage`,
         kind: 'stage',
         floor: 1,
-        bounds: depthAt(0, 2.0),
+        bounds: depthAt(0, stage),
         elevation: -rake,
       });
 
@@ -589,9 +590,31 @@ const TREAD_SLAB = 0.25;
 /** Height of a seat back above the tier it stands on, metres. */
 const SEAT_BACK = 0.85;
 
-/** Depth an auditorium spends on something other than seats: 2.5 m of cross
- * aisle behind the back row, 2 m of stage in front of the first. */
-const SEATING_CLEAR = 4.5;
+/** Depth behind the back row: the cross aisle you enter along. */
+const CROSS_AISLE = 2.5;
+
+/**
+ * Depth of the stage — the flat plate in front of the first row, where the
+ * screen is and where a person stands to talk.
+ *
+ * A FRACTION of the room, not a fixed 2 m. Two metres was a gangway rather
+ * than a stage: the presenter's desk nearly filled it, and it is where Devoxx
+ * puts a speaker, a lectern and a demo table. Room 8's is now 3.9 m.
+ *
+ * Proportional because the depth comes out of the SEATING — which is what
+ * happens in a real building, one with a proper stage in it seats fewer people
+ * — and a flat 4 m costs a 16 m screening room more than twice what it costs
+ * the 30 m keynote hall. Room 2 lost a fifth of its seats to a stage it would
+ * never have been built with. Big rooms take the full stage, small rooms take
+ * the floor, and the cross aisle you walk in on is untouched either way.
+ */
+const STAGE_MIN = 2.4;
+const STAGE_MAX = 4.0;
+const STAGE_FRACTION = 0.13;
+
+function stageDepth(room: Rect): number {
+  return Math.min(STAGE_MAX, Math.max(STAGE_MIN, room.w * STAGE_FRACTION));
+}
 
 /**
  * How many rows of seats a room holds — and therefore how hard it rakes.
@@ -603,7 +626,7 @@ const SEATING_CLEAR = 4.5;
  * 4.50 m, which is a 17.5% rake — a real multiplex number.
  */
 function seatRows(room: Rect): number {
-  return Math.floor((room.w - SEATING_CLEAR) / ROW_PITCH);
+  return Math.floor((room.w - CROSS_AISLE - stageDepth(room)) / ROW_PITCH);
 }
 
 function rakeOf(room: Rect): number {
@@ -649,8 +672,8 @@ function seatingFor(
    * flexible dimension in a real auditorium, and the rake is not: every one of
    * its steps has to land on a row of seats.
    */
-  const lead = room.w - 2.0 - depth;
-  const stageDepth = depth / stages;
+  const lead = room.w - stageDepth(room) - depth;
+  const bankDepth = depth / stages;
 
   // The seating sits away from the doors, so the wide aisle and the entrance
   // are on the same side of the room.
@@ -665,20 +688,24 @@ function seatingFor(
    *
    * Stated as a MEAN and a SPREAD about the middle row rather than as a taper
    * off the back, because those two numbers do different jobs and used to be
-   * one. The mean sets how many seats the building holds — it is what lands
-   * the modelled total within ten of the 5183 printed on the plan, and it must
-   * not move. The spread sets how fan-shaped a room looks, and it is free.
+   * one. The mean sets how many seats the building holds. The spread sets how
+   * fan-shaped a room looks, and costs nothing.
    *
    * The spread WAS the whole 0.26 taper, which put 26% of Room 8's frontage
    * into the aisle by the time you reached the front row: 13.2 m of seating in
    * a 22.2 m room, with 7.8 m of empty floor down one side. A real auditorium
-   * is that shape and at this zoom it reads as a funnel — the bottom of every
-   * room looked pinched and half empty. 0.09 keeps the rooms visibly fanned
-   * and gives the front rows back most of what the taper took, at no cost in
-   * seats, because narrowing the back by as much as the front gains leaves the
-   * mean exactly where it was.
+   * is that shape and at this zoom it reads as a funnel. 0.09 keeps the rooms
+   * visibly fanned without pinching their fronts.
+   *
+   * The mean is 0.94 because the stages are 4 m. It was 0.87, tuned to land
+   * the building within ten seats of the 5183 printed on the plan — and giving
+   * every room a stage a person can stand on took two rows out of the big ones
+   * and 365 seats out of the building. Widening the rows puts them back: 5221
+   * against 5183. The rooms now hold the right number of people in a slightly
+   * different shape, which is the trade the plan cannot arbitrate and is the
+   * one deliberate departure from it in here.
    */
-  const SEAT_FAN_MEAN = 0.87;
+  const SEAT_FAN_MEAN = 0.94;
   const SEAT_FAN_SPREAD = 0.09;
   const widthAt = (t: number): number =>
     full * (SEAT_FAN_MEAN + SEAT_FAN_SPREAD * (0.5 - t));
@@ -701,10 +728,10 @@ function seatingFor(
   for (let s = 0; s < stages; s += 1) {
     const bankH = widthAt(s / stages);
     if (bankH <= 0.6) continue;
-    const x = side === -1 ? doorEdge - lead - (s + 1) * stageDepth : doorEdge + lead + s * stageDepth;
+    const x = side === -1 ? doorEdge - lead - (s + 1) * bankDepth : doorEdge + lead + s * bankDepth;
     banks.push({
       floor: 1,
-      bounds: rect(x, yOf(bankH), stageDepth - 0.4, bankH),
+      bounds: rect(x, yOf(bankH), bankDepth - 0.4, bankH),
       height: 0.95,
       hidden: true,
     });

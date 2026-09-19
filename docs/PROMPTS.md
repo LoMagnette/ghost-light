@@ -1278,6 +1278,53 @@ those turned out to be separable. `SEAT_FAN_MEAN` is the dial that does cost
 fidelity, and it is still at its measured value in case the rooms want to be
 fuller still.
 
+### A stage a person could stand on
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> I don't mean the space between the seats. I meant the space where the
+> presenter is. it's not wide enough. You could almost double the depth
+
+**Iterations:** 3
+
+The previous round had read "the bottom of the room is too narrow" as the
+seating fan and fixed that instead, so the first job was a correction rather
+than a change. The stage — the plate in front of the first row, with the screen
+behind it — was 2 m. That is a gangway: the presenter's desk nearly filled it.
+
+Doubling it is one constant, and every consequence is the interesting part.
+
+**Where the depth comes from.** The seating, which is what happens in a real
+building: a room with a proper stage in it seats fewer people. The cross aisle
+you walk in on is untouched, which matters because it is 3.2 m and Biggy is
+1.44 m wide — take the stage out of that and the heaviest robot is sealed out
+of every auditorium.
+
+**Why a flat 4 m was wrong.** It took two rows out of the 30 m keynote hall and
+two out of a 16 m screening room, which cost the small room a fifth of its
+seats for a stage it would never have been built with. Five rooms blew through
+the 25% band. The stage is a FRACTION of the room now — 13%, floored at 2.4 and
+capped at 4.0 — so Room 8 gets 3.93 m and Room 2 gets 2.40, and the big rooms
+lose two rows while the small ones lose one.
+
+**Paying for it.** Even scaled, the stages cost the building 365 seats. This is
+where the permission to be unfaithful finally got spent: `SEAT_FAN_MEAN`, the
+dial held back last round precisely because it was the one with a price, went
+from 0.87 to 0.94. Wider rows put the seats back — 5221 against the 5183
+printed — so the building holds the right number of people in a slightly
+different shape. That is the trade the plan cannot arbitrate.
+
+**Fixed by hand.** Two things, and both were tests restating the building
+instead of asserting behaviour. `npm run traverse` asserted a robot ends up
+below -4.3 m at the bottom of Room 8's rake, which was true of a 25-row room
+and false of a 23-row one — so it failed for a change that was correct, which
+is the most expensive kind of test there is. It reads the stage plate's own
+elevation now. And a sweep over candidate values for the fan mean left the
+constant at the last value it tried rather than the one that was chosen, which
+the harness caught and a screenshot would not have.
+
 ---
 
 ## Audio
