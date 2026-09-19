@@ -361,7 +361,7 @@ export class BlockoutRenderer {
     for (const obstacle of this.venue.obstacles) {
       if (obstacle.floor !== floor || obstacle.hidden) continue;
       const { bounds } = obstacle;
-      const datum = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+      const datum = this.datumFor(floor, obstacle);
       boxes.push({
         bounds,
         bottom: datum + (obstacle.base ?? 0),
@@ -379,7 +379,7 @@ export class BlockoutRenderer {
     for (const piece of this.venue.decor) {
       if (piece.floor !== floor) continue;
       const { bounds } = piece;
-      const datum = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+      const datum = this.datumFor(floor, piece);
       boxes.push({
         bounds,
         bottom: datum + (piece.base ?? 0),
@@ -424,6 +424,34 @@ export class BlockoutRenderer {
     }
 
     return group;
+  }
+
+  /**
+   * What a piece's heights are measured FROM, in metres above the storey datum.
+   *
+   * Two answers, and getting them the wrong way round is the most expensive
+   * one-line mistake available in this file.
+   *
+   * A plain solid — a wall, a column, a seat bank — stands on whatever floor
+   * plate is under it, so it needs that plate's elevation. A storey is not one
+   * flat plane: the reception concourse is 1.2 m over the exhibition hall and
+   * an auditorium's stage is 4.5 m under its doors.
+   *
+   * A flight does not. `core/Traversal.surfaceHeight` measures a robot's feet
+   * on a staircase from the STOREY datum, and `Link.base` is stated the same
+   * way, so a tread already knows its absolute height and adding the plate
+   * under it counts the same metre twice. The grand staircase begins in the
+   * concourse and was drawn a storey and a bit into the ceiling; the wall
+   * bands beside a rake, which are cut to the same treads, hung three metres
+   * under the floor they belong to.
+   *
+   * The rule is simply "is this piece part of a flight", which is what
+   * `linkId` says on both an Obstacle and a Decor.
+   */
+  private datumFor(floor: Level, piece: { bounds: Rect; linkId?: string }): number {
+    if (piece.linkId) return 0;
+    const { bounds } = piece;
+    return groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   }
 
   /**

@@ -43,7 +43,11 @@ writeFileSync(
       baseUrl: repo,
       paths: { '@/*': ['src/*'] },
     },
-    files: [join(repo, 'src/venue/kinepolis.ts'), join(repo, 'src/core/Venue.ts')],
+    files: [
+      join(repo, 'src/venue/kinepolis.ts'),
+      join(repo, 'src/core/Venue.ts'),
+      join(repo, 'src/core/Traversal.ts'),
+    ],
   }),
 );
 
@@ -69,6 +73,8 @@ Module._resolveFilename = function (request, ...rest) {
 const { KINEPOLIS, SPAWNS, HALL_AREA_M2, HALL_FLOOR_M2, KEYNOTE_ROOM, ROW_PITCH } = await import(
   pathToFileURL(join(out, 'venue/kinepolis.js'))
 );
+const { groundAt } = await import(pathToFileURL(join(out, 'core/Venue.js')));
+const { surfaceHeight } = await import(pathToFileURL(join(out, 'core/Traversal.js')));
 rmSync(out, { recursive: true, force: true });
 
 // --json and --svg exist because a building cannot be checked by driving
@@ -565,6 +571,85 @@ for (const link of KINEPOLIS.links) {
 // sealed into whichever room it spawns in.
 const biggyRoutes = KINEPOLIS.links.filter((l) => l.id.includes('ramp'));
 check(biggyRoutes.length > 0, 'Biggy cannot climb, and there is no ramp anywhere — it would be sealed in');
+
+// --- the flight a robot climbs and the flight it can see --------------------
+//
+// A robot's feet on a staircase are put at `Traversal.surfaceHeight`, measured
+// from the STOREY datum. The renderer has to draw the tread it is standing on
+// at the same height, and the two are computed in different files from
+// different fields — which is exactly the arrangement that drifts.
+//
+// It drifted. The renderer added the elevation of the plate under each tread,
+// which is right for a wall and wrong for a flight: `Link.base` already says
+// how far up the storey the flight starts. The grand staircase begins in the
+// reception concourse, 1.2 m up, so every one of its treads was drawn 1.2 m
+// into the ceiling, and the wall bands beside a rake hung three metres under
+// the floor they belong to. Neither is an exception; both are one metre
+// counted twice.
+//
+// So: for every flight, compare what the renderer draws against what the
+// simulation makes a robot stand on.
+
+/** What `BlockoutRenderer.datumFor` does. Keep the two in step. */
+const datumFor = (piece) =>
+  piece.linkId
+    ? 0
+    : groundAt(KINEPOLIS, piece.floor, piece.bounds.x + piece.bounds.w / 2, piece.bounds.y + piece.bounds.h / 2);
+
+/**
+ * A tread is a flat slab spanning one step and the simulation's surface is a
+ * continuous ramp, so at a tread's centre the two differ by half a riser
+ * whatever anyone does. This has to clear that without clearing a real fault,
+ * and the smallest real fault available is the 1.2 m concourse.
+ */
+const TREAD_SLACK = 0.25;
+
+for (const link of KINEPOLIS.links) {
+  const flightArea = link.bounds.w * link.bounds.h;
+  const floors = link.from === link.to ? [link.from] : [link.from, link.to];
+  for (const floor of floors) {
+    for (const piece of KINEPOLIS.obstacles) {
+      if (piece.linkId !== link.id || piece.floor !== floor) continue;
+      // The shaft skins and the landing at the bottom of a well carry the same
+      // linkId — they belong to the flight — but nothing walks on them.
+      const share = (piece.bounds.w * piece.bounds.h) / flightArea;
+      if (share > 0.6 || piece.bounds.w < 0.1 || piece.bounds.h < 0.1) continue;
+
+      const cx = piece.bounds.x + piece.bounds.w / 2;
+      const cy = piece.bounds.y + piece.bounds.h / 2;
+      const drawn = datumFor(piece) + piece.height;
+      const walked = surfaceHeight(link, cx, cy, floor);
+      check(
+        Math.abs(drawn - walked) <= TREAD_SLACK,
+        `${link.id} on floor ${floor}: a robot at ${cx.toFixed(1)}, ${cy.toFixed(1)} stands at ` +
+          `${walked.toFixed(2)} m but the tread there is drawn at ${drawn.toFixed(2)} m`,
+      );
+    }
+  }
+}
+
+/**
+ * Same sum, for the walls cut to a flight's bands — and a looser tolerance,
+ * because those bands are coarsened two treads to a step and keep the LOWER of
+ * the pair, so a wall may honestly sit two risers under the surface beside it.
+ * Still nowhere near the metres a double-counted plate is worth.
+ */
+const WALL_SLACK = 0.45;
+
+for (const piece of KINEPOLIS.decor) {
+  if (!piece.linkId) continue;
+  const link = KINEPOLIS.links.find((l) => l.id === piece.linkId);
+  if (!link) continue;
+  const cx = piece.bounds.x + piece.bounds.w / 2;
+  const cy = piece.bounds.y + piece.bounds.h / 2;
+  const bottom = datumFor(piece) + (piece.base ?? 0);
+  const beside = surfaceHeight(link, cx, cy, piece.floor);
+  check(
+    Math.abs(bottom - beside) <= WALL_SLACK,
+    `${piece.linkId}: the flight at ${cx.toFixed(1)}, ${cy.toFixed(1)} is at ${beside.toFixed(2)} m but ` +
+      `the wall beside it is drawn from ${bottom.toFixed(2)} m — it will not meet the floor`,
+  );
+}
 
 // ---------------------------------------------------------------------------
 

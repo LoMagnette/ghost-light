@@ -1217,9 +1217,12 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               bounds: part.bounds,
               // Outside the flight the renderer finds the plate underneath on
               // its own, which is right: those ends stand on the cross-aisle
-              // at the top and the stage at the bottom.
+              // at the top and the stage at the bottom. Over the flight it
+              // must NOT, because `treadsOf` already answered from the storey
+              // datum — hence the linkId, which is what tells it apart.
               base: part.surface,
               height: (part.surface ?? 0) + WALL_HEIGHT,
+              linkId: part.surface === undefined ? undefined : rake.id,
             });
           }
         }

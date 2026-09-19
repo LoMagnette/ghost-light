@@ -184,6 +184,19 @@ export interface Decor {
   /** Bottom above its storey datum, metres. Defaults to 0. */
   base?: number;
   material?: Material;
+
+  /**
+   * Set when this piece is banded to a flight — a wall running alongside a
+   * staircase or a rake, stepping down with it.
+   *
+   * Unlike `Obstacle.linkId` this says nothing about who may climb what:
+   * dressing never collides. It says where the heights above are measured
+   * FROM. A flight states its surface from the storey datum, so anything cut
+   * to a flight's bands does too, and the renderer must not also add the plate
+   * the piece happens to stand over. The ends of such a wall stick out past
+   * the flight, have no surface of their own, and leave this unset.
+   */
+  linkId?: string;
 }
 
 /** A walkable link between floors. Robots climb it; Biggy climbs it slowly. */

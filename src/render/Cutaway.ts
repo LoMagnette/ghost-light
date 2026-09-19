@@ -39,7 +39,7 @@ export const CUTAWAY_MAX = 3;
 const CUTAWAY_FADE = 0.22;
 
 /** Metres of fade between the solid building and the clear centre. */
-const CUTAWAY_FEATHER = 0.65;
+const CUTAWAY_FEATHER = 0.8;
 
 /**
  * How far in front of a robot a surface has to be before it starts to fade,
@@ -63,7 +63,7 @@ const CUTAWAY_FAR = 0.8;
  * is at its best when a player does not notice it is there.
  */
 export function cutawayRadius(radius: number, height: number): number {
-  return radius * 1.2 + height * 0.5;
+  return radius * 1.5 + height * 0.7;
 }
 
 export interface CutawayUniforms {

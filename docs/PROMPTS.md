@@ -1038,6 +1038,58 @@ what it should: one 102 x 108 pixel region differs and the rest of the frame is
 identical to the bit. Without the cutaway the robot is not merely dim in that
 frame, it is entirely absent.
 
+### Steps and walls a storey out of place
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> Can you the fade circle a bit larger. There's issue with the step not render
+> on the right level and a few wall that are not correctly positioned
+
+**Iterations:** 2
+
+Two faults, one cause, and it had been latent since before the renderer moved.
+
+A storey is not one flat plane in this building — the reception concourse
+stands 1.2 m over the exhibition hall, an auditorium's stage 4.5 m under its
+own doors — so the renderer looked up the plate under each solid and drew from
+there. Right for a wall or a column. Wrong for a staircase: `Link.base` already
+states how far up the storey a flight begins, and it is the number
+`Traversal.surfaceHeight` puts a robot's feet at. Adding the plate as well
+counts the same metre twice.
+
+The grand staircase begins in the concourse, so all eighteen of its treads were
+drawn 1.2 m into the ceiling, as were the seven concourse steps. Sixteen wall
+bands beside the auditorium rakes — cut to the same treads by the same function
+— hung two to four metres below the floor they belong to: one was drawn from
+-7.56 m where the flight beside it is at -3.96.
+
+**Why it surfaced now.** The 2D renderer squashed every full-storey flight to
+2.4 m so it would fit under the drawing cutaway, and clamped the drawn height
+of everything else to 2.7 m. Both clamps are gone, because with a depth buffer
+they are no longer needed — and both had been quietly swallowing the error.
+
+**The fix.** One rule, in one place: a piece that is part of a flight measures
+its heights from the STOREY datum; everything else stands on the plate under
+it. `Obstacle` already carried a `linkId`; `Decor` gained one, meaning only
+that — the banded part of a wall gets it, the ends that stick out past the
+flight do not, because those genuinely do stand on a plate.
+
+**Fixed by hand.** The instinct to key the rule off "does this piece state its
+own base", which is one line and needs no new field. Measuring it first showed
+it would move 152 innocent pieces of stage dressing as well as the 41 broken
+ones, because furniture standing on a stage states a base AND wants the plate.
+The narrow rule moves exactly the 41.
+
+**What it cost, and what it bought.** `npm run venue` now compares, for every
+flight, the height the renderer draws a tread at against the height
+`Traversal.surfaceHeight` puts a robot's feet at — the two live in different
+files and are computed from different fields, which is the arrangement that
+drifted in the first place. Reinstating the old rule makes it report all 41
+faults with their coordinates; this is the third bug in this family and the
+first one a machine will catch.
+
 ---
 
 ## Audio
