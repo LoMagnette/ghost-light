@@ -661,28 +661,41 @@ function seatingFor(
    *
    * The room is a rectangle because the collision system speaks rectangles,
    * but the real ones are fans. This is the fan, and it is the only place it
-   * is written down. The three collision banks sample it at t = 0, ⅓ and ⅔ —
-   * each one the WIDEST the seating gets anywhere inside it — so every seat
-   * drawn from the same curve lands inside the block a robot meets.
+   * is stated: the collision banks, the terracing and the seats all sample it.
    *
-   * The 0.26 is no longer a taste: the seat counts printed on the plan are the
-   * only independent measure of how much seating a room holds, and this is the
-   * fan that lands the modelled total within ten seats of the printed 5183. It
-   * was 0.51 — a front row half the width of the back — which cost 740 seats
-   * and made every room read far narrower at the screen than the drawn rows
-   * are: measured off `cinema-venue-devoxx.png`, Room 8's rows hold 208 px of
-   * a 223 px frontage and barely shorten at all.
+   * Stated as a MEAN and a SPREAD about the middle row rather than as a taper
+   * off the back, because those two numbers do different jobs and used to be
+   * one. The mean sets how many seats the building holds — it is what lands
+   * the modelled total within ten of the 5183 printed on the plan, and it must
+   * not move. The spread sets how fan-shaped a room looks, and it is free.
+   *
+   * The spread WAS the whole 0.26 taper, which put 26% of Room 8's frontage
+   * into the aisle by the time you reached the front row: 13.2 m of seating in
+   * a 22.2 m room, with 7.8 m of empty floor down one side. A real auditorium
+   * is that shape and at this zoom it reads as a funnel — the bottom of every
+   * room looked pinched and half empty. 0.09 keeps the rooms visibly fanned
+   * and gives the front rows back most of what the taper took, at no cost in
+   * seats, because narrowing the back by as much as the front gains leaves the
+   * mean exactly where it was.
    */
-  const widthAt = (t: number): number => full * (1 - 0.26 * t);
+  const SEAT_FAN_MEAN = 0.87;
+  const SEAT_FAN_SPREAD = 0.09;
+  const widthAt = (t: number): number =>
+    full * (SEAT_FAN_MEAN + SEAT_FAN_SPREAD * (0.5 - t));
 
   /**
-   * Pin each row's FAR edge, so every time the fan narrows it is the door-side
-   * aisle that grows. Pin the door side instead — which is what this did first
-   * — and the taper opens the far aisle while the way in stays the same width,
-   * which is backwards and which the venue check caught on the two big rooms.
+   * CENTRE each row in the seatable width, so the fan opens both aisles.
+   *
+   * This pinned the far edge, which meant every millimetre the fan narrowed
+   * came out of the door-side aisle alone: by the front row of Room 8 that
+   * aisle was 7.8 m wide against 1.2 m on the far side, and a room with all
+   * its empty floor down one side reads as a mistake rather than as a shape.
+   * Splitting it keeps the way in the wider of the two — it starts 2 m wider
+   * and both grow by the same amount — which is the property pinning was
+   * protecting in the first place.
    */
   const yOf = (width: number): number =>
-    doorSide === 'low' ? room.y + room.h - FAR_AISLE - width : room.y + FAR_AISLE;
+    room.y + FAR_AISLE + (full - width) / 2 + (doorSide === 'low' ? DOOR_AISLE : 0);
 
   // -- what a robot meets: three blocks, and no longer drawn ----------------
   for (let s = 0; s < stages; s += 1) {

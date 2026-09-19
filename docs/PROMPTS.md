@@ -1232,6 +1232,52 @@ business restating the building's coordinates, so it asks the venue where the
 flight is and stands off each end of it. Moving a staircase is now a change to
 one file.
 
+### Auditoriums that read as funnels
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> the bottom of the room are too narrow can you widden them evenif it means no
+> being 100% faithful to reality
+
+**Iterations:** 2
+
+A real auditorium IS a fan, and this one was modelled as one: the seating
+tapered 26% from the back row to the screen. At this zoom that reads as a
+funnel, and the bottom of every room looked pinched. Worse, every millimetre
+the fan narrowed came out of ONE aisle, because each row was pinned to its far
+edge — so Room 8's front row was 13.2 m of seating in a 22.2 m room with 7.8 m
+of empty floor down one side and 1.2 m down the other. A room with all its
+space on one side reads as a mistake rather than as a shape.
+
+**The obvious fix is wrong.** Simply reducing the taper inflates the building
+from 5171 seats to 5968 against the 5183 printed on the plan, and two rooms
+blow through the 25% per-room band. The permission to be unfaithful was real,
+but spending it before checking whether it was needed would have been lazy.
+
+It was not needed. The taper was doing two jobs with one number: the MEAN width
+sets how many seats a room holds, and the SPREAD about it sets how fan-shaped
+it looks. Splitting them lets the second move while the first does not — narrow
+the back by as much as the front gains and the count is untouched. Spread 0.26
+to 0.09, and each row centred in the seatable width instead of pinned:
+
+| Room 8 | back row | front row | front aisles |
+|---|---|---|---|
+| before | 17.8 m | 13.2 m | 7.8 / 1.2 m |
+| now | 16.3 m | 14.7 m | 4.8 / 2.8 m |
+
+5170 seats against 5171, every check green, and the per-room drift came out
+tighter than it was. The rooms are still visibly fanned; they are no longer
+funnels.
+
+**Fixed by hand.** The instinct to take the offer. "Even if it means not being
+faithful" is worth spending, and it was not worth spending here — the fidelity
+that was actually costing anything was the fan's DEPTH, not the seat count, and
+those turned out to be separable. `SEAT_FAN_MEAN` is the dial that does cost
+fidelity, and it is still at its measured value in case the rooms want to be
+fuller still.
+
 ---
 
 ## Audio
