@@ -101,10 +101,26 @@ function scenario(label, expectation, run) {
 // The hall floor is the datum; the concourse stands 1.2 m above it.
 const HALL = { x: 0, y: -24 };
 const RAMP = { x: 16.5, y: -30 };
-// The west flight runs y -21.0 (landing) to -9.8 (foot), so it is climbed
-// SOUTHWARD. Approach the foot from the hall side, north of it.
-const STAIR_FOOT = { x: -6.0, y: -7.5 };
-const STAIR_LANDING = { x: -6.0, y: -23.0 };
+/*
+ * Where to stand to meet the west flight, READ OFF THE FLIGHT.
+ *
+ * These were two hard-coded y values, and they were wrong the moment the
+ * staircases moved to where the plan actually puts them — two column bays
+ * further back. The harness then reported a robot at y -340073, which is the
+ * collision solver ejecting something that started inside a solid: the test
+ * was standing where the stairs now are.
+ *
+ * A test of the stair rule should not restate the building's coordinates. It
+ * asks the venue where the flight is and stands at each end of it, so moving
+ * a staircase is a change to one file rather than to two.
+ */
+const WEST_FLIGHT = KINEPOLIS.links.find((l) => l.id === 'stair-west');
+/** Clear of either end, and more than a robot's own length away from it. */
+const APPROACH = 2.2;
+// `ascending: false` on a y axis: height falls as y rises, so the FOOT — the
+// end at hall level — is the northern one, and the landing is south.
+const STAIR_FOOT = { x: -6.0, y: WEST_FLIGHT.bounds.y + WEST_FLIGHT.bounds.h + APPROACH };
+const STAIR_LANDING = { x: -6.0, y: WEST_FLIGHT.bounds.y - APPROACH };
 
 scenario(
   'Voxxy climbs the concourse steps',
@@ -165,7 +181,8 @@ scenario(
 
 scenario(
   'Biggy is stopped by the stairwell upstairs',
-  (r) => r.floor === 1 && r.y < -21.0,
+  // Never got into the well: still south of the flight's own southern edge.
+  (r) => r.floor === 1 && r.y < WEST_FLIGHT.bounds.y,
   () => drive('biggy', STAIR_LANDING, NORTH, 14, 1),
 );
 

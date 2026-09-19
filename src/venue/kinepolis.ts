@@ -308,12 +308,23 @@ const STAIR_WIDTH = 2.3;
  * Where the flights meet the HALL floor, at their north end.
  *
  * They climb southward, away from the hall and toward the reception end of the
- * building, so the upper landing is at y -21.0 and the foot is here. That is
- * also the better view: the high end is the near end on screen, so the flight
- * steps away from the camera instead of hiding its own descent behind the
- * landing.
+ * building, so the upper landing is at the south end and the foot is here.
+ * That is also the better view: the high end is the near end on screen, so the
+ * flight steps away from the camera instead of hiding its own descent behind
+ * the landing.
+ *
+ * SET AGAINST THE COLUMN GRID, not typed in. The flights stand in the bay
+ * immediately behind the second row of columns, which is where `booth-map.png`
+ * draws them — the pair either side of "Conference entrance", between Areas #1
+ * and #2 at the back of the hall. They had been two bays south of that, which
+ * put them in the middle of the floor: the plan has them 6.7 to 19.5 m off the
+ * north wall and this had them at 21.8 to 33.0.
+ *
+ * Anchoring it to `COLUMN_Y` rather than restating a number is the point. Both
+ * were read off the same drawing, and the columns are the thing in the hall you
+ * can see the stairs standing between.
  */
-const STAIR_FOOT_Y = -9.8;
+const STAIR_FOOT_Y = HALL.y + HALL.h - COLUMN_Y[1] + STAIR_RUN;
 
 const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
@@ -1686,10 +1697,13 @@ export const SPAWNS = {
    */
   hallCentre: { floor: 0 as const, x: 0, y: -24 },
   /**
-   * The foot of the west flight — its SOUTH end. Approach from the north and
-   * you meet the top of the flight, which is a storey of wall.
+   * Just south of the west flight, below its TOP.
+   *
+   * The flights climb southward, so this end of one is a storey of wall: drive
+   * north from here and you meet it, which is what `npm run traverse` asserts.
+   * The foot you can actually walk onto is at the far, northern end.
    */
-  stairFoot: { floor: 0 as const, x: -6.0, y: -23.5 },
+  stairFoot: { floor: 0 as const, x: -6.0, y: -10.2 },
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *

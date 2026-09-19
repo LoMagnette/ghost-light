@@ -1194,6 +1194,44 @@ check was not vacuous reverted one cause and saw it pass, which is the correct
 answer to the wrong question: the two causes are independently sufficient, and
 only reverting BOTH makes the check report all three walls.
 
+### The staircases were two column bays out
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> if my memory serve me correctly the stairs on the exposition floor are two
+> pillars back from their current position
+
+**Iterations:** 1
+
+Checkable, so it was checked rather than taken on trust — `booth-map.png` is on
+disk and is the drawing the hall was surveyed from. It puts the two flights
+either side of "Conference entrance", between Areas #1 and #2 at the back of
+the hall, 6.7 to 19.5 m off the north wall. The venue had them at 21.8 to 33.0,
+which is two column bays south, in the middle of the floor. The recollection
+was right to the bay.
+
+The evidence was already in the file, too, and disagreeing with itself:
+`COLUMN_Y` carries a comment saying the northern stretch of the hall has no
+columns "because that is where the two staircases stand" — and the staircases
+were nowhere near it.
+
+**The fix.** `STAIR_FOOT_Y` is derived from `COLUMN_Y` rather than typed in.
+Both numbers were read off the same drawing, and the columns are the thing in
+the hall you can actually see the stairs standing between, so tying one to the
+other is what stops them drifting apart again. The flights now stand in the bay
+immediately behind the second row of columns and neither one has a column
+inside its footprint.
+
+**Fixed by hand.** `npm run traverse` broke, and correctly: it hard-coded the
+two y values the flights used to be at, so its start points were now inside
+solid geometry and it reported a robot at y -340073 — the collision solver
+ejecting something that began inside a wall. A test of the stair rule has no
+business restating the building's coordinates, so it asks the venue where the
+flight is and stands off each end of it. Moving a staircase is now a change to
+one file.
+
 ---
 
 ## Audio
