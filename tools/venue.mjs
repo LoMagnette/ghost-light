@@ -684,6 +684,75 @@ for (const piece of KINEPOLIS.decor) {
   );
 }
 
+// --- nothing the building is built of may hang in the air -------------------
+//
+// A wall stands on the plate under it, and `groundAt` is asked for that plate
+// AT THE WALL'S CENTRE. A wall long enough to span two plates therefore takes
+// the height of whichever one its midpoint happens to land on — and a party
+// wall between two auditoriums sits exactly on the line between them, where
+// the midpoint may land on neither room's stage and read the flat floor of the
+// room instead. Three walls hung four metres over the stage they belong to.
+//
+// Only walls are checked: they are the pieces that must meet the floor. Seats
+// stand on tiers that are deliberately not drawn under them, and the letters
+// on a keynote stage are raised on purpose, so both would be noise here.
+
+const MAX_DRAWN_HEIGHT = 2.7; // BlockoutRenderer's cutaway. Keep in step.
+const drawnPieces = [
+  ...KINEPOLIS.obstacles.filter((o) => !o.hidden),
+  ...KINEPOLIS.decor,
+];
+const inBounds = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+const drawnTop = (p) =>
+  datumFor(p) + Math.min(p.height, p.linkId ? Infinity : MAX_DRAWN_HEIGHT);
+
+/**
+ * The highest thing DRAWN at a point, at or below `ceiling`.
+ *
+ * Drawn, not modelled: a room's plate does not count where the room has cut a
+ * stairwell or a rake out of it, because a void is not a floor. That
+ * distinction is the whole check — every one of the three faults was a wall
+ * standing at the height of a plate with a hole in it.
+ */
+function drawnUnder(floor, x, y, ceiling) {
+  let best = -Infinity;
+  for (const r of KINEPOLIS.rooms) {
+    if (r.floor !== floor || !inBounds(r.bounds, x, y)) continue;
+    if (r.voids?.some((v) => inBounds(v, x, y))) continue;
+    const z = r.elevation ?? 0;
+    if (z <= ceiling + 1e-6) best = Math.max(best, z);
+  }
+  for (const p of drawnPieces) {
+    if (p.floor !== floor || !inBounds(p.bounds, x, y)) continue;
+    const t = drawnTop(p);
+    if (t <= ceiling + 1e-6) best = Math.max(best, t);
+  }
+  return best;
+}
+
+/** How far a wall may sit off the floor before it reads as floating. */
+const FLOAT_SLACK = 0.4;
+
+for (const piece of drawnPieces) {
+  if (piece.material !== undefined) continue; // no material means the building itself
+  if (piece.linkId) continue; // a tread hangs in its own well, on purpose
+  const bottom = datumFor(piece) + (piece.base ?? 0);
+  let highest = -Infinity;
+  for (const fx of [0.02, 0.5, 0.98]) {
+    for (const fy of [0.02, 0.5, 0.98]) {
+      const x = piece.bounds.x + piece.bounds.w * fx;
+      const y = piece.bounds.y + piece.bounds.h * fy;
+      highest = Math.max(highest, drawnUnder(piece.floor, x, y, bottom));
+    }
+  }
+  check(
+    bottom - highest <= FLOAT_SLACK,
+    `a wall at ${piece.bounds.x.toFixed(1)}, ${piece.bounds.y.toFixed(1)} ` +
+      `(${piece.bounds.w.toFixed(1)} x ${piece.bounds.h.toFixed(1)} m) is drawn from ${bottom.toFixed(2)} m ` +
+      `with nothing under it above ${highest === -Infinity ? 'anything at all' : highest.toFixed(2) + ' m'}`,
+  );
+}
+
 // ---------------------------------------------------------------------------
 
 console.log(`\nrooms       ${KINEPOLIS.rooms.length}`);

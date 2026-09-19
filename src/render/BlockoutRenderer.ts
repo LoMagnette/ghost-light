@@ -153,6 +153,17 @@ const SRGB_GAMMA = 2.2;
 interface SkidMark {
   x: number;
   y: number;
+  /**
+   * Height of the floor it was scuffed into, metres.
+   *
+   * Not optional and not zero. A mark is a decal on a surface, and this
+   * building has surfaces at every height between the stage of Room 8 and the
+   * top of the reception concourse — so a mark drawn at the storey datum
+   * regardless is correct only in the corridor. Halfway down a rake it hung
+   * two metres over the robot that left it, in mid-air, which is what a
+   * footprint on nothing looks like.
+   */
+  z: number;
   /** Half-width of the mark in metres — heavier robots leave a wider scar. */
   width: number;
   life: number;
@@ -644,6 +655,7 @@ export class BlockoutRenderer {
     this.marks.push({
       x: pos.x,
       y: pos.y,
+      z: pos.z,
       width: body.spec.radius * 0.8,
       // Harder slides leave darker marks, so the trace reads as pressure and
       // not merely as a path.
@@ -662,7 +674,7 @@ export class BlockoutRenderer {
     for (let i = 0; i < MAX_MARKS; i += 1) {
       const mark = this.marks[i];
       if (mark) {
-        SCRATCH.position.set(mark.x, mark.y, DECAL_LIFT * 0.6);
+        SCRATCH.position.set(mark.x, mark.y, mark.z + DECAL_LIFT * 0.6);
         SCRATCH.scale.set(mark.width, mark.width, 1);
         SCRATCH.rotation.set(0, 0, 0);
         SCRATCH.updateMatrix();

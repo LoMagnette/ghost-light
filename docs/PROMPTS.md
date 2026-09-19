@@ -1138,6 +1138,62 @@ before the surface pass, so the first use of `?at=` inside an auditorium put
 Voxxy inside a rake tread and the solver threw it 340 kilometres out of the
 building.
 
+### A wall over a stage, and footprints at the wrong height
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> if you look at the file @visual/issue-1.png I've circled in red two issues.
+> 1st the foot step are not at the right spot. the second the wall is floating
+
+**Iterations:** 2
+
+A screenshot with two rings drawn on it, which is a better bug report than any
+amount of prose — but neither fault could be found by looking at that
+screenshot, because both are metres in a file.
+
+**The footprints.** A skid mark was recorded as an x and a y and nothing else,
+and drawn at the storey datum. That is correct in the corridor and correct
+nowhere else in a building whose surfaces run from the stage of Room 8 at
+-4.50 m to the top of the reception concourse at +1.20. Halfway down a rake
+the marks hung two metres over the robot that left them, which is the ring the
+report drew. The mark now carries the height of the floor it was scuffed into.
+The proof is the reception concourse, which stands 1.20 m up: before the fix a
+mark there is drawn INSIDE the plate and cannot be seen at all, and the same
+scripted drive either side of the change shows nothing, then marks.
+
+**The wall.** Three of them, and a checkable fault rather than a visible one, so
+the way to find it was to ask every drawn piece whether anything was drawn
+under it. Three walls had nothing: 7 m of party wall between Rooms 7 and 8
+drawn at the flat floor of the room while the stage it belongs over is four
+and a half metres down, and its mirror in Room 5, and one in Room 13.
+
+Two independent causes, either of which alone was enough:
+
+1. A wall is cut to the bands of the flight it runs along, and a party wall
+   sits exactly on the line between two auditoriums — so it grazes the
+   neighbour's rake by the half-thickness of the wall, and `find` returned
+   whichever of the two came first in the list. Room 8's south wall was cut to
+   Room 7's rake, which ends eight metres short of it. A room's own flight is
+   the one INSIDE it; nothing else is.
+2. Whatever stuck out past the end of a flight was given no height and left to
+   `groundAt`, which is asked at the piece's CENTRE — and the centre of a 7 m
+   wall on a room boundary lands on neither room's stage, so it read the flat
+   floor. Past the foot of a rake is the stage, at exactly the rake's lowest
+   surface; past its head is the cross-aisle, at exactly its highest. So an end
+   now carries the height of the end it left, which agrees with the plate
+   everywhere the plate was right.
+
+**Fixed by hand.** The verification, twice. The first attempt to prove the
+skid-mark fix diffed two screenshots of a moving robot and reported the whole
+frame changed, which was the camera following it to a slightly different place
+— the same trap as two sessions ago, and the fix is the same: compare
+something at rest, or compare by looking. The first attempt to prove the wall
+check was not vacuous reverted one cause and saw it pass, which is the correct
+answer to the wrong question: the two causes are independently sufficient, and
+only reverting BOTH makes the check report all three walls.
+
 ---
 
 ## Audio

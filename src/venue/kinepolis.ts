@@ -1228,13 +1228,25 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
            * cut into the same bands the treads use — literally the same
            * function — so the wall and the floor beside it cannot drift.
            */
+          /*
+           * The flight this wall runs along — and it has to be THIS room's.
+           *
+           * A party wall sits on the line between two auditoriums, so it
+           * grazes the neighbour's rake by the half-thickness of the wall, and
+           * `find` returned whichever of the two came first in the list. Room
+           * 8's south wall was being cut to Room 7's rake, which ends eight
+           * metres short of it: everything past that got no surface, fell back
+           * to the room's flat plate, and hung four metres over Room 8's stage.
+           *
+           * A room's own flight is the one inside it. Nothing else is.
+           */
           const rake = links.find(
             (l) =>
               l.from === l.to &&
               l.from === room.floor &&
               l.rise > 0 &&
               l.axis === (edge.horizontal ? 'x' : 'y') &&
-              overlapping(bounds, l.bounds),
+              within(room.bounds, l.bounds),
           );
           if (!rake) {
             walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
@@ -1292,18 +1304,19 @@ function coarsen(
   return out;
 }
 
-/** Do these two rectangles share any area? */
-function overlapping(a: Rect, b: Rect): boolean {
-  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+/** Is `inner` wholly inside `outer`? Tolerant by a millimetre, for rounding. */
+function within(outer: Rect, inner: Rect): boolean {
+  return (
+    inner.x >= outer.x - 1e-3 &&
+    inner.y >= outer.y - 1e-3 &&
+    inner.x + inner.w <= outer.x + outer.w + 1e-3 &&
+    inner.y + inner.h <= outer.y + outer.h + 1e-3
+  );
 }
 
 /**
  * Cut a wall into the bands of the flight it runs along, plus whatever sticks
  * out at either end.
- *
- * The ends come back with no surface of their own — they stand on a plate and
- * the renderer already knows how to find one. Only the part over the flight
- * has to be told, because a flight is not a plate and `groundAt` cannot see it.
  */
 function alongBands(
   wall: Rect,
@@ -1320,13 +1333,25 @@ function alongBands(
   const out: { bounds: Rect; surface?: number }[] = [];
   const first = Math.max(lo, bands[0].from);
   const last = Math.min(hi, bands[bands.length - 1].to);
-  if (first - lo > 0.01) out.push({ bounds: slice(lo, first) });
+  /*
+   * An end carries the height of the end of the flight it left, rather than no
+   * height at all.
+   *
+   * Past the foot of a rake is the stage, which is at exactly the rake's
+   * lowest surface; past its head is the cross-aisle, at exactly its highest.
+   * So this agrees with the plate every time the plate is the right answer —
+   * and it is right in the one case the plate got wrong, which is a wall whose
+   * own centre lands on neither plate and so reads the flat floor of the room.
+   */
+  if (first - lo > 0.01) out.push({ bounds: slice(lo, first), surface: bands[0].surface });
   for (const band of bands) {
     const from = Math.max(band.from, lo);
     const to = Math.min(band.to, hi);
     if (to - from > 0.01) out.push({ bounds: slice(from, to), surface: band.surface });
   }
-  if (hi - last > 0.01) out.push({ bounds: slice(last, hi) });
+  if (hi - last > 0.01) {
+    out.push({ bounds: slice(last, hi), surface: bands[bands.length - 1].surface });
+  }
   return out;
 }
 
