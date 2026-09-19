@@ -58,6 +58,13 @@ These are pass/fail. Check them before every submission.
 Originality is 40 of 100 and it is the **idea**, not the technology. The stack
 exists to buy time to spend on the idea. Never trade idea time for engine time.
 
+The renderer moved from Phaser 4 to three.js on 19 Sep. The look is unchanged
+— the same isometric view, now from an orthographic camera at 30° rather than
+from a projection function — and so is every line of `src/core/`, which never
+knew what was drawing it. What it bought is a depth buffer, which deleted three
+hundred lines of hand-written sorting, stairwell clipping and per-face shading,
+and real lights, which is what `lightLevel` now drives.
+
 ## 4. The three chapters
 
 Same building. Same engine. Three rulesets.
@@ -220,10 +227,10 @@ schedule survivable.
 
 ```
 src/
-  main.ts                  Phaser bootstrap
+  main.ts                  bootstrap and routing
   config.ts                build constants (NOT gameplay tuning)
   core/
-    Iso.ts                 2:1 isometric projection, depth sort
+    Iso.ts                 the view angle and the zoom
     RobotSpec.ts           mass/force/speed per robot  ← main tuning surface
     Body.ts                force-based integrator for one body
     Sim.ts                 fixed 120 Hz loop, collision, impacts
@@ -234,28 +241,31 @@ src/
     Chapter.ts             what a chapter is allowed to change
     registry.ts            the three chapters, as data
   render/
-    BlockoutRenderer.ts    grey-box iso renderer
+    IsoCamera.ts           orthographic camera, fixed 30° from the south-west
+    BlockoutRenderer.ts    the building and the robots as three.js geometry
   input/
+    Keyboard.ts            DOM key state
     KeyboardController.ts  keys → DriveInput
-  scenes/
-    BootScene.ts
-    MenuScene.ts
-    ChapterScene.ts        the ONE gameplay scene
+  app/
+    Game.ts                canvas, renderer, loop, screen lifecycle
+    MenuScreen.ts          chapter select
+    ChapterScreen.ts       the ONE gameplay screen
 ```
 
 ### Rules that hold the whole thing together
 
-1. **There is one gameplay scene.** There is no `ChapterOneScene`. A chapter is
-   data. Adding a scene per chapter triples the cost of every later change.
+1. **There is one gameplay screen.** There is no `ChapterOneScreen`. A chapter
+   is data. Adding a screen per chapter triples the cost of every later change.
 2. **The venue is described once.** Chapters dress it; they never redefine it.
    This is also what earns the *sense of place* points — a judge who
    recognises the same corridor in three lights believes the building exists.
 3. **A chapter may change exactly four things:** palette + light, crowd
    density, control mode, objective. Wanting a fifth means the thing belongs
    in `core/`.
-4. **The simulation thinks in metres, the renderer thinks in pixels.** The
-   moment gameplay code reasons in pixels, the physics stops being honest and
-   the venue stops being to scale.
+4. **Everything is in metres.** The building is modelled at the coordinates it
+   was surveyed at and an orthographic camera is pointed at it, so there is no
+   projection in the middle for the simulation and the picture to disagree
+   about. The venue is to scale because it is not scaled.
 5. **Physics runs at a fixed 120 Hz.** Never step bodies with a variable frame
    delta — heavy bodies with force-limited braking change stopping distance
    with framerate, which is exactly when a judge is watching Biggy slide.
@@ -325,9 +335,20 @@ number.
 
 ### To generate
 
-8-direction sprite sheets per robot: idle, walk, run, plus one ability
-animation each. The model sheets are multi-angle orthographic turnarounds,
-which is exactly the right input for this.
+**Changed by the move to three.js, 19 Sep.** The plan was 8-direction sprite
+sheets per robot — 24 sheets, the standard answer for a 2D isometric game.
+A three.js scene rotates a mesh for free, so there are no facings to draw: one
+model per robot replaces eight views of it, and the ability animations become
+animations rather than eight copies of each.
+
+So: one model per robot, plus idle, walk, run and one ability animation each.
+The model sheets are multi-angle orthographic turnarounds, which is exactly the
+right input for modelling from — better input for a model than for a sprite
+sheet, in fact, because that is what a turnaround is for.
+
+This is a real saving, and it is the largest single piece of remaining art
+work. It is also the one place where the renderer change alters the deliverable
+rather than only the code.
 
 ### Hard rule
 

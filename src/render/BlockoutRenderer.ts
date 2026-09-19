@@ -1,40 +1,63 @@
 /**
- * Grey-box isometric renderer.
+ * Grey-box renderer.
  *
- * This draws the whole building and every robot as extruded boxes, from the
- * venue data and the chapter palette. It exists so that movement, collision
- * and level layout can be tuned and judged before a single sprite is
- * generated — which is the correct order to work in, and the only order that
- * fits the schedule.
+ * The whole building and every robot as extruded boxes, built from the venue
+ * data and the chapter palette. It exists so that movement, collision and
+ * level layout can be tuned and judged before a single sprite is generated —
+ * which is the correct order to work in, and the only order that fits the
+ * schedule.
  *
- * It is not throwaway. The art pass replaces the ROBOT drawing with sprites
- * and dresses the ROOMS with textures, but the depth sort, the camera and the
- * projection all stay exactly as they are here.
+ * It is not throwaway. The art pass replaces the ROBOT meshes with models and
+ * dresses the ROOMS with materials; the scene graph, the camera and the venue
+ * it is built from all stay exactly as they are here.
  *
- * Everything is drawn into a single Graphics object in depth order each frame.
- * That is fine at blockout scale (a few hundred quads). When the art pass adds
- * real sprites, move the robots onto Phaser game objects with `setDepth` and
- * leave the static geometry batched here.
+ * WHAT MOVING TO THREE.JS BOUGHT
+ *
+ * The 2D version of this file was 746 lines, and roughly three hundred of them
+ * were a depth buffer written by hand: a painter's-order queue re-sorted every
+ * frame, a Sutherland-Hodgman clipper so a staircase could not paint out of
+ * its own stairwell, precomputed screen-space bounds so five thousand seats
+ * could be culled before they were projected, and a per-face shading table.
+ * A z-buffer does all four correctly and for free, so all four are gone.
+ *
+ * What replaces them is static: the building is built ONCE, per storey, into
+ * instanced meshes, and a frame does nothing but move the robots. The building
+ * has stopped being redrawn sixty times a second to look the same.
  */
 
-import Phaser from 'phaser';
-import { depthKey, ISO_SQUASH, PPM, project, type ScreenPoint } from '@/core/Iso';
+import {
+  AmbientLight,
+  BoxGeometry,
+  BufferGeometry,
+  CircleGeometry,
+  Color,
+  DirectionalLight,
+  DoubleSide,
+  Float32BufferAttribute,
+  Group,
+  InstancedMesh,
+  Line,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+  Object3D,
+  RingGeometry,
+  Scene,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import type { Actor } from '@/core/Sim';
-import { climbFraction } from '@/core/Traversal';
 import { renderPos } from '@/core/Sim';
 import { groundAt, rect, type Level, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
-
-interface Drawable {
-  depth: number;
-  draw: (g: Phaser.GameObjects.Graphics) => void;
-}
 
 /**
  * Tallest an obstacle is DRAWN, in metres, whatever its real height.
  *
  * The exhibition hall's columns are 5.4 m — the real clear height under the
- * auditorium level — and drawn at full height they turn a 52 × 49 m room into
+ * auditorium level — and drawn at full height they turn a 52 x 49 m room into
  * a thicket of poles that hides the floor, the robot and any sense of how far
  * away the far wall is. The room measures correct and reads far too small.
  *
@@ -43,71 +66,16 @@ interface Drawable {
  * ceiling, applied one level down — and a column holding up a floor we do not
  * draw is the part that was inconsistent. Cutaway height is how isometric
  * games have always drawn interiors.
+ *
+ * Stairs are exempt. A flight cut off at 2.7 m is a staircase with its top
+ * missing and a robot walking up out of it into the air, which is what the 2D
+ * renderer's `drawnRise` squash existed to hide. With real depth the honest
+ * geometry sorts correctly, so it is drawn.
  */
 const MAX_DRAWN_HEIGHT = 2.7;
 
-/**
- * Screen-space bounding box of a piece of static geometry, in the world
- * layer's own coordinates. Precomputed, because it never changes.
- */
-interface ScreenBox {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-}
-
-/**
- * Slack around the viewport when culling, in pixels.
- *
- * Two things to cover and both are small: the camera shake, which moves the
- * view without moving the world layer and peaks around ten pixels, and the
- * storey elevation `screenBox` does not bother to look up — the concourse is
- * the only raised plate and 1.2 m is 34 px.
- *
- * Not generous, on purpose. This was 160 and every extra pixel of margin is
- * area at the auditorium level, where area is seats: at 160 the frame was
- * queueing 1217 boxes and dropping one frame in five, and at 64 it holds
- * sixty. The correct margin is the smallest one that cannot pop.
- */
-const CULL_MARGIN = 64;
-
-/**
- * Screen-space extent of a box standing on a floor plate.
- *
- * Only x and y decide the horizontal extent, and the projection is monotonic
- * in both, so two corners give the range. Vertically the far corner at the top
- * of the box is highest on screen and the near corner at its bottom lowest.
- */
-function screenBox(bounds: Rect, bottom: number, top: number): ScreenBox {
-  const near = project(bounds.x, bounds.y, bottom);
-  const far = project(bounds.x + bounds.w, bounds.y + bounds.h, top);
-  return {
-    minX: (bounds.x - (bounds.y + bounds.h)) * PPM - CULL_MARGIN,
-    maxX: (bounds.x + bounds.w - bounds.y) * PPM + CULL_MARGIN,
-    minY: far.sy - CULL_MARGIN,
-    maxY: near.sy + CULL_MARGIN,
-  };
-}
-
-/**
- * A hole in a floor shows exactly what is visible THROUGH the hole.
- *
- * Everything in a stairwell is BELOW the floor, and below the floor means
- * lower on screen — so a flight paints down across whatever lies in front of
- * the opening. There is no depth buffer to stop it and there should not be
- * one: the scene is a single Graphics object in painter's order, and the
- * floors are drawn first, in one pass, by design.
- *
- * So the contents of a well are clipped to the mouth of the well, which is
- * what a hole does. Nothing else about the stairs changes — the flight is the
- * same shape it always was, and the walls and the sort are untouched. It is
- * only no longer able to leave the opening.
- */
-function mouthOf(hole: Rect, z: number): ScreenPoint[] {
-  const { x, y, w, h } = hole;
-  return [project(x, y, z), project(x + w, y, z), project(x + w, y + h, z), project(x, y + h, z)];
-}
+/** How thick a floor plate is drawn, metres. Only its edge is ever seen. */
+const PLATE_THICKNESS = 0.14;
 
 /** Sideways speed, m/s, above which a robot is sliding rather than tracking. */
 const SLIP_THRESHOLD = 0.4;
@@ -118,6 +86,62 @@ const MARK_LIFE = 2.6;
 /** Hard cap on marks so a long tuning session cannot grow unbounded. */
 const MAX_MARKS = 320;
 
+/**
+ * How far above a floor plate its decals sit, metres.
+ *
+ * Enough to beat depth precision, small enough that nothing reads as floating:
+ * at the camera's 34 px per metre this is a fortieth of a pixel.
+ */
+const DECAL_LIFT = 0.025;
+
+/**
+ * Ambient and key light, as a fraction of full reflectance.
+ *
+ * Solved, not chosen. The 2D renderer shaded the three visible faces of every
+ * box by hand — top full, south 0.63 of it, west 0.52 — and these are the two
+ * intensities and the one direction that reproduce that from a light actually
+ * having a position. It is the same picture arrived at the right way round,
+ * and it is now a thing the art pass can move rather than a table of
+ * multipliers that had to be kept in step with the projection.
+ *
+ * Softer than the hand-shaded version on purpose: matching 0.63 exactly needs
+ * a light so near vertical that every unlit surface goes to pure black, which
+ * is not a trade worth making for a wall you can already tell apart.
+ */
+const AMBIENT = 0.111;
+const KEY = 0.972;
+
+/**
+ * Direction the key light comes from.
+ *
+ * Above and to the south-west, which is where the camera is. A key light
+ * behind the camera is flat lighting and normally a mistake; here it is the
+ * point, because the three faces of every box in sight are exactly the three
+ * this lights, and the shading has to tell them apart rather than set a mood.
+ * More south than west, so the two vertical faces separate.
+ */
+const KEY_DIRECTION = new Vector3(-0.196, -0.355, 0.914);
+
+/**
+ * three.js lights are physically scaled: a Lambert surface reflects
+ * `intensity / PI`, so an intensity of 1 is a face at about a third of its own
+ * colour. Both lights are pre-multiplied by this to make `AMBIENT` and `KEY`
+ * mean the fraction of the surface colour they say they mean.
+ */
+const LAMBERT_SCALE = Math.PI;
+
+/**
+ * Exponent that carries the chapter's light level into the renderer's space.
+ *
+ * `lightLevel` and every palette colour were tuned against a renderer that
+ * multiplied packed sRGB bytes; three.js lights a linear scene and converts
+ * back on the way out, where the same multiplier lands nowhere near the same
+ * brightness. Raising the exposure by the sRGB gamma puts it back: Chapter I
+ * at 0.18 is as dark as it was measured to be, not the washed-out 0.70 that a
+ * naive linear multiply produces.
+ */
+const SRGB_GAMMA = 2.2;
+
 interface SkidMark {
   x: number;
   y: number;
@@ -126,28 +150,47 @@ interface SkidMark {
   life: number;
 }
 
+/** One extruded box of static geometry, in metres. */
+interface Box {
+  bounds: Rect;
+  bottom: number;
+  top: number;
+  colour: number;
+}
+
+/** The parts of a robot that move every frame. */
+interface RobotView {
+  group: Group;
+  body: Mesh;
+  nose: Mesh;
+  shadow: Mesh;
+  stopLine: Line;
+  stopRing: Mesh;
+}
+
+const SCRATCH = new Object3D();
+const SCRATCH_COLOUR = new Color();
+
 export class BlockoutRenderer {
-  private readonly graphics: Phaser.GameObjects.Graphics;
+  /** The scene this renderer owns. The screen points a camera at it. */
+  readonly scene = new Scene();
+
   private readonly venue: Venue;
   private readonly palette: Palette;
-  private readonly lightLevel: number;
-  private readonly camera: Phaser.Cameras.Scene2D.Camera;
+
+  /** Static building geometry, one group per storey. Only one is ever shown. */
+  private readonly storeys = new Map<Level, Group>();
+
+  private readonly robots = new Map<Actor, RobotView>();
+  private readonly marks: SkidMark[] = [];
+  private readonly markMesh: InstancedMesh;
+  private readonly markColour: Color;
+  private readonly floorColour: Color;
+  /** The chapter's light level as a plain multiplier, for the unlit decals. */
+  private readonly exposure: number;
 
   /**
-   * Screen-space extent of every static solid and every piece of dressing,
-   * indexed alongside the venue's own arrays.
-   *
-   * The building is 150 m long and the view is 45 m wide, so most frames most
-   * of it is off screen — and since the seating landed, "most of it" is five
-   * thousand seats. Testing four numbers beats projecting nine quads and then
-   * discovering they were all outside the viewport, and it keeps the per-frame
-   * draw queue at what is actually visible rather than at what exists.
-   */
-  private readonly obstacleBoxes: ScreenBox[];
-  private readonly decorBoxes: ScreenBox[];
-
-  /**
-   * Draw the stopping marker and velocity vector. Set from the scene's F1
+   * Draw the stopping marker and velocity vector. Set from the screen's F1
    * debug flag. The marker is the single most useful thing on screen while
    * tuning movement, and it may well survive into the shipping game for
    * Chapter III, where you are directing Biggy rather than driving it and need
@@ -155,189 +198,179 @@ export class BlockoutRenderer {
    */
   telemetry = false;
 
-  private readonly marks: SkidMark[] = [];
-
-  constructor(
-    scene: Phaser.Scene,
-    venue: Venue,
-    palette: Palette,
-    lightLevel: number,
-    /** Container the graphics are parented to — this is what the camera moves. */
-    parent?: Phaser.GameObjects.Container,
-  ) {
-    this.graphics = scene.add.graphics();
-    if (parent) parent.add(this.graphics);
+  constructor(venue: Venue, palette: Palette, lightLevel: number) {
     this.venue = venue;
     this.palette = palette;
-    this.lightLevel = lightLevel;
-    this.camera = scene.cameras.main;
 
-    // Storey elevation is not looked up here: the only raised plate is the
-    // reception concourse at 1.2 m, and CULL_MARGIN is worth five metres.
-    this.obstacleBoxes = venue.obstacles.map((o) =>
-      screenBox(o.bounds, Math.min(o.base ?? 0, 0), Math.min(o.height, MAX_DRAWN_HEIGHT)),
-    );
-    this.decorBoxes = venue.decor.map((d) =>
-      screenBox(d.bounds, Math.min(d.base ?? 0, 0), Math.min(d.height, MAX_DRAWN_HEIGHT)),
-    );
-  }
+    // The same curve the 2D renderer multiplied every colour by, applied to
+    // the lights instead. Chapter I's darkness is its light level, not a
+    // pre-dimmed palette — see the note at the top of chapters/registry.ts.
+    this.exposure = 0.35 + lightLevel * 0.65;
+    const lit = LAMBERT_SCALE * this.exposure ** SRGB_GAMMA;
 
-  destroy(): void {
-    this.graphics.destroy();
+    this.scene.add(new AmbientLight(0xffffff, AMBIENT * lit));
+    const key = new DirectionalLight(0xffffff, KEY * lit);
+    key.position.copy(KEY_DIRECTION);
+    this.scene.add(key);
+
+    for (const floor of storeysOf(venue)) {
+      const group = this.buildStorey(floor);
+      group.visible = false;
+      this.storeys.set(floor, group);
+      this.scene.add(group);
+    }
+
+    // The marks and the floor they scuff are unlit — a decal has no normal
+    // worth lighting — so the chapter's exposure has to be applied to them by
+    // hand, or a skid mark stays at full brightness in a dark building.
+    this.floorColour = new Color(shade(palette.floor, this.exposure));
+    this.markColour = new Color(shade(palette.floor, this.exposure * 0.5));
+    this.markMesh = new InstancedMesh(
+      new CircleGeometry(1, 18),
+      // Opaque, and faded by lerping toward the floor it is scuffing rather
+      // than by alpha: an InstancedMesh has one material and therefore one
+      // opacity, but it has a colour per instance.
+      new MeshBasicMaterial({ depthWrite: false }),
+      MAX_MARKS,
+    );
+    this.markMesh.renderOrder = 1;
+    this.markMesh.count = MAX_MARKS;
+    this.markMesh.frustumCulled = false;
+    for (let i = 0; i < MAX_MARKS; i += 1) {
+      SCRATCH.scale.setScalar(0);
+      SCRATCH.updateMatrix();
+      this.markMesh.setMatrixAt(i, SCRATCH.matrix);
+      this.markMesh.setColorAt(i, this.markColour);
+    }
+    this.scene.add(this.markMesh);
   }
 
   /**
-   * Redraw everything on the given floor. Call once per frame.
+   * Update everything that moves. Call once per frame.
    *
    * `dt` is the real frame delta in seconds — used only for ageing skid marks,
    * never for anything the simulation can see.
    */
   render(floor: Level, actors: Actor[], alpha: number, dt: number): void {
-    const g = this.graphics;
-    g.clear();
+    for (const [level, group] of this.storeys) group.visible = level === floor;
 
     this.ageMarks(dt);
     for (const actor of actors) {
       if (actor.floor === floor) this.recordSlip(actor, alpha);
     }
+    this.writeMarks();
 
-    const queue: Drawable[] = [];
-
-    // The mouth of every stairwell arriving on this floor, in screen space.
-    // See mouthOf: this is the only thing holding a flight inside its own hole.
-    const mouths = new Map<string, ScreenPoint[]>();
-    for (const link of this.venue.links) {
-      if (link.to !== floor || link.from === floor) continue;
-      const { x, y, w, h } = link.bounds;
-      mouths.set(link.id, mouthOf(link.bounds, groundAt(this.venue, floor, x + w / 2, y + h / 2)));
+    for (const actor of actors) {
+      const view = this.robots.get(actor) ?? this.buildRobot(actor);
+      view.group.visible = actor.floor === floor;
+      if (view.group.visible) this.placeRobot(actor, view, alpha);
     }
+  }
+
+  /** Forget every mark. Call on reset so a tuning run starts on clean floor. */
+  clearMarks(): void {
+    this.marks.length = 0;
+    this.writeMarks();
+  }
+
+  dispose(): void {
+    this.scene.traverse((object) => {
+      if (object instanceof Mesh || object instanceof Line || object instanceof LineSegments) {
+        object.geometry.dispose();
+        const material = object.material;
+        if (Array.isArray(material)) for (const m of material) m.dispose();
+        else material.dispose();
+      }
+    });
+    this.scene.clear();
+    this.robots.clear();
+  }
+
+  // -- the building ---------------------------------------------------------
+
+  /**
+   * Everything standing on one storey, built once.
+   *
+   * Two draw calls for the solid geometry — every box in the building is the
+   * same unit cube with a transform and a colour, which is what an
+   * InstancedMesh is for — plus one for the floor seams. Floor 1 is five
+   * thousand seats and it costs the same as an empty room.
+   */
+  private buildStorey(floor: Level): Group {
+    const group = new Group();
+    const boxes: Box[] = [];
+    const seams: number[] = [];
 
     for (const room of this.venue.rooms) {
       if (room.floor !== floor) continue;
-      queue.push({
-        // Floors draw first, but a raised plate has to draw after the one it
-        // stands above or its edge is buried under the lower floor.
-        depth: -1e6 + (room.elevation ?? 0),
-        draw: (gfx) => this.drawFloorPlate(gfx, room),
-      });
-    }
+      const z = room.elevation ?? 0;
+      // Auditoriums sit a shade darker than circulation space, which reads as
+      // carpet against the lighter corridor floor in the reference photographs.
+      const colour =
+        room.kind === 'auditorium' ? shade(this.palette.floor, 0.82) : this.palette.floor;
 
-    // Each mark sorts on its own position rather than as one batch on the
-    // floor plane. Batching hides a skid that passes in FRONT of a column
-    // behind it, which is exactly the case you are looking at while tuning
-    // grip against the hall's column grid.
-    for (const mark of this.marks) {
-      queue.push({
-        depth: depthKey(mark.x, mark.y) - 0.5, // just under anything standing there
-        draw: (gfx) => this.drawMark(gfx, mark),
-      });
-    }
-
-    const view = this.viewBox();
-
-    for (let i = 0; i < this.venue.obstacles.length; i += 1) {
-      const obstacle = this.venue.obstacles[i];
-      if (obstacle.floor !== floor || obstacle.hidden) continue;
-      if (view && !overlapsView(this.obstacleBoxes[i], view)) continue;
-      const { bounds } = obstacle;
-      const base = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
-      const bottom = base + (obstacle.base ?? 0);
-      // A tread of a flight ARRIVING here hangs in a well, and a well is only
-      // ever seen through its own mouth. The same rectangle on the floor the
-      // flight LEAVES from is a solid standing on the carpet and is not
-      // clipped, which is why this asks the link and not the obstacle.
-      const mouth = obstacle.linkId ? mouths.get(obstacle.linkId) : undefined;
-      // No material means the building itself, which keeps the wall pair the
-      // palette tuned by hand. Only furniture passes a tint.
-      const tint = obstacle.material ? this.material(obstacle.material) : undefined;
-      queue.push({
-        depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h, base),
-        draw: (gfx) =>
-          this.drawBox(
-            gfx,
-            bounds.x,
-            bounds.y,
-            bounds.w,
-            bounds.h,
-            base + Math.min(obstacle.height, MAX_DRAWN_HEIGHT),
-            tint,
-            bottom,
-            mouth,
-          ),
-      });
-    }
-
-    // Dressing, after the solids and by the same rules: same cutaway, same
-    // depth key, same box. The only difference is that nothing collides with
-    // it and that its colour comes from the chapter rather than from the wall.
-    for (let i = 0; i < this.venue.decor.length; i += 1) {
-      const piece = this.venue.decor[i];
-      if (piece.floor !== floor) continue;
-      if (view && !overlapsView(this.decorBoxes[i], view)) continue;
-      const { bounds } = piece;
-      const base = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
-      queue.push({
-        depth: depthKey(bounds.x + bounds.w, bounds.y + bounds.h, base + (piece.base ?? 0)),
-        draw: (gfx) =>
-          this.drawBox(
-            gfx,
-            bounds.x,
-            bounds.y,
-            bounds.w,
-            bounds.h,
-            base + Math.min(piece.height, MAX_DRAWN_HEIGHT),
-            // Same rule as the solids: no material means the building itself,
-            // which keeps the wall pair the palette tuned by hand. A wall cut
-            // into pieces to follow a rake has to shade like the wall it is.
-            piece.material ? this.material(piece.material) : undefined,
-            base + (piece.base ?? 0),
-          ),
-      });
-    }
-
-    for (const actor of actors) {
-      if (actor.floor !== floor) continue;
-      const pos = renderPos(actor, alpha);
-      // A robot down in a stairwell is NOT clipped to the mouth of it, on
-      // purpose. Strictly the floor in front of the hole is between the camera
-      // and the robot, and strictly the player would then be driving something
-      // they cannot see. Same call as the 2.7 m cutaway: the building gives
-      // way to the machine.
-      const at = { ...pos, z: this.drawnZ(actor, pos, floor) };
-      queue.push({
-        depth: depthKey(at.x, at.y, at.z) + 1,
-        draw: (gfx) => this.drawRobot(gfx, actor, at),
-      });
-      if (this.telemetry) {
-        queue.push({
-          depth: -1e6 + 2, // floor decal: under the robots, over the skid marks
-          draw: (gfx) => this.drawStopMarker(gfx, actor, at),
-        });
+      // A stairwell is an absence of floor, so the plate is drawn with its
+      // holes taken out. The flight below then shows through the opening,
+      // which the depth buffer arranges without being asked.
+      for (const tile of floorTiles(room)) {
+        // A raised plate is drawn down to its storey datum so its edge reads
+        // as a step: the concourse stands 1.2 m over the hall and you go DOWN
+        // into the hall, and a level change you cannot see is one the player
+        // will not believe.
+        boxes.push({ bounds: tile, bottom: z > 0 ? 0 : z - PLATE_THICKNESS, top: z, colour });
+        pushOutline(seams, tile, z + DECAL_LIFT);
       }
     }
 
-    queue.sort((a, b) => a.depth - b.depth);
-    for (const item of queue) item.draw(g);
-  }
+    for (const obstacle of this.venue.obstacles) {
+      if (obstacle.floor !== floor || obstacle.hidden) continue;
+      const { bounds } = obstacle;
+      const datum = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+      boxes.push({
+        bounds,
+        bottom: datum + (obstacle.base ?? 0),
+        // A flight is exempt from the cutaway: see MAX_DRAWN_HEIGHT.
+        top: datum + (obstacle.linkId ? obstacle.height : Math.min(obstacle.height, MAX_DRAWN_HEIGHT)),
+        // No material means the building itself, which takes the wall colour.
+        // Only furniture names one. Same rule as Decor.material: the venue
+        // says what a thing IS and the chapter says what that looks like.
+        colour: this.material(obstacle.material),
+      });
+    }
 
-  /**
-   * The viewport, in the world layer's own pixels.
-   *
-   * The camera never scrolls: the scene moves the container the drawing is
-   * parented to, so a point is on screen when its local position plus that
-   * container's offset lands inside the camera. Without a container — nothing
-   * does this today, but the constructor allows it — there is no offset to
-   * read and everything is drawn.
-   */
-  private viewBox(): ScreenBox | undefined {
-    const parent = this.graphics.parentContainer;
-    if (!parent) return undefined;
-    return {
-      minX: -parent.x,
-      maxX: this.camera.width - parent.x,
-      minY: -parent.y,
-      maxY: this.camera.height - parent.y,
-    };
+    // Dressing, by the same rules: same cutaway, same box. The only difference
+    // is that nothing collides with it.
+    for (const piece of this.venue.decor) {
+      if (piece.floor !== floor) continue;
+      const { bounds } = piece;
+      const datum = groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+      boxes.push({
+        bounds,
+        bottom: datum + (piece.base ?? 0),
+        top: datum + Math.min(piece.height, MAX_DRAWN_HEIGHT),
+        colour: this.material(piece.material),
+      });
+    }
+
+    group.add(instanceBoxes(boxes));
+
+    if (seams.length) {
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new Float32BufferAttribute(seams, 3));
+      group.add(
+        new LineSegments(
+          geometry,
+          // Unlit, like every other decal, so the exposure is applied here.
+          new LineBasicMaterial({
+            color: shade(this.palette.floorLine, this.exposure),
+            transparent: true,
+            opacity: 0.9,
+          }),
+        ),
+      );
+    }
+
+    return group;
   }
 
   /**
@@ -362,191 +395,86 @@ export class BlockoutRenderer {
     }
   }
 
-  // -- pieces ---------------------------------------------------------------
+  // -- robots ---------------------------------------------------------------
 
-  private drawFloorPlate(g: Phaser.GameObjects.Graphics, room: Room): void {
-    const { x, y, w, h } = room.bounds;
-    // A storey is not one flat plane: the concourse stands 1.2 m over the hall.
-    // Draw the plate at its own level or the drop is invisible, and a level
-    // change the player cannot see is one they will not believe.
-    const z = room.elevation ?? 0;
-    const a = project(x, y, z);
-    const b = project(x + w, y, z);
-    const d = project(x, y + h, z);
-
-    // A stairwell is an absence of floor. Drawn as one quad, the corridor
-    // paints straight over the flight coming up through it — which is how a
-    // staircase manages to be missing on the very floor it serves.
-    this.drawTiles(g, room, floorTiles(room));
-
-    // An elevated plate needs its edge drawn or it reads as floating. Only the
-    // two faces toward the viewer, same as every other box.
-    if (z > 0) {
-      const a0 = project(x, y, 0);
-      const b0 = project(x + w, y, 0);
-      const d0 = project(x, y + h, 0);
-      g.fillStyle(this.lit(shade(this.palette.wall, 0.7)), 1);
-      for (const face of [
-        [a, b, b0, a0],
-        [a, d, d0, a0],
-      ]) {
-        g.beginPath();
-        g.moveTo(face[0].sx, face[0].sy);
-        for (const pt of face.slice(1)) g.lineTo(pt.sx, pt.sy);
-        g.closePath();
-        g.fillPath();
-      }
-    }
-  }
-
-  /**
-   * Where to DRAW an actor vertically: on the flight as drawn, not as climbed.
-   *
-   * A full-storey flight is squashed to 2.4 m so it reads under the cutaway,
-   * while the robot climbing it gains the true 6.2. Left alone the two
-   * disagree by the difference, and a machine halfway up hangs in the air over
-   * its own staircase. The simulation is untouched — this moves pixels.
-   */
-  private drawnZ(actor: Actor, pos: { x: number; y: number; z: number }, floor: Level): number {
-    if (!actor.onLink) return pos.z;
-    const link = this.venue.links.find((l) => l.id === actor.onLink);
-    if (!link || link.drawnRise === undefined || link.drawnRise === link.rise) return pos.z;
-    const f = climbFraction(link, pos.x, pos.y);
-    return floor === link.from
-      ? link.base + link.drawnRise * f
-      : -link.drawnRise * (1 - f);
-  }
-
-  /** Paint a set of floor rectangles at a room's own level. */
-  private drawTiles(g: Phaser.GameObjects.Graphics, room: Room, tiles: Rect[]): void {
-    const z = room.elevation ?? 0;
-    // Auditoriums sit a shade darker than circulation space, which reads as
-    // carpet against the lighter corridor floor in the reference photographs.
-    const isRoom = room.kind === 'auditorium';
-    const fill = isRoom ? shade(this.palette.floor, 0.82) : this.palette.floor;
-
-    g.fillStyle(this.lit(fill), 1);
-    g.lineStyle(1, this.lit(this.palette.floorLine), 0.9);
-    for (const tile of tiles) {
-      const corners = [
-        project(tile.x, tile.y, z),
-        project(tile.x + tile.w, tile.y, z),
-        project(tile.x + tile.w, tile.y + tile.h, z),
-        project(tile.x, tile.y + tile.h, z),
-      ];
-      g.beginPath();
-      g.moveTo(corners[0].sx, corners[0].sy);
-      for (const pt of corners.slice(1)) g.lineTo(pt.sx, pt.sy);
-      g.closePath();
-      g.fillPath();
-      // The tiles are a plate with its stairwells cut out, so their own edges
-      // ARE the lip of each opening — without the line a well reads as a
-      // pattern in the carpet rather than a hole in it.
-      g.strokePath();
-    }
-  }
-
-  /** Fill one screen-space polygon, clipped to a window if there is one. */
-  private fillPoly(
-    g: Phaser.GameObjects.Graphics,
-    points: ScreenPoint[],
-    window?: ScreenPoint[],
-  ): void {
-    const poly = window ? clipToWindow(points, window) : points;
-    if (poly.length < 3) return;
-    g.beginPath();
-    g.moveTo(poly[0].sx, poly[0].sy);
-    for (const pt of poly.slice(1)) g.lineTo(pt.sx, pt.sy);
-    g.closePath();
-    g.fillPath();
-  }
-
-  private drawBox(
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    height: number,
-    tint?: number,
-    bottom = 0,
-    /** Screen-space window this box is seen through — a stairwell's mouth. */
-    window?: ScreenPoint[],
-  ): void {
-    const top = tint ?? this.palette.wall;
-    const side = tint ? shade(tint, 0.66) : this.palette.wallShade;
-
-    // The viewer is to the south-west (see Iso.project), so the two faces in
-    // sight are the SOUTH one and the WEST one. Draw the north or east faces
-    // and every box turns inside out.
-    const topA = project(x, y, height);
-    const topB = project(x + w, y, height);
-    const topC = project(x + w, y + h, height);
-    const topD = project(x, y + h, height);
-    // Not always the floor: a flight of stairs seen from the floor it arrives
-    // on hangs below the datum rather than standing on it.
-    const botA = project(x, y, bottom);
-    const botB = project(x + w, y, bottom);
-    const botD = project(x, y + h, bottom);
-
-    // South face
-    g.fillStyle(this.lit(side), 1);
-    this.fillPoly(g, [topA, topB, botB, botA], window);
-
-    // West face, a touch darker still
-    g.fillStyle(this.lit(shade(side, 0.82)), 1);
-    this.fillPoly(g, [topA, topD, botD, botA], window);
-
-    // Top face
-    g.fillStyle(this.lit(top), 1);
-    this.fillPoly(g, [topA, topB, topC, topD], window);
-  }
-
-  private drawRobot(
-    g: Phaser.GameObjects.Graphics,
-    actor: Actor,
-    pos: { x: number; y: number; z: number },
-  ): void {
+  private buildRobot(actor: Actor): RobotView {
     const { spec } = actor.body;
-    const r = spec.radius;
+    const group = new Group();
+
+    const body = new Mesh(
+      new BoxGeometry(spec.radius * 2, spec.radius * 2, spec.height),
+      new MeshLambertMaterial({ color: spec.tint }),
+    );
+    group.add(body);
+
+    // Facing pip: a bead in the heading direction. It exists because a box is
+    // symmetrical and you cannot otherwise see which way a robot is pointing.
+    // A real model is simply rotated and needs none of this.
+    const nose = new Mesh(
+      new SphereGeometry(0.1, 10, 8),
+      new MeshBasicMaterial({ color: this.palette.accent }),
+    );
+    group.add(nose);
 
     // Contact shadow. Tightens as the robot settles, which sells weight even
-    // before there is a sprite to look at.
-    const ground = project(pos.x, pos.y, pos.z);
-    g.fillStyle(0x000000, 0.35);
-    g.fillEllipse(ground.sx, ground.sy, r * 4.2 * PPM, r * 4.2 * PPM * ISO_SQUASH);
-
-    // Body. A small vertical bob driven by stride phase, scaled by speed, so a
-    // walking robot has gait and a stationary one is dead still.
-    const bob = Math.abs(Math.sin(actor.body.stridePhase * Math.PI)) * 0.035 * actor.body.speedFraction;
-
-    // Standing ON whatever it is standing on, not on the storey datum. A box
-    // drawn from zero makes a robot on the 1.2 m concourse two metres tall and
-    // one halfway up a flight a six-metre pillar — and one descending a
-    // stairwell an inside-out smear, which is what made this visible.
-    this.drawBox(
-      g,
-      pos.x - r,
-      pos.y - r,
-      r * 2,
-      r * 2,
-      pos.z + spec.height + bob,
-      spec.tint,
-      pos.z,
+    // before there is a model to look at.
+    const shadow = new Mesh(
+      new CircleGeometry(spec.radius * 2.1, 24),
+      new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }),
     );
+    shadow.renderOrder = 2;
+    group.add(shadow);
 
-    // Facing pip: a short bar in the heading direction. Placeholder for what
-    // becomes the 8-direction sprite facing.
-    const nose = project(
-      pos.x + Math.cos(actor.body.heading) * (r + 0.28),
-      pos.y + Math.sin(actor.body.heading) * (r + 0.28),
-      pos.z + spec.height * 0.72,
+    const stopLine = new Line(
+      new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]),
+      new LineBasicMaterial({ color: this.palette.accent, transparent: true, opacity: 0.35 }),
     );
-    g.fillStyle(this.palette.accent, 1);
-    g.fillCircle(nose.sx, nose.sy, 3);
+    stopLine.frustumCulled = false;
+    group.add(stopLine);
+
+    const stopRing = new Mesh(
+      new RingGeometry(spec.radius * 0.86, spec.radius, 28),
+      new MeshBasicMaterial({ color: this.palette.accent, side: DoubleSide, depthWrite: false }),
+    );
+    stopRing.renderOrder = 3;
+    group.add(stopRing);
+
+    const view: RobotView = { group, body, nose, shadow, stopLine, stopRing };
+    this.robots.set(actor, view);
+    this.scene.add(group);
+    return view;
   }
 
-  // -- telemetry ------------------------------------------------------------
+  private placeRobot(actor: Actor, view: RobotView, alpha: number): void {
+    const { body } = actor;
+    const { spec } = body;
+    const pos = renderPos(actor, alpha);
+
+    // A small vertical bob driven by stride phase, scaled by speed, so a
+    // walking robot has gait and a stationary one is dead still.
+    const bob = Math.abs(Math.sin(body.stridePhase * Math.PI)) * 0.035 * body.speedFraction;
+
+    // Standing ON whatever it is standing on, not on the storey datum. Its
+    // feet are at pos.z — halfway up its own height is where the box centre
+    // goes, because a BoxGeometry is centred on its origin.
+    view.body.position.set(pos.x, pos.y, pos.z + bob + spec.height / 2);
+
+    view.nose.position.set(
+      pos.x + Math.cos(body.heading) * (spec.radius + 0.22),
+      pos.y + Math.sin(body.heading) * (spec.radius + 0.22),
+      pos.z + bob + spec.height * 0.72,
+    );
+
+    // No contact shadow on a staircase. The disc is 1.4 m across and a tread
+    // is 0.62 m deep, so on a flight it is a flat decal spanning three steps:
+    // most of it ends up buried inside the riser above and what is left reads
+    // as a detached smear beside the robot. A machine on stairs has no
+    // ground-plane contact patch to draw anyway.
+    view.shadow.visible = actor.onLink === undefined;
+    view.shadow.position.set(pos.x, pos.y, pos.z + DECAL_LIFT);
+
+    this.placeTelemetry(actor, view, pos);
+  }
 
   /**
    * Where the robot would come to rest if the brake went on this instant.
@@ -556,33 +484,28 @@ export class BlockoutRenderer {
    * it is immediately obvious that you have to commit to stopping long before
    * you arrive.
    */
-  private drawStopMarker(
-    g: Phaser.GameObjects.Graphics,
+  private placeTelemetry(
     actor: Actor,
+    view: RobotView,
     pos: { x: number; y: number; z: number },
   ): void {
     const { body } = actor;
     const speed = body.speed;
-    if (speed < 0.3) return;
+    const show = this.telemetry && speed >= 0.3;
+    view.stopLine.visible = show;
+    view.stopRing.visible = show;
+    if (!show) return;
 
     const distance = body.stoppingDistance;
     const tx = pos.x + (body.vx / speed) * distance;
     const ty = pos.y + (body.vy / speed) * distance;
 
-    const from = project(pos.x, pos.y, 0);
-    const to = project(tx, ty, 0);
+    const points = view.stopLine.geometry.getAttribute('position');
+    points.setXYZ(0, pos.x, pos.y, pos.z + DECAL_LIFT);
+    points.setXYZ(1, tx, ty, pos.z + DECAL_LIFT);
+    points.needsUpdate = true;
 
-    g.lineStyle(1, this.palette.accent, 0.35);
-    g.beginPath();
-    g.moveTo(from.sx, from.sy);
-    g.lineTo(to.sx, to.sy);
-    g.strokePath();
-
-    // A circle on the floor plane is an ellipse on screen — the same 2:1
-    // squash the projection applies to everything else.
-    const r = body.spec.radius * PPM;
-    g.lineStyle(1.5, this.palette.accent, 0.8);
-    g.strokeEllipse(to.sx, to.sy, r * 2, r * 2 * ISO_SQUASH);
+    view.stopRing.position.set(tx, ty, pos.z + DECAL_LIFT);
   }
 
   // -- skid marks -----------------------------------------------------------
@@ -593,7 +516,7 @@ export class BlockoutRenderer {
    * This is the visible consequence of lateral grip: ask Biggy for more turn
    * than 560 N can give and it scrubs across the floor, and now you can see
    * the arc it actually took rather than the one you asked for. Cheap, and it
-   * reads as weight long before there is a sprite.
+   * reads as weight long before there is a model.
    */
   private recordSlip(actor: Actor, alpha: number): void {
     const { body } = actor;
@@ -618,24 +541,87 @@ export class BlockoutRenderer {
     }
   }
 
-  private drawMark(g: Phaser.GameObjects.Graphics, mark: SkidMark): void {
-    // Relative to the floor, not black: a fixed dark mark is invisible on
-    // Chapter I's near-black carpet and far too strong on Chapter II's warm
-    // wood. Scuffing the floor's own colour works in every era.
-    const p = project(mark.x, mark.y, 0);
-    const fade = Math.min(1, mark.life / MARK_LIFE);
-    g.fillStyle(shade(this.lit(this.palette.floor), 0.5), 0.85 * fade);
-    g.fillEllipse(p.sx, p.sy, mark.width * 2 * PPM, mark.width * 2 * PPM * ISO_SQUASH);
+  private writeMarks(): void {
+    for (let i = 0; i < MAX_MARKS; i += 1) {
+      const mark = this.marks[i];
+      if (mark) {
+        SCRATCH.position.set(mark.x, mark.y, DECAL_LIFT * 0.6);
+        SCRATCH.scale.set(mark.width, mark.width, 1);
+        SCRATCH.rotation.set(0, 0, 0);
+        SCRATCH.updateMatrix();
+        this.markMesh.setMatrixAt(i, SCRATCH.matrix);
+        // Fading by colour, not alpha: a mark is the floor's own colour
+        // scuffed, so it fades by going back to it. A fixed dark mark is
+        // invisible on Chapter I's near-black carpet and far too strong on
+        // Chapter II's warm wood; scuffing the floor works in every era.
+        const fade = Math.min(1, mark.life / MARK_LIFE) * 0.85;
+        SCRATCH_COLOUR.copy(this.floorColour).lerp(this.markColour, fade);
+        this.markMesh.setColorAt(i, SCRATCH_COLOUR);
+      } else {
+        SCRATCH.scale.setScalar(0);
+        SCRATCH.updateMatrix();
+        this.markMesh.setMatrixAt(i, SCRATCH.matrix);
+      }
+    }
+    this.markMesh.instanceMatrix.needsUpdate = true;
+    if (this.markMesh.instanceColor) this.markMesh.instanceColor.needsUpdate = true;
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+/** Which storeys the venue actually has anything on. */
+function storeysOf(venue: Venue): Level[] {
+  return [...new Set(venue.rooms.map((room) => room.floor))].sort((a, b) => a - b);
+}
+
+/**
+ * Every box on a storey as one instanced draw call.
+ *
+ * They are all the same unit cube. Position and scale carry the dimensions and
+ * `instanceColor` carries the palette, which is the whole reason the building
+ * can be five thousand seats and still cost one draw.
+ */
+function instanceBoxes(boxes: Box[]): InstancedMesh {
+  const mesh = new InstancedMesh(
+    new BoxGeometry(1, 1, 1),
+    new MeshLambertMaterial(),
+    Math.max(boxes.length, 1),
+  );
+
+  for (let i = 0; i < boxes.length; i += 1) {
+    const { bounds, bottom, top, colour } = boxes[i];
+    // Degenerate boxes exist on purpose — the wafer that skins a stairwell
+    // wall is one — and a zero scale is an uninvertible matrix, which three
+    // will warn about once per frame forever.
+    const height = Math.max(top - bottom, 0.01);
+    SCRATCH.position.set(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bottom + height / 2);
+    SCRATCH.scale.set(Math.max(bounds.w, 0.01), Math.max(bounds.h, 0.01), height);
+    SCRATCH.rotation.set(0, 0, 0);
+    SCRATCH.updateMatrix();
+    mesh.setMatrixAt(i, SCRATCH.matrix);
+    mesh.setColorAt(i, SCRATCH_COLOUR.set(colour));
   }
 
-  /** Forget every mark. Call on reset so a tuning run starts on clean floor. */
-  clearMarks(): void {
-    this.marks.length = 0;
-  }
+  mesh.count = boxes.length;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  return mesh;
+}
 
-  /** Apply the chapter's ambient light level to a colour. */
-  private lit(colour: number): number {
-    return shade(colour, 0.35 + this.lightLevel * 0.65);
+/** The four edges of a floor tile, as line-segment vertices. */
+function pushOutline(out: number[], tile: Rect, z: number): void {
+  const { x, y, w, h } = tile;
+  const corners: [number, number][] = [
+    [x, y],
+    [x + w, y],
+    [x + w, y + h],
+    [x, y + h],
+  ];
+  for (let i = 0; i < 4; i += 1) {
+    const a = corners[i];
+    const b = corners[(i + 1) % 4];
+    out.push(a[0], a[1], z, b[0], b[1], z);
   }
 }
 
@@ -658,64 +644,6 @@ function floorTiles(room: Room): Rect[] {
   return tiles;
 }
 
-/**
- * Clip a screen-space polygon to a convex window — Sutherland–Hodgman.
- *
- * Walks the window's edges, keeping the part of the polygon inside each. The
- * window is always a projected rectangle, so it is convex and this terminates
- * in four passes, a handful of vector operations per quad.
- */
-function clipToWindow(subject: ScreenPoint[], window: ScreenPoint[]): ScreenPoint[] {
-  // Screen y grows downward, so the winding the projection produces decides
-  // which side is inside. Read it off the window rather than assuming it, or
-  // the clip keeps the outside and throws away the inside.
-  const orient = Math.sign(signedArea(window)) || 1;
-
-  let output = subject;
-  for (let edge = 0; edge < window.length && output.length > 2; edge += 1) {
-    const a = window[edge];
-    const b = window[(edge + 1) % window.length];
-    const inside = (p: ScreenPoint) =>
-      orient * ((b.sx - a.sx) * (p.sy - a.sy) - (b.sy - a.sy) * (p.sx - a.sx)) >= 0;
-
-    const input = output;
-    output = [];
-    for (let i = 0; i < input.length; i += 1) {
-      const current = input[i];
-      const previous = input[(i + input.length - 1) % input.length];
-      if (inside(current)) {
-        if (!inside(previous)) output.push(meet(previous, current, a, b));
-        output.push(current);
-      } else if (inside(previous)) {
-        output.push(meet(previous, current, a, b));
-      }
-    }
-  }
-  return output;
-}
-
-function signedArea(poly: ScreenPoint[]): number {
-  let area = 0;
-  for (let i = 0; i < poly.length; i += 1) {
-    const a = poly[i];
-    const b = poly[(i + 1) % poly.length];
-    area += a.sx * b.sy - b.sx * a.sy;
-  }
-  return area;
-}
-
-/** Where segment p→q crosses the infinite line through a and b. */
-function meet(p: ScreenPoint, q: ScreenPoint, a: ScreenPoint, b: ScreenPoint): ScreenPoint {
-  const rx = q.sx - p.sx;
-  const ry = q.sy - p.sy;
-  const sx = b.sx - a.sx;
-  const sy = b.sy - a.sy;
-  const denominator = rx * sy - ry * sx;
-  if (denominator === 0) return q; // parallel: only ever called on a crossing
-  const t = ((a.sx - p.sx) * sy - (a.sy - p.sy) * sx) / denominator;
-  return { sx: p.sx + rx * t, sy: p.sy + ry * t };
-}
-
 function subtract(a: Rect, b: Rect): Rect[] {
   const x0 = Math.max(a.x, b.x);
   const x1 = Math.min(a.x + a.w, b.x + b.w);
@@ -728,13 +656,6 @@ function subtract(a: Rect, b: Rect): Rect[] {
   if (x0 > a.x) out.push(rect(a.x, y0, x0 - a.x, y1 - y0));
   if (x1 < a.x + a.w) out.push(rect(x1, y0, a.x + a.w - x1, y1 - y0));
   return out;
-}
-
-/** Is any part of this box inside the view? */
-function overlapsView(box: ScreenBox, view: ScreenBox): boolean {
-  return (
-    box.maxX >= view.minX && box.minX <= view.maxX && box.maxY >= view.minY && box.minY <= view.maxY
-  );
 }
 
 /** Multiply a packed 0xRRGGBB colour by a factor. */

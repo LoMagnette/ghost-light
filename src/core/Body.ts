@@ -1,11 +1,12 @@
 /**
  * A physical body on the floor plane.
  *
- * Deliberately NOT Phaser Arcade Physics. Arcade is an AABB/velocity system
- * with no concept of mass, and "robots that move like machines with weight" is
- * the thing being scored. This integrator is small enough to read in one
- * sitting and gives us force-based acceleration, honest braking, grip-limited
- * turning and momentum transfer on impact.
+ * Deliberately NOT an off-the-shelf physics engine. The arcade-style solvers
+ * a 2D framework ships are AABB/velocity systems with no concept of mass, and
+ * "robots that move like machines with weight" is the thing being scored. This
+ * integrator is small enough to read in one sitting and gives us force-based
+ * acceleration, honest braking, grip-limited turning and momentum transfer on
+ * impact.
  *
  * Integration is semi-implicit Euler at a FIXED timestep (see Sim.ts). Never
  * step this with a variable frame delta — the feel of the heavy robots changes

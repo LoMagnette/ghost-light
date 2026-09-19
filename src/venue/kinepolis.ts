@@ -1324,19 +1324,6 @@ const {
  * where three robots and a full house need more than one staircase — and it
  * matters more now that Biggy cannot use any of them.
  */
-/**
- * Tallest a flight is BUILT to, in metres — below the renderer's 2.7 m cutaway.
- *
- * A 6.2 m flight drawn at true height is entirely above the cut, so it comes
- * out as a flat-topped slab with a sawtooth along one edge and reads as a
- * loading dock rather than a staircase. Squashing the rise under the cut shows
- * the whole flight stepping away from you, which is what the shape is for.
- *
- * The Link keeps the true 6.2 m rise; this only affects the bulk that is drawn
- * and collided with, and that bulk is interim anyway.
- */
-const DRAWN_RISE = 2.4;
-
 const receptionStairs: Link[] = [
   // Concourse → hall, descending northward. ~23 m wide, the full opening.
   { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
@@ -1404,23 +1391,6 @@ for (const room of floor1Rooms) {
 }
 
 /**
- * How much of each flight is drawn, so the renderer can stand a robot on the
- * staircase it drew rather than on the one it climbed.
- *
- * A robot climbs the true 6.2 m; the flight is squashed to 2.4 so it reads
- * under the cutaway. Without this the two disagree and a machine halfway up is
- * three metres in the air over its own steps — and halfway DOWN a stairwell it
- * is a metre under the treads.
- */
-for (const link of staircases) {
-  // Only flights that cross a storey. Everything within one storey — the
-  // concourse steps, the ramp, the fourteen rakes — is short enough to draw at
-  // its true rise, and a rake MUST be: its steps have to meet the plates at
-  // both ends and the seats standing on them.
-  if (link.from !== link.to) link.drawnRise = Math.min(link.rise, DRAWN_RISE);
-}
-
-/**
  * Staircases as physical bulk.
  *
  * A link was pure data: nothing drew it and nothing collided with it, so the
@@ -1468,15 +1438,15 @@ const MIN_TREAD = 0.62;
 
 
 /**
- * Metres of well depth the camera gains per metre back from its near lip.
+ * How thick the skin on the far walls of a stairwell is, metres.
  *
- * The projection drops half a metre of screen for every metre of x and of y,
- * so a point a metre back from the lip and half a metre down lands exactly on
- * the lip: that is the limit of what can be drawn inside a hole. 0.35 keeps
- * the well's bottom clear of that limit, where a surface would be edge-on and
- * project to nothing.
+ * A well cut through a floor plate has four sides and the camera sees two of
+ * them — the north and east ones, because the viewer stands to the south-west.
+ * The other two are behind the viewer's side of the hole and would only wall
+ * the well off from the person looking into it. So two wafers on the far rim,
+ * reaching from the floor below up to the plate, and nothing on the near side.
  */
-const WELL_SIGHT = 0.35;
+const SHAFT_SKIN = 0.06;
 
 /**
  * The bands a flight is built from: where each tread starts along the climb
@@ -1493,7 +1463,6 @@ function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
     Math.max(3, Math.round(rise / (link.riser || RISER))),
     Math.max(MAX_TREADS, Math.floor(run / MIN_TREAD)),
   );
-  const drawnRise = link.drawnRise ?? rise;
   const step = run / treads;
   const start = axis === 'y' ? b.y : b.x;
 
@@ -1504,7 +1473,7 @@ function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
     bands.push({
       from: start + i * step,
       to: start + (i + 1) * step,
-      surface: link.base + drawnRise * fraction,
+      surface: link.base + rise * fraction,
     });
   }
   return bands;
@@ -1570,60 +1539,44 @@ function stairMass(links: Link[]): Obstacle[] {
        * stair rule applies unchanged: Voxxy steps onto the landing and walks
        * down, Biggy meets the well as a wall.
        *
-       * How deep it may be DRAWN is decided by the camera, not by the
-       * building. A 2:1 isometric view can see half a metre down a well for
-       * every metre back from its near lip and no further — past that the
-       * floor in front of the opening is in the way, and a painter's floor
-       * pass has already been and gone, so the geometry comes out in front of
-       * the carpet instead of behind it. That is what put a staircase in the
-       * air outside the building at the south end of the corridor.
-       *
-       * So the well is a wedge, cut to what the camera can see, at 70% of the
-       * limit so the bottom is never edge-on. Where the flight is below that
-       * wedge — a flight descending TOWARD the viewer, which is most of the
-       * grand stair — it is simply not visible from up here, and the wedge is
-       * what shows.
+       * They hang at their TRUE depth. Under the 2D renderer they could not:
+       * a painter's floor pass had already been and gone, so anything drawn
+       * deeper than the near lip of the opening came out in front of the
+       * carpet instead of behind it, and the well had to be cut back to a
+       * wedge of what the projection could show. A depth buffer answers that
+       * question correctly for every tread, so the building is simply built.
        */
-      const along = (axis === 'y' ? tread.y : tread.x) - (axis === 'y' ? b.y : b.x);
-      const visible = -WELL_SIGHT * along;
-      // How far up the flight this tread is, read back off its own surface so
-      // the two can never drift: the band already knows.
-      const drawnRise = link.drawnRise ?? link.rise;
-      const climbed = drawnRise > 0 ? (band.surface - link.base) / drawnRise : 1;
-      const fromAbove = -drawnRise * (1 - climbed);
+      const climbed = (band.surface - link.base) / link.rise;
+      const fromAbove = -link.rise * (1 - climbed);
       solid.push({
         floor: link.to,
         bounds: tread,
-        height: Math.max(fromAbove, visible),
-        base: visible,
+        height: fromAbove,
+        base: fromAbove - TREAD_SLAB,
         linkId: link.id,
       });
 
-      /*
-       * The east wall of the shaft, above the flight.
-       *
-       * Only the south and west faces of a box are ever painted, so the two
-       * walls of a well in view are its north and east ones — and nothing was
-       * drawing them, which left the part of the hole the flight has dropped
-       * out of as pure background. A wafer on the rim, standing on the flight
-       * and reaching up to the floor, is exactly that face and nothing else.
-       */
-      const skin = 0.05;
-      solid.push({
-        floor: link.to,
-        bounds: rect(tread.x + tread.w - skin, tread.y, skin, tread.h),
-        height: 0,
-        base: Math.max(fromAbove, visible),
-        linkId: link.id,
-      });
       if (i === treads - 1) {
-        // And the north wall, once, across the far end.
+        /*
+         * The two far walls of the shaft, once per flight.
+         *
+         * A hole cut in a floor plate has four sides and the viewer, standing
+         * to the south-west, can only ever see into it past the near two. So
+         * the north and east sides get a skin from the floor below up to the
+         * plate, and the south and west sides get nothing — a wall there would
+         * stand between the camera and the well it is meant to enclose.
+         */
+        const shaft = { floor: link.to, height: 0, base: -link.rise, linkId: link.id };
+        solid.push({ ...shaft, bounds: rect(b.x + b.w - SHAFT_SKIN, b.y, SHAFT_SKIN, b.h) });
+        solid.push({ ...shaft, bounds: rect(b.x, b.y + b.h - SHAFT_SKIN, b.w, SHAFT_SKIN) });
+        // And the landing at the bottom, which is the floor below seen from
+        // up here. Only the storey you are standing on is drawn, so without it
+        // you look down a stairwell into the same black as the sky outside.
         solid.push({
-          floor: link.to,
-          bounds: rect(tread.x, tread.y + tread.h - skin, tread.w, skin),
-          height: 0,
-          base: Math.max(fromAbove, visible),
-          linkId: link.id,
+          ...shaft,
+          bounds: b,
+          height: -link.rise,
+          base: -link.rise - TREAD_SLAB,
         });
       }
     }

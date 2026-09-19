@@ -1,8 +1,8 @@
 /**
  * The fixed-timestep simulation.
  *
- * Phaser drives rendering at whatever rate the display allows; the physics
- * runs here at a constant 120 Hz with an accumulator. Rendering interpolates
+ * The renderer draws at whatever rate the display allows; the physics runs
+ * here at a constant 120 Hz with an accumulator. Rendering interpolates
  * between the last two simulation states, so the picture stays smooth without
  * the physics ever seeing a variable delta.
  *
@@ -89,7 +89,7 @@ export class Sim {
 
   /**
    * Advance the simulation by a real frame delta, in seconds.
-   * Call once per Phaser update; do not call step() directly from a scene.
+   * Call once per frame; do not call step() directly from a screen.
    */
   advance(frameDelta: number): void {
     // Cap the incoming delta so an alt-tab or a breakpoint does not teleport

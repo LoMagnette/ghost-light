@@ -1,11 +1,11 @@
 /**
- * The one scene every chapter runs in.
+ * The one screen every chapter runs in.
  *
- * There is no ChapterOneScene. There will never be a ChapterOneScene. A
- * chapter is data (see chapters/registry.ts); this scene reads that data and
- * changes its palette, its cast, its crowd density and its control mode
- * accordingly. Adding a per-chapter scene is the single fastest way to blow
- * the schedule, because it triples every subsequent change.
+ * There is no ChapterOneScreen. There will never be a ChapterOneScreen. A
+ * chapter is data (see chapters/registry.ts); this reads that data and changes
+ * its palette, its cast, its crowd density and its control mode accordingly.
+ * Adding a per-chapter screen is the single fastest way to blow the schedule,
+ * because it triples every subsequent change.
  *
  * Currently implements the 'direct' control mode only. 'switch' and
  * 'direct-order' are the next two milestones — see SPEC.md.
@@ -16,18 +16,21 @@
  * and a player only ever perceives mass through the response to it.
  */
 
-import Phaser from 'phaser';
+import type { OrthographicCamera, Scene } from 'three';
 import { Body } from '@/core/Body';
-import { project } from '@/core/Iso';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import type { Level } from '@/core/Venue';
 import { BlockoutRenderer } from '@/render/BlockoutRenderer';
+import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
 import type { Chapter } from '@/chapters/Chapter';
+import type { Game, Screen } from './Game';
+import type { Routes } from './Routes';
+import { css, label, MONO, SANS } from './dom';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
@@ -35,13 +38,13 @@ import {
   FOOTFALL_REFERENCE_MOMENTUM,
   IMPACT_REFERENCE_MOMENTUM,
   VIEW_HEIGHT,
-  VIEW_WIDTH,
 } from '@/config';
 
-export class ChapterScene extends Phaser.Scene {
-  private chapter!: Chapter;
+export class ChapterScreen implements Screen {
+  private readonly chapter: Chapter;
+  private readonly routes: Routes;
+
   private sim!: Sim;
-  // NOT `renderer` — Phaser.Scene already owns that property name.
   private blockout!: BlockoutRenderer;
   private controller!: KeyboardController;
 
@@ -50,31 +53,43 @@ export class ChapterScene extends Phaser.Scene {
   private floor: Level = 0;
   private spawns: { x: number; y: number }[] = [];
 
-  private hud!: Phaser.GameObjects.Text;
-  private debugText!: Phaser.GameObjects.Text;
+  private hud!: HTMLElement;
+  private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
 
-  private worldLayer!: Phaser.GameObjects.Container;
+  private readonly isoCamera: OrthographicCamera = createIsoCamera();
   private cameraX = 0;
   private cameraY = 0;
+  private cameraZ = 0;
 
-  constructor() {
-    super('chapter');
+  /** Camera shake: amplitude in metres, and how far through it we are. */
+  private shakeAmplitude = 0;
+  private shakeElapsed = 0;
+  private shakeDuration = 0;
+
+  /** Frames per second, smoothed, for the debug readout only. */
+  private fps = 60;
+
+  constructor(chapterId: string, routes: Routes) {
+    this.chapter = chapterOrLab(chapterId) ?? CHAPTER_ONE;
+    this.routes = routes;
   }
 
-  init(data: { chapterId?: string }): void {
-    this.chapter = chapterOrLab(data?.chapterId ?? '') ?? CHAPTER_ONE;
+  get scene(): Scene {
+    return this.blockout.scene;
   }
 
-  create(): void {
+  get camera(): OrthographicCamera {
+    return this.isoCamera;
+  }
+
+  mount(game: Game): void {
     const { chapter } = this;
 
-    this.cameras.main.setBackgroundColor(chapter.palette.void);
+    game.setBackground(chapter.palette.void);
     this.floor = chapter.startFloor;
 
     this.sim = new Sim(KINEPOLIS);
-    this.actors = [];
-    this.spawns = [];
 
     const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorSouth;
     chapter.cast.forEach((robotId, index) => {
@@ -88,61 +103,59 @@ export class ChapterScene extends Phaser.Scene {
     });
     this.controlled = this.actors[0];
 
-    // The renderer draws in world pixels; this container is what the camera
-    // moves, so the projection never has to know about the camera.
-    this.worldLayer = this.add.container(0, 0);
-    this.blockout = new BlockoutRenderer(
-      this,
-      KINEPOLIS,
-      chapter.palette,
-      chapter.lightLevel,
-      this.worldLayer,
-    );
+    this.blockout = new BlockoutRenderer(KINEPOLIS, chapter.palette, chapter.lightLevel);
     this.blockout.telemetry = this.debug;
 
-    this.controller = new KeyboardController(this);
+    this.controller = new KeyboardController(game.keyboard);
 
-    this.buildHud();
-    this.snapCameraToControlled();
+    this.buildHud(game);
+    this.snapCamera();
 
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('menu'));
-    this.input.keyboard?.on('keydown-F1', () => {
+    game.keyboard.on('Escape', () => this.routes.menu());
+    game.keyboard.on('F1', () => {
       this.debug = !this.debug;
-      this.debugText.setVisible(this.debug);
+      this.debugText.style.display = this.debug ? 'block' : 'none';
       this.blockout.telemetry = this.debug;
     });
-    this.input.keyboard?.on('keydown-R', () => this.resetCast());
+    game.keyboard.on('KeyR', () => this.resetCast());
 
     // Swapping robot mid-run is how the mass difference becomes legible: drive
     // the same line as Voxxy and then as Biggy. In the shipped chapters the
     // cast is usually one robot, so this does nothing; the movement lab is
     // where it earns its keep. Chapter II's 'switch' mode will make this a
     // real mechanic rather than a tuning affordance.
-    (['ONE', 'TWO', 'THREE'] as const).forEach((key, index) => {
-      this.input.keyboard?.on(`keydown-${key}`, () => this.takeControl(index));
+    (['Digit1', 'Digit2', 'Digit3'] as const).forEach((code, index) => {
+      game.keyboard.on(code, () => this.takeControl(index));
     });
   }
 
-  override update(_time: number, delta: number): void {
-    const dt = delta / 1000;
-
+  update(dt: number): void {
     // Drive the controlled actor. Everything else holds still until the
     // 'switch' and 'direct-order' modes land.
     this.controller.read(this.controlled.input);
 
     this.sim.advance(dt);
 
-    // A robot that walks up a flight changes storey underneath us; the view has
-    // to go with it or the player is left looking at the floor they left.
+    // A robot that walks up a flight changes storey underneath us. Each storey
+    // is modelled from its own datum, so the world it is standing in moves 6.2
+    // metres at that instant and the camera has to be put down with it rather
+    // than eased across a gap that does not exist.
     if (this.controlled.floor !== this.floor) {
       this.floor = this.controlled.floor;
+      this.cameraZ = this.controlled.body.z;
       this.blockout.clearMarks();
     }
 
     this.applyFeedback();
     this.followControlled(dt);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
+
+    this.fps += (1 / Math.max(dt, 1e-4) - this.fps) * 0.1;
     this.updateHud();
+  }
+
+  dispose(): void {
+    this.blockout.dispose();
   }
 
   // -- control --------------------------------------------------------------
@@ -167,7 +180,7 @@ export class ChapterScene extends Phaser.Scene {
       actor.prevY = spawn.y;
     });
     this.blockout.clearMarks();
-    this.snapCameraToControlled();
+    this.snapCamera();
   }
 
   // -- feedback -------------------------------------------------------------
@@ -181,21 +194,30 @@ export class ChapterScene extends Phaser.Scene {
    * pace hits harder than Voxxy at a sprint, and it should look like it.
    */
   private applyFeedback(): void {
-    const camera = this.cameras.main;
-
     for (const impact of this.sim.impacts) {
       if (impact.actor !== this.controlled) continue;
       const weight = Math.min(1, impact.momentum / IMPACT_REFERENCE_MOMENTUM);
-      camera.shake(90 + weight * 190, 0.002 + weight * 0.012, true);
+      this.shake(0.09 + weight * 0.19, 0.002 + weight * 0.012, true);
     }
 
     for (const footfall of this.sim.footfalls) {
       if (footfall.actor !== this.controlled) continue;
       const weight = Math.min(1, footfall.momentum / FOOTFALL_REFERENCE_MOMENTUM);
       // Do not force: a footfall must never interrupt an impact, which is the
-      // more important event and is running on the same camera.
-      camera.shake(70, 0.0004 + weight * 0.0022, false);
+      // more important event and is shaking the same camera.
+      this.shake(0.07, 0.0004 + weight * 0.0022, false);
     }
+  }
+
+  /**
+   * Shake the camera. `intensity` is a fraction of the viewport, as it was
+   * under Phaser, so the tuning constants in config.ts did not have to move.
+   */
+  private shake(duration: number, intensity: number, force: boolean): void {
+    if (!force && this.shakeElapsed < this.shakeDuration) return;
+    this.shakeElapsed = 0;
+    this.shakeDuration = duration;
+    this.shakeAmplitude = intensity * VIEW_WIDTH_METRES;
   }
 
   // -- camera ---------------------------------------------------------------
@@ -210,129 +232,122 @@ export class ChapterScene extends Phaser.Scene {
    * further ahead you are made to think, which is the feeling the chapter
    * arc is built on.
    */
-  private cameraTarget(): { x: number; y: number } {
+  private cameraTarget(): { x: number; y: number; z: number } {
     const body = this.controlled.body;
     const speed = body.speed;
-    if (speed < 0.05) return { x: body.x, y: body.y };
+    if (speed < 0.05) return { x: body.x, y: body.y, z: body.z };
 
     const lead = Math.min(body.stoppingDistance, CAMERA_LEAD_CAP);
     return {
       x: body.x + (body.vx / speed) * lead,
       y: body.y + (body.vy / speed) * lead,
+      z: body.z,
     };
   }
 
-  private snapCameraToControlled(): void {
+  private snapCamera(): void {
     const target = this.cameraTarget();
-    const p = project(target.x, target.y, 0);
-    this.cameraX = p.sx;
-    this.cameraY = p.sy;
-    this.applyCamera();
+    this.cameraX = target.x;
+    this.cameraY = target.y;
+    this.cameraZ = target.z;
+    this.applyCamera(0);
   }
 
   private followControlled(dt: number): void {
     const target = this.cameraTarget();
-    const p = project(target.x, target.y, 0);
     // Exponential smoothing, framerate independent. Lower CAMERA_LERP is lazier.
     const t = 1 - Math.exp(-CAMERA_LERP * dt);
-    this.cameraX += (p.sx - this.cameraX) * t;
-    this.cameraY += (p.sy - this.cameraY) * t;
-    this.applyCamera();
+    this.cameraX += (target.x - this.cameraX) * t;
+    this.cameraY += (target.y - this.cameraY) * t;
+    this.cameraZ += (target.z - this.cameraZ) * t;
+    this.applyCamera(dt);
   }
 
-  private applyCamera(): void {
-    this.worldLayer.setPosition(
-      Math.round(VIEW_WIDTH / 2 - this.cameraX),
-      Math.round(VIEW_HEIGHT / 2 - this.cameraY),
+  private applyCamera(dt: number): void {
+    let offsetX = 0;
+    let offsetY = 0;
+    if (this.shakeElapsed < this.shakeDuration) {
+      this.shakeElapsed += dt;
+      // Decays to nothing over the shake's life, so an impact rings out rather
+      // than stopping dead.
+      const decay = Math.max(0, 1 - this.shakeElapsed / this.shakeDuration);
+      const amplitude = this.shakeAmplitude * decay;
+      offsetX = (Math.random() * 2 - 1) * amplitude;
+      offsetY = (Math.random() * 2 - 1) * amplitude;
+    }
+
+    lookAtWorld(
+      this.isoCamera,
+      this.cameraX + offsetX,
+      this.cameraY + offsetY,
+      this.cameraZ,
     );
   }
 
   // -- hud ------------------------------------------------------------------
 
-  /**
-   * Drop a shadow behind HUD text.
-   *
-   * Not decoration. The hint line is #4c5357 and a lit wall is #454d54, so
-   * without this the controls simply vanish whenever a column passes behind
-   * them — and the one thing a judge must always be able to read is how to
-   * play. Every chapter has a different palette, so no single text colour is
-   * safe against all of them; a shadow is.
-   */
-  private legible<T extends Phaser.GameObjects.Text>(text: T): T {
-    text.setShadow(0, 1, '#000000', 4, false, true);
-    return text;
-  }
-
-  private buildHud(): void {
+  private buildHud(game: Game): void {
     const { chapter } = this;
 
-    this.legible(
-      this.add.text(28, 24, `${chapter.numeral}. ${chapter.title.toUpperCase()}`, {
-        fontFamily: 'ui-monospace, monospace',
-        fontSize: '12px',
-        color: '#6f777c',
-      }),
-    ).setScrollFactor(0);
+    game.ui.append(
+      label(
+        28,
+        24,
+        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
+        `${chapter.numeral}. ${chapter.title.toUpperCase()}`,
+      ),
+    );
 
-    this.hud = this.legible(
-      this.add.text(28, 46, '', {
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-        fontSize: '17px',
-        color: colourToCss(chapter.palette.text),
-      }),
-    ).setScrollFactor(0);
+    this.hud = label(28, 44, {
+      font: `17px ${SANS}`,
+      color: css(chapter.palette.text),
+    });
+    game.ui.append(this.hud);
 
     const keys =
       chapter.cast.length > 1
         ? 'WASD move   SHIFT brake   1/2/3 robot   R reset   F1 debug   ESC menu'
         : 'WASD move     SHIFT brake     R reset     F1 debug     ESC menu';
 
-    this.legible(
-      this.add.text(28, VIEW_HEIGHT - 40, keys, {
-        fontFamily: 'ui-monospace, monospace',
-        fontSize: '12px',
-        color: '#4c5357',
-      }),
-    ).setScrollFactor(0);
+    game.ui.append(
+      label(28, VIEW_HEIGHT - 40, { font: `12px ${MONO}`, color: '#4c5357' }, keys),
+    );
 
-    this.debugText = this.legible(
-      this.add.text(VIEW_WIDTH - 28, 24, '', {
-        fontFamily: 'ui-monospace, monospace',
-        fontSize: '12px',
-        color: '#6f777c',
-        align: 'right',
-      }),
-    )
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setVisible(this.debug);
+    this.debugText = label(0, 24, {
+      font: `12px ${MONO}`,
+      color: '#6f777c',
+      left: 'auto',
+      right: '28px',
+      textAlign: 'right',
+      lineHeight: '1.45',
+      display: this.debug ? 'block' : 'none',
+    });
+    game.ui.append(this.debugText);
   }
 
   private updateHud(): void {
-    this.hud.setText(this.chapter.objective);
+    this.hud.textContent = this.chapter.objective;
 
     if (!this.debug) return;
 
     const body = this.controlled.body;
     const spec = body.spec;
-    this.debugText.setText(
-      [
-        `${spec.name}`,
-        `mass       ${spec.mass} kg`,
-        `speed      ${body.speed.toFixed(2)} m/s   ${bar(body.speedFraction)}`,
-        `top speed  ${spec.maxSpeed.toFixed(1)} m/s`,
-        `momentum   ${body.momentum.toFixed(0)} kg·m/s`,
-        `stop in    ${body.stoppingDistance.toFixed(2)} m`,
-        `slip       ${body.slipSpeed.toFixed(2)} m/s`,
-        `accel max  ${(spec.driveForce / spec.mass).toFixed(1)} m/s²`,
-        `brake max  ${(spec.brakeForce / spec.mass).toFixed(1)} m/s²`,
-        '',
-        `pos        ${body.x.toFixed(1)}, ${body.y.toFixed(1)}`,
-        `floor      ${this.floor}`,
-        `sim        ${this.sim.elapsed.toFixed(1)} s`,
-        `fps        ${this.game.loop.actualFps.toFixed(0)}`,
-      ].join('\n'),
-    );
+    this.debugText.textContent = [
+      `${spec.name}`,
+      `mass       ${spec.mass} kg`,
+      `speed      ${body.speed.toFixed(2)} m/s   ${bar(body.speedFraction)}`,
+      `top speed  ${spec.maxSpeed.toFixed(1)} m/s`,
+      `momentum   ${body.momentum.toFixed(0)} kg·m/s`,
+      `stop in    ${body.stoppingDistance.toFixed(2)} m`,
+      `slip       ${body.slipSpeed.toFixed(2)} m/s`,
+      `accel max  ${(spec.driveForce / spec.mass).toFixed(1)} m/s²`,
+      `brake max  ${(spec.brakeForce / spec.mass).toFixed(1)} m/s²`,
+      '',
+      `pos        ${body.x.toFixed(1)}, ${body.y.toFixed(1)}`,
+      `floor      ${this.floor}`,
+      `sim        ${this.sim.elapsed.toFixed(1)} s`,
+      `fps        ${this.fps.toFixed(0)}`,
+    ].join('\n');
   }
 }
 
@@ -340,8 +355,4 @@ export class ChapterScene extends Phaser.Scene {
 function bar(fraction: number): string {
   const filled = Math.round(Math.max(0, Math.min(1, fraction)) * 10);
   return '█'.repeat(filled) + '·'.repeat(10 - filled);
-}
-
-function colourToCss(colour: number): string {
-  return `#${colour.toString(16).padStart(6, '0')}`;
 }

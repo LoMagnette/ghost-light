@@ -16,7 +16,7 @@ version of the division of labour:
 As of 18 Sep 2026, the scaffold is committed and verified running, and movement
 is tuned and measured.
 
-- **Stack** — Phaser 4.2.1, TypeScript strict, Vite 6. Typecheck and
+- **Stack** — three.js, TypeScript strict, Vite 6. Typecheck and
   production build both pass.
 - **Physics** — custom fixed-timestep 120 Hz simulation with real mass.
   Not Arcade Physics. See `src/core/`.

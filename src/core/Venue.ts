@@ -225,18 +225,6 @@ export interface Link {
    * to get over and the gradient alone decides — see `maxSlope`.
    */
   riser: number;
-
-  /**
-   * How much of the rise is DRAWN, in metres. Defaults to all of it.
-   *
-   * A full-storey flight drawn at its true 6.2 m is entirely above the
-   * renderer's cutaway and comes out as a flat-topped slab, so the venue
-   * squashes it. Nothing in the simulation reads this — a robot climbs the
-   * real rise — but the renderer has to put the robot on the flight it
-   * actually drew, or a machine halfway up floats three metres over its own
-   * staircase.
-   */
-  drawnRise?: number;
 }
 
 export interface Venue {

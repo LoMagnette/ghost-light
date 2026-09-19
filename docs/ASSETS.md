@@ -14,8 +14,9 @@ repository's MIT licence, and large ones should stay out of the bundle.
 | `references/robots/droid-robot.png` | 1376 × 768, 1.3 MB |
 | `references/robots/biggy-robot.png` | 2752 × 1536, 4.0 MB |
 
-Multi-angle orthographic turnarounds — the correct input for generating
-8-direction sprite sheets.
+Multi-angle orthographic turnarounds — a modelling reference. Since the
+renderer moved to three.js (19 Sep) the robots are meshes, not sprites, so
+these are read as views of an object to build rather than as frames to trace.
 
 ### Floor plans
 
@@ -74,16 +75,21 @@ Taken from the photographs, not invented:
 
 ## To generate
 
-- [ ] Voxxy — 8 facings × (idle, walk, run)
-- [ ] Droid — 8 facings × (idle, walk, run) + reach
-- [ ] Biggy — 8 facings × (idle, walk, run) + shove
-- [ ] Crowd NPC — needs to read at density 1.0 without killing the framerate
+Facings are gone: a mesh is rotated, not redrawn from eight angles. This was 24
+sprite sheets and is now three models.
+
+- [ ] Voxxy — model + idle, walk, run
+- [ ] Droid — model + idle, walk, run, reach
+- [ ] Biggy — model + idle, walk, run, shove
+- [ ] Crowd NPC — needs to read at density 1.0 without killing the framerate.
+      One low-poly mesh in an InstancedMesh, the way the seating is done
 - [ ] Footfall audio, per robot — the highest-value sound in the game
 
 ## Rules
 
 1. **The Robot Lab reference robot is not shippable in any form.** An entry
    that is that robot repainted scores zero of the 40 originality points.
-2. Generated sprites go in `public/assets/`. Working files stay in
-   `art/_work/`, which is git-ignored.
+2. Generated models and textures go in `public/assets/`. Working files stay in
+   `art/_work/`, which is git-ignored. Prefer glTF — it is the format three.js
+   loads without a plugin.
 3. Keep the deployed bundle small. Judges load the hosted build first.

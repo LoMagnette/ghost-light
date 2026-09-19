@@ -881,6 +881,102 @@ the walls for a smear across the floor.
 
 ---
 
+## Engine
+
+### Migrating the renderer from Phaser 4 to three.js
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-19
+
+**Prompt:**
+> I realized that we kind of hit the wall the the phaser approach for this
+> game. I would like to migrate all this to three.js that will give us more
+> flexibility can you tackle that
+
+**Iterations:** 1 for the port, 3 more to get the picture right
+
+The wall was real and it had a name: the 2D renderer was a depth buffer written
+by hand. `BlockoutRenderer` was 746 lines and roughly three hundred of them
+were a painter's-order queue re-sorted every frame, a Sutherland–Hodgman
+clipper so a staircase could not paint out of its own stairwell, precomputed
+screen-space bounds so five thousand seats could be culled before they were
+projected, and a per-face shading table that had to be kept in step with the
+projection. Three of the last four commits before this one were bug fixes in
+that machinery, and each fix made the next one harder.
+
+**What made it cheap.** `src/core/` had never imported a line of rendering
+code — rule 4, enforced since day one, and `npm run physics` only works because
+of it. So the simulation, the venue, the chapters and all three verification
+harnesses came across untouched. What changed was the renderer, the input, and
+the Phaser scene shell, which became about 250 lines of `src/app/`.
+
+**Decision: keep the look, change what is underneath.** The alternative — a
+free orbiting camera — was refused on the brief's own terms: the venue was
+surveyed, drawn and cut away for one fixed angle, and "a sharp 2D game beats a
+vague 3D one". So the camera is orthographic at a fixed 30° from the
+south-west, derived from the same `PPM` and `ISO_SQUASH` the projection
+function used, and `assertMatchesProjection` checks at boot that it still
+agrees with `Iso.project` to within a millionth of a pixel.
+
+**What went wrong.**
+
+1. *2:1 isometric is not a projection of anything.* The 2D renderer squashed
+   the floor by 0.5 and drew heights unsquashed. No camera does that — it is
+   dimetric, not isometric. A real camera at the angle that reproduces the
+   floor grid draws heights 1.22× taller. Both facts had to be found before the
+   camera could be written, and the choice (keep the floor plan exact, let the
+   heights be honest) is the reason every surveyed coordinate still lands on
+   the same pixel it used to.
+
+2. *Everything came out about half as bright as it should be.* Two causes
+   stacked. three.js lights are physically scaled, so a Lambert surface
+   reflects `intensity / π` and an intensity of 1 is a face at a third of its
+   own colour. And the scene is lit in linear space while every palette colour
+   was measured off a photograph and tuned against a renderer that multiplied
+   sRGB bytes — so multiplying a light by `lightLevel` directly makes Chapter I
+   roughly twice as bright as it was measured to be, in the one chapter whose
+   entire mood is how dark it is. `LAMBERT_SCALE` and `SRGB_GAMMA` are those
+   two facts written down.
+
+3. *The building had renderer workarounds baked into the venue data.* A
+   staircase was squashed from its true 6.2 m to 2.4 so it fell under the
+   drawing cutaway, and a stairwell seen from the floor above was cut back to a
+   wedge of what a painter's algorithm could show into a hole. Both are wrong
+   with a depth buffer — the squash puts a climbing robot inside its own steps
+   — so `drawnRise` and `WELL_SIGHT` are gone and the flights are simply built
+   at the height they are. `npm run traverse` passing unchanged afterwards is
+   what says the stair rule survived it.
+
+**Fixed by hand.**
+
+- The face-shading constants. The model's first pass ported the hand-tuned
+  `0.66` / `0.82` face multipliers as literal light intensities, which is not a
+  thing a light can be. They were re-solved as the one ambient, one key
+  intensity and one direction that reproduce the old picture — and deliberately
+  landed a little softer than the original, because matching the 0.63 south
+  face exactly needs a light so near vertical that every unlit surface goes to
+  pure black.
+- The camera-follow height. The old camera tracked the floor plane and let the
+  robot ride up the screen on a staircase, because the staircase was squashed
+  and the drift was small. At true height it is 6.2 m of drift, so the camera
+  now follows z — and has to be SNAPPED rather than eased when the storey
+  changes, since both storeys are modelled from their own datum and the world
+  moves 6.2 m under the robot at that instant.
+- The contact shadow on stairs. A 1.4 m disc on 0.62 m treads buries itself in
+  the riser above and reads as a smear beside the robot. Hidden while a robot
+  is on a flight.
+
+**What it bought, concretely.** `BlockoutRenderer` is 666 lines against 746,
+and the part that went is all of the sorting and clipping — what replaced it is
+geometry and documentation. The building is now built ONCE per storey into two
+draw calls instead of being re-queued and re-sorted sixty times a second; a
+frame does nothing but move the robots. The Phaser scene shell became 260 lines
+of `src/app/`. The production bundle is 564 kB, 145 kB gzipped. And
+`lightLevel` drives an actual light, which is what the art pass needs it to
+be.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
