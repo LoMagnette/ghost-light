@@ -1881,6 +1881,47 @@ was cheap.
 
 ---
 
+### Claude Opus — the missing party wall
+
+**Prompt:**
+> For now just keep the toilet zone as empty rectangle with a coridor. there's
+> a missing wall next to the stair between the exposition wall and the
+> reception.
+
+**Iterations:** 1
+
+Both true. The toilets are an empty rectangle off a corridor now, which is
+what the plan draws anyway — two blocks served off a passage down their south
+side — and the cubicles are gone until there is a reason for them.
+
+The wall is the interesting one. Listing every wall along the hall/reception
+boundary:
+
+```
+x -23.50 .. -9.80    x -13.60 .. -9.62
+x   8.03 .. 11.51    x   8.13 .. 11.62
+x  21.46 .. 22.70    x  21.58 .. 28.80
+```
+
+**Eleven metres of it, from x 11.5 to 21.5, was simply not there** — starting
+a metre east of the concourse steps, which is exactly where it was noticed
+from. That is the wheelchair ramp's footprint, and the wall builder lets any
+same-storey flight cut its own way through a wall it crosses. Right for a
+staircase, which is a made thing as wide as the way through it. Wrong twice
+over here: the ramp is a 10 m drivable wedge standing in for a ramp a fraction
+that wide, and the terrace added last round meets the wall across its whole
+23 m while only being at door height for the middle 18.
+
+So only a *stepped* flight punches its own hole now. The ramp and the terrace
+say where their openings are, and the ramp's is 4 m.
+
+A traversal scenario stands where the wall was and drives at it. With the old
+rule Voxxy goes straight through the gap, up the ramp and twenty-two metres
+across the concourse to the far wall; with the new one it stops at the wall,
+on the hall floor, half a metre short.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

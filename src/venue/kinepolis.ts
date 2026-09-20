@@ -276,14 +276,38 @@ const HALL_OPENING = rect(
 );
 
 /**
- * The toilets off the south-east of the concourse, hard against the BOF rooms.
+ * The toilets off the south-east of the concourse, and the corridor to them.
  *
- * Same 19.8 m frontage as the two rooms below it, because on the plan all
- * three are one block of building served by one wall.
+ * Same 19.8 m frontage as the BOF rooms below, because on the plan all three
+ * are one block of building served by one wall — and served, on the plan, off
+ * a corridor along their south side, which is what gets a robot in there.
+ * The rooms themselves are left empty on purpose for now.
  */
-const TOILETS = rect(22.3, -45.2, 19.8, 5.0);
+const TOILET_CORRIDOR = rect(22.3, -45.2, 19.8, 2.2);
+const TOILETS = rect(22.3, -43.0, 19.8, 3.6);
 
-const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [{ floor: 0, bounds: HALL_OPENING }];
+/**
+ * The wheelchair ramp from the concourse down into the hall.
+ *
+ * Ten metres wide because it stands for a ramp nobody draws — see the note on
+ * the reception's plate — and the width is what makes it comfortably drivable
+ * rather than what the building has.
+ */
+const RAMP = rect(11.5, -49.4, 10.0, 12.0);
+
+/** The gap it needs in the wall at the bottom. A ramp, not a ten-metre hole. */
+const RAMP_DOOR = 4.0;
+const RAMP_OPENING = rect(
+  RAMP.x + RAMP.w / 2 - RAMP_DOOR / 2,
+  HALL.y - 1,
+  RAMP_DOOR,
+  2,
+);
+
+const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
+  { floor: 0, bounds: HALL_OPENING },
+  { floor: 0, bounds: RAMP_OPENING },
+];
 
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
@@ -318,6 +342,7 @@ const floor0Rooms: Room[] = [
    * it. The cubicle partitions are what makes it read as a toilet block
    * rather than a store — see `receptionFitOut`.
    */
+  { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
   { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
 ];
@@ -1440,9 +1465,19 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               l.from === l.to &&
               l.from === room.floor &&
               (edge.horizontal ? l.axis === 'y' : l.axis === 'x') &&
-              // A terrace is only at door height across part of its width, so
-              // it cannot be trusted with the hole. See HALL_OPENING.
+              /*
+               * ...and only a flight in a slot. A stepped flight is a made
+               * thing as wide as the way through it, so it can be trusted to
+               * cut its own hole. The other two here cannot: a terrace meets
+               * the wall across its whole 23 m and is only at door height for
+               * the middle 18, and the ramp is a 10 m drivable wedge standing
+               * for a ramp a fraction of that. Letting it punch left eleven
+               * metres of the wall between the hall and the reception simply
+               * missing, which is what you notice from inside. Both say where
+               * their opening is instead — see WALL_OPENINGS.
+               */
               l.wrap === undefined &&
+              l.riser > 0 &&
               rectContains(l.bounds, px, py),
           ) ||
           // An opening wider than the flight standing in it. See HALL_OPENING.
@@ -1732,7 +1767,7 @@ const receptionStairs: Link[] = [
    * the 3.6 m of footprint the switchback folds into. A documented
    * simplification of a thing the plan shows, not an invented feature.
    */
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: rect(11.5, -49.4, 10.0, 12.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: 0 },
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: RAMP, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: 0 },
   /**
    * "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
    *
@@ -2344,13 +2379,8 @@ const DESK_DOOR = 2.2;
 /** The store against the head of the stairs. Full height; a cupboard. */
 const DESK_STORE = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h, 3.6, 1.6);
 
-/** Cubicle partitions: pitch and depth, metres. */
-const CUBICLE_PITCH = 1.2;
-const CUBICLE_DEPTH = 1.5;
-const CUBICLE_HEIGHT = 2.0;
-
 function receptionFitOut(): Obstacle[] {
-  const solids: Obstacle[] = [
+  return [
     // The office: walled on the two sides away from the concourse, with the
     // staff way in at the corner nearest the stairs. Closed on all four sides
     // it is a box nobody can be inside, which is a strange thing to build.
@@ -2379,24 +2409,6 @@ function receptionFitOut(): Obstacle[] {
       material: 'desk',
     },
   ];
-
-  // Cubicles along the toilets' back wall. Head height, not wall height: a
-  // partition you can see over the top of is what tells you what the room is.
-  const first = TOILETS.x + 1.6;
-  const cubicles = Math.floor((TOILETS.w - 3.2) / CUBICLE_PITCH);
-  for (let i = 0; i <= cubicles; i += 1) {
-    solids.push({
-      floor: 0,
-      bounds: rect(
-        first + i * CUBICLE_PITCH,
-        TOILETS.y + TOILETS.h - CUBICLE_DEPTH,
-        0.1,
-        CUBICLE_DEPTH,
-      ),
-      height: CUBICLE_HEIGHT,
-    });
-  }
-  return solids;
 }
 
 /**

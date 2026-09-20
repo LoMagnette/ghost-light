@@ -194,6 +194,28 @@ scenario(
 // Checked on peakZ rather than final z: nothing bounds the building, so a
 // robot held at full throttle long enough drives out of it and back down to
 // zero. See the note at the end of this file.
+/*
+ * The wall between the hall and the reception, beside the ramp.
+ *
+ * The ramp is a 10 m drivable wedge standing for a ramp a fraction that wide,
+ * and it used to cut its own way through the wall — so eleven metres of the
+ * building's most-used party wall was simply not there, starting a metre east
+ * of the concourse steps. It has a 4 m opening now and the rest is wall. This
+ * stands where the wall is and drives at it.
+ */
+const RAMP_LINK = KINEPOLIS.links.find((l) => l.id === 'wheelchair-ramp');
+const HALL_WALL = KINEPOLIS.rooms.find((r) => r.id === 'reception').bounds;
+const BESIDE_RAMP = {
+  x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w - 1.5,
+  y: HALL_WALL.y + HALL_WALL.h + 6,
+};
+
+scenario(
+  'Voxxy is stopped by the wall beside the ramp',
+  (r) => r.z < 0.1 && r.y > HALL_WALL.y + HALL_WALL.h,
+  () => drive('voxxy', BESIDE_RAMP, SOUTH, 8),
+);
+
 scenario(
   'Biggy reaches the concourse by the ramp',
   (r) => r.peakZ > 1.1,
