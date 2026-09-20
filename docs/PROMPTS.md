@@ -1610,6 +1610,39 @@ out at 1.35 m clear: Voxxy 0.68 and Droid 0.92 pass, Biggy 1.44 does not. True,
 and now true with a number attached — and the right answer anyway for a machine
 that could not have used the stairs it would be squeezing past.
 
+### A stair hall, not a slot
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> the shouldn't have wall next to that staire just guarrails
+
+**Iterations:** 1, after asking
+
+Three things could have been meant and I had misread the previous instruction
+already, so this one was put back as a question with the three candidates drawn
+out: the corridor's own side walls, the flight's solid side seen from the
+concourse, or the wall across the head of it. The answer was the first.
+
+The grand flight arrives between Rooms 6 and 7, so the corridor's party walls
+run the whole length of its well, and at 3.2 m they made the head of the
+staircase a slot between two blank faces. They are 1.2 m along that stretch
+now, and full height everywhere else — the wall is SPLIT at the well's ends
+rather than replaced, so Room 6's doorway and the runs north of the stair are
+untouched.
+
+**Still solid, and that is the point of lowering rather than deleting.** A
+balustrade is something you see over, not something you walk through: the
+auditorium behind it is still entered by its own door, and `npm run traverse`
+says so. Collision here has never read a height, so this change is invisible to
+the simulation and entirely about what is in the way of looking at the stairs.
+
+**Fixed by hand.** The instinct to apply it to all three wells. The two flights
+into the hall are pressed against the corridor walls with no landing beside
+them, so lowering those opens an auditorium onto a stairwell nobody can stand
+in. `RAILED_WELLS` has one entry and says why.
+
 ---
 
 ## Audio

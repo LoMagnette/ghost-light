@@ -1257,6 +1257,13 @@ export const HALL_FLOOR_M2 =
 const WALL_THICKNESS = 0.3;
 const WALL_HEIGHT = 3.2;
 
+/**
+ * Balustrade height and thickness, metres. Chest height on Droid, taller than
+ * Voxxy. Up here with the walls because a wall that flanks a stairwell is one.
+ */
+const RAIL_HEIGHT = 1.2;
+const RAIL_THICKNESS = 0.12;
+
 /** A double door's worth of opening. */
 const DOOR_WIDTH = 2.6;
 
@@ -1852,6 +1859,70 @@ function stairMass(links: Link[]): Obstacle[] {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Stairwells whose flanking walls are balustrades rather than walls.
+ *
+ * The grand flight arrives between Rooms 6 and 7, so the corridor's own side
+ * walls run the length of its well — and at 3.2 m they make the head of the
+ * staircase a slot between two blank faces. A stair hall is not a slot: what
+ * stands along the edge of a five-metre drop is something you can see over.
+ *
+ * The two flights into the hall are deliberately not in here. Their wells are
+ * pressed against the corridor walls with no landing beside them, so lowering
+ * those walls opens an auditorium to a stairwell nobody can stand in.
+ */
+const RAILED_WELLS = new Set(['grand-stair']);
+
+/**
+ * Metres of landing a wall may be from a well and still count as flanking it.
+ * Wide enough for the grand flight's 1.5 m, narrow enough that the corridor's
+ * far side is never in question.
+ */
+const FLANKING = 2.5;
+
+/**
+ * Lower the stretch of wall that runs alongside a stairwell to a balustrade.
+ *
+ * Still SOLID, and that is the point of doing it this way rather than deleting
+ * the wall: a balustrade is something you see over, not something you walk
+ * through, and the auditorium behind it is still entered by its own door. The
+ * only thing that changes is how much of the building is in the way of looking
+ * at the staircase.
+ */
+function railBesideWells(walls: Obstacle[], links: Link[]): Obstacle[] {
+  const wells = links.filter((l) => RAILED_WELLS.has(l.id) && l.from !== l.to);
+
+  return walls.flatMap((wall) => {
+    let pieces = [wall];
+    for (const well of wells) {
+      pieces = pieces.flatMap((piece) => splitBesideWell(piece, well));
+    }
+    return pieces;
+  });
+}
+
+function splitBesideWell(wall: Obstacle, well: Link): Obstacle[] {
+  const b = wall.bounds;
+  const w = well.bounds;
+  // Only a wall on the well's own storey, running ALONG it, and close enough
+  // to be the edge of its landing rather than something across the corridor.
+  if (wall.floor !== well.to || b.h <= b.w) return [wall];
+  const gap = Math.min(Math.abs(b.x - (w.x + w.w)), Math.abs(w.x - (b.x + b.w)));
+  if (gap > FLANKING) return [wall];
+
+  const lo = Math.max(b.y, w.y);
+  const hi = Math.min(b.y + b.h, w.y + w.h);
+  if (hi - lo < 0.2) return [wall];
+
+  const out: Obstacle[] = [];
+  if (lo - b.y > 0.05) out.push({ ...wall, bounds: rect(b.x, b.y, b.w, lo - b.y) });
+  out.push({ ...wall, bounds: rect(b.x, lo, b.w, hi - lo), height: RAIL_HEIGHT });
+  if (b.y + b.h - hi > 0.05) {
+    out.push({ ...wall, bounds: rect(b.x, hi, b.w, b.y + b.h - hi) });
+  }
+  return out;
+}
+
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
 
 /**
@@ -1873,8 +1944,6 @@ const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
  * does not read heights anyway, and a run of bands for the eye, cut to the
  * flight's own treads so the rail steps down with it.
  */
-const RAIL_HEIGHT = 1.2;
-const RAIL_THICKNESS = 0.12;
 
 /**
  * The flights that stand clear of a wall, and so are worth railing.
@@ -2015,7 +2084,7 @@ export const KINEPOLIS: Venue = {
     ...stairMass(staircases),
     ...RAILS.solids,
     ...concourseStepRails(),
-    ...WALLS.walls,
+    ...railBesideWells(WALLS.walls, staircases),
   ],
   decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor],
   links: staircases,
