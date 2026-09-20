@@ -2170,6 +2170,41 @@ platform as a solid box fails it at the front edge, 2.9 m short.
 
 ---
 
+### Claude Opus — a counter on every stand
+
+**Prompt:**
+> most booth should have some kind of small desk
+
+**Iterations:** 1
+
+All twenty-seven have one. The interesting part is where it goes.
+
+The obvious place is across the frontage, and it is wrong: a counter on the
+aisle edge walls a 6 m² stand off completely, and the whole reason these
+stopped being solid blocks last round is that you can drive into one. So the
+counter sits **against the back panel**, which is also what a stand with an
+info desk actually looks like, and the frontage stays open.
+
+`DESK_SHARE` of the frontage and capped, so a small stand gets a metre of
+counter and a large one two and a half rather than four — a desk, not a
+partition. Which end it sits at alternates up the rank, because a floor where
+every stand is the same object twenty-seven times reads as wallpaper rather
+than as a trade floor.
+
+They are `material: 'desk'`, the same as the lecterns upstairs, which is the
+honest answer — it is the same kind of object and the chapters should dress
+it the same way. That only works because the presenter's-desk count was
+scoped to the auditorium level two rounds ago, when the reception counter
+tripped it.
+
+`npm run venue` holds every stand to exactly one counter, wholly inside it.
+The traversal scenario from last round still passes and now stops Voxxy 60 cm
+earlier — on the stand, against the counter, rather than against the back
+panel — so it got a name that says what it is testing: that you get ONTO a
+stand at all.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

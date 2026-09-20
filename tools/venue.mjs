@@ -440,6 +440,24 @@ const pillars = KINEPOLIS.obstacles.filter(
 );
 check(pillars.length === 42, `expected 42 columns on the hall floor, found ${pillars.length}`);
 
+// One counter per stand, and inside the stand it belongs to. The counters
+// are the only thing on the hall floor made of the same stuff as the
+// lecterns upstairs, which is why the presenter's-desk count is scoped to
+// floor 1 — see the note there.
+const counters = KINEPOLIS.obstacles.filter((o) => o.floor === 0 && o.material === 'desk');
+for (const stand of stands) {
+  const b = stand.bounds;
+  const mine = counters.filter(
+    (c) =>
+      c.bounds.x >= b.x - EPS && c.bounds.x + c.bounds.w <= b.x + b.w + EPS &&
+      c.bounds.y >= b.y - EPS && c.bounds.y + c.bounds.h <= b.y + b.h + EPS,
+  );
+  check(
+    mine.length === 1,
+    `the stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} has ${mine.length} counters, expected 1`,
+  );
+}
+
 const hallBounds = KINEPOLIS.rooms.find((r) => r.id === 'hall').bounds;
 for (const stand of stands) {
   const b = stand.bounds;

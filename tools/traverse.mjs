@@ -401,17 +401,17 @@ scenario(
 );
 
 /*
- * And into a stand, which is the point of them not being blocks.
+ * And onto a stand, which is the point of them not being blocks.
  *
- * A stand is a platform with a panel across the back of it: you drive off
- * the aisle onto the stand, and what stops you is the back. As solid boxes
- * they stopped a robot at the front edge and the inside of a stand was
- * somewhere nobody could ever be.
+ * A stand is a platform with a panel across the back and a counter in front
+ * of that: you drive off the aisle onto the stand and get stopped by its
+ * contents, not by its edge. As solid boxes they stopped a robot at the
+ * front and the inside of a stand was somewhere nobody could ever be.
  */
 const WEST_STAND = STANDS.reduce((a, b) => (b.bounds.x < a.bounds.x ? b : a));
 
 scenario(
-  'Voxxy drives into a stand and is stopped by the back of it',
+  'Voxxy drives off the aisle onto a stand',
   (r) => r.x < WEST_STAND.bounds.x + WEST_STAND.bounds.w && r.x > WEST_STAND.bounds.x,
   () =>
     drive(
