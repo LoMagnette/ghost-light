@@ -528,6 +528,8 @@ function auditoriums(): {
         riser: RISER,
       });
 
+      decor.push(projectionScreen(bounds, side, rake));
+
       const fitOut = seatingFor(bounds, side, doorSide);
       solids.push(...fitOut.banks);
       decor.push(...fitOut.decor);
@@ -650,6 +652,47 @@ function seatRows(room: Rect): number {
 
 function rakeOf(room: Rect): number {
   return seatRows(room) * RISER;
+}
+
+/**
+ * The projection screen on an auditorium's end wall.
+ *
+ * Drawn, never collided: the room's own screen wall is right behind it and
+ * already stops anything that gets that far, and a robot cannot drive through
+ * a screen without driving through the wall first.
+ *
+ * It stands ON THE STAGE, which is the whole reason it reads at all. The stage
+ * is a rake below the corridor you came in from — 4.14 m in Room 8 — so a
+ * screen filling that end wall is a four-metre object sunk into the floor, and
+ * the deeper the room the bigger its screen, which is exactly the relationship
+ * a cinema has.
+ */
+const SCREEN_SILL = 0.35;
+const SCREEN_THICKNESS = 0.3;
+/** Gap between the screen wall and the back of the screen, metres. */
+const SCREEN_OFFSET = 0.25;
+/** Bare wall left at each end of the frontage, metres. */
+const SCREEN_MARGIN = 1.6;
+/**
+ * Tallest a screen is drawn above its stage.
+ *
+ * Capped so its top lands at or just under the storey datum — the level of the
+ * corridor and of the back row. A screen that rises past that is a screen
+ * standing in front of the room behind it, and the cutaway would trim it
+ * anyway. `rake` is the room's own drop, so this is "fill the end wall".
+ */
+const SCREEN_MAX_HEIGHT = 3.6;
+
+function projectionScreen(room: Rect, side: -1 | 1, rake: number): Decor {
+  const x = side === -1 ? room.x + SCREEN_OFFSET : room.x + room.w - SCREEN_OFFSET - SCREEN_THICKNESS;
+  const top = SCREEN_SILL + Math.min(SCREEN_MAX_HEIGHT, Math.max(0.8, rake - SCREEN_SILL));
+  return {
+    floor: 1,
+    bounds: rect(x, room.y + SCREEN_MARGIN, SCREEN_THICKNESS, room.h - SCREEN_MARGIN * 2),
+    base: SCREEN_SILL,
+    height: top,
+    material: 'screen',
+  };
 }
 
 /**

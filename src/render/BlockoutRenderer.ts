@@ -82,6 +82,23 @@ import {
  */
 const MAX_DRAWN_HEIGHT = 2.7;
 
+/**
+ * Where the cutaway actually cuts, for a piece standing on a given plate.
+ *
+ * A PLANE through the building, not a height limit per object. Measured from
+ * the piece's own plate it is neither: an auditorium's stage is four metres
+ * under the corridor, so a wall down there was being stopped 2.7 m above the
+ * stage — a metre and a half BELOW the cut — and a projection screen filling
+ * that end wall came out a third of its proper size.
+ *
+ * Never lower than the plate itself, though, because the concourse stands 1.2 m
+ * over the hall and the things on it are standing on the floor you are walking
+ * on. So: 2.7 m above the storey datum, or above the plate, whichever is more.
+ */
+function cutAt(plate: number): number {
+  return Math.max(plate, 0) + MAX_DRAWN_HEIGHT;
+}
+
 /** How thick a floor plate is drawn, metres. Only its edge is ever seen. */
 const PLATE_THICKNESS = 0.14;
 
@@ -377,7 +394,9 @@ export class BlockoutRenderer {
         bounds,
         bottom: datum + (obstacle.base ?? 0),
         // A flight is exempt from the cutaway: see MAX_DRAWN_HEIGHT.
-        top: datum + (obstacle.linkId ? obstacle.height : Math.min(obstacle.height, MAX_DRAWN_HEIGHT)),
+        top: obstacle.linkId
+          ? datum + obstacle.height
+          : Math.min(datum + obstacle.height, cutAt(datum)),
         // No material means the building itself, which takes the wall colour.
         // Only furniture names one. Same rule as Decor.material: the venue
         // says what a thing IS and the chapter says what that looks like.
@@ -394,7 +413,9 @@ export class BlockoutRenderer {
       boxes.push({
         bounds,
         bottom: datum + (piece.base ?? 0),
-        top: datum + Math.min(piece.height, MAX_DRAWN_HEIGHT),
+        top: piece.linkId
+          ? datum + piece.height
+          : Math.min(datum + piece.height, cutAt(datum)),
         colour: this.material(piece.material),
       });
     }
@@ -482,6 +503,8 @@ export class BlockoutRenderer {
         return this.palette.sign;
       case 'signAccent':
         return this.palette.accent;
+      case 'screen':
+        return this.palette.screen;
       default:
         return this.palette.wall;
     }

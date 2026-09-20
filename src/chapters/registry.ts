@@ -70,6 +70,9 @@ export const CHAPTER_ONE: Chapter = {
     // years — which is the chapter in one object.
     desk: 0x3a4a6b,
     sign: 0xe4e9ec, // the letters on the keynote stage, still standing
+    // Fourteen screens with nothing on them. Cold and slightly grey, because
+    // the only thing lighting them is whatever daylight reaches this far in.
+    screen: 0xaeb6bd,
     // The red LED step strips, measured at their brightest in the one
     // photograph of the auditorium with everything else switched off. It is
     // a hot crimson, not the brick orange this used to guess at — and SPEC
@@ -110,6 +113,9 @@ export const CHAPTER_TWO: Chapter = {
     // A trestle and a green baize, before anyone thought to brand the table.
     desk: 0x5d5236,
     sign: 0xefe2cc,
+    // Tungsten on the same cloth. The screens of this era were smaller and
+    // greyer, and this is the one surface in the room that shows the light.
+    screen: 0xcfc3ab,
     accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
     text: 0xf2e8d8,
   },
@@ -144,6 +150,8 @@ export const CHAPTER_THREE: Chapter = {
     seat: 0x4a5573,
     desk: 0x44547a, // conference blue, catching the warm light off the screen
     sign: 0xf2f2ee, // the letters, lit from the screen behind them
+    // The brightest thing in the building at capacity: every room is running.
+    screen: 0xe8e4da,
     // The hall's warm cove lighting at capacity. SPEC calls this era "Devoxx
     // orange"; this is that orange as the building actually throws it, which
     // is softer and peachier than a brand hex.

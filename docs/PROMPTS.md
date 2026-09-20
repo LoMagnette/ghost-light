@@ -1479,6 +1479,42 @@ That is the second rail in two rounds where the interesting question was not
 where to put it but what it should be solid TO — the flight's own rails are
 solid to everybody and carry no linkId, and this one is solid to nobody.
 
+### Fourteen projection screens
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> Can you add the projection screen on the different rooms
+
+**Iterations:** 2
+
+A screen per auditorium, on the end wall, standing on the stage — drawn and
+never collided, because the room's own screen wall is right behind it and a
+robot cannot reach a screen without driving through that first. `Material`
+gained `screen` and the four palettes gained a colour for it, which is the
+documented way to add dressing and the reason it takes one line per chapter.
+
+Sized from the room rather than set: `min(3.6, rake)` tall and the frontage
+less a margin wide, so Room 8 gets 19.0 x 3.6 m and Room 2 gets 9.1 x 1.6.
+That is not a formula chosen for tidiness — the stage is a rake below the
+corridor, so the depth of a room decides how far its floor drops and therefore
+how much end wall there is to fill. A cinema has exactly that relationship and
+it came out of the geometry rather than being imposed on it.
+
+**The cutaway had to be fixed first.** Every screen came out a third of its
+proper size, because `MAX_DRAWN_HEIGHT` was being applied 2.7 m above each
+piece's OWN plate. A cutaway is a PLANE through the building. Measured per
+object it is not one: an auditorium's stage is four metres under the corridor,
+so a wall down there was stopped 2.7 m above the stage, which is a metre and a
+half BELOW the cut it was supposed to be respecting.
+
+Now it is `max(plate, 0) + 2.7` — the plane, or the plate, whichever is higher,
+the second clause being the reception concourse, where the raised plate IS the
+floor you are standing on. Checked before changing it: fourteen pieces move,
+all of them walls on a stage, every one of them getting 0.5 m TALLER and none
+shorter. A latent fault, found by needing something else.
+
 ---
 
 ## Audio
