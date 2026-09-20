@@ -189,6 +189,86 @@ function exhibitionColumns(): Obstacle[] {
 }
 
 /**
+ * The exhibition stands, as Devoxx lays the floor out.
+ *
+ * From `references/venue/maps/booth-map.png`: five ranks running north-south
+ * in the southern half of the hall — two of small stands against the west
+ * wall, two of large ones either side of a broad central aisle, one of small
+ * ones to the east — plus two in the south-west corner by the curve. Twenty-
+ * seven in all, which is the number the plan lets.
+ *
+ * The ranks are placed off the COLUMN GRID rather than traced off the image,
+ * because that is what a stand fitter does: nothing is built round a column,
+ * and the two narrow gaps between back-to-back ranks each have a column
+ * standing in them, which is what makes them service gaps rather than aisles
+ * a robot can get itself wedged in. `npm run venue` holds us to the first
+ * half of that; laying this out broke it twice.
+ *
+ * They are solid, and that is the point of them as much as the look: an empty
+ * 2400 m² hall is a car park, and Biggy needs 3.8 m to stop.
+ */
+
+/** A stand is a shell scheme: head height, and a fascia over it. */
+const BOOTH_HEIGHT = 2.6;
+
+/** Gap between stands in a rank, metres. You walk through it, not drive. */
+const BOOTH_GAP = 1.0;
+
+/**
+ * South end of the booth field.
+ *
+ * Four metres clear of the concourse terrace, so the first thing you meet
+ * coming out of the reception is floor rather than the back of a stand.
+ */
+const BOOTH_SOUTH = -30.0;
+
+/** Stand depths along a rank, metres: the small shell, and the large one. */
+const STAND_S = 2.4;
+const STAND_L = 5.4;
+
+/** West edge and width of each rank, and its stands from the south up. */
+const BOOTH_RANKS: { x: number; w: number; stands: number[] }[] = [
+  { x: -23.0, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
+  { x: -14.6, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
+  // Three large, and no fourth: the plan puts a small stand on the end of
+  // this rank, and here that would leave the west flight with 0.8 m between
+  // its foot and the back of a booth. The stand it lost is on the east rank.
+  { x: -10.0, w: 4.2, stands: [STAND_L, STAND_L, STAND_L] },
+  { x: 4.0, w: 4.2, stands: [STAND_L, STAND_L, STAND_S, STAND_S] },
+  { x: 9.9, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
+];
+
+/**
+ * The two in the south-west corner, off the end of the ranks.
+ *
+ * The plan turns one of them 45 degrees to face the curve. Nothing here is
+ * anything but axis-aligned, so they are square on and a metre further north
+ * than the plan draws them — south of that they would be standing on the
+ * southernmost line of columns.
+ */
+const CORNER_BOOTHS = [rect(-20.0, -32.8, 3.0, STAND_S), rect(-16.0, -32.8, 3.0, STAND_S)];
+
+function exhibitionBooths(): Obstacle[] {
+  const booths: Obstacle[] = [];
+  for (const rank of BOOTH_RANKS) {
+    let y = BOOTH_SOUTH;
+    for (const depth of rank.stands) {
+      booths.push({
+        floor: 0,
+        bounds: rect(rank.x, y, rank.w, depth),
+        height: BOOTH_HEIGHT,
+        material: 'booth',
+      });
+      y += depth + BOOTH_GAP;
+    }
+  }
+  for (const bounds of CORNER_BOOTHS) {
+    booths.push({ floor: 0, bounds, height: BOOTH_HEIGHT, material: 'booth' });
+  }
+  return booths;
+}
+
+/**
  * The reception concourse — a SEPARATE room south of the hall, not part of it.
  *
  * This is the walk a judge sees first: in through the main entrance at the
@@ -2596,6 +2676,7 @@ export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
   obstacles: [
     ...exhibitionColumns(),
+    ...exhibitionBooths(),
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
     ...STAIRS.solids,
@@ -2615,8 +2696,10 @@ export const SPAWNS = {
   /** Inside the main entrance, east of the grand stair. */
   mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
   /** Where the concourse opens into the hall. */
-  // Between the two southernmost column rows, which sit at y -27.05 and -33.58.
-  hallEntrance: { floor: 0 as const, x: 2, y: -30.3 },
+  // Between the two southernmost column rows, which sit at y -27.05 and
+  // -33.58, and now on the centre line of the main aisle: the cast lines up
+  // eastward from here and the east rank of stands begins at x 4.0.
+  hallEntrance: { floor: 0 as const, x: -1, y: -32.0 },
   /**
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
@@ -2632,7 +2715,7 @@ export const SPAWNS = {
    * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: 0, y: -24 },
+  hallCentre: { floor: 0 as const, x: -2, y: -24 },
   /**
    * Just south of the west flight, below its TOP.
    *
@@ -2640,7 +2723,7 @@ export const SPAWNS = {
    * north from here and you meet it, which is what `npm run traverse` asserts.
    * The foot you can actually walk onto is at the far, northern end.
    */
-  stairFoot: { floor: 0 as const, x: -6.0, y: -10.2 },
+  stairFoot: { floor: 0 as const, x: -6.0, y: -9.6 },
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *

@@ -379,6 +379,25 @@ scenario(
 // The building has to hold them in. This was a printed warning for as long as
 // rooms were floor plates rather than enclosures, and a robot at full throttle
 // drove clean out of the Kinepolis. Now it is an assertion.
+/*
+ * The main aisle through the exhibition stands.
+ *
+ * Twenty-seven solids went onto the hall floor and the hall stopped being a
+ * car park, which is the point of them — but the floor still has to be a
+ * floor. Biggy is the widest robot and the worst at changing its mind, so it
+ * is the one that has to get from the concourse end of the aisle to the far
+ * end of it in a straight line.
+ */
+const STANDS = KINEPOLIS.obstacles.filter((o) => o.material === 'booth');
+const AISLE_SOUTH = Math.min(...STANDS.map((b) => b.bounds.y));
+const AISLE_NORTH = Math.max(...STANDS.map((b) => b.bounds.y + b.bounds.h));
+
+scenario(
+  'Biggy drives the length of the main aisle',
+  (r) => r.y > AISLE_NORTH,
+  () => drive('biggy', { x: -1, y: AISLE_SOUTH - 3 }, NORTH, 14),
+);
+
 scenario(
   'Voxxy cannot drive out of the south wall',
   (r) => r.y > -62,

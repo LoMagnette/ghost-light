@@ -2040,6 +2040,55 @@ like a door, it is framed like the window it is.
 
 ---
 
+### Claude Opus — the exhibition stands
+
+**Prompt:**
+> Can you adapt the exibition area to add some booth based on the image:
+> booth-map.png
+
+**Iterations:** 1
+
+Twenty-seven stands, laid out as the map lays them: two ranks of small ones
+against the west wall, two ranks of large ones either side of a 9.8 m central
+aisle, one rank of small ones east of it, and two in the south-west corner by
+the curve.
+
+**Placed off the column grid, not traced off the image.** That is what a stand
+fitter does — nothing gets built around a column — and it is the one thing
+about the layout that is not a matter of taste. It also turns out to be what
+makes the plan work: the two narrow gaps between back-to-back ranks each have
+a column standing in them, which is what makes them service gaps rather than
+1.6 m dead ends a robot can wedge itself into.
+
+`npm run venue` now holds the floor to it, and the check earns its keep
+immediately — laying these out broke it twice, both times by under half a
+metre, and both times invisibly. A column inside a booth draws as a booth and
+collides as a booth; the only thing wrong with it is that it could not exist.
+
+**Three things the harness caught that I did not:**
+
+- The spawn-safety check failed on three cast positions at once — `hallEntrance`,
+  `hallCentre` and `stairFoot` were all under a stand. The chapters line their
+  cast up EASTWARD from a spawn, so a point that looks clear is not: the third
+  robot lands 4 m away, which is exactly where the east rank begins.
+- `stairFoot` also showed that the west rank was a stand too long: it left
+  0.8 m between the back of a booth and the foot of the west flight. The plan
+  puts a small stand on the end of that rank; here it goes on the east one.
+- And the first colour for Chapter III was picked at the canopy's own warm
+  white, which made twenty-seven stands read as twenty-seven lumps of the
+  building — the hall looked demolished rather than fitted out. They are
+  deliberately cooler than the building they stand in now.
+
+They are solid, and that is as much the point as the look: an empty 2400 m²
+hall is a car park, and Biggy needs 3.8 m to stop. `npm run traverse` drives
+Biggy — widest robot, worst at changing its mind — the full length of the main
+aisle.
+
+Not done, and worth a look later: `Obstacle.movable` already exists, and a
+trade-show stand is the most shoveable thing in the building.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

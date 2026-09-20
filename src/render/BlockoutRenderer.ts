@@ -543,6 +543,8 @@ export class BlockoutRenderer {
         return this.palette.screen;
       case 'glazing':
         return this.palette.glazing;
+      case 'booth':
+        return this.palette.booth;
       default:
         return this.palette.wall;
     }

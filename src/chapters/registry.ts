@@ -73,6 +73,8 @@ export const CHAPTER_ONE: Chapter = {
     // Fourteen screens with nothing on them. Cold and slightly grey, because
     // the only thing lighting them is whatever daylight reaches this far in.
     screen: 0xaeb6bd,
+    // Stands nobody struck, under a decade of dust.
+    booth: 0x5c6470,
     // Nothing switched on behind it: from the street the front of a dead
     // building is the darkest thing on it, colder than the concrete around.
     glazing: 0x49596b,
@@ -119,6 +121,8 @@ export const CHAPTER_TWO: Chapter = {
     // Tungsten on the same cloth. The screens of this era were smaller and
     // greyer, and this is the one surface in the room that shows the light.
     screen: 0xcfc3ab,
+    // Painted board and trestle, lit by the same tungsten as everything else.
+    booth: 0xa07d4c,
     // Tungsten behind it, and glass still reads darker than the frame it
     // sits in — which is the whole cue that it IS glass and not more wall.
     glazing: 0x5c4f38,
@@ -158,6 +162,11 @@ export const CHAPTER_THREE: Chapter = {
     sign: 0xf2f2ee, // the letters, lit from the screen behind them
     // The brightest thing in the building at capacity: every room is running.
     screen: 0xe8e4da,
+    // A full trade floor: modular shell scheme, and deliberately COOLER than
+    // the warm white canopy it stands under. Picked at the canopy's own
+    // colour first, and twenty-seven stands then read as twenty-seven lumps
+    // of the building — the hall looked demolished rather than fitted out.
+    booth: 0x99a1a8,
     // A full house behind it, so this is the one era where the glass is
     // lighter than the floor it shows. Still well under the warm canopy it
     // is framed by: a cool grey against a warm white is unmistakably glass.

@@ -164,7 +164,8 @@ export type Material =
   | 'sign' // the letters of a sign, its body colour
   | 'signAccent' // the one letter that is not
   | 'screen' // the projection screen on an auditorium's end wall
-  | 'glazing'; // curtain wall: the glass front of the building
+  | 'glazing' // curtain wall: the glass front of the building
+  | 'booth'; // an exhibitor's stand on the hall floor
 
 /**
  * Dressing: DRAWN, never simulated.

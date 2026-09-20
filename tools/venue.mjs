@@ -402,6 +402,46 @@ check(
 // measured with one ruler and furnished with another.
 check(ROW_PITCH === 1.0, `row pitch is ${ROW_PITCH} m; the auditorium plan was scaled at 1.0`);
 
+// --- the exhibition stands -------------------------------------------------
+//
+// Twenty-seven of them on the plan, and the one thing about laying them out
+// that is not a matter of taste: a stand is a shell built on the floor, and
+// the floor has a column grid through it. Nobody builds a booth around a
+// column, and a layout that does is one the hall could not actually hold.
+//
+// This is not hypothetical. Placing these broke it twice, both times by less
+// than half a metre, and both times invisibly — a column inside a booth draws
+// as a booth and collides as a booth, and the only thing wrong with it is
+// that it could not exist.
+const stands = KINEPOLIS.obstacles.filter((o) => o.material === 'booth');
+check(stands.length === 27, `the plan lets 27 stands, the hall has ${stands.length}`);
+
+const overlap = (a, b) =>
+  a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS &&
+  a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
+
+const pillars = KINEPOLIS.obstacles.filter(
+  (o) => o.floor === 0 && Math.abs(o.bounds.w - 0.7) < EPS && Math.abs(o.bounds.h - 0.7) < EPS,
+);
+check(pillars.length === 42, `expected 42 columns on the hall floor, found ${pillars.length}`);
+
+const hallBounds = KINEPOLIS.rooms.find((r) => r.id === 'hall').bounds;
+for (const stand of stands) {
+  const b = stand.bounds;
+  check(
+    b.x >= hallBounds.x - EPS && b.x + b.w <= hallBounds.x + hallBounds.w + EPS &&
+      b.y >= hallBounds.y - EPS && b.y + b.h <= hallBounds.y + hallBounds.h + EPS,
+    `a stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} is not on the exhibition floor`,
+  );
+  for (const pillar of pillars) {
+    check(
+      !overlap(b, pillar.bounds),
+      `the stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} is built around the column at ` +
+        `${pillar.bounds.x.toFixed(2)}, ${pillar.bounds.y.toFixed(2)}`,
+    );
+  }
+}
+
 // --- nothing drawn may stand outside the room it belongs to ----------------
 // Dressing is not collided with, so nothing else would ever notice a sign
 // hanging in the corridor or a row of seats pushed through a party wall.
