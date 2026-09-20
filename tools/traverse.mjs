@@ -398,6 +398,20 @@ scenario(
   () => drive('biggy', { x: -1, y: AISLE_SOUTH - 3 }, NORTH, 14),
 );
 
+/*
+ * And the west one, which is the tighter of the two.
+ *
+ * 5.6 m between the ranks with a line of columns down the middle of it, so
+ * what Biggy actually has is the 2.6 m lane east of the columns. The stands
+ * were 20 cm too deep and this lane was 1.6 m — passable by the two small
+ * robots, not by the one that most needs to get past.
+ */
+scenario(
+  'Biggy drives the west aisle',
+  (r) => r.y > AISLE_NORTH,
+  () => drive('biggy', { x: -15.2, y: AISLE_SOUTH - 3 }, NORTH, 16),
+);
+
 scenario(
   'Voxxy cannot drive out of the south wall',
   (r) => r.y > -62,

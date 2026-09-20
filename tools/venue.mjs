@@ -416,6 +416,18 @@ check(ROW_PITCH === 1.0, `row pitch is ${ROW_PITCH} m; the auditorium plan was s
 const stands = KINEPOLIS.obstacles.filter((o) => o.material === 'booth');
 check(stands.length === 27, `the plan lets 27 stands, the hall has ${stands.length}`);
 
+// 6 m² and 24 m², and nothing in between. The first pass built them at 7.2
+// and 22.7 — near enough to look right, and wrong enough that every extra
+// centimetre came out of the aisle beside it.
+for (const stand of stands) {
+  const area = stand.bounds.w * stand.bounds.h;
+  check(
+    Math.abs(area - 6) < 0.01 || Math.abs(area - 24) < 0.01,
+    `the stand at ${stand.bounds.x.toFixed(1)}, ${stand.bounds.y.toFixed(1)} is ` +
+      `${stand.bounds.w} x ${stand.bounds.h} m — ${area.toFixed(1)} m². The plan lets 6 and 24`,
+  );
+}
+
 const overlap = (a, b) =>
   a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS &&
   a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;

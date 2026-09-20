@@ -2089,6 +2089,46 @@ trade-show stand is the most shoveable thing in the building.
 
 ---
 
+### Claude Opus — 6 m² and 24 m²
+
+**Prompt:**
+> I think the exposition floot is a bit too small since it's not possible to
+> circulate between some booth as a reminder the small one are suposed to be
+> 2*3m (6 sqm) et le largest are 24sqm
+
+**Iterations:** 1
+
+The floor was not too small; the stands were too big. They went in at 7.2 m²
+and 22.7 m² — near enough to look right off the map, and wrong enough to
+matter, because every extra centimetre of stand comes straight out of the
+aisle beside it. Two of the gaps came out at 1.6 m: wide enough to see
+through, not wide enough for Biggy at 1.44 m across.
+
+At the sizes the plan actually lets, the layout can be set against the column
+grid properly. The columns sit 6.4 m apart, so a rank and a usable aisle do
+NOT fit between two of them — which is the fact the first pass kept losing
+to. So the ranks are paired instead: two of them back onto the same column
+line from either side with nothing but the column between, and the aisles get
+the whole of the next bay. **5.6 m down the west side and 10.7 m down the
+middle**, each with one line of columns standing in it, instead of a 1.6 m
+slot.
+
+Two checks came out of it, and both fired straight away:
+
+- `npm run venue` now holds every stand to 6 m² or 24 m². It caught the two
+  small stands capping the east-central rank: a small stand in a 4 m deep
+  rank is 8 m², which is not a size that exists. That rank is three large
+  ones now, and the two it lost went to the east rank.
+- `npm run traverse` drives **Biggy** — widest robot, worst at changing its
+  mind — the full length of both aisles. It is the only honest test of "can
+  you circulate", because the two small robots fit down gaps that are not
+  aisles at all.
+
+The plan's two stands turned into the south-west corner are gone: they stood
+in the west aisle, and square-on-the-grid beats the irregularity. Still 27.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

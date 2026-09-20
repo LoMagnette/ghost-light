@@ -217,36 +217,52 @@ const BOOTH_GAP = 1.0;
 /**
  * South end of the booth field.
  *
- * Four metres clear of the concourse terrace, so the first thing you meet
- * coming out of the reception is floor rather than the back of a stand.
+ * As far south as the hall's curved south-west corner allows the west rank to
+ * come: the curve is modelled in 1.25 m bands and the one below this reaches
+ * 0.73 m in off the wall, which is into the back of a stand.
  */
-const BOOTH_SOUTH = -30.0;
-
-/** Stand depths along a rank, metres: the small shell, and the large one. */
-const STAND_S = 2.4;
-const STAND_L = 5.4;
-
-/** West edge and width of each rank, and its stands from the south up. */
-const BOOTH_RANKS: { x: number; w: number; stands: number[] }[] = [
-  { x: -23.0, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
-  { x: -14.6, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
-  // Three large, and no fourth: the plan puts a small stand on the end of
-  // this rank, and here that would leave the west flight with 0.8 m between
-  // its foot and the back of a booth. The stand it lost is on the east rank.
-  { x: -10.0, w: 4.2, stands: [STAND_L, STAND_L, STAND_L] },
-  { x: 4.0, w: 4.2, stands: [STAND_L, STAND_L, STAND_S, STAND_S] },
-  { x: 9.9, w: 3.0, stands: [STAND_S, STAND_S, STAND_S, STAND_S, STAND_S, STAND_S] },
-];
+const BOOTH_SOUTH = -31.0;
 
 /**
- * The two in the south-west corner, off the end of the ranks.
+ * Stand sizes: 6 m² and 24 m², which is what the plan lets.
  *
- * The plan turns one of them 45 degrees to face the curve. Nothing here is
- * anything but axis-aligned, so they are square on and a metre further north
- * than the plan draws them — south of that they would be standing on the
- * southernmost line of columns.
+ * A rank runs north-south, so a rank's WIDTH is how deep its stands are and
+ * the numbers below are their frontage onto the aisle. 3 x 2 and 4 x 6.
+ *
+ * The first pass had them at 7.2 and 22.7 m² — near enough to look right and
+ * wrong enough to matter, because every extra centimetre of stand comes
+ * straight out of the aisle beside it, and the floor ended up with gaps you
+ * could see through and not drive through.
  */
-const CORNER_BOOTHS = [rect(-20.0, -32.8, 3.0, STAND_S), rect(-16.0, -32.8, 3.0, STAND_S)];
+const STAND_S = 2.0;
+const STAND_L = 6.0;
+const RANK_S = 3.0;
+const RANK_L = 4.0;
+
+/**
+ * West edge and width of each rank, and its stands from the south up.
+ *
+ * Set against the column grid, which is what decides everything here. The
+ * columns sit 6.4 m apart, so a rank and a usable aisle do not fit between
+ * two of them: the ranks are paired instead, backing onto a column line from
+ * either side with nothing but the column between them, and the aisles get
+ * the whole of the next bay. That gives a 5.6 m aisle down the west side and
+ * a 10.7 m one down the middle, each with one line of columns standing in it,
+ * against the 1.6 m slots the first pass left.
+ *
+ * The plan also has two stands turned into the south-west corner. They are
+ * the seven-and-seven in the west ranks here instead: square on the grid and
+ * out of the aisle, which is worth more than the irregularity.
+ */
+const BOOTH_RANKS: { x: number; w: number; stands: number[] }[] = [
+  { x: -22.5, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
+  { x: -13.9, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
+  { x: -10.0, w: RANK_L, stands: [STAND_L, STAND_L, STAND_L] },
+  // All three large. The plan caps this rank with two small stands, and a
+  // small stand in a 4 m rank is 8 m², which is not a size the plan lets.
+  { x: 4.7, w: RANK_L, stands: [STAND_L, STAND_L, STAND_L] },
+  { x: 9.6, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
+];
 
 function exhibitionBooths(): Obstacle[] {
   const booths: Obstacle[] = [];
@@ -261,9 +277,6 @@ function exhibitionBooths(): Obstacle[] {
       });
       y += depth + BOOTH_GAP;
     }
-  }
-  for (const bounds of CORNER_BOOTHS) {
-    booths.push({ floor: 0, bounds, height: BOOTH_HEIGHT, material: 'booth' });
   }
   return booths;
 }
@@ -2699,7 +2712,7 @@ export const SPAWNS = {
   // Between the two southernmost column rows, which sit at y -27.05 and
   // -33.58, and now on the centre line of the main aisle: the cast lines up
   // eastward from here and the east rank of stands begins at x 4.0.
-  hallEntrance: { floor: 0 as const, x: -1, y: -32.0 },
+  hallEntrance: { floor: 0 as const, x: -1, y: -32.4 },
   /**
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
@@ -2715,7 +2728,7 @@ export const SPAWNS = {
    * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: -2, y: -24 },
+  hallCentre: { floor: 0 as const, x: -2.6, y: -24 },
   /**
    * Just south of the west flight, below its TOP.
    *
