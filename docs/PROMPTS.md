@@ -2008,6 +2008,38 @@ zoom and was never going to earn its place.
 
 ---
 
+### Claude Opus — the bays, from the photograph
+
+**Prompt:**
+> I think the windows should be a bit widder look at the image
+> 54842743975_b835884445_k.jpg
+
+**Iterations:** 1
+
+The photograph is the front of the building from the car park, and it
+corrects two things at once.
+
+The bays are wide — wide enough that you read panes of glass with frames
+round them rather than the other way round. And the ground floor is **the
+same grid as the storey above it**, coming down to the pavement. I had built
+the entrance at a door leaf's 1.1 m on the theory that a bank of doors is
+framed leaf by leaf, which across 36 m is thirty-three posts: a picket fence,
+and nothing like the building.
+
+So: one pitch for both storeys, 2.6 m, because that is what a curtain wall
+is — a grid that runs up the whole elevation and lines up floor to floor.
+Fourteen bays across the front instead of thirty-three, six across the
+first-floor window. The only thing left telling the two levels apart is the
+one the photograph shows: upstairs the glass stands on a spandrel, downstairs
+it reaches the floor.
+
+Which also settles what "windows that can be opened as a door" meant, and I
+had read it too literally the round before. A door here is a panel of the
+curtain wall on hinges, not a doorway cut in a wall — so it is not framed
+like a door, it is framed like the window it is.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

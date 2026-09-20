@@ -2135,7 +2135,10 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  * which sits 0.4 m further out and is not glass.
  */
 const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
-  // The entrance itself: a bank of glazed doors, floor to head.
+  // The entrance itself: the same glazing, coming down to the floor, and
+  // some of it opens. "Windows that can be opened as a door" is the
+  // building's own description and it is the right one — a door here is a
+  // panel of the curtain wall on hinges, not a doorway cut in a wall.
   {
     floor: 0,
     bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2),
@@ -2165,12 +2168,19 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
  */
 const GLAZING_SILL = 0.45;
 
-/** Mullion centres and width, metres. */
-const MULLION_PITCH = 1.8;
+/**
+ * Mullion centres and width, metres.
+ *
+ * ONE pitch for both storeys, because that is what a curtain wall is: a grid
+ * that runs up the whole elevation and lines up floor to floor. The entrance
+ * was drawn at a door leaf's 1.1 m on the theory that a bank of doors is
+ * framed leaf by leaf, and across 36 m that is thirty-three posts — a picket
+ * fence, and nothing like the photograph. The bays in that are wide enough to
+ * read as panes of glass with frames round them rather than the other way
+ * round, and the ground floor is the same grid coming down to the floor.
+ */
+const MULLION_PITCH = 2.6;
 const MULLION_WIDTH = 0.14;
-
-/** A door leaf. A bank of them is framed at this pitch instead. */
-const DOOR_LEAF = 1.1;
 
 /**
  * The bottom rail of a glazed door, metres.
@@ -2232,8 +2242,10 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     const along = b.w >= b.h; // which way the run lies
     const run = along ? b.w : b.h;
     // A window stands on a solid spandrel; a door comes down to its own
-    // bottom rail. Same piece, and the height of it is half of what tells
-    // the two elevations apart from across the concourse.
+    // bottom rail. Same piece, and with the grid now shared between the two
+    // storeys it is the ONLY thing that tells them apart — which is also all
+    // the photograph shows: one wall of glass, standing on something upstairs
+    // and reaching the pavement downstairs.
     const foot = door ? DOOR_KICK : GLAZING_SILL;
     decor.push({ floor: wall.floor, bounds: b, height: foot });
 
@@ -2248,10 +2260,8 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     });
 
     // One mullion at each end and the bays between them as near the pitch as
-    // the run allows, so a 36 m front does not end on half a bay. A bank of
-    // doors is framed leaf by leaf, which is a much tighter rhythm and is
-    // most of what makes it read as a way in rather than a window.
-    const bays = Math.max(1, Math.round(run / (door ? DOOR_LEAF : MULLION_PITCH)));
+    // the run allows, so a 36 m front does not end on half a bay.
+    const bays = Math.max(1, Math.round(run / MULLION_PITCH));
     for (let i = 0; i <= bays; i += 1) {
       const at = (i * (run - MULLION_WIDTH)) / bays;
       decor.push({
