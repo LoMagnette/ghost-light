@@ -2205,6 +2205,42 @@ stand at all.
 
 ---
 
+### Claude Opus — the counter belongs at the front
+
+**Prompt:**
+> the desk should be more in front of the booth then in the back
+
+**Iterations:** 1
+
+Correct, and my reasoning for putting it at the back was backwards. I argued
+that a counter on the aisle edge walls a small stand off — but it only takes
+`DESK_SHARE` of the frontage, so the rest of it is still the way in, and a
+counter tucked against the backdrop is a stand nobody is manning. You are
+talked to across a counter from the aisle. It sits 0.3 m in from the front
+edge now, so there is a lip of platform in front of it rather than the
+counter being the edge.
+
+**The traversal scenario broke, which is the useful part.** It drove Voxxy at
+the middle of the westmost stand and asserted it ended up inside the
+platform; with the counter moved it stopped dead ON the platform edge, 0 cm
+inside. That is the test telling me it had been passing for the wrong reason
+— it never knew where the counter was, so it happened to be aiming at open
+floor.
+
+Rewritten so it reads the stand instead of guessing at it. It now takes the
+largest stand, finds the counter inside it, and works out both **which side
+the aisle is on** (the side the counter sits nearer, because the counter is
+at the front by construction) and **where the way in is** (the frontage the
+counter does not cover). It drives at that.
+
+One number in it is a test detail rather than a building one, and is
+commented as such: the approach is a metre off the front edge and not the far
+side of the aisle, because the main aisle has a line of columns down the
+middle and a long straight run at the stand lands on one. Driving the aisles
+is what the two scenarios above it are for.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

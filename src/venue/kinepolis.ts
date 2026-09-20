@@ -231,20 +231,22 @@ const BOOTH_WALL = 2.5;
 const BOOTH_PLATFORM = 0.05;
 
 /**
- * The counter every stand is run from.
+ * The counter every stand is run from, at the FRONT of it.
  *
- * Against the back panel rather than across the frontage, which is the
- * arrangement that leaves the stand open: a counter on the aisle edge walls
- * a 6 m² stand off entirely, and the whole reason these stopped being blocks
- * is that you can drive into one.
+ * Which is where you meet one: you are talked to across it from the aisle,
+ * and a counter tucked against the backdrop is a stand nobody is manning.
+ * Set 0.3 m in from the edge so there is a lip of platform in front of it
+ * rather than the counter being the edge.
  *
  * `DESK_SHARE` of the frontage, capped, so the small stands get a metre of
  * counter and the large ones two and a half rather than four — a desk, not a
- * partition. Which end it sits at alternates up the rank, because a floor
- * where every stand is the same object twenty-seven times reads as wallpaper.
+ * partition, and the rest of the frontage is the way in. Which end it sits
+ * at alternates up the rank, because a floor where every stand is the same
+ * object twenty-seven times reads as wallpaper.
  */
 const DESK_HEIGHT = 1.0;
 const DESK_DEPTH = 0.6;
+const DESK_SETBACK = 0.3;
 const DESK_SHARE = 0.55;
 const DESK_MAX = 2.4;
 
@@ -346,8 +348,8 @@ function exhibitionBooths(): { solids: Obstacle[]; decor: Decor[] } {
         floor: 0,
         bounds: rect(
           rank.back === 'west'
-            ? rank.x + BOOTH_PANEL
-            : rank.x + rank.w - BOOTH_PANEL - DESK_DEPTH,
+            ? rank.x + rank.w - DESK_SETBACK - DESK_DEPTH
+            : rank.x + DESK_SETBACK,
           i % 2 === 0 ? y : y + depth - counter,
           DESK_DEPTH,
           counter,

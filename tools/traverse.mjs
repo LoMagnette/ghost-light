@@ -88,6 +88,7 @@ function drive(robotId, from, dir, seconds, floor = 0) {
 const SOUTH = { x: 0, y: -1 };
 const NORTH = { x: 0, y: 1 };
 const EAST = { x: 1, y: 0 };
+const WEST = { x: -1, y: 0 };
 
 const failures = [];
 const rows = [];
@@ -403,21 +404,58 @@ scenario(
 /*
  * And onto a stand, which is the point of them not being blocks.
  *
- * A stand is a platform with a panel across the back and a counter in front
- * of that: you drive off the aisle onto the stand and get stopped by its
- * contents, not by its edge. As solid boxes they stopped a robot at the
- * front and the inside of a stand was somewhere nobody could ever be.
+ * A stand is a platform with a panel across the back and a counter at the
+ * front of it, taking part of the frontage: you drive in past the counter
+ * and get stopped by the back. As solid boxes they stopped a robot at the
+ * front edge and the inside of a stand was somewhere nobody could ever be.
+ *
+ * Every coordinate here is read off the stand, including which SIDE of it
+ * to drive at. The counter is at the front by construction, so the side it
+ * sits nearer is the side the aisle is on, and the frontage it does not
+ * cover is the way in. Written out because the layout has already moved
+ * three times this week and a test that guesses at it is worth nothing.
  */
-const WEST_STAND = STANDS.reduce((a, b) => (b.bounds.x < a.bounds.x ? b : a));
+const inside = (outer, inner) =>
+  inner.x >= outer.x - 0.01 && inner.x + inner.w <= outer.x + outer.w + 0.01 &&
+  inner.y >= outer.y - 0.01 && inner.y + inner.h <= outer.y + outer.h + 0.01;
+
+const BIG_STAND = STANDS.reduce((a, b) =>
+  b.bounds.w * b.bounds.h > a.bounds.w * a.bounds.h ? b : a,
+).bounds;
+const COUNTER = KINEPOLIS.obstacles.find(
+  (o) => o.floor === 0 && o.material === 'desk' && inside(BIG_STAND, o.bounds),
+).bounds;
+
+/** The frontage the counter leaves clear, and the aisle side it opens onto. */
+const WAY_IN =
+  COUNTER.y - BIG_STAND.y > BIG_STAND.y + BIG_STAND.h - (COUNTER.y + COUNTER.h)
+    ? (BIG_STAND.y + COUNTER.y) / 2
+    : (COUNTER.y + COUNTER.h + BIG_STAND.y + BIG_STAND.h) / 2;
+const FRONT_WEST =
+  COUNTER.x - BIG_STAND.x < BIG_STAND.x + BIG_STAND.w - (COUNTER.x + COUNTER.w);
+
+/**
+ * A metre off the front edge, not the far side of the aisle.
+ *
+ * The main aisle has a line of columns down the middle of it, so a long
+ * straight run at it lands on one — and driving the aisles is what the two
+ * scenarios above are for. This one only has to cross the frontage.
+ */
+const STAND_APPROACH = 1.0;
 
 scenario(
   'Voxxy drives off the aisle onto a stand',
-  (r) => r.x < WEST_STAND.bounds.x + WEST_STAND.bounds.w && r.x > WEST_STAND.bounds.x,
+  (r) => r.x > BIG_STAND.x && r.x < BIG_STAND.x + BIG_STAND.w,
   () =>
     drive(
       'voxxy',
-      { x: WEST_STAND.bounds.x + WEST_STAND.bounds.w + 2, y: WEST_STAND.bounds.y + WEST_STAND.bounds.h / 2 },
-      { x: -1, y: 0 },
+      {
+        x: FRONT_WEST
+          ? BIG_STAND.x - STAND_APPROACH
+          : BIG_STAND.x + BIG_STAND.w + STAND_APPROACH,
+        y: WAY_IN,
+      },
+      FRONT_WEST ? EAST : WEST,
       6,
     ),
 );
