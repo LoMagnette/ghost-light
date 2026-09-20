@@ -70,6 +70,17 @@ const FLOOR_CLEAR = 5.4;
  */
 export const RISER = 0.18;
 
+/** Thickness and height of a partition, metres. */
+const WALL_THICKNESS = 0.3;
+const WALL_HEIGHT = 3.2;
+
+/**
+ * Balustrade height and thickness, metres. Chest height on Droid, taller than
+ * Voxxy. Up here with the walls because a wall that flanks a stairwell is one.
+ */
+const RAIL_HEIGHT = 1.2;
+const RAIL_THICKNESS = 0.12;
+
 // ---------------------------------------------------------------------------
 // Floor 0 — the exhibition hall, "Hollywood"
 // ---------------------------------------------------------------------------
@@ -431,16 +442,42 @@ const GRAND_SIDE = 1.5;
  * Its long axis is the one you walk ACROSS: 11.3 m wide, centred in the 14.3 m
  * corridor it delivers you to, and 8.4 m deep for the 5.0 m it has to climb.
  */
+const GRAND_RUN = runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL);
+
+/**
+ * The WELL — the hole the grand flight comes up through — which is the full
+ * width of the corridor, and a different rectangle from the flight in it.
+ *
+ * The corridor's floor stops dead at the head of the stairs, right across, and
+ * what carries on south is the staircase alone with a balustrade down each
+ * side. The 1.5 m either side of it is not a landing: it is the well, open to
+ * the reception five metres below.
+ *
+ * Making it the flight's own rectangle left those two strips as floor — a
+ * pair of 8.4 m ledges running down the sides of a stairwell to a dead end
+ * against the south wall, which is not a thing buildings have.
+ */
+const GRAND_WELL = rect(
+  -CORRIDOR_HALF,
+  // The INNER FACE of the south wall, not its centreline. A wall is drawn
+  // standing on the plate under it, and a well taken right to SOUTH_END leaves
+  // the building's own end wall with no plate at all — 14.3 m of it hanging
+  // over the reception, which `npm run venue` reports the moment you try it.
+  // Half a wall's thickness of floor, entirely under the wall, is what it
+  // stands on. Nothing is visible of it because the wall is on top of it.
+  SOUTH_END + WALL_THICKNESS / 2,
+  CORRIDOR_HALF * 2,
+  GRAND_RUN,
+);
+
 const GRAND_STAIR = rect(
-  -CORRIDOR_HALF + GRAND_SIDE,
+  GRAND_WELL.x + GRAND_SIDE,
   // Flush with the south end of the storey above, not half a metre short of
-  // it. The corridor's plate is cut to this rectangle, so anything the flight
-  // does not reach stays as floor — and 0.5 m of floor beyond the foot of a
-  // staircase is a ledge of the upper storey hanging over the reception with
-  // nothing under it and nothing on it.
-  SOUTH_END,
-  CORRIDOR_HALF * 2 - GRAND_SIDE * 2,
-  runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL),
+  // it: 0.5 m of floor beyond the foot of a staircase is a ledge of the upper
+  // storey hanging over the reception with nothing under it and nothing on it.
+  GRAND_WELL.y,
+  GRAND_WELL.w - GRAND_SIDE * 2,
+  GRAND_RUN,
 );
 
 /**
@@ -1259,15 +1296,7 @@ export const HALL_FLOOR_M2 =
 // ---------------------------------------------------------------------------
 
 /** Wall thickness and height, metres. Height is cut by the renderer anyway. */
-const WALL_THICKNESS = 0.3;
-const WALL_HEIGHT = 3.2;
 
-/**
- * Balustrade height and thickness, metres. Chest height on Droid, taller than
- * Voxxy. Up here with the walls because a wall that flanks a stairwell is one.
- */
-const RAIL_HEIGHT = 1.2;
-const RAIL_THICKNESS = 0.12;
 
 /** A double door's worth of opening. */
 const DOOR_WIDTH = 2.6;
@@ -1665,7 +1694,11 @@ const staircases: Link[] = [
  */
 for (const room of floor1Rooms) {
   if (room.kind !== 'corridor') continue;
-  room.voids = staircases.filter((l) => l.to === 1 && l.from !== l.to).map((l) => l.bounds);
+  room.voids = staircases
+    .filter((l) => l.to === 1 && l.from !== l.to)
+    // The grand flight's well is wider than the flight — see GRAND_WELL. Every
+    // other flight fills its own hole exactly.
+    .map((l) => (l.id === 'grand-stair' ? GRAND_WELL : l.bounds));
 }
 
 /**
@@ -2070,7 +2103,13 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
       const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
       const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
       const guarding = rooms.some(
-        (r) => r.floor === link.to && rectContains(r.bounds, ox, oy),
+        (r) =>
+          r.floor === link.to &&
+          rectContains(r.bounds, ox, oy) &&
+          // A hole in the plate is not floor to stand on. Without this the
+          // grand flight kept a balustrade down each side of its well, in mid
+          // air, once the well became wider than the flight.
+          !r.voids?.some((v) => rectContains(v, ox, oy)),
       );
       if (!guarding) continue;
       decor.push({ floor: link.to, bounds: edge.bounds, base: 0, height: RAIL_HEIGHT });
@@ -2101,6 +2140,26 @@ function concourseStepRails(): Obstacle[] {
   }));
 }
 
+/**
+ * The balustrade across the head of the grand well, either side of the flight.
+ *
+ * The floor stops right across the corridor at the head of the stairs, so the
+ * 1.5 m beyond each side of the flight is an edge like any other and wants
+ * something along it. It is also the only thing keeping a robot out of the
+ * well: `voids` is render-only, so without this a machine walking south down
+ * the side of the corridor finds the floor still there in the simulation and
+ * strolls out over a five-metre drop.
+ */
+function grandWellHeadRails(): Obstacle[] {
+  const head = GRAND_WELL.y + GRAND_WELL.h;
+  const half = RAIL_THICKNESS / 2;
+  return [GRAND_WELL.x, GRAND_STAIR.x + GRAND_STAIR.w].map((x) => ({
+    floor: 1,
+    bounds: rect(x, head - half, GRAND_SIDE, RAIL_THICKNESS),
+    height: RAIL_HEIGHT,
+  }));
+}
+
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 
 export const KINEPOLIS: Venue = {
@@ -2112,6 +2171,7 @@ export const KINEPOLIS: Venue = {
     ...stairMass(staircases),
     ...RAILS.solids,
     ...concourseStepRails(),
+    ...grandWellHeadRails(),
     ...railBesideWells(WALLS.walls, staircases),
   ],
   decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor],

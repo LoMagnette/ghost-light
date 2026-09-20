@@ -1676,6 +1676,53 @@ balustrade straddles the lip of the opening, so its own centre is on the line
 and answers yes to everything. The two flights into the hall are unaffected;
 the grand flight goes from three railed edges to two.
 
+### The stair hall, drawn as a diagram
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> You didn't understand properly the bit staire case and it junction should
+> look something like this:
+> ```
+> |                           |
+> |                           |
+> ------|--------------|------|
+> |     |--------------|      |
+> |     |--------------|      |
+> ```
+
+**Iterations:** 1
+
+Four rounds of prose on this junction and an ASCII plan settled it in one. The
+1.5 m either side of the flight is NOT a landing: the corridor's floor stops
+dead at the head of the stairs, right across, and what carries on south is the
+staircase alone with a balustrade down each side. The strips are the well, open
+to the reception five metres below. I had read "1.5 m of guardrail on each
+side" as floor with a rail on it; the drawing shows the third row closing right
+across and rows four onward empty at the edges, which is a hole.
+
+So the WELL and the FLIGHT are two rectangles now — the same split the concourse
+opening already needed. The corridor's plate is cut to the well, 14.3 m wide;
+the flight is the 11.3 m standing in it.
+
+**Two things fell out, and both were caught rather than noticed.**
+
+`voids` is render-only, so cutting the plate wider does not stop anybody: a
+robot walking south down the side of the corridor would find the floor still
+there in the simulation and stroll out over the drop. The balustrade across the
+head of each strip is what the drawing's third row is, and it is solid.
+
+And taking the well right to `SOUTH_END` left the building's own end wall with
+no plate under it — 14.3 m of wall hanging over the reception. `npm run venue`
+reported it on the first run. The well starts at the wall's INNER FACE now,
+which leaves it half a wall's thickness of floor to stand on, entirely hidden
+under the wall itself.
+
+The level balustrade round the well went from three edges to none, because
+there is no floor beside it any more to guard. The flight's own raking rails
+were always the right object for that.
+
 ---
 
 ## Audio
