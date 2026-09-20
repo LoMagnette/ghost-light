@@ -720,9 +720,15 @@ function seatingFor(
    * Splitting it keeps the way in the wider of the two — it starts 2 m wider
    * and both grow by the same amount — which is the property pinning was
    * protecting in the first place.
+   *
+   * The aisle to offset by is the one on the LOW side, which is the door's
+   * when the door is low and the far aisle's when it is not. Adding both —
+   * which this did at first — pushes the seating a whole far aisle up the
+   * room, and the far side of every low-door auditorium lost its aisle
+   * entirely: 0.12 m of gap in Room 12, against the 1.2 m it should have.
    */
   const yOf = (width: number): number =>
-    room.y + FAR_AISLE + (full - width) / 2 + (doorSide === 'low' ? DOOR_AISLE : 0);
+    room.y + (doorSide === 'low' ? DOOR_AISLE : FAR_AISLE) + (full - width) / 2;
 
   // -- what a robot meets: three blocks, and no longer drawn ----------------
   for (let s = 0; s < stages; s += 1) {

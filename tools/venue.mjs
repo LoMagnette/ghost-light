@@ -308,6 +308,40 @@ for (const room of auditoria) {
   );
 }
 
+// --- both side aisles have to survive ---------------------------------------
+//
+// The check above asks which SIDE of a room the seating leans, which is not the
+// same as asking whether it left room to walk. Centring each row in the
+// seatable width offset it by the low-side aisle — and the low-side aisle is
+// the door's in half the rooms and the far one in the other half. Adding both
+// pushed the seating a whole far aisle up the room, and the far side of every
+// low-door auditorium lost its aisle: 0.12 m of gap in Room 12 against the
+// 1.2 m it is supposed to have. Every affected room still passed the lean test,
+// because it leaned the right way — just far too much.
+//
+// Measured off the seats themselves rather than off the constants, because the
+// constants were never wrong. What was wrong was where they got applied.
+
+/** Narrowest gap between the seating and a side wall. Voxxy is 0.68 m across. */
+const MIN_AISLE = 0.9;
+
+for (const room of auditoria) {
+  const b = room.bounds;
+  const seats = KINEPOLIS.decor.filter(
+    (d) => d.material === 'seat' &&
+      d.bounds.x >= b.x && d.bounds.x <= b.x + b.w &&
+      d.bounds.y >= b.y && d.bounds.y <= b.y + b.h,
+  );
+  if (!seats.length) continue;
+  const low = Math.min(...seats.map((d) => d.bounds.y)) - b.y;
+  const high = b.y + b.h - Math.max(...seats.map((d) => d.bounds.y + d.bounds.h));
+  check(
+    Math.min(low, high) >= MIN_AISLE,
+    `${room.label} leaves ${Math.min(low, high).toFixed(2)} m between its seating and a side wall — ` +
+      `that is not an aisle (${low.toFixed(2)} m one side, ${high.toFixed(2)} m the other)`,
+  );
+}
+
 // --- the modelled seats against the seats printed on the plan --------------
 // The seat counts have been a sanity check on room AREA since the rooms were
 // measured. Now that the seating is laid out row by row they are a check on

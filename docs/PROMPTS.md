@@ -1325,6 +1325,47 @@ elevation now. And a sweep over candidate values for the fan mean left the
 constant at the last value it tried rather than the one that was chosen, which
 the harness caught and a screenshot would not have.
 
+### The room with the logo, and an aisle that had vanished
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> there's on room with the door on the wrong side. it's the room with the
+> devoxx logo on the right
+
+**Iterations:** 1
+
+Two rooms carry the letters, 5 and 8, and the one on the right is Room 8. Its
+door follows the alternation the venue intends — odd rooms one end, even rooms
+the other — so on the face of it there was nothing to find.
+
+There was. Room 8's seating was 0.35 m from one side wall and 4.75 m from the
+other, so the room was lopsided the wrong way and the door read as being at the
+wrong end of it. Five rooms were like that, and all five were rooms whose door
+is at the LOW end of their frontage.
+
+**Mine, from two commits earlier.** Centring each row in the seatable width
+means offsetting it by the aisle on the low side — and that aisle is the door's
+in half the rooms and the far one in the other half. The offset added both, so
+the seating was pushed a whole far aisle up the room and the far side of every
+low-door auditorium lost its aisle: 0.12 m of gap in Room 12 against the 1.2 m
+it is supposed to have.
+
+**Why the existing check missed it.** There is already a check that the way in
+and the way through are on the same side, and every affected room passed it —
+because the seating leaned the right way. It just leaned far too much. Asking
+which side something leans is not the same as asking whether it left room to
+walk, so there is now a check on the gap itself, measured off the seats rather
+than off the constants. The constants were never wrong; where they got applied
+was.
+
+**Fixed by hand.** Nothing, and that is the point worth recording: the report
+named one room, the fault was in five, and the difference between those two
+numbers is the whole argument for going and measuring instead of going and
+looking. Reinstating the bad line makes the new check name all five with their
+gaps.
+
 ---
 
 ## Audio
