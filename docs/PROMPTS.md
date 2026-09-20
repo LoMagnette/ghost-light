@@ -1406,6 +1406,42 @@ every room's seating centroid with the whole floor mixed in, which is a
 centroid dragged toward the middle and a check quietly weakened. Both now ask
 for a height above zero and no linkId, which is what actually means seats.
 
+### Balustrades on the two hall flights
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> the two stairs that goes to the exposition floor have guardrails that are
+> about 1,2 m high
+
+**Iterations:** 1
+
+A fact about the building, from someone who has been in it, and the only two
+flights it applies to are the two that stand FREE — every other flight in here
+runs against a wall, which is why those two are the ones with a handrail you
+can see. At 1.2 m it is a real object: chest height on Droid and taller than
+Voxxy.
+
+It is also the only thing that had ever stopped a robot walking off the side of
+a staircase six metres in the air. Nothing did before, and nobody had noticed,
+because a flight with a wall down one side and a stairwell down the other
+happens to be enclosed by accident.
+
+**One detail worth the comment it got.** The collision rectangle carries NO
+`linkId`. In this venue `linkId` means "solid to whoever cannot climb this
+flight" — it is the whole stair rule in one field — and being able to climb a
+flight has never entitled anyone to step off the edge of it. A rail tagged that
+way would have been solid to Biggy, which cannot reach it, and transparent to
+Voxxy, which can.
+
+Drawn and collided as two different shapes, the way a wall alongside a rake
+already is: one rectangle the full length for the solver, which does not read
+heights anyway, and eighteen bands per side for the eye, cut to the flight's
+own treads so the rail steps down with it. The check that a flight-banded piece
+sits within half a riser of the surface beside it covered the new geometry with
+no change, which is the second time that check has paid for itself.
+
 ---
 
 ## Audio

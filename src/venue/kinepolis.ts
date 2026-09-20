@@ -1723,6 +1723,80 @@ function stairMass(links: Link[]): Obstacle[] {
 
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
 
+/**
+ * Balustrades down both sides of the two flights into the exhibition hall.
+ *
+ * Those two stand free in the middle of a 52 x 49 m room — every other flight
+ * in the building runs against a wall — so they are the ones that actually
+ * have a handrail you can see, and at 1.2 m it is a real object: it is chest
+ * height on Droid and taller than Voxxy.
+ *
+ * It is also the only thing stopping a robot walking off the side of a
+ * staircase six metres in the air, which nothing did before. That is why the
+ * collision rectangle carries NO linkId: `linkId` means "solid to whoever
+ * cannot climb this flight", and being able to climb a flight has never
+ * entitled anyone to step off the edge of it. The rail is solid to everybody.
+ *
+ * Drawn and collided as two different shapes, the same way a wall running
+ * alongside a rake is: one rectangle the full length for the solver, which
+ * does not read heights anyway, and a run of bands for the eye, cut to the
+ * flight's own treads so the rail steps down with it.
+ */
+const RAIL_HEIGHT = 1.2;
+const RAIL_THICKNESS = 0.12;
+
+/** The flights that stand clear of a wall, and so are worth railing. */
+const RAILED = new Set(['stair-west', 'stair-east']);
+
+function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  for (const link of links) {
+    if (!RAILED.has(link.id)) continue;
+    const b = link.bounds;
+    // Along the climb axis, on the two long sides.
+    const sides =
+      link.axis === 'y'
+        ? [
+            rect(b.x, b.y, RAIL_THICKNESS, b.h),
+            rect(b.x + b.w - RAIL_THICKNESS, b.y, RAIL_THICKNESS, b.h),
+          ]
+        : [
+            rect(b.x, b.y, b.w, RAIL_THICKNESS),
+            rect(b.x, b.y + b.h - RAIL_THICKNESS, b.w, RAIL_THICKNESS),
+          ];
+
+    const bands = coarsen(treadsOf(link), WALL_STEP);
+    const floors = link.from === link.to ? [link.from] : [link.from, link.to];
+
+    for (const side of sides) {
+      for (const floor of floors) {
+        solids.push({ floor, bounds: side, height: RAIL_HEIGHT, hidden: true });
+
+        for (const part of alongBands(side, link.axis === 'x', bands)) {
+          if (part.surface === undefined) continue; // the rail IS the flight
+          // Seen from the floor it arrives on, the whole flight hangs a storey
+          // lower — the same correction the treads make in `stairMass`.
+          const surface =
+            floor === link.from ? part.surface : part.surface - (link.base + link.rise);
+          decor.push({
+            floor,
+            bounds: part.bounds,
+            base: surface,
+            height: surface + RAIL_HEIGHT,
+            linkId: link.id,
+          });
+        }
+      }
+    }
+  }
+
+  return { solids, decor };
+}
+
+const RAILS = stairRails(staircases);
+
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
   obstacles: [
@@ -1730,9 +1804,10 @@ export const KINEPOLIS: Venue = {
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
     ...stairMass(staircases),
+    ...RAILS.solids,
     ...WALLS.walls,
   ],
-  decor: [...auditoriumDecor, ...WALLS.decor],
+  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };
