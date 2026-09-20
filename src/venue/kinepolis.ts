@@ -433,7 +433,12 @@ const GRAND_SIDE = 1.5;
  */
 const GRAND_STAIR = rect(
   -CORRIDOR_HALF + GRAND_SIDE,
-  -59.5,
+  // Flush with the south end of the storey above, not half a metre short of
+  // it. The corridor's plate is cut to this rectangle, so anything the flight
+  // does not reach stays as floor — and 0.5 m of floor beyond the foot of a
+  // staircase is a ledge of the upper storey hanging over the reception with
+  // nothing under it and nothing on it.
+  SOUTH_END,
   CORRIDOR_HALF * 2 - GRAND_SIDE * 2,
   runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL),
 );
@@ -1954,7 +1959,7 @@ const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
  */
 const RAILED = new Set(['stair-west', 'stair-east', 'grand-stair']);
 
-function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
+function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: Decor[] } {
   const solids: Obstacle[] = [];
   const decor: Decor[] = [];
 
@@ -2045,6 +2050,29 @@ function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
     ];
     for (const edge of edges) {
       if (edge.at === (landsAtLow ? 'low' : 'high')) continue;
+      /*
+       * And only where there is floor for it to stand on.
+       *
+       * A well pushed hard against the edge of its storey has one side that is
+       * the building's own outer wall, and a balustrade straddling THAT is
+       * half over the opening and half over nothing: it floats, which is what
+       * `npm run venue` said the moment the grand flight moved flush with the
+       * south end. The wall already guards that edge. A rail is for an edge
+       * the floor makes, not one the building does.
+       */
+      const cx = edge.bounds.x + edge.bounds.w / 2;
+      const cy = edge.bounds.y + edge.bounds.h / 2;
+      // Sampled half a metre OUTBOARD of the rail, not at the rail: a
+      // balustrade straddles the lip of the opening, so its own centre is on
+      // the line and answers yes to everything. What decides it is whether
+      // there is floor on the far side for anyone to be standing on.
+      const out = 0.5;
+      const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
+      const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
+      const guarding = rooms.some(
+        (r) => r.floor === link.to && rectContains(r.bounds, ox, oy),
+      );
+      if (!guarding) continue;
       decor.push({ floor: link.to, bounds: edge.bounds, base: 0, height: RAIL_HEIGHT });
     }
   }
@@ -2073,7 +2101,7 @@ function concourseStepRails(): Obstacle[] {
   }));
 }
 
-const RAILS = stairRails(staircases);
+const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],

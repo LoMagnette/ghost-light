@@ -1643,6 +1643,39 @@ into the hall are pressed against the corridor walls with no landing beside
 them, so lowering those opens an auditorium onto a stairwell nobody can stand
 in. `RAILED_WELLS` has one entry and says why.
 
+### A ledge of upper floor with nothing on it
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> Almost there the floor should stop at the starting point of the stairs
+
+**Iterations:** 1
+
+Found by printing the floor-1 plate around the grand stairwell rather than by
+looking for it. The corridor's plate is cut to the flight's own rectangle, so
+whatever the flight does not reach stays as floor — and the flight started at
+y -59.5 while the corridor starts at -60. Half a metre times the full 14.3 m
+width: a ledge of the upper storey hanging past the foot of the staircase, over
+the reception, with nothing under it and nothing on it.
+
+The flight is flush with `SOUTH_END` now rather than half a metre short of a
+number typed next to it.
+
+**The check caught what that broke, immediately.** The well's balustrade has a
+piece across its foot, and that piece had been standing on the half metre. With
+the flight moved it straddled the building's own outer edge — half over the
+opening and half over nothing — and `npm run venue` reported it floating on the
+first run after the change.
+
+It should not be there at all: that edge is the south wall, and a wall guards it
+already. So a well edge is only railed where there is floor beyond it to stand
+on, sampled half a metre OUTBOARD of the rail rather than at the rail — a
+balustrade straddles the lip of the opening, so its own centre is on the line
+and answers yes to everything. The two flights into the hall are unaffected;
+the grand flight goes from three railed edges to two.
+
 ---
 
 ## Audio
