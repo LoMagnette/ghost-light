@@ -2122,6 +2122,99 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
 // ---------------------------------------------------------------------------
 
 /**
+ * Elevations that are curtain wall rather than building.
+ *
+ * The front of the Kinepolis is glass. You walk up to a wall of it, and the
+ * concourse behind is lit through it all day — it is the first thing the
+ * building says and the reason the entrance reads as an entrance from fifty
+ * metres away. Drawn as a solid 3.2 m slab it is the back of a warehouse.
+ *
+ * A BAND rather than a wall rectangle, because the wall builder decides where
+ * the runs fall and merges them; this only has to say which elevation. The
+ * band is tight enough in x to leave the BOF rooms' own south wall alone,
+ * which sits 0.4 m further out and is not glass.
+ */
+const CURTAIN_WALLS: { floor: Level; bounds: Rect }[] = [
+  { floor: 0, bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2) },
+];
+
+/** Solid base under the glass, metres. Glass does not meet the floor. */
+const GLAZING_SILL = 0.45;
+
+/** Mullion centres and width, metres. */
+const MULLION_PITCH = 1.8;
+const MULLION_WIDTH = 0.14;
+
+/** Thickness of the glass itself. Thin, so it reads as a plane. */
+const PANE_THICKNESS = 0.08;
+
+/**
+ * Turn the walls on a glazed elevation into a curtain wall.
+ *
+ * The wall still stops a robot — a window is not a door — so what was there
+ * stays, marked `hidden`. What you SEE instead is three things: the sill it
+ * stands on, the mullions dividing it into bays, and one pane of glass the
+ * length of the run. The pane is the only piece in the building that is
+ * drawn translucent; see GLAZING_OPACITY in the renderer.
+ */
+function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
+  const kept: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  for (const wall of walls) {
+    const b = wall.bounds;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    // In the band, and lying ALONG it. Without the second half a 0.4 m stub
+    // of the BOF rooms' west wall — the return at the corner where the
+    // entrance elevation stops — came out as a pane of glass on its own.
+    const glazed = CURTAIN_WALLS.some(
+      (c) =>
+        c.floor === wall.floor &&
+        rectContains(c.bounds, cx, cy) &&
+        (c.bounds.w >= c.bounds.h) === (b.w >= b.h),
+    );
+    if (!glazed) {
+      kept.push(wall);
+      continue;
+    }
+
+    kept.push({ ...wall, hidden: true });
+
+    const along = b.w >= b.h; // which way the run lies
+    const run = along ? b.w : b.h;
+
+    decor.push({ floor: wall.floor, bounds: b, height: GLAZING_SILL });
+    decor.push({
+      floor: wall.floor,
+      bounds: along
+        ? rect(b.x, cy - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
+        : rect(cx - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
+      base: GLAZING_SILL,
+      height: wall.height,
+      material: 'glazing',
+    });
+
+    // One mullion at each end and the bays between them as near the pitch as
+    // the run allows, so a 36 m front does not end on half a bay.
+    const bays = Math.max(1, Math.round(run / MULLION_PITCH));
+    for (let i = 0; i <= bays; i += 1) {
+      const at = (i * (run - MULLION_WIDTH)) / bays;
+      decor.push({
+        floor: wall.floor,
+        bounds: along
+          ? rect(b.x + at, b.y, MULLION_WIDTH, b.h)
+          : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
+        base: GLAZING_SILL,
+        height: wall.height,
+      });
+    }
+  }
+
+  return { walls: kept, decor };
+}
+
+/**
  * Stairwells whose flanking walls are balustrades rather than walls.
  *
  * The grand flight arrives between Rooms 6 and 7, so the corridor's own side
@@ -2186,6 +2279,7 @@ function splitBesideWell(wall: Obstacle, well: Link): Obstacle[] {
 }
 
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
+const FACADE = glazeFacade(WALLS.walls);
 
 /**
  * Balustrades down both sides of the two flights into the exhibition hall.
@@ -2444,9 +2538,9 @@ export const KINEPOLIS: Venue = {
     ...RAILS.solids,
     ...grandWellHeadRails(),
     ...receptionFitOut(),
-    ...railBesideWells(WALLS.walls, staircases),
+    ...railBesideWells(FACADE.walls, staircases),
   ],
-  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor, ...STAIRS.decor],
+  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor, ...STAIRS.decor, ...FACADE.decor],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };

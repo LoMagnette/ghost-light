@@ -407,11 +407,15 @@ check(ROW_PITCH === 1.0, `row pitch is ${ROW_PITCH} m; the auditorium plan was s
 // hanging in the corridor or a row of seats pushed through a party wall.
 for (const piece of KINEPOLIS.decor) {
   const b = piece.bounds;
-  // Furniture has to be wholly inside a room. A WALL face — the pieces with no
-  // material, cut from a wall so it can follow a rake down — is centred on a
-  // room's edge by construction, so half of it is legitimately outside and
-  // only its centre line can be tested.
-  const whole = piece.material !== undefined;
+  // Furniture has to be wholly inside a room. A piece of the BUILDING — a
+  // wall face cut from a wall so it can follow a rake down, a pane of the
+  // glass front — is centred on a room's edge by construction, so half of it
+  // is legitimately outside and only its centre line can be tested.
+  //
+  // "Has no material" used to be the test for that, and it stopped being one
+  // the moment a piece of building needed a colour of its own: glazing is a
+  // wall, and it is a wall the chapters dress differently.
+  const whole = piece.material !== undefined && piece.material !== 'glazing';
   const cx = b.x + b.w / 2;
   const cy = b.y + b.h / 2;
   const inside = KINEPOLIS.rooms.some((r) =>

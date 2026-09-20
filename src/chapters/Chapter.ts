@@ -55,6 +55,15 @@ export interface Palette {
    * decides whether you can see it. Give it a colour that reads as cloth.
    */
   screen: number;
+  /**
+   * The glass front of the building.
+   *
+   * Drawn translucent, so this is a TINT over whatever is behind it rather
+   * than a surface colour: it is the colour the concourse takes on when you
+   * are looking at it through the entrance, which is a different question in
+   * daylight, under tungsten and at capacity.
+   */
+  glazing: number;
   /** Accent — signage, screens, step lighting. */
   accent: number;
   /** HUD text. */

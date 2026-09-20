@@ -1922,6 +1922,50 @@ on the hall floor, half a metre short.
 
 ---
 
+### Claude Opus — the glass front
+
+**Prompt:**
+> Btw the front part of the kinepolis so the reception entrance is made of
+> windows it should be reflected in the game
+
+**Iterations:** 1
+
+The whole south elevation of the concourse was one unbroken 36 m slab of
+concrete, which is the back of a warehouse and the opposite of what that
+building does to you when you walk up to it.
+
+It is a curtain wall now: a 0.45 m sill, mullions at 1.8 m centres, and one
+pane of glass the length of the run. The wall itself stays — a window is not a
+door, and the robot that could not drive out of the south wall still cannot —
+but it is `hidden`, and what you see is the three pieces in front of it.
+
+**The one thing in the building that is not opaque.** An `InstancedMesh` has
+one material, so glazing gets a mesh of its own: a plain translucent Lambert
+at 0.42, no cutaway shader — a pane you can already see through has nothing to
+get out of the way of — and no depth write, so what stands behind it draws
+normally and the glass tints it.
+
+**The palette does the era, as always.** The first pass gave each chapter a
+colour picked in the abstract, and Chapter II's glass vanished: warm tungsten
+glazing at 30% over the warm tan floor behind it is the same colour as the
+floor, so the façade came out as a row of posts standing on nothing. The cue
+that a thing is glass is that it reads DARKER than the frame it sits in,
+whatever the light — so all three are now well under their era's wall colour,
+and Chapter III's is cool grey against warm white rather than another warm.
+
+Two harness notes:
+
+- `npm run venue` caught the first attempt: "a piece of glazing at -13.6,
+  -60.4 is inside no room". Its test for *is this furniture or is it the
+  building* was "does it name a material", and glazing is the first piece of
+  building that needs a colour of its own. Wall faces are centred on a room's
+  edge by construction, so half of them is legitimately outside.
+- A 0.4 m stub of the BOF rooms' west wall — the return at the corner where
+  the entrance elevation stops — came out as a lone pane of glass. A curtain
+  wall glazes the runs lying ALONG it, not the ones crossing it.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

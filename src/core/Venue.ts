@@ -163,7 +163,8 @@ export type Material =
   | 'desk' // the presenter's table and lectern
   | 'sign' // the letters of a sign, its body colour
   | 'signAccent' // the one letter that is not
-  | 'screen'; // the projection screen on an auditorium's end wall
+  | 'screen' // the projection screen on an auditorium's end wall
+  | 'glazing'; // curtain wall: the glass front of the building
 
 /**
  * Dressing: DRAWN, never simulated.
