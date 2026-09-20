@@ -2134,16 +2134,54 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  * band is tight enough in x to leave the BOF rooms' own south wall alone,
  * which sits 0.4 m further out and is not glass.
  */
-const CURTAIN_WALLS: { floor: Level; bounds: Rect }[] = [
-  { floor: 0, bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2) },
+const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
+  // The entrance itself: a bank of glazed doors, floor to head.
+  {
+    floor: 0,
+    bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2),
+    kind: 'door',
+  },
+  /*
+   * The same elevation a storey up, over the entrance and facing the head of
+   * the grand stair.
+   *
+   * A curtain wall does not stop at the first floor slab, and this is the one
+   * piece of it you meet from inside: you come up the grand flight and the
+   * thing at the top of it is a window the height of the wall. Windows, not
+   * doors — there is no walking out of the first floor.
+   */
+  {
+    floor: 1,
+    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF * 2 + 1, 1.2),
+    kind: 'window',
+  },
 ];
 
-/** Solid base under the glass, metres. Glass does not meet the floor. */
+/**
+ * Solid base under a window, metres. Glass does not meet the floor.
+ *
+ * A door does: that is most of what tells the two apart in plan and all of
+ * what tells them apart from across the concourse.
+ */
 const GLAZING_SILL = 0.45;
 
 /** Mullion centres and width, metres. */
 const MULLION_PITCH = 1.8;
 const MULLION_WIDTH = 0.14;
+
+/** A door leaf. A bank of them is framed at this pitch instead. */
+const DOOR_LEAF = 1.1;
+
+/**
+ * The bottom rail of a glazed door, metres.
+ *
+ * Half a spandrel, and that difference is the point: a window sits on a
+ * solid base you cannot walk through and a door comes down to the floor. A
+ * push rail across the bank at hand height was tried first and is not worth
+ * having — three pixels at this zoom, and the float check was right to call
+ * a 36 m bar held up by nothing but mullions a wall hanging in the air.
+ */
+const DOOR_KICK = 0.2;
 
 /** Thickness of the glass itself. Thin, so it reads as a plane. */
 const PANE_THICKNESS = 0.08;
@@ -2168,36 +2206,52 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     // In the band, and lying ALONG it. Without the second half a 0.4 m stub
     // of the BOF rooms' west wall — the return at the corner where the
     // entrance elevation stops — came out as a pane of glass on its own.
-    const glazed = CURTAIN_WALLS.some(
+    const glazing = CURTAIN_WALLS.find(
       (c) =>
         c.floor === wall.floor &&
         rectContains(c.bounds, cx, cy) &&
         (c.bounds.w >= c.bounds.h) === (b.w >= b.h),
     );
-    if (!glazed) {
+    if (!glazing) {
       kept.push(wall);
       continue;
     }
 
+    /*
+     * The wall stays, for collision, and stops being drawn.
+     *
+     * The doors do not open in the simulation, and that is not an oversight
+     * about doors — there is nothing outside to open onto. South of this line
+     * the building's extents run out: no plate, no floor, a robot that got
+     * through would step off the concourse into 1.2 m of nothing and keep
+     * falling. They are doors when there is a forecourt to walk into.
+     */
     kept.push({ ...wall, hidden: true });
 
+    const door = glazing.kind === 'door';
     const along = b.w >= b.h; // which way the run lies
     const run = along ? b.w : b.h;
+    // A window stands on a solid spandrel; a door comes down to its own
+    // bottom rail. Same piece, and the height of it is half of what tells
+    // the two elevations apart from across the concourse.
+    const foot = door ? DOOR_KICK : GLAZING_SILL;
+    decor.push({ floor: wall.floor, bounds: b, height: foot });
 
-    decor.push({ floor: wall.floor, bounds: b, height: GLAZING_SILL });
     decor.push({
       floor: wall.floor,
       bounds: along
         ? rect(b.x, cy - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
         : rect(cx - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
-      base: GLAZING_SILL,
+      base: foot,
       height: wall.height,
       material: 'glazing',
     });
 
     // One mullion at each end and the bays between them as near the pitch as
-    // the run allows, so a 36 m front does not end on half a bay.
-    const bays = Math.max(1, Math.round(run / MULLION_PITCH));
+    // the run allows, so a 36 m front does not end on half a bay. A bank of
+    // doors is framed leaf by leaf, which is a much tighter rhythm and is
+    // most of what makes it read as a way in rather than a window.
+    const bays = Math.max(1, Math.round(run / (door ? DOOR_LEAF : MULLION_PITCH)));
     for (let i = 0; i <= bays; i += 1) {
       const at = (i * (run - MULLION_WIDTH)) / bays;
       decor.push({
@@ -2205,7 +2259,7 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
         bounds: along
           ? rect(b.x + at, b.y, MULLION_WIDTH, b.h)
           : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
-        base: GLAZING_SILL,
+        base: foot,
         height: wall.height,
       });
     }

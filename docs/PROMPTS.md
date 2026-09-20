@@ -1966,6 +1966,48 @@ Two harness notes:
 
 ---
 
+### Claude Opus — two storeys of it, and doors
+
+**Prompt:**
+> it should still be windows in front of the stairs on the 1st floor. The
+> glass on the reception level are windows but can be opened as door
+
+**Iterations:** 1
+
+A curtain wall does not stop at the first floor slab. The corridor's south
+end is a 14.3 m run at exactly the same elevation as the entrance below it,
+and it is the one piece of the glass front you meet from INSIDE: you come up
+the grand flight and the thing at the top of it is a window the height of the
+wall. Glazed now, as windows.
+
+And the two elevations are not the same thing, so they are not drawn the
+same. `CURTAIN_WALLS` entries carry a kind:
+
+| | spandrel | mullions |
+|---|---|---|
+| window | 0.45 m solid base | 1.8 m |
+| door | 0.2 m bottom rail | 1.1 m — one per leaf |
+
+Glass down to the floor and a rhythm two-thirds tighter is what makes a bank
+of doors read as a way in rather than a window, and both cues survive being
+three hundred pixels wide on screen.
+
+**The doors do not open, and that is not about doors.** South of that line
+the building's extents run out — no plate, no floor. A robot that got through
+would step off the concourse into 1.2 m of nothing and keep falling, which is
+exactly the fault `Voxxy cannot drive out of the south wall` exists to catch.
+They become doors when there is a forecourt to walk into.
+
+**The float check was right and I was wrong.** The first attempt put a push
+rail across the whole bank at hand height, and `npm run venue` called it: *a
+wall at -13.6, -60.5 (35.8 x 0.3 m) is drawn from 2.25 m with nothing under
+it above 1.20 m*. A 36 m bar held up by nothing but mullions is a wall
+hanging in the air as far as that check can tell, and the honest answer was
+not to loosen the check — it was that a 0.12 m rail is three pixels at this
+zoom and was never going to earn its place.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
