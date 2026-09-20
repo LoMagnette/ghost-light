@@ -208,10 +208,29 @@ function exhibitionColumns(): Obstacle[] {
  * 2400 m² hall is a car park, and Biggy needs 3.8 m to stop.
  */
 
-/** A stand is a shell scheme: head height, and a fascia over it. */
-const BOOTH_HEIGHT = 2.6;
+/**
+ * A stand is a shell scheme, and a shell scheme is a floor and some panels.
+ *
+ * They went in as solid 2.6 m boxes, which is what a stand looks like from
+ * the outside and nothing like what one IS: you walk into a stand off the
+ * aisle, and what stops you is the back of it. A block also throws away the
+ * best thing about putting them here — Voxxy slips between two small stands
+ * and Biggy has to go round, out of the same geometry.
+ *
+ * So each stand is a coloured platform you can drive onto, a back panel on
+ * the side away from the aisle, and — on the large ones only — a side panel
+ * wherever it has a neighbour to share one with. The small ones stand apart
+ * with a metre between them and have no sides at all.
+ */
 
-/** Gap between stands in a rank, metres. You walk through it, not drive. */
+/** Panel thickness and height, metres. */
+const BOOTH_PANEL = 0.1;
+const BOOTH_WALL = 2.5;
+
+/** How proud of the hall floor a stand's platform sits, metres. */
+const BOOTH_PLATFORM = 0.05;
+
+/** Gap between small stands in a rank, metres. You walk through it. */
 const BOOTH_GAP = 1.0;
 
 /**
@@ -240,7 +259,8 @@ const RANK_S = 3.0;
 const RANK_L = 4.0;
 
 /**
- * West edge and width of each rank, and its stands from the south up.
+ * Each rank: its west edge and width, which side its stands turn their backs
+ * to, and the stands in it from the south up.
  *
  * Set against the column grid, which is what decides everything here. The
  * columns sit 6.4 m apart, so a rank and a usable aisle do not fit between
@@ -250,35 +270,76 @@ const RANK_L = 4.0;
  * a 10.7 m one down the middle, each with one line of columns standing in it,
  * against the 1.6 m slots the first pass left.
  *
+ * `back` follows from that pairing and is the same statement twice: a stand
+ * faces the aisle, so its back is the side against the wall or the column.
+ *
  * The plan also has two stands turned into the south-west corner. They are
  * the seven-and-seven in the west ranks here instead: square on the grid and
  * out of the aisle, which is worth more than the irregularity.
  */
-const BOOTH_RANKS: { x: number; w: number; stands: number[] }[] = [
-  { x: -22.5, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
-  { x: -13.9, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
-  { x: -10.0, w: RANK_L, stands: [STAND_L, STAND_L, STAND_L] },
+const BOOTH_RANKS: {
+  x: number;
+  w: number;
+  back: 'west' | 'east';
+  stands: number[];
+}[] = [
+  { x: -22.5, w: RANK_S, back: 'west', stands: Array<number>(7).fill(STAND_S) },
+  { x: -13.9, w: RANK_S, back: 'east', stands: Array<number>(7).fill(STAND_S) },
+  { x: -10.0, w: RANK_L, back: 'west', stands: [STAND_L, STAND_L, STAND_L] },
   // All three large. The plan caps this rank with two small stands, and a
   // small stand in a 4 m rank is 8 m², which is not a size the plan lets.
-  { x: 4.7, w: RANK_L, stands: [STAND_L, STAND_L, STAND_L] },
-  { x: 9.6, w: RANK_S, stands: Array<number>(7).fill(STAND_S) },
+  { x: 4.7, w: RANK_L, back: 'east', stands: [STAND_L, STAND_L, STAND_L] },
+  { x: 9.6, w: RANK_S, back: 'west', stands: Array<number>(7).fill(STAND_S) },
 ];
 
-function exhibitionBooths(): Obstacle[] {
-  const booths: Obstacle[] = [];
+function exhibitionBooths(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+
   for (const rank of BOOTH_RANKS) {
+    // Large stands run together so they can share a side panel, which is what
+    // makes "a side wall where there is a neighbour" mean anything. Small ones
+    // stand apart.
+    const shared = rank.w === RANK_L;
     let y = BOOTH_SOUTH;
-    for (const depth of rank.stands) {
-      booths.push({
+
+    for (let i = 0; i < rank.stands.length; i += 1) {
+      const depth = rank.stands[i];
+
+      // The platform: drawn, never collided. Drive onto a stand and you are
+      // standing on the stand.
+      decor.push({
         floor: 0,
         bounds: rect(rank.x, y, rank.w, depth),
-        height: BOOTH_HEIGHT,
+        height: BOOTH_PLATFORM,
         material: 'booth',
       });
-      y += depth + BOOTH_GAP;
+
+      const backX = rank.back === 'west' ? rank.x : rank.x + rank.w - BOOTH_PANEL;
+      solids.push({
+        floor: 0,
+        bounds: rect(backX, y, BOOTH_PANEL, depth),
+        height: BOOTH_WALL,
+        material: 'booth',
+      });
+
+      // One panel per boundary, not one per side: the stand to the north of
+      // it owns the same wall. So the end stands get one side and everything
+      // between them gets two, which is the rule stated the short way.
+      if (shared && i < rank.stands.length - 1) {
+        solids.push({
+          floor: 0,
+          bounds: rect(rank.x, y + depth - BOOTH_PANEL / 2, rank.w, BOOTH_PANEL),
+          height: BOOTH_WALL,
+          material: 'booth',
+        });
+      }
+
+      y += depth + (shared ? 0 : BOOTH_GAP);
     }
   }
-  return booths;
+
+  return { solids, decor };
 }
 
 /**
@@ -2682,6 +2743,7 @@ function grandWellHeadRails(): Obstacle[] {
   }));
 }
 
+const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 
@@ -2689,7 +2751,7 @@ export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
   obstacles: [
     ...exhibitionColumns(),
-    ...exhibitionBooths(),
+    ...BOOTHS.solids,
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
     ...STAIRS.solids,
@@ -2698,7 +2760,14 @@ export const KINEPOLIS: Venue = {
     ...receptionFitOut(),
     ...railBesideWells(FACADE.walls, staircases),
   ],
-  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor, ...STAIRS.decor, ...FACADE.decor],
+  decor: [
+    ...auditoriumDecor,
+    ...WALLS.decor,
+    ...RAILS.decor,
+    ...STAIRS.decor,
+    ...FACADE.decor,
+    ...BOOTHS.decor,
+  ],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };

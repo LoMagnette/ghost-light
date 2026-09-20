@@ -413,7 +413,10 @@ check(ROW_PITCH === 1.0, `row pitch is ${ROW_PITCH} m; the auditorium plan was s
 // than half a metre, and both times invisibly — a column inside a booth draws
 // as a booth and collides as a booth, and the only thing wrong with it is
 // that it could not exist.
-const stands = KINEPOLIS.obstacles.filter((o) => o.material === 'booth');
+// The PLATFORM is the stand: one per stand, and the thing whose size and
+// position the plan actually specifies. Its panels are obstacles and there
+// are a variable number of them, so counting those answers nothing.
+const stands = KINEPOLIS.decor.filter((d) => d.material === 'booth');
 check(stands.length === 27, `the plan lets 27 stands, the hall has ${stands.length}`);
 
 // 6 m² and 24 m², and nothing in between. The first pass built them at 7.2

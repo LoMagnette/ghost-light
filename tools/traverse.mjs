@@ -388,7 +388,9 @@ scenario(
  * is the one that has to get from the concourse end of the aisle to the far
  * end of it in a straight line.
  */
-const STANDS = KINEPOLIS.obstacles.filter((o) => o.material === 'booth');
+// The platforms, one per stand — the panels are obstacles and there are a
+// variable number of them. Same rule as `npm run venue`.
+const STANDS = KINEPOLIS.decor.filter((d) => d.material === 'booth');
 const AISLE_SOUTH = Math.min(...STANDS.map((b) => b.bounds.y));
 const AISLE_NORTH = Math.max(...STANDS.map((b) => b.bounds.y + b.bounds.h));
 
@@ -396,6 +398,28 @@ scenario(
   'Biggy drives the length of the main aisle',
   (r) => r.y > AISLE_NORTH,
   () => drive('biggy', { x: -1, y: AISLE_SOUTH - 3 }, NORTH, 14),
+);
+
+/*
+ * And into a stand, which is the point of them not being blocks.
+ *
+ * A stand is a platform with a panel across the back of it: you drive off
+ * the aisle onto the stand, and what stops you is the back. As solid boxes
+ * they stopped a robot at the front edge and the inside of a stand was
+ * somewhere nobody could ever be.
+ */
+const WEST_STAND = STANDS.reduce((a, b) => (b.bounds.x < a.bounds.x ? b : a));
+
+scenario(
+  'Voxxy drives into a stand and is stopped by the back of it',
+  (r) => r.x < WEST_STAND.bounds.x + WEST_STAND.bounds.w && r.x > WEST_STAND.bounds.x,
+  () =>
+    drive(
+      'voxxy',
+      { x: WEST_STAND.bounds.x + WEST_STAND.bounds.w + 2, y: WEST_STAND.bounds.y + WEST_STAND.bounds.h / 2 },
+      { x: -1, y: 0 },
+      6,
+    ),
 );
 
 /*

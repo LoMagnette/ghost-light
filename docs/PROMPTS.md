@@ -2129,6 +2129,47 @@ in the west aisle, and square-on-the-grid beats the irregularity. Still 27.
 
 ---
 
+### Claude Opus — a stand is a floor and some panels
+
+**Prompt:**
+> So the booth should'nt be some boxeds, they should be a flat surface with a
+> different colors with a back wall and for the bigest one or too side walls
+> depending on the fact if they have a neighbout on that side.
+
+**Iterations:** 1
+
+Right, and a solid box was not a simplification of a stand — it was the
+opposite of one. You walk INTO a stand off the aisle; what stops you is the
+back of it. A box makes the inside of every stand somewhere nobody can be.
+
+Each one is now a coloured platform you can drive onto, a back panel on the
+side away from the aisle, and — on the large ones — a side panel wherever it
+has a neighbour to share one with. **One panel per boundary, not one per
+side**, which is the rule stated the short way: the end stands get one side
+and everything between them gets two, and it falls out of emitting a wall
+only where a next stand exists.
+
+That also decides something the box was hiding. A side panel is only
+meaningful if there is a neighbour close enough to share it, so the large
+stands run TOGETHER in their ranks and the small ones keep their metre
+between them. Which is what the map draws: the blue stands almost touch and
+the yellow ones plainly do not.
+
+`back` is the same statement twice — a stand faces the aisle, so its back is
+whatever it is pressed against, and the ranks were already paired against the
+column lines.
+
+**What it buys, beyond looking right.** Voxxy is 0.68 m across and the gaps
+between small stands are a metre; Biggy is 1.44 m and has to go round. Same
+geometry, different answer per robot, which is the rule the whole cast is
+built on — and it was impossible while a stand was a solid block.
+
+`npm run traverse` drives Voxxy off the aisle into a stand and asserts it
+ends up INSIDE the platform and not through the back of it. Re-emitting the
+platform as a solid box fails it at the front edge, 2.9 m short.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
