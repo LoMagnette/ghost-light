@@ -49,6 +49,7 @@ import {
   rect,
   rectContains,
   type Decor,
+  type Level,
   type Link,
   type Obstacle,
   type Rect,
@@ -194,9 +195,67 @@ const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
  */
 const CONCOURSE_LEVEL = 1.2;
 
+/**
+ * The gap in the wall between the reception concourse and the hall — and, a
+ * separate thing, the flight of steps standing in it.
+ *
+ * They were one rectangle, so the steps ran the full width of the opening,
+ * wall to wall. That is not what a broad flight looks like: it is centred in
+ * its opening with something along the edge either side of it, because the
+ * concourse is 1.2 m over the hall and every metre of that edge which is not a
+ * step is a drop.
+ *
+ * Splitting them is what lets the wall builder leave the whole opening clear
+ * while only the middle of it is walkable — see `WALL_OPENINGS`. Without that
+ * the narrowed flight simply grows a 3.2 m wall at each end, which is a
+ * smaller opening rather than a balustrade.
+ */
+const HALL_OPENING = rect(-12.4, -39.4, 23.2, 2.0);
+
+/** Balustrade flanking the steps, metres of the opening at each end. */
+const STEP_RAIL = 1.5;
+
+const HALL_STEPS = rect(
+  HALL_OPENING.x + STEP_RAIL,
+  HALL_OPENING.y,
+  HALL_OPENING.w - STEP_RAIL * 2,
+  HALL_OPENING.h,
+);
+
+/**
+ * Where the wall builder must leave a hole that no link accounts for.
+ *
+ * A same-storey flight punches its own way through a wall, which covers every
+ * other level change in the building. This one is wider than its flight.
+ */
+const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [{ floor: 0, bounds: HALL_OPENING }];
+
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
-  { id: 'reception', label: 'Reception', kind: 'foyer', floor: 0, bounds: RECEPTION, elevation: CONCOURSE_LEVEL },
+  {
+    id: 'reception',
+    label: 'Reception',
+    kind: 'foyer',
+    floor: 0,
+    bounds: RECEPTION,
+    elevation: CONCOURSE_LEVEL,
+    /*
+     * The steps are cut out of the concourse's own plate, or they are not
+     * there.
+     *
+     * A flight descends from the plate it starts on, so drawn inside a solid
+     * plate it is a flight inside a slab: every tread of this one was buried
+     * and the only thing you could see of the level change was the 1.2 m face
+     * along the concourse edge. The same rule the corridor upstairs already
+     * follows for its stairwells — a floor with a flight coming through it
+     * does not have floor there.
+     *
+     * Only the flight. The 1.5 m either side IS concourse, with a balustrade
+     * along its edge, and the wheelchair ramp is not cut at all: nothing draws
+     * a ramp, so a hole there would be a hole.
+     */
+    voids: [HALL_STEPS],
+  },
   // BOF rooms, south-east of the concourse.
   //
   // There is no seminar suite here. An earlier pass read the plan's "∧ Rooms ∧"
@@ -1263,13 +1322,16 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
         // from one cinema straight into the next. And a link only crosses a
         // wall if it climbs ACROSS it, so an edge of constant y can only be
         // opened by a link whose axis is y.
-        const crossing = links.some(
-          (l) =>
-            l.from === l.to &&
-            l.from === room.floor &&
-            (edge.horizontal ? l.axis === 'y' : l.axis === 'x') &&
-            rectContains(l.bounds, px, py),
-        );
+        const crossing =
+          links.some(
+            (l) =>
+              l.from === l.to &&
+              l.from === room.floor &&
+              (edge.horizontal ? l.axis === 'y' : l.axis === 'x') &&
+              rectContains(l.bounds, px, py),
+          ) ||
+          // An opening wider than the flight standing in it. See HALL_OPENING.
+          WALL_OPENINGS.some((o) => o.floor === room.floor && rectContains(o.bounds, px, py));
         if (crossing) {
           kind.push(0);
           continue;
@@ -1514,7 +1576,7 @@ const {
  */
 const receptionStairs: Link[] = [
   // Concourse → hall, descending northward. ~23 m wide, the full opening.
-  { id: 'hall-steps', from: 0, to: 0, bounds: rect(-12.4, -39.4, 23.2, 2.0), base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
+  { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
   /**
    * The ramp beside the steps, and Biggy's only way between the two levels.
    *
@@ -1899,6 +1961,27 @@ function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
   return { solids, decor };
 }
 
+/**
+ * The balustrade either end of the concourse steps.
+ *
+ * The opening is 23.2 m and the flight takes the middle 20.2, so 1.5 m at each
+ * end is a 1.2 m drop with nothing across it. This is that something: the same
+ * 1.2 m rail height as the staircases in the hall, standing on the concourse
+ * and straddling its edge, which is where a balustrade goes and is also what
+ * keeps half its footprint on a floor that is drawn.
+ *
+ * Solid, and no linkId: you cannot climb a guardrail, and there is no flight
+ * here to be able to climb.
+ */
+function concourseStepRails(): Obstacle[] {
+  const edge = HALL_OPENING.y + HALL_OPENING.h; // where the concourse drops
+  return [HALL_OPENING.x, HALL_STEPS.x + HALL_STEPS.w].map((x) => ({
+    floor: 0,
+    bounds: rect(x, edge - RAIL_THICKNESS / 2, STEP_RAIL, RAIL_THICKNESS),
+    height: RAIL_HEIGHT,
+  }));
+}
+
 const RAILS = stairRails(staircases);
 
 export const KINEPOLIS: Venue = {
@@ -1909,6 +1992,7 @@ export const KINEPOLIS: Venue = {
     ...auditoriumSolids,
     ...stairMass(staircases),
     ...RAILS.solids,
+    ...concourseStepRails(),
     ...WALLS.walls,
   ],
   decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor],

@@ -1540,6 +1540,41 @@ every wall in the building stops, so they read as filling the end wall rather
 than growing out of a roofless building. Nothing else had to move: the plane
 was made a plane in the round before, for this.
 
+### Narrowing the concourse steps, and finding them buried
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> the stairs going from the hallway to the reception is a bit too large it
+> should be center with about 1,5m of guardrail on each side.
+
+**Iterations:** 2
+
+The steps ran the full 23.2 m of the opening, wall to wall, which is not what a
+broad flight looks like: it is centred in its opening with something along the
+edge either side, because the concourse is 1.2 m over the hall and every metre
+of that edge which is not a step is a drop. Now 20.2 m of flight with 1.5 m of
+1.2 m balustrade at each end.
+
+**The opening and the flight had to become two things.** They were one
+rectangle, and the wall builder punches its hole wherever a same-storey link
+crosses an edge — so narrowing the link simply grew a 3.2 m WALL at each end,
+which is a smaller opening rather than a balustrade. `WALL_OPENINGS` is the
+gap; `HALL_STEPS` is what stands in it.
+
+**And the steps turned out never to have been visible.** A flight descends from
+the plate it starts on, so drawn inside a solid plate it is a flight inside a
+slab: all seven treads were buried in the concourse and the only thing showing
+of the level change was the 1.2 m face along its edge. The corridor upstairs
+has followed the rule since the stairwells landed — a floor with a flight
+coming through it does not have floor there — and the concourse never had. It
+has a `voids` entry now.
+
+Only under the flight. The 1.5 m either side IS concourse, and the wheelchair
+ramp beside it is cut from nothing at all, because no code draws a ramp: a hole
+there would be a hole.
+
 ---
 
 ## Audio
