@@ -410,15 +410,31 @@ function runFor(rise: number): number {
 }
 
 /**
+ * How much corridor is left at each side of the grand flight, metres.
+ *
+ * It used to be none: the flight was the full 14.3 m width of the corridor it
+ * delivers you to, so its stairwell crossed the corridor wall to wall and the
+ * south end of the auditorium level simply stopped there. A flight that wide
+ * is not a staircase in a corridor, it IS the corridor.
+ *
+ * 1.5 m each side is a way past it and, at the top, something to put a
+ * balustrade on — which is the other half of why the flight narrows. Measured
+ * clear of both, it comes out at 1.35 m: Voxxy passes at 0.68 m across and
+ * Droid at 0.92, and Biggy does not at 1.44. That is the right answer for a
+ * machine that could not use the stairs it would be squeezing past anyway.
+ */
+const GRAND_SIDE = 1.5;
+
+/**
  * The grand flight out of the reception concourse — see the Link below.
  *
- * Its long axis is the one you walk ACROSS: 14.3 m wide, the full width of the
+ * Its long axis is the one you walk ACROSS: 11.3 m wide, centred in the 14.3 m
  * corridor it delivers you to, and 8.4 m deep for the 5.0 m it has to climb.
  */
 const GRAND_STAIR = rect(
-  -CORRIDOR_HALF,
+  -CORRIDOR_HALF + GRAND_SIDE,
   -59.5,
-  CORRIDOR_HALF * 2,
+  CORRIDOR_HALF * 2 - GRAND_SIDE * 2,
   runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL),
 );
 
@@ -1860,8 +1876,14 @@ const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
 const RAIL_HEIGHT = 1.2;
 const RAIL_THICKNESS = 0.12;
 
-/** The flights that stand clear of a wall, and so are worth railing. */
-const RAILED = new Set(['stair-west', 'stair-east']);
+/**
+ * The flights that stand clear of a wall, and so are worth railing.
+ *
+ * The grand flight joined them by being narrowed: at the full width of the
+ * corridor its sides WERE the corridor walls, and now there is 1.5 m of landing
+ * past each one with a five-metre drop beside it.
+ */
+const RAILED = new Set(['stair-west', 'stair-east', 'grand-stair']);
 
 function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
   const solids: Obstacle[] = [];

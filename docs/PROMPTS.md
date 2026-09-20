@@ -1575,6 +1575,41 @@ Only under the flight. The 1.5 m either side IS concourse, and the wheelchair
 ramp beside it is cut from nothing at all, because no code draws a ramp: a hole
 there would be a hole.
 
+### The grand flight, and a corridor that stopped
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> you miss understood me I meant the big stair case comming from the room floor
+> to the reception
+
+**Iterations:** 1
+
+The round before had applied the same instruction to the concourse steps. This
+is the grand flight — auditorium level down to reception — and the correction
+made the instruction make more sense than my first reading did.
+
+It was 14.3 m wide, which is the full width of the corridor it delivers you to.
+A flight that wide is not a staircase in a corridor, it IS the corridor: its
+stairwell crossed wall to wall and the south end of the auditorium level simply
+stopped there. Narrowed to 11.3 m, centred, which leaves 1.5 m of landing down
+each side — a way past, and something to stand a balustrade on, which is the
+other half of why it narrows.
+
+Everything else followed from two lines. The corridor's stairwell void is
+derived from the link's own bounds, so it shrank with the flight and the
+landings are floor. `RAILED` gained `grand-stair`, so the flight got the side
+rails and the opening got the level balustrade that the two hall flights
+already had.
+
+**Measured rather than asserted.** The comment first claimed Biggy would not
+fit past; that is the sort of thing worth checking before writing it down. The
+gap is 1.5 m of corridor less a straddling rail and half a wall, which comes
+out at 1.35 m clear: Voxxy 0.68 and Droid 0.92 pass, Biggy 1.44 does not. True,
+and now true with a number attached — and the right answer anyway for a machine
+that could not have used the stairs it would be squeezing past.
+
 ---
 
 ## Audio
