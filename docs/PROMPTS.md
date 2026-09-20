@@ -1813,13 +1813,71 @@ Three things the change broke that the harness caught:
 treads cannot be seen. The viewer stands south-west, the concourse is south and
 high, so the flight descends AWAY from the viewer and every riser is a
 back-face: what is left is tread tops, all horizontal, all the same colour.
-`visual/threshold-flat.png` is the terrace at 4× contrast — one unbroken white
-strip. It is not a bug in this change; it is why the grand staircase is the
+The finished terrace at 4× contrast is one unbroken white strip. It is not a bug in this change; it is why the grand staircase is the
 only flight in the building that reads as a staircase (it is the only one that
 rises away from the viewer). What does read here is the splayed flanks, whose
 risers face west, and the steps show properly under the cutaway when a robot is
 standing on them. Making the treads themselves read is a renderer change — a
 depth-discontinuity edge pass — not a building one.
+
+---
+
+### Claude Opus — the reception, and the space under the stairs
+
+**Prompt:**
+> the reception part should look more like this with a part being under the
+> stairs. the simple like | and - just be only max 1,4m high. *(a plan diagram
+> of the concourse: a stepped enclosure north-west of the grand flight drawn in
+> `|`/`-`, two blocks to the east, and the stair block hatched only across its
+> southern half)*
+
+**Iterations:** 1
+
+The diagram is the real plan. `references/venue/maps/exhibition-floor.jpg` has
+a "< Reception" counter and its office standing north-west of the grand flight,
+"Toilets >" off the south-east corner above the BOF rooms, and — the part worth
+reading twice — **the stair hatched only as far as the cut, with open floor
+north of it**. That is the "part being under the stairs": a staircase is cut at
+about 1.2 m in plan, so what is drawn beyond the cut is what you would see
+standing under the upper half of the flight.
+
+**The flight had none of that.** `stairMass` draws every tread as a box from
+the floor to the tread, which makes any staircase a solid wedge. Right for the
+two flights into the hall, because the plan draws those as enclosed stair cores
+with walls all the way round. Wrong for the grand flight, which stands in the
+open with five metres of rise: above the headroom line it is now a soffit — a
+slab following the pitch, drawn, never collided, with the concourse running on
+underneath it. A robot walks 4.3 m in under the stairs and stops where the mass
+comes back down to meet the floor.
+
+**The 1.4 m instruction is the whole design of the desk.** The enclosure is
+walled at 3.2 m on the two sides away from the concourse and countered at 1.1 m
+on the two sides the public stands at. A counter drawn at wall height is a
+room, and this is not a room — it is a desk you walk up to and can see over
+from anywhere in the concourse.
+
+Also added: the toilets north of the BOF rooms, with cubicle partitions at head
+height rather than wall height, because a partition you can see over the top of
+is what tells you what the room is.
+
+**Two things caught rather than reasoned.**
+
+- `npm run traverse` failed instantly on `Biggy is stopped at the head of the
+  grand flight`: Biggy drove four metres into the stairwell from the corridor
+  above. The soffit branch had an early `continue`, and the same loop iteration
+  also emits the tread seen from the floor the flight ARRIVES on — which is the
+  only thing stopping a robot walking into the well from up there. One keyword,
+  a hole in the first floor, and no type error.
+- `npm run venue` failed on "expected a lectern and a table in each of 14
+  rooms, found 30 pieces". `desk` is a MATERIAL, not a role: the reception
+  counter is made of the same stuff and is not a lectern. The check is scoped
+  to the auditorium level now.
+
+I also ran `npx prettier` on `kinepolis.ts` out of habit. The project has no
+prettier config, so it reformatted 384 lines to double quotes and 80 columns
+against the file's own style. Reverted with `git checkout` and re-applied the
+edit by hand — the commit before it was clean, which is the only reason that
+was cheap.
 
 ---
 

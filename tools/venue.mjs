@@ -465,7 +465,12 @@ for (const room of twoBiggest) {
 // get past it. That last one is the check that earns its keep: in half the
 // rooms the desk stands at the same end as the doors, so the gap between it
 // and the side wall is the only way onto the stage, and Biggy is 1.44 m wide.
-const desks = KINEPOLIS.obstacles.filter((o) => o.material === 'desk');
+//
+// Scoped to the auditorium level, because 'desk' is a MATERIAL and not a role:
+// the reception counter downstairs is made of the same stuff and is not a
+// lectern. Counting every piece of desk in the building made adding one to the
+// concourse look like a fifteenth auditorium.
+const desks = KINEPOLIS.obstacles.filter((o) => o.material === 'desk' && o.floor === 1);
 check(
   desks.length === auditoria.length * 2,
   `expected a lectern and a table in each of ${auditoria.length} rooms, found ${desks.length} pieces`,

@@ -324,6 +324,20 @@ scenario(
   (r) => r.floor === 0 && r.z < CONCOURSE_LEVEL + 0.19,
   () => drive('droid', GRAND_HEAD, SOUTH, 18, 1),
 );
+/*
+ * The space under the grand flight.
+ *
+ * Its upper half is a soffit with nothing under it, so a robot walks in from
+ * the head of the stairs, stays on the concourse, and stops where the mass
+ * comes back down to meet the floor. With the flight solid all the way, it is
+ * stopped at the first tread instead and never gets in.
+ */
+scenario(
+  'Voxxy walks in under the grand stair',
+  (r) => Math.abs(r.z - CONCOURSE_LEVEL) < 0.1 && r.y < GRAND.bounds.y + GRAND.bounds.h - 2,
+  () => drive('voxxy', GRAND_HEAD, SOUTH, 6),
+);
+
 scenario(
   'Biggy is stopped at the head of the grand flight',
   (r) => r.floor === 1 && r.y > GRAND.bounds.y + GRAND.bounds.h - 1.0,

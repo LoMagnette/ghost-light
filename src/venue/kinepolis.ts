@@ -275,6 +275,14 @@ const HALL_OPENING = rect(
   2,
 );
 
+/**
+ * The toilets off the south-east of the concourse, hard against the BOF rooms.
+ *
+ * Same 19.8 m frontage as the two rooms below it, because on the plan all
+ * three are one block of building served by one wall.
+ */
+const TOILETS = rect(22.3, -45.2, 19.8, 5.0);
+
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [{ floor: 0, bounds: HALL_OPENING }];
 
 const floor0Rooms: Room[] = [
@@ -302,6 +310,15 @@ const floor0Rooms: Room[] = [
   // way up to the cinema rooms". See `receptionStairs`.
   { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6), elevation: CONCOURSE_LEVEL },
   { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7), elevation: CONCOURSE_LEVEL },
+  /*
+   * The toilets, north of the BOF rooms and labelled on the plan.
+   *
+   * Modelled because the south-east corner of the concourse was 400 m² of
+   * nothing, and because a building people believe in has the dull rooms in
+   * it. The cubicle partitions are what makes it read as a toilet block
+   * rather than a store — see `receptionFitOut`.
+   */
+  { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
 ];
 
@@ -1903,8 +1920,34 @@ function terraceSteps(link: Link): Obstacle[] {
   return pieces;
 }
 
-function stairMass(links: Link[]): Obstacle[] {
+/**
+ * Flights with usable space under them.
+ *
+ * A staircase is drawn here as a run of solid treads, which makes it a wedge
+ * of mass standing on the floor. That is right for the two flights into the
+ * hall — the plan draws those as enclosed stair cores, walls all the way round
+ * — and wrong for the grand flight, which stands in the middle of the
+ * reception with nothing but air beside it. Five metres of rise puts its upper
+ * half well over head height, and the plan shows exactly that: the treads are
+ * hatched only as far as the cut, and north of it is open floor UNDER the
+ * stairs.
+ *
+ * So above the headroom line the flight becomes a soffit — a slab following
+ * the pitch with the concourse running on underneath it. Drawn, never
+ * collided, because there is nothing at floor level there to walk into, which
+ * is the whole point of the space.
+ */
+const OPEN_UNDER = new Set(['grand-stair']);
+
+/** Clear height wanted under a flight before its underside becomes a soffit. */
+const UNDER_STAIR_HEAD = 2.1;
+
+/** How thick a flight is between its treads and its soffit, metres. */
+const STAIR_SOFFIT = 0.4;
+
+function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
   const solid: Obstacle[] = [];
+  const soffits: Decor[] = [];
   for (const link of links) {
     // A ramp is the accessible route by definition — leave it drivable. It is
     // also the only way between the hall and the concourse until stairs work.
@@ -1920,6 +1963,13 @@ function stairMass(links: Link[]): Obstacle[] {
     const bands = treadsOf(link);
     const treads = bands.length;
 
+    // Where this flight's underside clears the floor it stands on. That floor
+    // is the flight's own base: the grand flight starts on the concourse, and
+    // the concourse is what you walk about on under it.
+    const soffitFrom = OPEN_UNDER.has(link.id)
+      ? link.base + UNDER_STAIR_HEAD + STAIR_SOFFIT
+      : Infinity;
+
     for (let i = 0; i < treads; i += 1) {
       const band = bands[i];
       const tread =
@@ -1930,28 +1980,48 @@ function stairMass(links: Link[]): Obstacle[] {
       // Drawn from the link's own base, so the grand flight starts at
       // concourse level rather than sinking through it.
       const surface = band.surface;
-      solid.push({
-        floor: link.from,
-        bounds: tread,
-        height: surface,
-        /*
-         * A rake's treads collide but do not draw.
-         *
-         * They run the full frontage, because the seat banks are solid and
-         * that is the cheapest rectangle that stops Biggy — but a 22 m box per
-         * row is 22 m of fill per row, and all but the aisles at either end of
-         * it is behind a seat. Drawn where it is actually visible instead, by
-         * `seatingFor`, which is the only code that knows how wide the seating
-         * is on any given row. Worth 3 ms a frame on the auditorium level.
-         */
-        hidden: surface < 0,
-        // A step below the floor is a slab you look down onto; one above it is
-        // a mass standing on the floor. See TREAD_SLAB.
-        base: surface < 0 ? surface - TREAD_SLAB : Math.min(0, link.base),
-        // Solid to anything that cannot climb this flight, walkable to
-        // anything that can. Sim.resolveObstacles reads it.
-        linkId: link.id,
-      });
+
+      // High enough to stand under: a slab on the pitch and nothing below it.
+      //
+      // Only the face this flight shows to the floor it LEAVES. The same tread
+      // seen from the floor it arrives on is emitted below and is unchanged —
+      // it is what stops a robot driving into the stairwell from up there, and
+      // an early `continue` here silently took it away for the upper half of
+      // the flight. `npm run traverse` had Biggy four metres into the well.
+      if (surface >= soffitFrom) {
+        soffits.push({
+          floor: link.from,
+          bounds: tread,
+          height: surface,
+          base: surface - STAIR_SOFFIT,
+          // Heights measured from the storey datum, not from the plate this
+          // happens to hang over. Same reason the wall bands carry it.
+          linkId: link.id,
+        });
+      } else {
+        solid.push({
+          floor: link.from,
+          bounds: tread,
+          height: surface,
+          /*
+           * A rake's treads collide but do not draw.
+           *
+           * They run the full frontage, because the seat banks are solid and
+           * that is the cheapest rectangle that stops Biggy — but a 22 m box per
+           * row is 22 m of fill per row, and all but the aisles at either end of
+           * it is behind a seat. Drawn where it is actually visible instead, by
+           * `seatingFor`, which is the only code that knows how wide the seating
+           * is on any given row. Worth 3 ms a frame on the auditorium level.
+           */
+          hidden: surface < 0,
+          // A step below the floor is a slab you look down onto; one above it is
+          // a mass standing on the floor. See TREAD_SLAB.
+          base: surface < 0 ? surface - TREAD_SLAB : Math.min(0, link.base),
+          // Solid to anything that cannot climb this flight, walkable to
+          // anything that can. Sim.resolveObstacles reads it.
+          linkId: link.id,
+        });
+      }
 
       if (link.to === link.from) continue;
 
@@ -2011,7 +2081,7 @@ function stairMass(links: Link[]): Obstacle[] {
       }
     }
   }
-  return solid;
+  return { solids: solid, decor: soffits };
 }
 
 // ---------------------------------------------------------------------------
@@ -2239,6 +2309,97 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
 }
 
 /**
+ * The reception desk, the office behind it, and the toilet cubicles.
+ *
+ * The concourse was a bare plate with a staircase in it: 830 m² of the
+ * building's front door with nothing in it to recognise. The plan has a
+ * reception counter and its office standing north-west of the grand flight,
+ * and toilets off the south-east corner, and all of it is what makes the
+ * space read as somewhere you arrive rather than somewhere left over.
+ *
+ * Two heights and the difference between them is the point. The office is a
+ * room and its south and east sides are 3.2 m walls; the counter along its
+ * west and north is 1.1 m, which you see over from anywhere in the concourse.
+ * A counter drawn at wall height is a room, and this is not a room — it is a
+ * desk you walk up to.
+ */
+
+/** Height of anything you are meant to see over. Never above 1.4 m. */
+const COUNTER_HEIGHT = 1.1;
+
+/** How deep the counter top is, metres. A desk, not a wall. */
+const COUNTER_DEPTH = 0.6;
+
+/**
+ * The reception enclosure, north-west of the stairwell.
+ *
+ * Its west side lines up with the well's, which is how the plan draws it: the
+ * desk and the flight share an edge and you walk between them.
+ */
+const DESK = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 3.0, 9.8, 5.0);
+
+/** The way in behind the counter, metres off the enclosure's west corner. */
+const DESK_DOOR = 2.2;
+
+/** The store against the head of the stairs. Full height; a cupboard. */
+const DESK_STORE = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h, 3.6, 1.6);
+
+/** Cubicle partitions: pitch and depth, metres. */
+const CUBICLE_PITCH = 1.2;
+const CUBICLE_DEPTH = 1.5;
+const CUBICLE_HEIGHT = 2.0;
+
+function receptionFitOut(): Obstacle[] {
+  const solids: Obstacle[] = [
+    // The office: walled on the two sides away from the concourse, with the
+    // staff way in at the corner nearest the stairs. Closed on all four sides
+    // it is a box nobody can be inside, which is a strange thing to build.
+    {
+      floor: 0,
+      bounds: rect(DESK.x + DESK_DOOR, DESK.y, DESK.w - DESK_DOOR, WALL_THICKNESS),
+      height: WALL_HEIGHT,
+    },
+    {
+      floor: 0,
+      bounds: rect(DESK.x + DESK.w - WALL_THICKNESS, DESK.y, WALL_THICKNESS, DESK.h),
+      height: WALL_HEIGHT,
+    },
+    { floor: 0, bounds: DESK_STORE, height: WALL_HEIGHT },
+    // The counter: the two sides the public stands at.
+    {
+      floor: 0,
+      bounds: rect(DESK.x, DESK.y, COUNTER_DEPTH, DESK.h),
+      height: COUNTER_HEIGHT,
+      material: 'desk',
+    },
+    {
+      floor: 0,
+      bounds: rect(DESK.x, DESK.y + DESK.h - COUNTER_DEPTH, DESK.w, COUNTER_DEPTH),
+      height: COUNTER_HEIGHT,
+      material: 'desk',
+    },
+  ];
+
+  // Cubicles along the toilets' back wall. Head height, not wall height: a
+  // partition you can see over the top of is what tells you what the room is.
+  const first = TOILETS.x + 1.6;
+  const cubicles = Math.floor((TOILETS.w - 3.2) / CUBICLE_PITCH);
+  for (let i = 0; i <= cubicles; i += 1) {
+    solids.push({
+      floor: 0,
+      bounds: rect(
+        first + i * CUBICLE_PITCH,
+        TOILETS.y + TOILETS.h - CUBICLE_DEPTH,
+        0.1,
+        CUBICLE_DEPTH,
+      ),
+      height: CUBICLE_HEIGHT,
+    });
+  }
+  return solids;
+}
+
+/**
  * The balustrade across the head of the grand well, either side of the flight.
  *
  * The floor stops right across the corridor at the head of the stairs, so the
@@ -2258,6 +2419,7 @@ function grandWellHeadRails(): Obstacle[] {
   }));
 }
 
+const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 
 export const KINEPOLIS: Venue = {
@@ -2266,12 +2428,13 @@ export const KINEPOLIS: Venue = {
     ...exhibitionColumns(),
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
-    ...stairMass(staircases),
+    ...STAIRS.solids,
     ...RAILS.solids,
     ...grandWellHeadRails(),
+    ...receptionFitOut(),
     ...railBesideWells(WALLS.walls, staircases),
   ],
-  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor],
+  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor, ...STAIRS.decor],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };
