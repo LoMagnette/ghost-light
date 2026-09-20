@@ -232,6 +232,24 @@ export interface Link {
   base: number;
 
   /**
+   * Metres of the flight's WIDTH given over to climbing it sideways, or
+   * undefined for a flight you may only walk up end-on.
+   *
+   * A staircase in a stairwell is a one-dimensional thing: it climbs along one
+   * axis and its two sides are walls. A flight of shallow steps standing in
+   * the open is not — the threshold between the reception and the hall is
+   * 23 m wide and 3 m deep, and you walk up it from the front or from either
+   * flank, because there is nothing there to stop you. Modelled as a plain
+   * ramp along y it would be a 1.2 m cliff down both its sides.
+   *
+   * So the surface climbs from each long side as well, reaching full height
+   * `wrap` metres in, and the height at a point is the LOWER of the two — the
+   * terrace you get by nesting one rectangle inside the next. See
+   * `Traversal.climbFraction`, which is the only place it is read.
+   */
+  wrap?: number;
+
+  /**
    * Riser height in metres, or 0 for a ramp.
    *
    * This is what `RobotSpec.maxStepRise` is measured against, so it is the

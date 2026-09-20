@@ -1761,6 +1761,68 @@ of it would have been caught on the first run by a scenario that did not exist.
 
 ---
 
+### Claude Opus — the hall threshold as a terrace
+
+**Prompt:**
+> so the transition between the reception and the exposition hall should look
+> more like that with a couple of steps: *(a plan diagram: nested, downward-
+> opening brackets in the wall opening, each one inset from the last)*
+
+**Iterations:** 1
+
+The diagram is three nested contours whose legs all run down to the wall —
+which is not a staircase narrowing, it is a **terrace**: each step a frame
+around the one above it, so you walk up it from the front or off either flank.
+The old flight was a 20 m × 2 m slot cut into the concourse plate with a stub
+of balustrade at each end, and it read as a fire exit.
+
+**Which side it fans into decided the whole design.** Fanning back into the
+concourse looks identical in plan and is a worse building: the steps beside the
+doorway then sit within a robot's step of the plate they are cut out of, so a
+machine standing on the concourse half a metre from the edge reads the flight
+under it and sinks into the floor it is standing on. Fanned DOWNWARDS into the
+hall, every one of those points is a metre above the hall floor beside it, far
+out of reach, and the question never arises. The terrace stands in the hall;
+the reception no longer needs a hole in its plate at all.
+
+**One new idea in `core`.** `Link.wrap` — metres of a flight's width given over
+to climbing it sideways. `climbFraction` takes the LOWER of the along-axis and
+across-axis fractions, which is exactly the nested-rectangle terrace; take the
+higher and the corners rise to the top step and the thing grows two ramps up
+its own diagonals. Nine lines, one optional field, and every other flight in
+the building is untouched because they do not set it.
+
+Three things the change broke that the harness caught:
+
+- The hall's west and east walls started being cut to the terrace's treads and
+  hung a metre in the air for 49 m. The wall builder's test for "a wall running
+  along a flight" was *the flight is inside this room*, which is true of an
+  auditorium rake by construction and false of a 3 m terrace in a 49 m hall.
+  Now: a wall is cut to a flight only where the flight runs at least half the
+  length of it.
+- A tapered flight cannot be trusted to punch its own hole in a wall: it meets
+  the wall across its whole 23 m and is only at door height for the middle 18.
+  It says where the opening is instead.
+- `npm run traverse` still asserted `r.y < -39` for the climb, a number that
+  had stopped describing the building three metres ago and was still passing.
+  It reads the flight now. Three scenarios were added: down as well as up, and
+  one that drives at the flank and asserts the robot gets up — which fails flat
+  at zero if `wrap` is removed.
+
+**What I could not fix, and it is worth knowing.** From this fixed camera the
+treads cannot be seen. The viewer stands south-west, the concourse is south and
+high, so the flight descends AWAY from the viewer and every riser is a
+back-face: what is left is tread tops, all horizontal, all the same colour.
+`visual/threshold-flat.png` is the terrace at 4× contrast — one unbroken white
+strip. It is not a bug in this change; it is why the grand staircase is the
+only flight in the building that reads as a staircase (it is the only one that
+rises away from the viewer). What does read here is the splayed flanks, whose
+risers face west, and the steps show properly under the cutaway when a robot is
+standing on them. Making the treads themselves read is a renderer change — a
+depth-discontinuity edge pass — not a building one.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

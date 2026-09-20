@@ -122,22 +122,73 @@ const APPROACH = 2.2;
 const STAIR_FOOT = { x: -6.0, y: WEST_FLIGHT.bounds.y + WEST_FLIGHT.bounds.h + APPROACH };
 const STAIR_LANDING = { x: -6.0, y: WEST_FLIGHT.bounds.y - APPROACH };
 
+/*
+ * The threshold between the hall and the concourse, READ OFF THE FLIGHT.
+ *
+ * These were three hard-coded y values, and they survived the terrace being
+ * built three metres north of where the old flight stood only by luck: they
+ * had stopped describing the building and still happened to be true. The
+ * flight says where it is.
+ *
+ * `ascending: false` on a y axis: height falls as y rises, so the TOP step —
+ * the doorway into the concourse — is the southern edge, and the terrace
+ * splays north into the hall.
+ */
+const THRESHOLD = KINEPOLIS.links.find((l) => l.id === 'hall-steps');
+const THRESHOLD_TOP = THRESHOLD.bounds.y;
+const THRESHOLD_FOOT = THRESHOLD.bounds.y + THRESHOLD.bounds.h;
+/** Beside the west flank, level with the middle of the terrace. */
+const THRESHOLD_FLANK = {
+  x: THRESHOLD.bounds.x - APPROACH,
+  y: THRESHOLD.bounds.y + THRESHOLD.bounds.h / 2,
+};
+
 scenario(
   'Voxxy climbs the concourse steps',
-  (r) => r.z > 1.1 && r.y < -39,
+  (r) => r.z > 1.1 && r.y < THRESHOLD_TOP,
   () => drive('voxxy', HALL, SOUTH, 9),
 );
 
 scenario(
   'Droid climbs the concourse steps',
-  (r) => r.z > 1.1 && r.y < -39,
+  (r) => r.z > 1.1 && r.y < THRESHOLD_TOP,
   () => drive('droid', HALL, SOUTH, 14),
 );
 
 scenario(
   'Biggy is stopped by the concourse steps',
-  (r) => r.z < 0.1 && r.y > -38.5,
+  (r) => r.z < 0.1 && r.y > THRESHOLD_FOOT - 1.0,
   () => drive('biggy', HALL, SOUTH, 16),
+);
+
+/*
+ * Down as well as up.
+ *
+ * The grand flight taught this the expensive way: it had been narrowed,
+ * moved and railed four times with nothing driving DOWN it, and the day a
+ * robot tried, its foot turned out to be inside a wall. A flight is two
+ * routes and both of them want a scenario.
+ */
+scenario(
+  'Droid walks down the threshold into the hall',
+  (r) => r.z < 0.1 && r.y > THRESHOLD_FOOT,
+  () => drive('droid', { x: -0.8, y: THRESHOLD_TOP - APPROACH }, NORTH, 10),
+);
+
+/*
+ * The whole point of the terrace: it is climbable off its flank as well as
+ * off its front, because it stands in the open and has no sides to speak of.
+ *
+ * Driving due east across the middle of it cannot reach the concourse — the
+ * steps only rise to two thirds of their height that far out — so this asks
+ * whether the robot got UP at all. Without `Link.wrap` the flight is a plain
+ * ramp along y, the surface beside the robot is 0.6 m of sheer face it cannot
+ * step onto, and the answer is a flat zero.
+ */
+scenario(
+  'Voxxy climbs the threshold off its flank',
+  (r) => r.peakZ > 0.5,
+  () => drive('voxxy', THRESHOLD_FLANK, EAST, 8),
 );
 
 // Checked on peakZ rather than final z: nothing bounds the building, so a

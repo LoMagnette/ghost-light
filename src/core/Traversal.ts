@@ -41,7 +41,25 @@ export function gradient(link: Link): number {
 export function climbFraction(link: Link, x: number, y: number): number {
   const b = link.bounds;
   const along = link.axis === 'y' ? (y - b.y) / b.h : (x - b.x) / b.w;
-  const f = link.ascending ? along : 1 - along;
+  let f = link.ascending ? along : 1 - along;
+
+  /*
+   * A flight standing in the open climbs from its flanks too. See `Link.wrap`.
+   *
+   * The lower of the two fractions, which is what makes the surface a terrace
+   * rather than a saddle: a point is only as high as the FEWEST steps that
+   * reach it, whether those steps come from the front or from the side. Take
+   * the higher and the corners rise to the top step, so the terrace grows two
+   * ramps up its own diagonals and the building stops being a building.
+   */
+  if (link.wrap) {
+    const across =
+      link.axis === 'y'
+        ? Math.min(x - b.x, b.x + b.w - x)
+        : Math.min(y - b.y, b.y + b.h - y);
+    f = Math.min(f, across / link.wrap);
+  }
+
   return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 

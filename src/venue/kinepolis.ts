@@ -207,38 +207,74 @@ const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
 const CONCOURSE_LEVEL = 1.2;
 
 /**
- * The gap in the wall between the reception concourse and the hall — and, a
- * separate thing, the flight of steps standing in it.
+ * The threshold between the reception concourse and the exhibition hall.
  *
- * They were one rectangle, so the steps ran the full width of the opening,
- * wall to wall. That is not what a broad flight looks like: it is centred in
- * its opening with something along the edge either side of it, because the
- * concourse is 1.2 m over the hall and every metre of that edge which is not a
- * step is a drop.
+ * You come in at street level and the hall is 1.2 m below you, so this is the
+ * first level change anybody meets and the one that has to read as an
+ * ARRIVAL. It was a flight in a slot: 20 m wide, 2 m deep, cut into the
+ * concourse plate, standing in a hole in the wall with a stub of balustrade
+ * at each end. Wide enough, and it still read as a fire exit, because a
+ * staircase in a hole is a way out of a room rather than a way into one.
  *
- * Splitting them is what lets the wall builder leave the whole opening clear
- * while only the middle of it is walkable — see `WALL_OPENINGS`. Without that
- * the narrowed flight simply grows a 3.2 m wall at each end, which is a
- * smaller opening rather than a balustrade.
+ * So it is a terrace instead, standing in the HALL. Shallow steps, each one
+ * wider than the step above it, splaying out of the doorway into the room:
+ * you walk down the front of it or off either flank, and from the hall floor
+ * it is something you climb towards rather than a gap you find. The doorway
+ * is the top step and nothing more, which is why the wall no longer needs a
+ * balustrade in it — there is no gap left beside the flight to fall down.
+ *
+ * Built in the hall on purpose. Fanning it back into the concourse gives the
+ * same picture and a worse building: the steps beside the doorway would then
+ * be within a robot's step of the concourse they are cut out of, and a
+ * machine standing on the plate half a metre from the edge reads the flight
+ * under it and sinks into the floor it is standing on. Fanned DOWNWARDS every
+ * one of those points is a metre above the hall floor beside it, far out of
+ * reach, and the question never arises.
  */
-const HALL_OPENING = rect(-12.4, -39.4, 23.2, 2.0);
 
-/** Balustrade flanking the steps, metres of the opening at each end. */
-const STEP_RAIL = 1.5;
+/** Tread depth, metres. Twice a staircase's, because this is not a staircase. */
+const THRESHOLD_GOING = 0.45;
 
-const HALL_STEPS = rect(
-  HALL_OPENING.x + STEP_RAIL,
-  HALL_OPENING.y,
-  HALL_OPENING.w - STEP_RAIL * 2,
-  HALL_OPENING.h,
-);
+/**
+ * How much wider each step is than the one above it, per side, in metres.
+ *
+ * The same as the going, so the terrace splays at 45 degrees in plan and its
+ * corners are square. Anything else has to be justified by something, and
+ * nothing here justifies it.
+ */
+const THRESHOLD_SPLAY = 0.45;
+
+/** Steps in the flight. The rise divided by the building's riser, as always. */
+const THRESHOLD_STEPS = Math.round(CONCOURSE_LEVEL / RISER);
+
+/**
+ * The terrace's footprint on the hall floor — the width the wall opening used
+ * to be, which is as much of the hall as this is allowed to take.
+ */
+const HALL_STEPS = rect(-12.4, HALL.y, 23.2, THRESHOLD_STEPS * THRESHOLD_GOING);
+
+/** Metres of the width given over to climbing it sideways. See `Link.wrap`. */
+const THRESHOLD_WRAP = THRESHOLD_STEPS * THRESHOLD_SPLAY;
+
+/** What is left of the width at the top: the doorway, and the top step. */
+const THRESHOLD_DOOR = HALL_STEPS.w - (THRESHOLD_STEPS - 1) * THRESHOLD_SPLAY * 2;
 
 /**
  * Where the wall builder must leave a hole that no link accounts for.
  *
  * A same-storey flight punches its own way through a wall, which covers every
- * other level change in the building. This one is wider than its flight.
+ * other level change in the building. Not this one: a terrace meets the wall
+ * across its whole 23 m and is only at door height for the middle 18, so
+ * letting it cut its own hole opens the wall to the full span and leaves the
+ * bottom steps running into open concourse. It says where instead.
  */
+const HALL_OPENING = rect(
+  HALL_STEPS.x + (THRESHOLD_STEPS - 1) * THRESHOLD_SPLAY,
+  HALL.y - 1,
+  THRESHOLD_DOOR,
+  2,
+);
+
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [{ floor: 0, bounds: HALL_OPENING }];
 
 const floor0Rooms: Room[] = [
@@ -251,21 +287,13 @@ const floor0Rooms: Room[] = [
     bounds: RECEPTION,
     elevation: CONCOURSE_LEVEL,
     /*
-     * The steps are cut out of the concourse's own plate, or they are not
-     * there.
+     * No hole in the plate any more.
      *
-     * A flight descends from the plate it starts on, so drawn inside a solid
-     * plate it is a flight inside a slab: every tread of this one was buried
-     * and the only thing you could see of the level change was the 1.2 m face
-     * along the concourse edge. The same rule the corridor upstairs already
-     * follows for its stairwells — a floor with a flight coming through it
-     * does not have floor there.
-     *
-     * Only the flight. The 1.5 m either side IS concourse, with a balustrade
-     * along its edge, and the wheelchair ramp is not cut at all: nothing draws
-     * a ramp, so a hole there would be a hole.
+     * The old flight descended from the concourse, so it was drawn inside the
+     * concourse's own slab and every tread of it was buried — hence a void.
+     * The terrace that replaced it stands in the HALL and climbs to meet this
+     * plate at its edge, so there is nothing of it under here to uncover.
      */
-    voids: [HALL_STEPS],
   },
   // BOF rooms, south-east of the concourse.
   //
@@ -1395,6 +1423,9 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               l.from === l.to &&
               l.from === room.floor &&
               (edge.horizontal ? l.axis === 'y' : l.axis === 'x') &&
+              // A terrace is only at door height across part of its width, so
+              // it cannot be trusted with the hole. See HALL_OPENING.
+              l.wrap === undefined &&
               rectContains(l.bounds, px, py),
           ) ||
           // An opening wider than the flight standing in it. See HALL_OPENING.
@@ -1504,7 +1535,8 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               l.from === room.floor &&
               l.rise > 0 &&
               l.axis === (edge.horizontal ? 'x' : 'y') &&
-              within(room.bounds, l.bounds),
+              within(room.bounds, l.bounds) &&
+              runsAlong(bounds, edge.horizontal, l.bounds),
           );
           if (!rake) {
             walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
@@ -1563,6 +1595,28 @@ function coarsen(
 }
 
 /** Is `inner` wholly inside `outer`? Tolerant by a millimetre, for rounding. */
+/**
+ * Is this wall one of the flight's own sides, or does it merely share a room
+ * with it?
+ *
+ * "The flight is inside this room" was the whole test, and it holds for an
+ * auditorium — a rake runs the length of both side walls by construction. It
+ * stopped holding the moment a flight sat in the middle of a room instead of
+ * filling it: the concourse terrace is 3 m of the exhibition hall's 49 m west
+ * wall, eleven metres away from it, and the wall was being cut to its treads
+ * and hung a metre in the air for the whole of that run.
+ *
+ * So: a wall is cut to a flight only where the flight runs most of the length
+ * of it. Half is a wide margin either way — a rake covers about three quarters
+ * of its side walls, the terrace covers a sixteenth of the hall's.
+ */
+function runsAlong(wall: Rect, horizontal: boolean, flight: Rect): boolean {
+  const [from, span] = horizontal ? [wall.x, wall.w] : [wall.y, wall.h];
+  const [start, length] = horizontal ? [flight.x, flight.w] : [flight.y, flight.h];
+  const overlap = Math.min(from + span, start + length) - Math.max(from, start);
+  return span > 0 && overlap / span >= 0.5;
+}
+
 function within(outer: Rect, inner: Rect): boolean {
   return (
     inner.x >= outer.x - 1e-3 &&
@@ -1643,7 +1697,7 @@ const {
  */
 const receptionStairs: Link[] = [
   // Concourse → hall, descending northward. ~23 m wide, the full opening.
-  { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER },
+  { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER, wrap: THRESHOLD_WRAP },
   /**
    * The ramp beside the steps, and Biggy's only way between the two levels.
    *
@@ -1800,12 +1854,67 @@ function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
   return bands;
 }
 
+/**
+ * A wrapped flight, drawn as the terrace it is.
+ *
+ * `treadsOf` cuts a flight into bands across its climb axis, which is right
+ * for a staircase between two walls and wrong for one you can also walk up
+ * from the side: the band at the top would be drawn the full width of the
+ * flight and bury the six steps splaying out beneath it.
+ *
+ * So the bands are RINGS — each step is the frame left between its own
+ * contour and the next one in — and a ring is three rectangles: the two
+ * flanks and the nose. There is no fourth side, because the fourth side is
+ * the wall the terrace climbs to meet.
+ *
+ * `i` counts DOWN from the top step at the wall, so step `i` is inset by the
+ * steps still below it and is that many goings deep.
+ */
+function terraceSteps(link: Link): Obstacle[] {
+  const b = link.bounds;
+  const steps = Math.round(link.rise / link.riser);
+  const going = b.h / steps;
+  const splay = (link.wrap ?? 0) / steps;
+
+  const pieces: Obstacle[] = [];
+  for (let i = 0; i < steps; i += 1) {
+    const inset = (steps - 1 - i) * splay;
+    const depth = (i + 1) * going;
+    // Solid to anything that cannot climb this flight, walkable to anything
+    // that can — the same rule as every other tread in the building.
+    const step = {
+      floor: link.from,
+      height: (link.rise * (steps - i)) / steps,
+      base: 0,
+      linkId: link.id,
+    };
+    pieces.push({ ...step, bounds: rect(b.x + inset, b.y, splay, depth) });
+    pieces.push({ ...step, bounds: rect(b.x + b.w - inset - splay, b.y, splay, depth) });
+    pieces.push({
+      ...step,
+      bounds: rect(
+        b.x + inset + splay,
+        b.y + depth - going,
+        b.w - (inset + splay) * 2,
+        going,
+      ),
+    });
+  }
+  return pieces;
+}
+
 function stairMass(links: Link[]): Obstacle[] {
   const solid: Obstacle[] = [];
   for (const link of links) {
     // A ramp is the accessible route by definition — leave it drivable. It is
     // also the only way between the hall and the concourse until stairs work.
     if (link.id === 'wheelchair-ramp') continue;
+
+    // A flight that also climbs from its flanks is not a run of bands.
+    if (link.wrap) {
+      solid.push(...terraceSteps(link));
+      continue;
+    }
 
     const { bounds: b, axis } = link;
     const bands = treadsOf(link);
@@ -2130,27 +2239,6 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
 }
 
 /**
- * The balustrade either end of the concourse steps.
- *
- * The opening is 23.2 m and the flight takes the middle 20.2, so 1.5 m at each
- * end is a 1.2 m drop with nothing across it. This is that something: the same
- * 1.2 m rail height as the staircases in the hall, standing on the concourse
- * and straddling its edge, which is where a balustrade goes and is also what
- * keeps half its footprint on a floor that is drawn.
- *
- * Solid, and no linkId: you cannot climb a guardrail, and there is no flight
- * here to be able to climb.
- */
-function concourseStepRails(): Obstacle[] {
-  const edge = HALL_OPENING.y + HALL_OPENING.h; // where the concourse drops
-  return [HALL_OPENING.x, HALL_STEPS.x + HALL_STEPS.w].map((x) => ({
-    floor: 0,
-    bounds: rect(x, edge - RAIL_THICKNESS / 2, STEP_RAIL, RAIL_THICKNESS),
-    height: RAIL_HEIGHT,
-  }));
-}
-
-/**
  * The balustrade across the head of the grand well, either side of the flight.
  *
  * The floor stops right across the corridor at the head of the stairs, so the
@@ -2180,7 +2268,6 @@ export const KINEPOLIS: Venue = {
     ...auditoriumSolids,
     ...stairMass(staircases),
     ...RAILS.solids,
-    ...concourseStepRails(),
     ...grandWellHeadRails(),
     ...railBesideWells(WALLS.walls, staircases),
   ],
