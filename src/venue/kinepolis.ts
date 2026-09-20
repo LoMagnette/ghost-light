@@ -457,25 +457,35 @@ const GRAND_RUN = runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL);
  * pair of 8.4 m ledges running down the sides of a stairwell to a dead end
  * against the south wall, which is not a thing buildings have.
  */
+/**
+ * Clear concourse at the FOOT of the flight, inside the well.
+ *
+ * A staircase lands on something. Run this flight down to the building's south
+ * wall and the point a robot has to reach to arrive on floor 0 — the very
+ * bottom of the climb — is inside that wall, so no machine of any size can
+ * ever get there: Voxxy's centre stops 0.34 m short of it and Droid's 0.46 m,
+ * and both walk to the bottom step and stand there for ever. It is not a
+ * tuning problem, it is a staircase with no floor at the end of it.
+ *
+ * So the WELL reaches the wall and the FLIGHT stops short, and what you see
+ * through the gap is the concourse the stairs land on.
+ */
+const GRAND_LANDING = 1.2;
+
 const GRAND_WELL = rect(
   -CORRIDOR_HALF,
   // The INNER FACE of the south wall, not its centreline. A wall is drawn
   // standing on the plate under it, and a well taken right to SOUTH_END leaves
   // the building's own end wall with no plate at all — 14.3 m of it hanging
   // over the reception, which `npm run venue` reports the moment you try it.
-  // Half a wall's thickness of floor, entirely under the wall, is what it
-  // stands on. Nothing is visible of it because the wall is on top of it.
   SOUTH_END + WALL_THICKNESS / 2,
   CORRIDOR_HALF * 2,
-  GRAND_RUN,
+  GRAND_RUN + GRAND_LANDING,
 );
 
 const GRAND_STAIR = rect(
   GRAND_WELL.x + GRAND_SIDE,
-  // Flush with the south end of the storey above, not half a metre short of
-  // it: 0.5 m of floor beyond the foot of a staircase is a ledge of the upper
-  // storey hanging over the reception with nothing under it and nothing on it.
-  GRAND_WELL.y,
+  GRAND_WELL.y + GRAND_LANDING,
   GRAND_WELL.w - GRAND_SIDE * 2,
   GRAND_RUN,
 );

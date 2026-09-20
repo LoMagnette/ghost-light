@@ -248,6 +248,37 @@ scenario(
   onTheStage,
   () => drive('droid', KEYNOTE_BACK, EAST, 44, 1),
 );
+/*
+ * The grand flight, which nothing in here tested until it stopped working.
+ *
+ * It is one of the three routes to the auditorium level and the only one a
+ * visitor meets first, and it had been rebuilt four times — narrowed, moved
+ * flush with the south wall, railed, its well widened past the flight — with
+ * no scenario watching. Descent broke and a human found it.
+ *
+ * Read off the link, like the west flight above: `ascending` is true, so the
+ * head is the HIGH-y end and you step on to it from the corridor going south.
+ */
+const GRAND = KINEPOLIS.links.find((l) => l.id === 'grand-stair');
+const CONCOURSE_LEVEL = KINEPOLIS.rooms.find((r) => r.id === 'reception').elevation;
+const GRAND_HEAD = { x: 0, y: GRAND.bounds.y + GRAND.bounds.h + APPROACH };
+
+scenario(
+  'Voxxy walks down the grand flight to the concourse',
+  (r) => r.floor === 0 && r.z < CONCOURSE_LEVEL + 0.19 && r.minZ < 1.4,
+  () => drive('voxxy', GRAND_HEAD, SOUTH, 14, 1),
+);
+scenario(
+  'Droid walks down the grand flight to the concourse',
+  (r) => r.floor === 0 && r.z < CONCOURSE_LEVEL + 0.19,
+  () => drive('droid', GRAND_HEAD, SOUTH, 18, 1),
+);
+scenario(
+  'Biggy is stopped at the head of the grand flight',
+  (r) => r.floor === 1 && r.y > GRAND.bounds.y + GRAND.bounds.h - 1.0,
+  () => drive('biggy', GRAND_HEAD, SOUTH, 14, 1),
+);
+
 // The point of the exercise. Biggy gets into every auditorium in the building
 // and reaches the back row of all fourteen, and never reaches a stage.
 scenario(

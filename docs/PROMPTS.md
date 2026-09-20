@@ -1723,6 +1723,42 @@ The level balustrade round the well went from three edges to none, because
 there is no floor beside it any more to guard. The flight's own raking rails
 were always the right object for that.
 
+### A staircase with no floor at the end of it
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> you introduce a bug with your change because now I cannot go down anymore
+
+**Iterations:** 1
+
+Correct, and the interesting part is why nobody but a human could have found it.
+
+`npm run traverse` has fifteen scenarios and not one of them touched the grand
+flight. It is one of the three routes to the auditorium level and the only one
+a visitor meets first, and it had been narrowed, moved flush with the south
+wall, railed, and had its well widened past the flight — four rounds — with
+nothing watching. The first thing this round did was write the scenario, and it
+failed immediately: Voxxy walked to the bottom of the stairs, stopped 0.35 m
+short of the foot, and stood there on floor 1 for ever.
+
+**What was wrong.** Moving the flight flush with `SOUTH_END` put its foot at the
+inner face of the building's own end wall — and the point a robot must reach to
+arrive on floor 0 is the very bottom of the climb, which is now inside that
+wall. Voxxy's centre stops 0.34 m short of it and Droid's 0.46 m. It is not a
+tuning problem. It is a staircase with no floor at the end of it.
+
+The well reaches the wall and the flight stops 1.2 m short of it now, and what
+shows through the gap is the concourse the stairs land on.
+
+**The bug was older than the change.** With the foot back at its previous
+position, Voxxy gets down by four centimetres of clearance and DROID STILL DOES
+NOT — it was already unable to use the grand staircase, and had been for as
+long as the flight has been there. The change did not introduce the fault, it
+widened it from one robot to two, which is what made it visible. Every version
+of it would have been caught on the first run by a scenario that did not exist.
+
 ---
 
 ## Audio
