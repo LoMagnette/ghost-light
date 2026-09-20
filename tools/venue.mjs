@@ -289,12 +289,16 @@ for (const room of auditoria) {
   const doorAt = gapN ? gapSum / gapN : mid;
 
   // Seating centroid across the frontage.
-  // The seat banks and nothing else. Hidden and under 1.2 m is exactly them:
-  // the letters are hidden and 1.5, the presenter's desk is 0.75 but visible,
-  // and both stand at the far end of the room where they would drag the
-  // centroid clean across it.
+  // The seat banks and nothing else. Hidden and under 1.2 m nearly picks them
+  // out — the letters are hidden and 1.5, the presenter's desk is 0.75 but
+  // visible, and both stand at the far end of the room where they would drag
+  // the centroid clean across it. Nearly, but not quite: a rake's treads are
+  // hidden as well and their height is NEGATIVE, so they passed the `< 1.2`
+  // test, and they run the full frontage — which is a centroid dead on the
+  // room's midline dragging every real one toward it. Height above zero, and
+  // no linkId, is what actually means "a bank of seats".
   const seats = KINEPOLIS.obstacles.filter(
-    (o) => o.floor === 1 && o.hidden && o.height < 1.2 &&
+    (o) => o.floor === 1 && o.hidden && !o.linkId && o.height > 0 && o.height < 1.2 &&
       o.bounds.x >= b.x - 0.1 && o.bounds.x + o.bounds.w <= b.x + b.w + 0.1 &&
       o.bounds.y >= b.y - 0.1 && o.bounds.y + o.bounds.h <= b.y + b.h + 0.1,
   );

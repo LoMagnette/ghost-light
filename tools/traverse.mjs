@@ -207,7 +207,36 @@ const KEYNOTE_STAGE = KINEPOLIS.rooms.find((r) => r.id === 'aud-8-stage');
 /** On the stage plate, within a riser of its floor. */
 const onTheStage = (r) =>
   r.floor === 1 && r.z < KEYNOTE_STAGE.elevation + 0.19 && r.x > KEYNOTE_STAGE.bounds.x + 0.5;
-const KEYNOTE_BACK = { x: 8.7, y: -40.5 };
+
+/*
+ * Start in Room 8's WIDE aisle — the one the doors are at — found by measuring
+ * it rather than by knowing which end it is on.
+ *
+ * This was y -40.5, which was the wide aisle while Room 8's doors were at the
+ * south end of its frontage. The plan puts them at the north, so -40.5 became
+ * a point 5 cm inside the seat bank and every robot sent down the rake stopped
+ * against it. That is the third time a hard-coded coordinate in this file has
+ * failed for a change to the building that was correct.
+ */
+const KEYNOTE = KINEPOLIS.rooms.find((r) => r.label === 'Room 8');
+const inRoom = (o) =>
+  o.bounds.x >= KEYNOTE.bounds.x && o.bounds.x + o.bounds.w <= KEYNOTE.bounds.x + KEYNOTE.bounds.w &&
+  o.bounds.y >= KEYNOTE.bounds.y && o.bounds.y + o.bounds.h <= KEYNOTE.bounds.y + KEYNOTE.bounds.h;
+// The seat banks. Hidden and under 1.2 m tall is not enough on its own: a
+// rake's treads are hidden too and their height is NEGATIVE, so they pass a
+// `< 1.2` test and they span the whole frontage — which reported no aisle at
+// all and put the start point inside the room's north wall.
+const banks = KINEPOLIS.obstacles.filter(
+  (o) => o.floor === 1 && o.hidden && !o.linkId && o.height > 0 && o.height < 1.2 && inRoom(o),
+);
+const seatLow = Math.min(...banks.map((o) => o.bounds.y)) - KEYNOTE.bounds.y;
+const seatHigh = KEYNOTE.bounds.y + KEYNOTE.bounds.h - Math.max(...banks.map((o) => o.bounds.y + o.bounds.h));
+const KEYNOTE_BACK = {
+  x: KEYNOTE.bounds.x + 1.5,
+  y: seatLow > seatHigh
+    ? KEYNOTE.bounds.y + seatLow / 2
+    : KEYNOTE.bounds.y + KEYNOTE.bounds.h - seatHigh / 2,
+};
 
 scenario(
   'Voxxy walks down the keynote rake to the stage',

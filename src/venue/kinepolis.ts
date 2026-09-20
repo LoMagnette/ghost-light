@@ -390,6 +390,21 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   return ARRIVALS.some((flight) => rectContains(flight, x, y));
 }
 
+/**
+ * Rooms the plan enters against the alternation.
+ *
+ * Room 8 is the only one. `cinema-venue-devoxx.png` draws its entrance as a
+ * pair of doors a fifth of the way down its frontage from the NORTH end, where
+ * the alternation puts it at the south — it shares its lobby with Room 9
+ * rather than with Room 7, and Rooms 7 and 8 are both entered from the north
+ * with no alternation between them at all.
+ *
+ * Kept as an exception rather than smuggled into the rule, because it is one:
+ * thirteen rooms alternate and one does not. Inventing a cleverer formula that
+ * happens to produce this would be fitting a curve to a single point.
+ */
+const ROOMS_AGAINST_ALTERNATION = new Set([8]);
+
 function auditoriums(): {
   rooms: Room[];
   solids: Obstacle[];
@@ -420,16 +435,20 @@ function auditoriums(): {
           : rect(bounds.x + bounds.w - d1, bounds.y, d1 - d0, bounds.h);
 
       // Odd rooms are entered at one end of their frontage, even rooms at the
-      // other — the alternation this building actually uses. Decided once:
-      // the wall builder puts the door here and the seating leaves its wide
-      // aisle here, and those two must never disagree.
+      // other — the alternation this building mostly uses. Decided once: the
+      // wall builder puts the door here and the seating leaves its wide aisle
+      // here, and those two must never disagree.
       //
-      // Unless a staircase is parked against that end. The flights run the
-      // length of the corridor walls, and the west one lands right across the
-      // south end of Room 4's frontage — a doorway with 2.3 m of staircase in
-      // front of it is not a way in. The alternation is a pattern, not a law;
-      // a building puts the door where there is room for one.
+      // Two things overrule it, and both say the same thing about the rule.
+      // ROOMS_AGAINST_ALTERNATION is the plan simply not alternating; and a
+      // staircase parked against the chosen end is a doorway with 2.3 m of
+      // flight in front of it, which is not a way in. The alternation is a
+      // pattern, not a law; a building puts the door where there is room for
+      // one.
       let doorSide: 'low' | 'high' = aud.number % 2 === 1 ? 'high' : 'low';
+      if (ROOMS_AGAINST_ALTERNATION.has(aud.number)) {
+        doorSide = doorSide === 'low' ? 'high' : 'low';
+      }
       if (doorBlocked(bounds, side, doorSide)) {
         doorSide = doorSide === 'low' ? 'high' : 'low';
       }

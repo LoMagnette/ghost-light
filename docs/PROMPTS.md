@@ -1366,6 +1366,46 @@ numbers is the whole argument for going and measuring instead of going and
 looking. Reinstating the bad line makes the new check name all five with their
 gaps.
 
+### Room 8's door, read off the drawing
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> in room 8 the door is still not on the wrong side
+
+**Iterations:** 1, after a wrong one the round before
+
+The round before had found a genuine fault in Room 8 — its seating was jammed
+against one wall — fixed it, and reported it as the answer. It was not the
+answer. The door really was on the wrong side, and the only way to know was to
+go and look at the drawing.
+
+`cinema-venue-devoxx.png` is the auditorium plan and it is on disk, so the
+question was answerable rather than arguable. Cropped and enlarged four times
+around Room 8's corridor wall, it draws the entrance as a PAIR of doors a fifth
+of the way down the frontage from the north end. The venue had it at the south.
+Room 9's is at ITS south end, so 8 and 9 share a lobby; Room 7's is at its
+north, so 7 and 8 do not alternate at all.
+
+**Kept as an exception, not folded into the rule.** Thirteen rooms alternate
+and one does not. A cleverer formula that happened to produce this would be a
+curve fitted to a single point, and the next person would trust it.
+
+**Fixed by hand.** `npm run traverse` broke for the third time in two days on a
+hard-coded coordinate: its keynote-rake test started at y -40.5, which was
+Room 8's wide aisle while the door was at the south end and is 5 cm inside the
+seat bank now. It finds the wide aisle by measuring both of them.
+
+And finding it that way immediately exposed a second thing. "Hidden, and under
+1.2 m tall" was the idiom both the harness and `npm run venue` used to mean "a
+bank of seats" — but a rake's treads are hidden too and their height is
+NEGATIVE, so they pass a `< 1.2` test and they run the full frontage. The
+harness put its start point inside a wall; the venue check had been computing
+every room's seating centroid with the whole floor mixed in, which is a
+centroid dragged toward the middle and a check quietly weakened. Both now ask
+for a height above zero and no linkId, which is what actually means seats.
+
 ---
 
 ## Audio
