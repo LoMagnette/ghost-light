@@ -15,6 +15,7 @@
  * because the chapters are thin.
  */
 
+import type { Level } from '@/core/Venue';
 import type { RobotId } from '@/core/RobotSpec';
 
 /**
@@ -40,6 +41,20 @@ export interface Palette {
   wall: number;
   /** Walls and solid obstacles, shadowed face. */
   wallShade: number;
+  /** Auditorium seating. Five thousand of them, so it is its own colour. */
+  seat: number;
+  /** The presenter's desk: draped table and lectern. */
+  desk: number;
+  /** The body of the letters on the keynote stages. */
+  sign: number;
+  /**
+   * The projection screen filling the end wall of every auditorium.
+   *
+   * A screen with nothing running on it is a matte surface, not a light: it is
+   * the same fabric in all three eras and it is the room's light level that
+   * decides whether you can see it. Give it a colour that reads as cloth.
+   */
+  screen: number;
   /** Accent — signage, screens, step lighting. */
   accent: number;
   /** HUD text. */
@@ -77,7 +92,7 @@ export interface Chapter {
   palette: Palette;
 
   /** Which floor the chapter opens on. */
-  startFloor: 0 | 1;
+  startFloor: Level;
 
   /** Short objective line shown in the HUD. Must be readable in one glance. */
   objective: string;

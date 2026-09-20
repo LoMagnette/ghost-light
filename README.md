@@ -86,11 +86,12 @@ a verb rather than a subtitle.
 ## Project layout
 
 ```
-src/core/      simulation: projection, mass, forces, fixed-timestep loop
+src/core/      simulation: mass, forces, fixed-timestep loop, the view angle
 src/venue/     the Kinepolis, once, in metres
 src/chapters/  the three eras, as data
-src/render/    isometric renderer
-src/scenes/    boot, chapter select, and the one gameplay scene
+src/render/    isometric camera and the grey-box scene builder
+src/input/     keyboard
+src/app/       the shell: canvas, loop, chapter select, the one gameplay screen
 ```
 
 `SPEC.md` is the design specification. `CLAUDE.md` is the build convention.
@@ -99,11 +100,20 @@ the generative AI work.
 
 ## Built with
 
-- **[Phaser 4](https://phaser.io/phaser4)** — 2D WebGL framework
+- **[three.js](https://threejs.org)** — WebGL renderer. The building is real
+  geometry in metres and the isometric look comes from an orthographic camera
+  at a fixed 30° angle, rather than from a projection function. It is the same
+  view it always was; what changed is that the depth buffer now does the
+  sorting, so a staircase can hang in its own stairwell without being clipped
+  to it by hand. When the building gets between the camera and a robot, the
+  wall fades in a soft disc rather than the robot being drawn over the top of
+  it — a shader pass, because "which of six thousand boxes is in the way" is
+  not a question worth asking on the CPU sixty times a second.
 - **TypeScript** (strict) and **Vite 6**
 - A **custom fixed-timestep, mass-based physics simulation** rather than an
-  off-the-shelf one. Arcade Physics has no concept of mass, and mass is the
-  entire point of the cast.
+  off-the-shelf one. No physics engine of any kind is involved: mass is the
+  entire point of the cast, and the simulation is renderer-agnostic — nothing
+  in `src/core/` has ever imported a line of rendering code.
 
 Generative AI use is documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 

@@ -14,6 +14,22 @@
 
 export const FLOOR_HEIGHT = 6.2;
 
+/**
+ * Which storey a thing is on: an index from the ground up.
+ *
+ * A number rather than `0 | 1`. The pair was honest while the building had two
+ * storeys and it was load-bearing in sixty-four places, which is exactly the
+ * kind of type you want to widen BEFORE a third one exists rather than after —
+ * every one of those sites is a `!==` filter that carries on working, and none
+ * of them would have carried on compiling.
+ *
+ * It is not the same thing as a level. A storey is the datum heights are
+ * measured from; a level is a plate at some height above it, and one storey
+ * holds as many of those as the building has — the reception concourse stands
+ * 1.2 m over the exhibition hall and both are storey 0.
+ */
+export type Level = number;
+
 export interface Rect {
   x: number;
   y: number;
@@ -26,6 +42,7 @@ export type RoomKind =
   | 'corridor'
   | 'foyer'
   | 'auditorium'
+  | 'stage' // the flat plate at the bottom of an auditorium's rake
   | 'stairs'
   | 'service';
 
@@ -34,9 +51,16 @@ export interface Room {
   /** Human label. Shown in the HUD and used by the objective system. */
   label: string;
   kind: RoomKind;
-  floor: 0 | 1;
+  floor: Level;
   bounds: Rect;
-  /** Auditorium seating rake, in metres of rise across the room. 0 for flat. */
+  /**
+   * Auditorium seating rake, in metres of rise across the room. 0 for flat.
+   *
+   * Not decoration: this is a real level change, and the room's stage plate
+   * sits exactly this far BELOW the corridor you walk in from. It is one
+   * building riser per row of seats, so the steps a robot climbs, the tiers
+   * the seats stand on and this number cannot drift apart.
+   */
   rake?: number;
 
   /**
@@ -72,7 +96,7 @@ export interface Room {
 
 /** A solid the robots collide with: walls, columns, seat blocks, booths. */
 export interface Obstacle {
-  floor: 0 | 1;
+  floor: Level;
   bounds: Rect;
   /**
    * Top of this solid above its storey datum, metres. Under 0.5 m is a kerb
@@ -89,6 +113,27 @@ export interface Obstacle {
    * on the carpet.
    */
   base?: number;
+  /**
+   * What this is made of, when it is not the building itself.
+   *
+   * Left off, a solid is a wall and takes the wall colour, which is right for
+   * every wall, column and floor plate in here. Furniture is not a wall, and
+   * the presenter's desk reading as a lump of concrete was the whole reason
+   * this exists. Same rule as `Decor.material`: the venue names the material
+   * and the chapter says what it looks like.
+   */
+  material?: Material;
+
+  /**
+   * Collide with this, but do not draw it.
+   *
+   * For solids whose visible form is finer than their collision shape: the
+   * seat banks are one block a robot cannot enter, and the thing you see is
+   * three hundred seats in `decor`. Drawing both would put a grey slab
+   * through the seating.
+   */
+  hidden?: boolean;
+
   /** Biggy can shove this out of the way if its momentum is high enough. */
   movable?: boolean;
   /** kg, only meaningful when movable. */
@@ -104,11 +149,62 @@ export interface Obstacle {
   linkId?: string;
 }
 
+/**
+ * What a piece of dressing is made of, so the venue never names a colour.
+ *
+ * The building is defined once and the chapters dress it — so `Decor` says
+ * what a thing IS and the renderer asks the chapter's palette what that looks
+ * like in this era. A raw tint here would be a colour the chapters cannot
+ * change, which is the one thing rule 2 forbids.
+ */
+export type Material =
+  | 'structure' // concrete, terracing, anything the building is built of
+  | 'seat'
+  | 'desk' // the presenter's table and lectern
+  | 'sign' // the letters of a sign, its body colour
+  | 'signAccent' // the one letter that is not
+  | 'screen'; // the projection screen on an auditorium's end wall
+
+/**
+ * Dressing: DRAWN, never simulated.
+ *
+ * Five thousand seats are not five thousand things to collide with — a robot
+ * meets the seat block, not the seat — and putting them in `obstacles` would
+ * cost the 120 Hz solver five thousand tests per robot per step to answer a
+ * question the bank already answered. So the bank stays in `obstacles` and is
+ * marked `hidden`, and what you actually see is this.
+ *
+ * Nothing in `src/core` reads this list except to carry it. It is the one
+ * place in the venue where the reason a thing exists is purely visual.
+ */
+export interface Decor {
+  floor: Level;
+  bounds: Rect;
+  /** Top above its storey datum, metres. */
+  height: number;
+  /** Bottom above its storey datum, metres. Defaults to 0. */
+  base?: number;
+  material?: Material;
+
+  /**
+   * Set when this piece is banded to a flight — a wall running alongside a
+   * staircase or a rake, stepping down with it.
+   *
+   * Unlike `Obstacle.linkId` this says nothing about who may climb what:
+   * dressing never collides. It says where the heights above are measured
+   * FROM. A flight states its surface from the storey datum, so anything cut
+   * to a flight's bands does too, and the renderer must not also add the plate
+   * the piece happens to stand over. The ends of such a wall stick out past
+   * the flight, have no surface of their own, and leave this unset.
+   */
+  linkId?: string;
+}
+
 /** A walkable link between floors. Robots climb it; Biggy climbs it slowly. */
 export interface Link {
   id: string;
-  from: 0 | 1;
-  to: 0 | 1;
+  from: Level;
+  to: Level;
   bounds: Rect;
   /** Rise in metres. A full floor is 6.2. */
   rise: number;
@@ -136,6 +232,24 @@ export interface Link {
   base: number;
 
   /**
+   * Metres of the flight's WIDTH given over to climbing it sideways, or
+   * undefined for a flight you may only walk up end-on.
+   *
+   * A staircase in a stairwell is a one-dimensional thing: it climbs along one
+   * axis and its two sides are walls. A flight of shallow steps standing in
+   * the open is not — the threshold between the reception and the hall is
+   * 23 m wide and 3 m deep, and you walk up it from the front or from either
+   * flank, because there is nothing there to stop you. Modelled as a plain
+   * ramp along y it would be a 1.2 m cliff down both its sides.
+   *
+   * So the surface climbs from each long side as well, reaching full height
+   * `wrap` metres in, and the height at a point is the LOWER of the two — the
+   * terrace you get by nesting one rectangle inside the next. See
+   * `Traversal.climbFraction`, which is the only place it is read.
+   */
+  wrap?: number;
+
+  /**
    * Riser height in metres, or 0 for a ramp.
    *
    * This is what `RobotSpec.maxStepRise` is measured against, so it is the
@@ -143,26 +257,16 @@ export interface Link {
    * to get over and the gradient alone decides — see `maxSlope`.
    */
   riser: number;
-
-  /**
-   * How much of the rise is DRAWN, in metres. Defaults to all of it.
-   *
-   * A full-storey flight drawn at its true 6.2 m is entirely above the
-   * renderer's cutaway and comes out as a flat-topped slab, so the venue
-   * squashes it. Nothing in the simulation reads this — a robot climbs the
-   * real rise — but the renderer has to put the robot on the flight it
-   * actually drew, or a machine halfway up floats three metres over its own
-   * staircase.
-   */
-  drawnRise?: number;
 }
 
 export interface Venue {
   rooms: Room[];
   obstacles: Obstacle[];
+  /** Drawn, never collided. See Decor. */
+  decor: Decor[];
   links: Link[];
-  /** Overall extents per floor, for camera clamping. */
-  extents: Record<0 | 1, Rect>;
+  /** Overall extents, indexed by storey. Intended for camera clamping. */
+  extents: Rect[];
 }
 
 export function rect(x: number, y: number, w: number, h: number): Rect {
@@ -178,23 +282,38 @@ export function rectCentre(r: Rect): { x: number; y: number } {
 }
 
 /** Find the room containing a point, or undefined if the point is outside. */
-export function roomAt(venue: Venue, floor: 0 | 1, x: number, y: number): Room | undefined {
+export function roomAt(venue: Venue, floor: Level, x: number, y: number): Room | undefined {
   return venue.rooms.find((r) => r.floor === floor && rectContains(r.bounds, x, y));
 }
 
 /**
- * Height of the walkable surface at a point, ignoring links.
+ * Height of the floor plate at a point, ignoring links.
  *
  * Rooms overlap — the corridor and an auditorium share a doorway's worth of
- * floor — so this takes the HIGHEST elevation found rather than the first.
- * Picking the first would make a robot's height depend on the order the venue
- * happens to list its rooms in.
+ * floor, and a stage is a plate lying inside the room it belongs to — so the
+ * SMALLEST plate containing the point wins. Smallest rather than highest, and
+ * the difference is not cosmetic:
+ *
+ *   - it is deterministic, which "the first one listed" is not;
+ *   - a plate nested inside another overrides it, which is what makes a stage
+ *     inside an auditorium expressible at all;
+ *   - it can go DOWN. Taking the highest meant seeding the answer with 0 and
+ *     maxing against it, so no floor could ever sit below its storey datum —
+ *     and every auditorium floor in this building does.
+ *
+ * Where two plates genuinely overlap at the same level, which is every doorway
+ * in the venue, all three rules agree and always did.
  */
-export function groundAt(venue: Venue, floor: 0 | 1, x: number, y: number): number {
-  let best = 0;
+export function groundAt(venue: Venue, floor: Level, x: number, y: number): number {
+  let best: Room | undefined;
+  let bestArea = Infinity;
   for (const room of venue.rooms) {
-    if (room.floor !== floor || !room.elevation) continue;
-    if (rectContains(room.bounds, x, y)) best = Math.max(best, room.elevation);
+    if (room.floor !== floor || !rectContains(room.bounds, x, y)) continue;
+    const area = room.bounds.w * room.bounds.h;
+    if (area < bestArea) {
+      best = room;
+      bestArea = area;
+    }
   }
-  return best;
+  return best?.elevation ?? 0;
 }

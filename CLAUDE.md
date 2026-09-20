@@ -8,19 +8,34 @@ authority. Where they disagree, `SPEC.md` wins on *what* and this file wins on
 
 | | |
 |---|---|
-| Engine | **Phaser 4** (`phaser@^4.2.1`) — 2D, WebGL |
+| Renderer | **three.js** (`three@^0.186`) — WebGL |
+| UI | **DOM**, over the canvas. Not drawn into the scene |
 | Language | TypeScript, strict |
 | Bundler | Vite 6 |
 | Runtime | Node 22+ |
 | Deploy | GitHub Pages via `.github/workflows/deploy.yml` |
-| Physics | **Ours** — `src/core/`. Not Arcade, not Matter |
+| Physics | **Ours** — `src/core/`. No engine, not even three's |
 
-Phaser 4 ships its own type definitions. Do **not** install `@types/phaser`.
+three.js is a renderer and nothing else. There is no scene manager, no input
+plugin, no loop and no text: `src/app/Game.ts` is all four, and it is about a
+hundred lines. Resist growing it into a framework — everything a chapter needs
+belongs in `ChapterScreen`, and everything the building needs belongs in the
+renderer.
 
-Phaser 4's repo contains 28 agent skill files covering every subsystem. When
-you need an API you are unsure of, check those rather than recalling Phaser 3
-from memory — the v3 pipeline system is gone in v4 and filters replaced FX and
-masks.
+Two three.js facts that are not obvious and have already cost time:
+
+- **Lights are physically scaled.** A Lambert surface reflects `intensity / π`,
+  so an intensity of 1 is a face at a third of its own colour. See
+  `LAMBERT_SCALE` in `BlockoutRenderer`.
+- **`onBeforeCompile` does not change the program cache key.** Two materials
+  of the same type with different injected code are handed the SAME compiled
+  program unless you set `customProgramCacheKey`. That is how the cutaway's
+  solid and ghost passes would silently become the same pass.
+- **The scene is linear, the palette is sRGB.** Every colour in
+  `chapters/registry.ts` was measured off a photograph and tuned against a
+  renderer that multiplied sRGB bytes. Multiplying a light by `lightLevel`
+  directly makes Chapter I about twice as bright as it was measured to be. See
+  `SRGB_GAMMA`.
 
 ## Commands
 
@@ -38,6 +53,20 @@ npm run shoot       # build, drive the game headless, screenshot, fail on consol
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
 ```
 
+Two query parameters exist for looking at the game rather than playing it, and
+neither is reachable from inside it:
+
+| | |
+|---|---|
+| `?lab` | straight into the movement rig |
+| `?chapter=<id>` | straight into a chapter, no menu |
+| `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
+
+`?at=` is worth knowing about. Photographing a particular doorway thirty metres
+up a corridor by driving to it is several builds and a lot of guessed key
+timings, and every guess is a chance to photograph the wrong place and draw a
+confident conclusion from it. Coordinates are metres, as in `kinepolis.ts`.
+
 `npm run physics` needs no browser and no native binaries — it compiles
 `src/core` with tsc and runs it in node. That works because `core/` imports
 nothing outside itself. Keep it that way.
@@ -50,9 +79,9 @@ that way — a broken Pages deploy on the last day is an unforced loss.
 These are not style preferences. Each one is load-bearing for the schedule or
 for a scoring criterion.
 
-1. **One gameplay scene.** `ChapterScene` runs every chapter. There is no
-   `ChapterOneScene` and there will never be one. A chapter is *data* in
-   `src/chapters/registry.ts`. A scene per chapter triples the cost of every
+1. **One gameplay screen.** `ChapterScreen` runs every chapter. There is no
+   `ChapterOneScreen` and there will never be one. A chapter is *data* in
+   `src/chapters/registry.ts`. A screen per chapter triples the cost of every
    subsequent change, and there are twelve days.
 
 2. **The venue is defined once**, in `src/venue/kinepolis.ts`, in metres.
@@ -64,16 +93,23 @@ for a scoring criterion.
    density, control mode, objective. See the `Chapter` interface. If you want
    a fifth, the thing you want belongs in `core/`.
 
-4. **Metres in the simulation, pixels only in the renderer.** `src/core/`
-   never imports from `src/render/`. The only code that calls `project()` is a
-   renderer. Once gameplay reasons in pixels the physics stops being honest.
+4. **Metres everywhere. There are no pixels.** The scene is built at the
+   venue's own surveyed coordinates and a camera is pointed at it, so the
+   simulation and the picture can no longer disagree about where anything is.
+   `src/core/` still never imports from `src/render/`.
 
    The viewer stands **south-west** of the building: north runs up-left on
    screen, east up-right. Three things encode that and all three must agree —
-   `Iso.project`, `Iso.depthKey` and which two faces `drawBox` paints. Flip one
-   alone and the building turns inside out or renders 180° from every drawing
-   of it, which is exactly the bug a floor plan next to the screen catches and
-   nothing else does.
+   `Iso.ISO_AZIMUTH`, the camera basis in `render/IsoCamera.ts`, and the
+   rotation in `input/KeyboardController.ts`. Flip one alone and the building
+   turns inside out or renders 180° from every drawing of it, which is exactly
+   the bug a floor plan next to the screen catches and nothing else does.
+   `assertMatchesProjection` checks the camera against `Iso.project` at boot in
+   dev, which covers two of the three.
+
+   **The world is z-up**, because the simulation is. three.js defaults to
+   y-up; the camera is moved rather than the building, or sixteen hundred
+   lines of surveyed geometry get silently transposed.
 
 5. **Physics is fixed-timestep, 120 Hz.** Call `sim.advance(delta)` once per
    frame and let the accumulator do its job. Never call `body.step()` with a
@@ -88,9 +124,16 @@ for a scoring criterion.
 | Make a robot feel heavier/lighter | `src/core/RobotSpec.ts` — nothing else |
 | Change how resistance or grip behaves | `src/core/Body.ts` — affects ALL robots |
 | Change camera lead, shake, footfall weight | `src/config.ts` — presentation only |
+| Change the view angle or the zoom | `ISO_SQUASH` / `PPM` in `src/core/Iso.ts` — the camera is derived from them |
+| Change how the building is lit | `AMBIENT`, `KEY`, `KEY_DIRECTION` in `BlockoutRenderer` |
+| Change how much a wall fades to show a robot | `CUTAWAY_*` in `src/render/Cutaway.ts` |
 | Change what an era looks like | `palette` / `lightLevel` in `registry.ts` |
 | Change the building | `src/venue/kinepolis.ts` — then `npm run venue` |
-| Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScene` |
+| Put a piece of floor at another height | `elevation` on a `Room`. It may be negative |
+| Join two levels | a `Link` — stepped if `riser > 0`, a ramp if 0 — then `npm run traverse` |
+| Add something drawn but not collided | `decor` in `kinepolis.ts`, and a `Material` |
+| Change what the furniture looks like | `seat` / `desk` / `sign` in a chapter palette |
+| Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScreen` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |
@@ -103,7 +146,7 @@ constant can change where a robot ends up, it belongs in `core/`.
 
 ## Code conventions
 
-- Named exports. No default exports except where Phaser demands it.
+- Named exports. No default exports.
 - `@/` maps to `src/`. Use it; no `../../..` chains.
 - `strict` is on, plus `noUnusedLocals` and `noUnusedParameters`. Prefix a
   deliberately unused parameter with `_`.
@@ -111,8 +154,8 @@ constant can change where a robot ends up, it belongs in `core/`.
   noise; a comment explaining why Biggy brakes worse than it accelerates is
   the most valuable line in the file.
 - Numbers with physical meaning carry their unit in a comment or the name.
-- No `any`. No non-null `!` except on Phaser lifecycle fields assigned in
-  `create()` (already the established pattern in `ChapterScene`).
+- No `any`. No non-null `!` except on screen fields assigned in `mount()`
+  (already the established pattern in `ChapterScreen`).
 
 ## Verification loop
 
@@ -124,7 +167,8 @@ You cannot see the game. Close that gap rather than guessing:
    `Link`, `maxStepRise` on a `RobotSpec`, whether a tread collides, and
    whether the surface is reachable from where the robot stands — and any one
    of them can be right while the behaviour is wrong. The failure is never an
-   exception; it is Biggy quietly gliding up a staircase.
+   exception; it is Biggy quietly gliding up a staircase, or reaching a stage
+   it is supposed to be shut out of.
 3. **`npm run physics` after every change that touches movement.** It measures
    what a player experiences rather than what the spec table claims, and it
    fails the build when a robot leaves its design envelope or when the cast
@@ -133,10 +177,12 @@ You cannot see the game. Close that gap rather than guessing:
    would have.
 4. `npm run dev`, then drive the page with the browser tools — screenshot the
    canvas and read the console. A screenshot of the running game is worth more
-   than any amount of reasoning about whether the draw order is right.
+   than any amount of reasoning about whether the geometry is right.
    `npm run shoot -- --lab` does this unattended for all three robots.
-5. Watch for console errors on scene transitions specifically. Menu → chapter
-   → ESC → menu is the path most likely to leak objects.
+5. Watch for console errors on screen transitions specifically. Menu → chapter
+   → ESC → menu is the path most likely to leak objects — and a WebGL buffer
+   has no garbage collector, so `Screen.dispose` has to give back every
+   geometry and every material it made.
 6. When tuning movement, press `L` at the menu for the movement lab — all
    three robots, one lit hall, `1`/`2`/`3` to swap between them mid-run. Turn
    on the readout (`F1`) and read the actual numbers rather than judging by
@@ -149,8 +195,12 @@ You cannot see the game. Close that gap rather than guessing:
   explicit: an entry that is that robot repainted scores **zero** of the 40
   originality points. Read its source for technique; generate our own from the
   model sheets.
-- Do not add a third dimension for its own sake. Nothing in the rubric rewards
-  it, and the brief says outright that a sharp 2D game beats a vague 3D one.
+- Do not turn the fixed camera loose. The scene is genuinely three-dimensional
+  now, which makes an orbit control about four lines away — and the venue was
+  surveyed, drawn and cut away for one fixed angle. The brief says outright
+  that a sharp 2D game beats a vague 3D one, and the sharp look is the fixed
+  isometric one. 3D is here for the depth buffer and the lighting, not for the
+  camera.
 - Do not let the live build break. It is the judges' first impression.
 - Do not make the three robots interchangeable. If two robots solve the same
   puzzle, the puzzle is wrong.

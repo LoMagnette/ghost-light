@@ -12,6 +12,8 @@
     "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    // import.meta.env — Vite injects it; this is where its type comes from.
+    "types": ["vite/client", "node"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

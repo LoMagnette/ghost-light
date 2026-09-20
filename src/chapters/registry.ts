@@ -61,6 +61,18 @@ export const CHAPTER_ONE: Chapter = {
     floorLine: 0x44505f,
     wall: 0x8d99a8, // concrete and painted wall under nothing but daylight leak
     wallShade: 0x545f6d,
+    // The auditorium seats, which are blue and stay blue in every era — the
+    // building never reupholstered. Measured off the one photograph of a room
+    // with the house lights down, then un-dimmed: `lightLevel` does the dark.
+    seat: 0x3f5175,
+    // The cloth over the speaker's table, the same conference blue as the
+    // lectern beside it. Still draped, in a room nobody has spoken in for
+    // years — which is the chapter in one object.
+    desk: 0x3a4a6b,
+    sign: 0xe4e9ec, // the letters on the keynote stage, still standing
+    // Fourteen screens with nothing on them. Cold and slightly grey, because
+    // the only thing lighting them is whatever daylight reaches this far in.
+    screen: 0xaeb6bd,
     // The red LED step strips, measured at their brightest in the one
     // photograph of the auditorium with everything else switched off. It is
     // a hot crimson, not the brick orange this used to guess at — and SPEC
@@ -94,6 +106,16 @@ export const CHAPTER_TWO: Chapter = {
     // shaded faces gives this era a timber feel the other two do not have,
     // from one measured colour rather than a texture.
     wallShade: 0x7a5231,
+    // JavaPolis sat in the same seats — but this era is lit by tungsten and
+    // shot on film, and a blue that reads cold in Chapter I reads WRONG here.
+    // The hue is the era's light, which is the whole job of a palette.
+    seat: 0x6e4b52,
+    // A trestle and a green baize, before anyone thought to brand the table.
+    desk: 0x5d5236,
+    sign: 0xefe2cc,
+    // Tungsten on the same cloth. The screens of this era were smaller and
+    // greyer, and this is the one surface in the room that shows the light.
+    screen: 0xcfc3ab,
     accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
     text: 0xf2e8d8,
   },
@@ -124,6 +146,12 @@ export const CHAPTER_THREE: Chapter = {
     floorLine: 0x433d36,
     wall: 0xbdb5a8, // the white canopy, warm under the cove
     wallShade: 0x77706a,
+    // The same blue seats, under the peach cove light of a full house.
+    seat: 0x4a5573,
+    desk: 0x44547a, // conference blue, catching the warm light off the screen
+    sign: 0xf2f2ee, // the letters, lit from the screen behind them
+    // The brightest thing in the building at capacity: every room is running.
+    screen: 0xe8e4da,
     // The hall's warm cove lighting at capacity. SPEC calls this era "Devoxx
     // orange"; this is that orange as the building actually throws it, which
     // is softer and peachier than a brand hex.

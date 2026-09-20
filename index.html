@@ -11,25 +11,50 @@
     <style>
       :root {
         color-scheme: dark;
+        /* Design resolution. The stage is scaled to fit; the world never reflows. */
+        --view-w: 1280px;
+        --view-h: 720px;
       }
       html,
       body {
         margin: 0;
         padding: 0;
         height: 100%;
-        background: #0a0c0d;
+        background: #06080a;
         overflow: hidden;
         font-family:
           ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       }
+
+      /*
+       * Everything is authored at 1280x720 and the whole stage is scaled to fit
+       * the window, which is what Phaser's Scale.FIT did. Doing it here rather
+       * than in the renderer keeps the DOM overlay in the same coordinate space
+       * as the canvas: a HUD line at y=46 is at y=46 in every window size.
+       */
+      #stage {
+        position: absolute;
+        width: var(--view-w);
+        height: var(--view-h);
+        transform-origin: top left;
+        overflow: hidden;
+      }
       #game {
-        width: 100vw;
-        height: 100vh;
-      }
-      #game canvas {
         display: block;
+        width: 100%;
+        height: 100%;
       }
-      /* Shown until Phaser boots, and if WebGL is unavailable. */
+      /* The UI layer sits over the canvas and only takes the clicks it is given. */
+      #ui {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        user-select: none;
+      }
+      #ui > * {
+        pointer-events: auto;
+      }
+
       #boot-fallback {
         position: fixed;
         inset: 0;
@@ -46,7 +71,10 @@
     </style>
   </head>
   <body>
-    <div id="game"></div>
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="ui"></div>
+    </div>
     <div id="boot-fallback">Powering on&hellip;</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
