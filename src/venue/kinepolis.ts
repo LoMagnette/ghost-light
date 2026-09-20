@@ -674,18 +674,28 @@ const SCREEN_OFFSET = 0.25;
 /** Bare wall left at each end of the frontage, metres. */
 const SCREEN_MARGIN = 1.6;
 /**
- * Tallest a screen is drawn above its stage.
+ * How far a screen rises, as a multiple of the room's own drop.
  *
- * Capped so its top lands at or just under the storey datum — the level of the
- * corridor and of the back row. A screen that rises past that is a screen
- * standing in front of the room behind it, and the cutaway would trim it
- * anyway. `rake` is the room's own drop, so this is "fill the end wall".
+ * It was 1 — the screen exactly filled the sunken part of the end wall, its
+ * top level with the corridor and the back row — and that is a screen sized by
+ * the floor rather than by the room. A cinema screen carries on well above the
+ * back row; it is the tallest thing in the auditorium.
+ *
+ * `rake` stays the unit because it is the only dimension that knows how big a
+ * room is: the stage sits a rake below the corridor, so a deeper house drops
+ * further and has more wall. Room 8 gets 7.2 m and Room 2 gets 3.3, which is
+ * the same proportion each had before, twice over.
  */
-const SCREEN_MAX_HEIGHT = 3.6;
+const SCREEN_RISE = 2;
+
+/** Tallest a screen is drawn above its stage, whatever the room. */
+const SCREEN_MAX_HEIGHT = 7.2;
 
 function projectionScreen(room: Rect, side: -1 | 1, rake: number): Decor {
   const x = side === -1 ? room.x + SCREEN_OFFSET : room.x + room.w - SCREEN_OFFSET - SCREEN_THICKNESS;
-  const top = SCREEN_SILL + Math.min(SCREEN_MAX_HEIGHT, Math.max(0.8, rake - SCREEN_SILL));
+  const top =
+    SCREEN_SILL +
+    Math.min(SCREEN_MAX_HEIGHT, Math.max(1.6, (rake - SCREEN_SILL) * SCREEN_RISE));
   return {
     floor: 1,
     bounds: rect(x, room.y + SCREEN_MARGIN, SCREEN_THICKNESS, room.h - SCREEN_MARGIN * 2),

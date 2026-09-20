@@ -1515,6 +1515,31 @@ floor you are standing on. Checked before changing it: fourteen pieces move,
 all of them walls on a stage, every one of them getting 0.5 m TALLER and none
 shorter. A latent fault, found by needing something else.
 
+### Twice the screen
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> the screen should be the double the current height
+
+**Iterations:** 1
+
+Sized right, reasoned wrong. The screen filled exactly the SUNKEN part of the
+end wall — its top level with the corridor and the back row — which is a screen
+sized by the floor rather than by the room. A cinema screen carries on well
+above the back row; it is the tallest thing in the auditorium.
+
+So the multiple became the constant: a screen rises twice the room's own drop.
+`rake` stays the unit because it is still the only dimension that knows how big
+a house is, so every room keeps the proportion it had and gets twice as much of
+it — Room 8 goes 3.60 to 7.20 m, Room 2 goes 1.63 to 3.26.
+
+The nine biggest now reach the cutaway plane and stop there, which is where
+every wall in the building stops, so they read as filling the end wall rather
+than growing out of a roofless building. Nothing else had to move: the plane
+was made a plane in the round before, for this.
+
 ---
 
 ## Audio
