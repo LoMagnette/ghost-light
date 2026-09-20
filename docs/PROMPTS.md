@@ -1442,6 +1442,43 @@ own treads so the rail steps down with it. The check that a flight-banded piece
 sits within half a riser of the surface beside it covered the new geometry with
 no change, which is the second time that check has paid for itself.
 
+### Carrying the balustrade round the stairwell
+
+**Tool:** Claude Opus 5 (Claude Code)
+**Date:** 2026-09-20
+
+**Prompt:**
+> the guard rails are incomplete the should go all the a way around and just
+> keep the entrance not blocked
+
+**Iterations:** 2
+
+The rails added the round before were the FLIGHT's own, and they rake down with
+it — so by the far end of the opening they are six metres below the corridor
+and the hole in the floor has nothing around it at all. What a stairwell
+actually has is a second balustrade, level, following the edge of the opening.
+Two different objects, which is why it is not the same loop.
+
+Every side but the one the flight lands on. That one is the way in and stays
+clear.
+
+**What made it interesting.** As solids, the new rails sealed the bottom of
+both staircases, and `npm run traverse` said so on the first run: a robot
+walked the flight down to 5.98 m of its 6.2 and stopped. Collision in this
+building is two-dimensional — `resolveCircleRect` has never read a height —
+so a balustrade a robot physically passes UNDER, six metres below it at the
+foot of the flight, stops it dead instead.
+
+So the well balustrade is DRAWN, never collided. Nothing is lost by that: a
+robot cannot get into the well anyway, because the treads cover the whole
+opening and a tread six metres under your feet is not one you can step onto.
+The collision was always the flight's, and the rail was only ever the picture
+of it.
+
+That is the second rail in two rounds where the interesting question was not
+where to put it but what it should be solid TO — the flight's own rails are
+solid to everybody and carry no linkId, and this one is solid to nobody.
+
 ---
 
 ## Audio

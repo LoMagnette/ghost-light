@@ -1790,6 +1790,57 @@ function stairRails(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
         }
       }
     }
+
+    if (link.from === link.to) continue;
+
+    /*
+     * And the balustrade around the WELL, on the floor the flight arrives at.
+     *
+     * The rails above are the flight's own: they rake down with it, so by the
+     * far end of the opening they are six metres below the corridor and the
+     * hole in the floor has nothing around it at all. What a stairwell
+     * actually has is a second, level balustrade following the edge of the
+     * opening — and the two are different objects, which is why this is not
+     * the same loop.
+     *
+     * Every side but the one the flight lands on. That one is the way in and
+     * stays clear; walling it would make the staircase decorative.
+     *
+     * DRAWN, never collided, which is the one thing here that is not obvious.
+     * Collision in this building is two-dimensional — `resolveCircleRect` has
+     * never read a height — so a balustrade a robot would physically walk
+     * UNDER, six metres below it at the foot of the flight, stops it dead
+     * instead. As a solid this rail sealed the bottom of both staircases and
+     * `npm run traverse` caught it on the first run. Nothing is lost by
+     * dropping it: a robot cannot enter the well anyway, because the treads
+     * cover the whole opening and a tread six metres under your feet is not
+     * one you can step onto.
+     */
+    const landsAtLow = !link.ascending;
+    const alongY = link.axis === 'y';
+    const half = RAIL_THICKNESS / 2;
+    // Straddling the edge of the opening rather than standing inside it: a
+    // balustrade stands on the floor beside a hole, not over it, and half of
+    // its footprint has to be on something or it is the floating-wall bug
+    // again.
+    const edges = [
+      { at: 'low', bounds: alongY
+          ? rect(b.x, b.y - half, b.w, RAIL_THICKNESS)
+          : rect(b.x - half, b.y, RAIL_THICKNESS, b.h) },
+      { at: 'high', bounds: alongY
+          ? rect(b.x, b.y + b.h - half, b.w, RAIL_THICKNESS)
+          : rect(b.x + b.w - half, b.y, RAIL_THICKNESS, b.h) },
+      { at: 'side', bounds: alongY
+          ? rect(b.x - half, b.y, RAIL_THICKNESS, b.h)
+          : rect(b.x, b.y - half, b.w, RAIL_THICKNESS) },
+      { at: 'side', bounds: alongY
+          ? rect(b.x + b.w - half, b.y, RAIL_THICKNESS, b.h)
+          : rect(b.x, b.y + b.h - half, b.w, RAIL_THICKNESS) },
+    ];
+    for (const edge of edges) {
+      if (edge.at === (landsAtLow ? 'low' : 'high')) continue;
+      decor.push({ floor: link.to, bounds: edge.bounds, base: 0, height: RAIL_HEIGHT });
+    }
   }
 
   return { solids, decor };
