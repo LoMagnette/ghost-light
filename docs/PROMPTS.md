@@ -595,10 +595,38 @@ the slope along its own facing, so crossing a slope sideways stays level.
 **Measured rather than eyeballed**, because a still frame cannot show a
 climb: a probe drove Voxxy up the west flight in the real sim and compared
 the two heights frame by frame. 36 distinct drawn heights against 775
-simulated ones — it is a staircase now, not a ramp — and the worst
-disagreement with the solver is 0.092 m against the 0.090 half-riser the
-design allows. Exactly the intended bound, and the check is the only way
-to know the arc is not quietly lifting the machine off its own feet.
+simulated ones — a staircase, not a ramp.
+
+**And that first version was wrong, which the user saw and the probe did
+not.**
+
+> can you improve it a bit more so it looks more natural an not jumping
+> from step to step
+
+Snapping to the NEAREST tread puts the feet on a step at every instant and
+pays for it with a 0.18 m teleport at the halfway point of every step. The
+probe had reported "36 distinct heights, worst disagreement 0.092 m" and
+called it a success, because it was measuring how close the drawing stayed
+to the solver and never once asked how far it moved BETWEEN FRAMES. The
+metric was right about the thing it measured and silent about the thing
+that mattered — the second time in this session that has happened.
+
+Rebuilt as dwell, rise, dwell: the height holds at the tread for the first
+fifth of the going, eases onto the next over the middle, and settles. Plus
+a rock backwards and a little extra lift, both hung off the rise rate, so
+the effort peaks in the middle of the step and is nothing at rest.
+Continuous everywhere, and it tracks the treads better than the snap did:
+
+| | snap | eased |
+|---|---|---|
+| worst disagreement with the solver | 0.092 m | **0.041 m** |
+| biggest jump between frames | **0.180 m** | **0.019 m** |
+
+The probe grew a between-frames check, which is the measurement it should
+have had first. It also grew a guard for the storey change — arriving on
+floor 1 re-bases z on the new datum, a 6.2 m step in the number and no
+movement at all, which the new check dutifully reported as the worst jump
+in the climb until it was told otherwise.
 
 **What was deliberately not done:** any change to the lighting. `AMBIENT`,
 `KEY` and the sRGB curve were tuned against photographs and every palette

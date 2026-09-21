@@ -288,9 +288,31 @@ const CROWD_SEGMENTS = 6;
  * ever disagrees with the simulation by is half a riser — nine centimetres
  * — and it is the difference between climbing and floating.
  */
-const STEP_ARC = 0.055;
+/**
+ * Where in a tread's width the body starts and finishes rising, 0..1.
+ *
+ * It dwells at one tread, lifts over the middle of the going, and settles
+ * on the next — which is what a body climbing stairs actually does, and
+ * the reason this is not a snap to the nearest tread. Snapping was the
+ * first attempt: it put the feet on a tread at every instant and paid for
+ * it with a 0.18 m teleport at the halfway point of every single step.
+ * Continuous beats correct-at-every-instant when the eye is watching the
+ * motion rather than the frame.
+ */
+const STEP_DWELL_START = 0.18;
+const STEP_DWELL_END = 0.82;
+/** A little extra lift at the top of the swing, over the eased rise. */
+const STEP_ARC = 0.022;
+/** How far the machine rocks back as it takes a step, radians. */
+const STEP_ROCK = 0.1;
 /** How far a machine leans into a gradient, as a fraction of the real angle. */
 const SLOPE_LEAN = 0.8;
+
+/** Hermite ease between two edges. 0 below `from`, 1 above `to`. */
+function smoothstep(x: number, from: number, to: number): number {
+  const u = Math.max(0, Math.min(1, (x - from) / (to - from)));
+  return u * u * (3 - 2 * u);
+}
 
 /**
  * How a person is coloured, from the one crowd colour the chapter gives.
@@ -1225,16 +1247,27 @@ export class BlockoutRenderer {
       const steps = Math.max(1, Math.round(link.rise / link.riser));
       const f = climbFraction(link, body.x, body.y);
       const exact = f * steps;
-      const tread = Math.round(exact);
-      // Nearest tread rather than the one below, so the drawing never
-      // disagrees with the solver by more than half a riser in either
-      // direction instead of a whole one in one.
-      const lift = (tread / steps - f) * link.rise;
-      // Highest halfway between two treads and nothing at all at rest, so
-      // a parked robot does not hover.
-      const between = Math.min(1, Math.abs(exact - tread) * 2);
-      const arc = Math.sin(between * Math.PI) * STEP_ARC * body.speedFraction;
-      return { lift: lift + arc, lean: 0 };
+      const tread = Math.floor(exact);
+      const across = exact - tread;
+
+      /*
+       * Dwell, rise, dwell — once per tread, and continuous throughout.
+       *
+       * The height tracks the tread the robot is over for most of the
+       * going and eases onto the next in between, so the feet are on a
+       * step whenever anyone would notice and the body never teleports.
+       * The worst it parts company with the solver's smooth ramp is about
+       * a fifth of a riser, which is tighter than the snap it replaced.
+       */
+      const eased = smoothstep(across, STEP_DWELL_START, STEP_DWELL_END);
+      const lift = ((tread + eased) / steps - f) * link.rise;
+
+      // The rise rate, normalised to peak at 1 halfway through the lift.
+      // Everything that reads as effort hangs off it: a little extra height
+      // at the top of the swing, and a rock backwards while pushing up.
+      const rising = 4 * eased * (1 - eased);
+      const effort = rising * body.speedFraction;
+      return { lift: lift + STEP_ARC * effort, lean: STEP_ROCK * effort };
     }
 
     // A ramp: tip by the component of the gradient along the way it faces,
