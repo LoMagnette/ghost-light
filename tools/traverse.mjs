@@ -85,6 +85,32 @@ function drive(robotId, from, dir, seconds, floor = 0) {
   return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, minZ, onLink: actor.onLink };
 }
 
+/**
+ * The same drive, carrying something.
+ *
+ * A payload is not a flag the traversal system checks — it is mass in the
+ * body, which changes the force available against the slope. So the only
+ * honest way to ask "can Biggy get up the ramp with the keg" is to put the
+ * keg on Biggy and drive it at the ramp, which is what this does.
+ */
+function driveLoaded(robotId, from, dir, seconds, payload, floor = 0) {
+  const sim = new Sim(KINEPOLIS);
+  const body = new Body(ROBOTS[robotId], from.x, from.y);
+  body.payload = payload;
+  const actor = makeActor(body, floor);
+  sim.add(actor);
+
+  const mag = Math.hypot(dir.x, dir.y);
+  Object.assign(actor.input, { dirX: dir.x / mag, dirY: dir.y / mag, throttle: 1, braking: false });
+
+  let peakZ = 0;
+  for (let t = 0; t < seconds; t += FIXED_DT) {
+    sim.advance(FIXED_DT);
+    peakZ = Math.max(peakZ, body.z);
+  }
+  return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, onLink: actor.onLink };
+}
+
 const SOUTH = { x: 0, y: -1 };
 const NORTH = { x: 0, y: 1 };
 const EAST = { x: 1, y: 0 };
@@ -472,6 +498,38 @@ scenario(
   'Biggy drives the west aisle',
   (r) => r.y > AISLE_NORTH,
   () => drive('biggy', { x: -15.2, y: AISLE_SOUTH - 3 }, NORTH, 16),
+);
+
+/*
+ * The ramp, loaded — and the constraint Chapter III is built around.
+ *
+ * The wheelchair ramp is 1.2 m over 12 m, a 10% gradient, and it is the only
+ * way between the hall and the concourse that Biggy can use at all. Empty it
+ * clears it by one percentage point. With the 200 kg keg its limit falls to
+ * 0.075 and it must not: anything heavy stays on the exhibition floor, the
+ * party is in the hall, and no objective may ever ask a laden Biggy to change
+ * level. See docs/MECHANICS.md §5.3.
+ *
+ * Both halves are asserted, because each protects against the opposite
+ * mistake — making Biggy stronger silently deletes the design, and making it
+ * weaker strands it on one floor with no way back.
+ */
+scenario(
+  'Biggy climbs the ramp empty',
+  (r) => r.z > 1.1,
+  () => driveLoaded('biggy', RAMP, SOUTH, 18, 0),
+);
+
+scenario(
+  'Biggy cannot climb the ramp carrying the keg',
+  (r) => r.z < 0.6,
+  () => driveLoaded('biggy', RAMP, SOUTH, 18, 200),
+);
+
+scenario(
+  'Droid carries a crate up the concourse steps',
+  (r) => r.z > 1.1,
+  () => driveLoaded('droid', HALL, SOUTH, 20, 60),
 );
 
 scenario(

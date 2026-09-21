@@ -121,6 +121,269 @@ playthrough.
 
 ---
 
+### The mechanics of all three chapters — and four rejected pitches
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> Can we brain storm on what game mechanic will be implemented for each level
+> to them write a spec about it.
+
+**Iterations:** five rounds on Chapter III, four of which were thrown away.
+Chapters I and II were agreed in one.
+
+**What went wrong, and it is the most useful entry in this file:**
+
+The model was asked to design the mechanics and produced, in order:
+
+1. **Three "flow operators"** — the crowd as a density field, Voxxy attracts,
+   Droid blocks, Biggy clears. Rejected: *"they look not really convincing and
+   a bit generic."* Correct. All three options in that round were the same
+   RTS — select a unit, issue an order — with different order vocabularies.
+2. **A ghost relay** — three passes over the same 90 seconds, earlier runs
+   replaying exactly as ghosts, which the deterministic fixed-timestep sim
+   makes nearly free. Technically elegant, thematically tidy (the game is
+   called *Ghost Light*), and rejected flat. The model had optimised for what
+   was cheap to build in this engine and for a pun on the title, which is not
+   the same thing as what is fun.
+3. **Five fresh premises** — play the building, lead a convoy, crowd as
+   terrain, a relay of one object, a show-call clock. The human took *crowd as
+   terrain* and added the actual requirement, which had never been stated:
+   *"I want something with a wow effect."*
+4. **One stick, three masses** — WASD driving all three robots simultaneously,
+   identical input producing three trajectories because mass is the only
+   difference. Rejected on the real objection: *"I'm not sure that the crowd
+   control is original enough."*
+
+Then the human supplied the idea, in one line: *"maybe play on the idea of
+collectable or activities that could be done at a conference."*
+
+**What the model had missed, four times running:** it kept varying the
+*control abstraction* — how the player addresses the robots — because the spec
+said the control scheme was the through-line, and it treated that sentence as
+a constraint rather than as a hypothesis that could be wrong. Every pitch was
+therefore a different way of *commanding*, when the problem was that the
+finale had no reason to be enjoyable. Chapter I is melancholy and Chapter II
+is stressed; ending on crowd logistics meant the game never got to be fun, and
+a conference is fun. No amount of iterating on command syntax finds that.
+
+**Fixed by hand:** the premise, and it came from knowing what a conference
+feels like. From it the model could derive the rest — that the pickups should
+have mass and feed the integrator, so greed costs handling; that reach is
+`height` and fit is `radius`, both already on `RobotSpec`, so three of the
+four capability gates needed no new code at all.
+
+**What the model found that the human could not:**
+With the premise fixed, it was asked to check whether a loaded Biggy could
+still climb the building's only ramp. It cannot, and the arithmetic is exact:
+the ramp is 1.2 m over 12 m, a 10% gradient, against a `maxSlope` of 0.11 —
+cleared **empty by one percentage point**, and at `0.6 · 774 / (630 · 9.81)` =
+0.075 with the 200 kg keg aboard, not at all. Biggy can take at most 43 kg up
+that ramp. So anything heavy is confined to the exhibition hall, which is
+where Devoxx actually holds the party. Nobody designed that; the surveyed
+geometry and the measured motors had already agreed on it, and it is now the
+constraint Chapter III is built around, with a `npm run traverse` assertion so
+that nobody later "fixes" it.
+
+That is the useful division of labour, stated plainly: the human supplied the
+premise and rejected four competent, wrong answers; the model supplied the
+consequences, the arithmetic, and the discovery that the building had been
+carrying a better constraint than either of them had thought to ask for.
+
+**Output:** `docs/MECHANICS.md`, plus `SPEC.md` §§1, 3, 4, 5, 7, 10 and the
+`ROADMAP.md` decision table. `direct-order` was cut from the design.
+
+### Building the objective system, and two harnesses earning their keep
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> Document everything then move to implementation
+
+**Iterations:** one pass, but with four corrections that came from harnesses
+rather than from reading the code.
+
+**What was built:** payload as real mass in `Body`, an activity vocabulary and
+objective runner in `core/`, all three chapters authored as data, `switch`
+mode, the card and the end card, markers, a lamp, and zone lighting.
+
+**What went wrong — and none of it was visible in the code:**
+
+1. **A laden Biggy walked up a ramp it cannot climb.** Payload reduces the
+   gradient a robot can hold, so `canTraverse` correctly refused the ramp —
+   and nothing physical refused it, because a ramp had never needed treads.
+   The robot walked over the link and the concourse floor plate, 1.2 m up,
+   simply picked it up. `npm run traverse` caught it on the first run of the
+   new assertion. The fix is a threshold lip at the foot of the ramp carrying
+   the link's id, exactly like every stair tread in the building: invisible
+   to whoever may use it, a wall to whoever may not.
+
+2. **Four of Chapter III's activities were unreachable**, found by a harness
+   written specifically to look for it (`npm run objectives`). The keg was
+   inside an exhibition stand, and the Room 5, Room 11 and keynote zones were
+   all centred in the seating. The last three were one mistake repeated: the
+   model wrote "be in the room" as the room's own rectangle, when the only
+   floor of an auditorium a robot can occupy is the 2.5 m cross aisle behind
+   the back row — the rest is seat banks and a four-metre rake.
+
+   This is the failure this project is most exposed to: an objective is
+   coordinates, a zone two metres out is inside a solid, and the only symptom
+   is a chapter nobody can finish. It is invisible in a typecheck, in a
+   screenshot of anywhere else, and in review. So it got a harness, and the
+   harness now also checks that somebody in the cast both passes the gates
+   and can physically reach that storey.
+
+3. **The reveal lit nothing you could see.** Switching the hall on hung three
+   point lights down the long axis of a 52 × 49 m room, so everything off
+   that centre line — including the west wall, where the board that switches
+   it on is — stayed exactly as dark. Caught by screenshotting the game
+   before and after, which is the only way this one could have been caught.
+   Now a grid, one light per 15 m in each direction.
+
+4. **The spec's own `maxSlope` table had been wrong for days** — 0.45 / 0.38
+   / 0.35 against the code's 0.55 / 0.27 / 0.11. Harmless while nothing read
+   it; not harmless now that Biggy's 0.11 against the ramp's 0.10 gradient is
+   the constraint Chapter III is designed around. Found by checking the
+   number before writing it into a new document rather than copying it.
+
+**Fixed by hand:** nothing, this time — which is the point of the entry. Every
+one of the four was found by a harness or a screenshot and fixed from what it
+reported. The human's contribution on 21 Sep was the design (see the entry
+above); the verification loop caught the implementation's mistakes without
+anyone having to read the diff.
+
+### Numbering the rooms, and three renderer facts that each ate a design
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> The room should have a visible number
+
+**Iterations:** four designs, three of which were built, screenshotted and
+thrown away.
+
+**What went wrong:** the model reached for the obvious sign each time, and the
+renderer refused it for a different reason each time. None of the three was
+visible in the code, in a typecheck, or in any amount of reasoning — each took
+one screenshot.
+
+1. **A plate on the corridor wall.** The view is fixed to the south-west, so
+   the faces you can see point south and west. The east wall's numbers read
+   and the west wall's face away: half the building numbered, for the whole
+   game. Caught before building it, by thinking about `ISO_AZIMUTH` — the one
+   of the four that was caught for free.
+2. **A blade projecting into the corridor**, which fixes the facing. Built it,
+   shot it, and the digits came back as a stack of thin dashes. Cause:
+   `MAX_DRAWN_HEIGHT` clips every piece of geometry 2.7 m above the storey
+   datum, so a sign hung at head height was sliced to a five-centimetre
+   sliver. The model had read that constant earlier in the session and still
+   did not connect it.
+3. **Thinning the characters so they showed their face rather than their
+   top.** This made it worse, and the reason is the lighting: `KEY_DIRECTION`
+   is almost straight down, so a south-facing surface reflects about a third
+   of what an upward-facing one does. The bright bars in the failed shot were
+   never the characters — they were the TOPS of the horizontal strokes, which
+   is why every number read as a stack of lines with the uprights missing.
+4. **A dark plate behind them** (a new `signPlate` palette entry) made the
+   blade legible and still clipped. Only then did the three facts add up to
+   the answer: paint the numbers on the FLOOR, which is never clipped, never
+   occluded, and faces the one direction the light comes from.
+
+**Fixed by hand:** nothing — but the human's one-line prompt was the whole
+task, and the model's first three answers were all the answer a person would
+give for a real building rather than for this camera.
+
+**Worth keeping:** the geometry was verified numerically before being
+believed. A probe dumped the decor pieces around Room 2 and printed a correct
+seven-segment "2" and an "11" opposite, which proved the layout was right at
+a point when the screenshot still looked wrong — and that is what localised
+the bug to the lighting rather than to the glyph code.
+
+**Output:** seven-segment digits added to the existing `#DEVOXX` glyph set,
+`roomNumeral` in `kinepolis.ts`, a `signPlate` colour in all three palettes,
+and `npm run peek` — an arbitrary-frame screenshot tool, promoted from a
+scratch script to a real one because three of these four findings came out of
+it.
+
+### Populating the building
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> it would be nice for the chapter 2 and 3 to have some roaming human and some
+> speakers in the rooms
+
+**Iterations:** one build, then two corrections from measurement.
+
+**What this was really fixing:** `crowdDensity` had been in the spec since day
+one, described as the parameter carrying the emotional arc of the whole game,
+and it drove nothing whatsoever. Three chapters' worth of design rested on a
+number nothing read.
+
+**The decision that made it affordable**, and the model did get this one
+right first time: split the crowd into people who are sitting down and people
+who are not. The seated are thousands, never move, and are baked into their
+storey's geometry at build time — a full Room 8 costs the same per frame as
+an empty one. Only the few hundred on their feet are simulated, at 20 Hz
+rather than the physics timestep, because nothing about the game's outcome
+depends on exactly where a stranger is standing.
+
+**What measurement caught afterwards:**
+
+1. **The building held two conferences.** Filling every seat of all fourteen
+   rooms is 5221 people, plus 454 more walking about. Devoxx sells roughly
+   3200 tickets. The fix is a single cap that seated and roaming both draw
+   from, which lands at 3197 and has the side effect of making every room
+   about two thirds full — which is what a conference actually looks like,
+   and better than the thing that was asked for.
+2. **The first pass was too thin to read as capacity.** 260 roamers over a
+   2500 m² hall and a 126 m corridor looked like a quiet Tuesday. Raised to
+   440 after looking at a frame, which is a judgement no amount of arithmetic
+   was going to make.
+
+**Verified numerically as well as visually**, which is the habit this session
+settled into: a probe instantiated the crowd for all three chapters and
+printed the counts and the number of stages with a speaker on them (14 of
+14). The screenshot that was supposed to show a speaker had the robot parked
+on top of it, and without the count it would have looked like a bug.
+
+**Follow-up prompt, same day:**
+> Can you make them look like human and less like chocolate bar ?
+
+Fair. Each person was one box, and one box at this scale is confectionery.
+Three boxes fixed it — legs, torso, head — because what makes a shape read
+as human at twenty pixels is silhouette and nothing else: a head narrower
+than the shoulders and a break between them. All three share one centre
+line, so the figure still rotates on a single heading and the extra parts
+cost no extra maths.
+
+The second half of the fix was colour. The first version gave the whole
+crowd one flat palette entry, justified in the code comment as "a crowd is a
+mass" — which is true and was still wrong, because a mass in exactly one
+colour is a texture. Trousers, clothing and head are now all derived from
+that same entry (darkened, varied per person, and lifted towards the era's
+near-white), so the crowd is still the colour the chapter chose and no
+palette entries were added.
+
+Also caught here: people walked through each other and gathered in knots of
+five, because they all navigate the same 1.5 m grid and kept choosing the
+same cell. Separation resolved within a cell only — almost every cell holds
+nought or one person, so it is free, and the case it misses is the case
+nobody sees.
+
+**A measurement worth recording as a warning:** the frame rate at capacity
+read 24 fps, against 64 earlier — and it is not the crowd. Chapter I, which
+has no people in it at all, reads 37 in the same harness. This sandbox has
+no GPU and is rasterising in software, so every absolute number out of it is
+meaningless and only the ratio means anything. Nearly threw away a working
+design chasing it. Performance on real hardware is a human task.
+
+**Deliberately not built:** any force from the crowd back onto the robots.
+Movement is measured, tuned and worth 20 points, and `npm run physics`
+measures in an empty world — so a drag term would silently change every
+figure in the spec table while the harness went on reporting the old ones.
+Written down in `docs/MECHANICS.md` §5.4 rather than left as an omission.
+
 ## Robots
 
 ### _(pending)_ 8-direction sprite sheets from the model sheets

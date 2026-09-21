@@ -13,7 +13,9 @@
     "shoot": "npm run build && node tools/shoot.mjs",
     "physics": "node tools/physics.mjs",
     "venue": "node tools/venue.mjs",
-    "traverse": "node tools/traverse.mjs"
+    "traverse": "node tools/traverse.mjs",
+    "objectives": "node tools/objectives.mjs",
+    "peek": "node tools/peek.mjs"
   },
   "dependencies": {
     "three": "^0.186.0"

@@ -20,12 +20,20 @@
  */
 
 import { groundAt, rectContains, type Level, type Link, type Venue } from './Venue';
-import type { RobotSpec } from './RobotSpec';
+import { maxSlopeLoaded, type RobotSpec } from './RobotSpec';
 
-/** Can this machine use this link at all? */
-export function canTraverse(spec: RobotSpec, link: Link): boolean {
+/**
+ * Can this machine use this link at all?
+ *
+ * `payload` is what it is carrying, kg. A step is a step whatever you are
+ * holding, so `maxStepRise` does not care — but a gradient is fought with
+ * force against weight, and a laden robot has less of the first and more of
+ * the second. That is how the only ramp in the building came to be passable
+ * empty and impassable with the keg. See `maxSlopeLoaded`.
+ */
+export function canTraverse(spec: RobotSpec, link: Link, payload = 0): boolean {
   if (link.riser > 0) return spec.maxStepRise >= link.riser;
-  return gradient(link) <= spec.maxSlope;
+  return gradient(link) <= maxSlopeLoaded(spec, payload);
 }
 
 /** Rise over run. Always positive. */
@@ -108,8 +116,9 @@ export function canStepOnto(
   y: number,
   z: number,
   floor: Level = link.from,
+  payload = 0,
 ): boolean {
-  if (!canTraverse(spec, link)) return false;
+  if (!canTraverse(spec, link, payload)) return false;
   // A little slack above maxStepRise so a robot already tracking the surface
   // is never thrown off it by a rounding error mid-climb.
   const reach = spec.maxStepRise + 0.06;
@@ -160,9 +169,10 @@ export function footingAt(
   x: number,
   y: number,
   z: number,
+  payload = 0,
 ): Footing {
   const link = linkAt(venue, floor, x, y);
-  if (link && canStepOnto(spec, link, x, y, z, floor)) {
+  if (link && canStepOnto(spec, link, x, y, z, floor, payload)) {
     const pull = link.riser > 0 ? { x: 0, y: 0 } : downhill(link);
     return { z: surfaceHeight(link, x, y, floor), slopeX: pull.x, slopeY: pull.y, link };
   }

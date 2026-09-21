@@ -14,7 +14,7 @@
  * notices without being able to name it.
  */
 
-import type { RobotSpec } from './RobotSpec';
+import { G, type RobotSpec } from './RobotSpec';
 
 /**
  * Rolling resistance as a fraction of weight — a polished cinema floor, not
@@ -42,9 +42,6 @@ const ROLLING_RESISTANCE = 0.012;
  */
 const COAST_DRAG = 0.3;
 
-/** Gravity, m/s^2. Only used to scale friction against weight. */
-const G = 9.81;
-
 export interface DriveInput {
   /** Desired travel direction, world space. Zero vector means "no throttle". */
   dirX: number;
@@ -63,6 +60,19 @@ export class Body {
   x: number;
   y: number;
   z = 0;
+
+  /**
+   * What this machine is carrying, in kilograms.
+   *
+   * Not a status effect and not a multiplier: it is added to the robot's own
+   * mass and every force below divides by the sum. A laden Voxxy IS a heavier
+   * Voxxy — slower off the mark, longer to stop, wider through a corner — by
+   * the same arithmetic that makes Biggy Biggy. That is the whole of
+   * Chapter III's design, and it is this one field.
+   *
+   * The objective system owns it. Nothing in `core/` sets it on its own.
+   */
+  payload = 0;
 
   vx = 0;
   vy = 0;
@@ -102,8 +112,19 @@ export class Body {
     return Math.hypot(this.vx, this.vy);
   }
 
+  /** Machine plus load, kg. What the integrator actually accelerates. */
+  get loadedMass(): number {
+    return this.spec.mass + this.payload;
+  }
+
+  /**
+   * Momentum, kg·m/s — and it counts the load.
+   *
+   * Which is the point: a laden Biggy hits harder, and the `shove` threshold
+   * that only it can meet is measured against this.
+   */
   get momentum(): number {
-    return this.spec.mass * this.speed;
+    return this.loadedMass * this.speed;
   }
 
   /** Fraction of this robot's top speed, 0..1. Useful for audio and camera. */
@@ -128,7 +149,11 @@ export class Body {
    * down because that is what its weight does to it.
    */
   step(dt: number, input: DriveInput, slopeX = 0, slopeY = 0): void {
-    const { mass, driveForce, brakeForce, maxSpeed, lateralGrip } = this.spec;
+    const { driveForce, brakeForce, maxSpeed, lateralGrip } = this.spec;
+    // The load rides with the body, so it is part of every f = ma below. The
+    // motors are NOT stronger for carrying something, which is exactly why a
+    // full robot handles worse.
+    const mass = this.loadedMass;
 
     let fx = 0;
     let fy = 0;
@@ -249,14 +274,15 @@ export class Body {
   get stoppingDistance(): number {
     const speed = this.speed;
     if (speed < 1e-4) return 0;
-    const decel = (this.spec.brakeForce + ROLLING_RESISTANCE * this.spec.mass * G) / this.spec.mass;
+    const mass = this.loadedMass;
+    const decel = (this.spec.brakeForce + ROLLING_RESISTANCE * mass * G) / mass;
     return (speed * speed) / (2 * decel);
   }
 
   /** Apply an instantaneous impulse, in newton-seconds. Used by collisions. */
   applyImpulse(ix: number, iy: number): void {
-    this.vx += ix / this.spec.mass;
-    this.vy += iy / this.spec.mass;
+    this.vx += ix / this.loadedMass;
+    this.vy += iy / this.loadedMass;
   }
 
   /** Bring the body to a dead stop. Used on respawn and chapter transitions. */

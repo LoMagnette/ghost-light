@@ -54,7 +54,7 @@ try {
 
 const { Body } = await import(pathToFileURL(join(out, 'Body.js')));
 const { Sim, makeActor, FIXED_DT } = await import(pathToFileURL(join(out, 'Sim.js')));
-const { ROBOTS, stoppingDistance, accelTimeConstant } = await import(
+const { ROBOTS, stoppingDistance, accelTimeConstant, maxSlopeLoaded } = await import(
   pathToFileURL(join(out, 'RobotSpec.js'))
 );
 
@@ -263,7 +263,95 @@ line('reverse decel m/s²', (r) => r.reverseDecel);
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Loaded
+// ---------------------------------------------------------------------------
+
+/**
+ * The same measurements, carrying something.
+ *
+ * Chapter III's entire design is "everything you pick up is added to your
+ * mass", and that claim is worth exactly as much as this table says it is.
+ * The numbers in docs/MECHANICS.md §2 are these numbers; if they drift apart,
+ * the document is the one that is wrong.
+ */
+function loaded(spec, payload) {
+  const seed = (body) => {
+    body.payload = payload;
+  };
+  const cruise = run(spec, EAST, 60, null, seed).body.speed;
+  const start = run(spec, EAST, 30, null, seed).body;
+  const { body } = run(
+    spec,
+    (t) => (t < 30 ? EAST : BRAKE),
+    60,
+    (b, t) => t > 30 && b.speed < 0.05,
+    seed,
+  );
+  return {
+    cruise,
+    stop: body.x - start.x,
+    accel: spec.driveForce / (spec.mass + payload),
+    brake: spec.brakeForce / (spec.mass + payload),
+    slope: maxSlopeLoaded(spec, payload),
+  };
+}
+
+const LOADS = [
+  ['Voxxy', ROBOTS.voxxy, 10, 'a bag of stickers and a coffee'],
+  ['Droid', ROBOTS.droid, 60, 'a crate of shirts'],
+  ['Droid', ROBOTS.droid, 90, 'its limit'],
+  ['Biggy', ROBOTS.biggy, 200, 'the keg'],
+  ['Biggy', ROBOTS.biggy, 400, 'its limit'],
+];
+
+console.log('\nCarrying something. Payload is real mass — see Body.payload.\n');
+console.log('                     empty    laden    load   accel   brake   max slope');
+for (const [name, spec, payload, what] of LOADS) {
+  const empty = rows.find((r) => r.name === name);
+  const l = loaded(spec, payload);
+  console.log(
+    `${(name + ' +' + payload + 'kg').padEnd(18)}` +
+      `${empty.stop.toFixed(2).padStart(7)}m` +
+      `${l.stop.toFixed(2).padStart(8)}m` +
+      `${String(payload).padStart(7)}` +
+      `${l.accel.toFixed(2).padStart(8)}` +
+      `${l.brake.toFixed(2).padStart(8)}` +
+      `${l.slope.toFixed(3).padStart(10)}   ${what}`,
+  );
+}
+
 const failures = [];
+
+/*
+ * The building's only ramp, and the constraint Chapter III is built around.
+ *
+ * 1.2 m of rise over 12 m of run. Biggy clears it EMPTY by one percentage
+ * point and cannot climb it with the keg, so anything heavy stays on the
+ * exhibition floor. That is a designed consequence, not an accident, and the
+ * next person to look at these numbers must not "fix" it.
+ */
+const RAMP_GRADIENT = 1.2 / 12;
+if (!(maxSlopeLoaded(ROBOTS.biggy, 0) > RAMP_GRADIENT)) {
+  failures.push('Biggy can no longer climb the wheelchair ramp empty — it is its only way between levels');
+}
+if (maxSlopeLoaded(ROBOTS.biggy, 200) > RAMP_GRADIENT) {
+  failures.push(
+    'Biggy can now climb the ramp carrying the keg. Chapter III depends on it NOT being able to — see docs/MECHANICS.md §5.3',
+  );
+}
+
+// Carrying has to be felt, or the mechanic is a number on a card.
+for (const [name, spec, payload] of LOADS) {
+  const empty = rows.find((r) => r.name === name);
+  const l = loaded(spec, payload);
+  if (!(l.stop > empty.stop * 1.1)) {
+    failures.push(
+      `${name} +${payload}kg stops in ${l.stop.toFixed(2)} m against ${empty.stop.toFixed(2)} m empty — a load you cannot feel is not a load`,
+    );
+  }
+}
+
 for (const r of rows) {
   const t = TARGETS[r.id];
   const check = (label, value, [lo, hi]) => {

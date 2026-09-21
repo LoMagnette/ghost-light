@@ -49,14 +49,18 @@ export const MOVEMENT_LAB: Chapter = {
     seat: 0x3c4650,
     desk: 0x424b55,
     sign: 0xc8d0d6,
+    signPlate: 0x1c2126,
     screen: 0x9aa4ad,
     booth: 0x4a545d,
     glazing: 0x2f363c,
+    crowd: 0x5b6570,
     accent: 0x4ec9b0,
     text: 0xdfe5e9,
   },
   startFloor: 0,
-  objective: 'Movement lab — 1/2/3 swap robot, R reset',
+  // Nothing to do in here but drive, which is the point: the lab exists so a
+  // human can feel the three machines against each other in four seconds.
+  objective: { line: 'Movement lab — 1/2/3 swap robot, R reset', activities: [] },
 };
 
 /**

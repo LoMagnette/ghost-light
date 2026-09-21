@@ -18,11 +18,17 @@ You begin alone in the dark, in a venue you do not recognise, and each chapter
 you unlock fills it with more people — until the last thing you do is move
 through the building at absolute capacity.
 
-The control scheme itself evolves across the three chapters: you go from
-driving one machine by hand, to coordinating two, to directing three that act
-on their own mass while you watch and correct. That arc is the Devoxx 2026
-theme — *From Developer to Builder* — expressed as a verb rather than a
-subtitle.
+What you are deciding with your hands evolves across the three chapters: you
+drive one machine, then you react to a building that is falling behind with
+two, and finally you spend a day you do not have enough of with three, each
+locked out of things the others can do. Driving is the only verb throughout —
+what changes is what it is *for*. That arc is the Devoxx 2026 theme — *From
+Developer to Builder* — expressed as a verb rather than a subtitle.
+
+And in the last chapter what you carry is why you cannot stop. Payload is real
+mass in the integrator, so a collectathon becomes a physics game. See
+`docs/MECHANICS.md`, which is the authority on what the player does; this
+section stays the authority on what each chapter is.
 
 ## 2. Non-negotiables from the brief
 
@@ -48,7 +54,7 @@ These are pass/fail. Check them before every submission.
 
 | # | Criterion | Pts | How this entry attacks it |
 |---|---|---|---|
-| 1 | **Originality** | 40 | Anthology structure; control scheme that changes per chapter; the same building read three ways; directing rather than driving |
+| 1 | **Originality** | 40 | Anthology structure; the same building read three ways; a conference finale where everything you pick up is added to your mass, so greed costs you handling |
 | 2 | **Realism** | 20 | Force-based, mass-aware, fixed-timestep simulation. Momentum is the gameplay, not a layer under it |
 | 3 | **Playability** | 15 | Empty first chapter doubles as a wordless tutorial; one objective line on screen; chapters are short |
 | 4 | **All three robots** | 10 | Mass differs by 10×; each chapter is unsolvable without the right robot |
@@ -78,6 +84,9 @@ Same building. Same engine. Three rulesets.
 - **Light:** 0.18 — the red LED step lighting in the auditoriums is still running
 - **Starts on:** the exhibition floor
 - **Objective:** find the power
+- **Mechanic:** three distribution boards, each raising the light in one zone.
+  The building assembles itself around the player. No clock, no failure. See
+  `docs/MECHANICS.md` §5.1
 
 The building is **empty, not wrecked**. The game never explains why, and it is
 not interested in blame.
@@ -102,6 +111,9 @@ This chapter is first for four reasons, and all four matter:
 - **Light:** 0.62 — warm, tungsten, slightly dated
 - **Starts on:** the auditorium level
 - **Objective:** keep every room running
+- **Mechanic:** five rooms with draining session meters. Voxxy taps the rack
+  and buys seconds; only Droid reaches the projector at 2 m and resets one.
+  Lose three rooms and the day ends early. See `docs/MECHANICS.md` §5.2
 
 A community event that outgrew its room. Half the floor in use, a conference
 held together by hand. Droid's reach and patience solve what Voxxy's speed
@@ -111,23 +123,41 @@ cannot.
 *The full house.*
 
 - **Cast:** Voxxy, Droid, Biggy
-- **Control:** `direct-order` — you issue intent; the robots execute
+- **Control:** `switch` — three robots, and the clock never stops for any of them
 - **Crowd density:** 1.0
 - **Light:** 0.85 — Devoxx orange
 - **Starts on:** the exhibition floor
-- **Objective:** get everyone to the keynote
+- **Objective:** do Devoxx. You cannot do all of it
+- **Mechanic:** twelve conference activities, some open and some on a
+  timetable, against a six-minute day. Everything you pick up is added to your
+  mass. See `docs/MECHANICS.md` §5.3
 
-Every room is full. **You cannot hand-drive three robots through this many
-people, so you stop trying.** The shift to directing is motivated by crowd
-density rather than imposed as a theme — the mechanic and the story are the
-same thing.
+Every room is full, everything is running, and the robots are *attending*. The
+crowd is spectacle and obstacle, never something you manage. Settled 21 Sep,
+replacing an earlier `direct-order` mode: every version of "issue intent, the
+robots execute" turned out to be an RTS order queue wearing a hat, and a
+conference is a better thing to end on than a logistics problem.
 
-### Why crowd density carries the arc
+The tone lands better too. Chapter I is melancholy and Chapter II is stressed;
+without this the game never gets to be fun, and a conference is fun.
 
-`crowdDensity` is one number: `0 → 0.35 → 1.0`. It drives NPC count, the
-ambient audio bed, and how hard the space pushes back. Empty → sparse →
-packed is the entire emotional arc of the game expressed as a single
-parameter, which is very cheap to build and very hard to misread.
+Biggy cannot climb a staircase, so **Biggy cannot attend the keynote.** The
+game ends with two robots going up into a full room and the heavy one waiting
+in the hall it worked all day.
+
+### Why crowd density still carries the arc
+
+`crowdDensity` is one number: `0 → 0.35 → 1.0`. Empty → sparse → packed is
+the entire emotional arc of the game expressed as a single parameter, which
+is very cheap to build and very hard to misread.
+
+**Built 21 Sep.** It drives the population — nobody, 904 people, 3197 people
+— and it also decides how much of the building is in use, because 0.35 of
+fourteen auditoriums is five and that is exactly the five Chapter II tends.
+Thousands of seated figures are baked into their storey and cost nothing per
+frame; a few hundred walk, and get out of the way of anything heavy. See
+`docs/MECHANICS.md` §5.4. It does not yet drive the ambient audio bed, which
+does not exist.
 
 ## 5. The robots
 
@@ -182,6 +212,22 @@ division of labour:
 - **Biggy** — momentum as a tool. The only robot that can move something
   heavy, force a jammed route, or hold a line. It cannot be precise, ever
 
+Capability is four gates, and three of them are dimensions the robots already
+had: `maxStepRise` (who climbs), `height` (who reaches 2 m), `radius` (who
+fits a 0.8 m gap) and `payload` (who can lift the thing at all). Only the last
+is new. `docs/MECHANICS.md` §2 has the table.
+
+The `maxSlope` row above was wrong until 21 Sep — it carried 0.45 / 0.38 /
+0.35, which was a design intention from before the figures were derived from
+`driveForce / (mass · g)`. The real numbers are an order of magnitude apart
+at the bottom end, and Biggy's 0.11 against the ramp's 0.10 is now load-
+bearing, so the drift mattered. `npm run physics` prints the derived figures.
+
+**Payload is real mass.** `Body.payload` is added to the robot's own and
+divides every force in the integrator, so what a robot is carrying changes
+how it accelerates, brakes, turns and climbs, by arithmetic rather than by a
+rule. It is the mechanic Chapter III is built on and it is about thirty lines.
+
 ### Stairs — settled 18 Sep 2026
 
 Climbing is decided by `maxStepRise`, a dimension rather than a flag, measured
@@ -191,7 +237,7 @@ against the building's 0.18 m risers:
 |---|---|---|---|
 | `maxStepRise` | 0.20 m | 0.18 m | **0.00 m** |
 | Stairs | yes | exactly these, nothing steeper | **never** |
-| Ramps (`maxSlope`) | 0.45 | 0.38 | 0.35 |
+| Ramps (`maxSlope`) | 0.55 | 0.27 | **0.11** |
 
 **Biggy cannot use a staircase.** 430 kg on a flight of stairs is an accident,
 not a route. It gets between levels by ramp or not at all, and that single
@@ -200,19 +246,25 @@ right robot":
 
 - **Chapter I** — Voxxy alone, so "find a way up" is about finding *which*
   stair in the dark, not about being able to climb one.
-- **Chapter III** — you cannot send all three up the nearest flight. Biggy has
-  to be routed the long way round while the others take the stairs, which is
-  the first problem `direct-order` mode has that is worth solving.
+- **Chapter III** — Biggy simply never goes up. Half the card is on storey 1
+  and it is locked out of all of it, so the day has to be planned around a
+  robot that works one floor. It cannot even attend the keynote.
 
 The same number governs kerbs and the lip of a seat block, so it keeps paying
 out beyond the staircases.
 
-**Still open:** whether Biggy ever reaches the auditorium level at all. The
-only ramp links the reception concourse down to the hall, 1.2 m. All three
-routes to floor 1 are stairs, so as it stands Biggy is confined to the ground
-floor. Either a goods lift goes in — every cinema has one, though none is
-drawn — or Biggy stays on the exhibition floor, which is where a heavy hauler
-belongs anyway.
+**Settled 21 Sep: Biggy never reaches the auditorium level.** No goods lift
+goes in. All three routes to floor 1 are stairs, the only ramp links the
+concourse to the hall, and a heavy hauler belongs on the exhibition floor
+anyway. This is now load-bearing rather than an omission — it is why Biggy
+cannot attend the keynote.
+
+The ramp pays out once more. It is 1.2 m over 12 m, a 10% gradient, against
+Biggy's `maxSlope` of 0.11: it clears it **empty, by one percentage point**,
+and carrying the 200 kg keg its limit falls to 0.075 and it cannot. Anything
+heavy therefore stays in the hall, which is where the party is anyway. Nobody
+designed that; the surveyed geometry and the measured motors did. See
+`docs/MECHANICS.md` §5.3.
 
 Note the levels: the concourse is the HIGHER of the two ground-floor spaces.
 You come in at street level and go down into the hall.
@@ -283,7 +335,7 @@ which the agent can take unattended.
 | 1 | Scaffold + deploy pipeline + **live URL** | An empty canvas is on the public URL |
 | 2–3 | **Movement feel**, grey boxes only | Biggy feels heavy with no art whatsoever |
 | 4–5 | Chapter I playable end to end | A stranger finishes it without being told anything |
-| 6–7 | Chapter III's `direct-order` mode | The differentiator is proven, not hoped for |
+| 6–7 | Chapter III, the conference day | The differentiator is proven, not hoped for |
 | 7 | **First submission** | Judged on most recent entry — early costs nothing |
 | 8 | Chapter II | The middle chapter; shrinkable if time runs short |
 | 9–10 | Art pass: sprites, lighting, audio | Robots generated from the model sheets |
@@ -364,6 +416,10 @@ model sheets.
 - Exhibition hall: white canopy, warm cove lighting, regular column grid
 - Corridors: dark carpet, pendant disc lights, exposed concrete ceiling
 - Auditoriums: raked seating, blue and red wall wash, **red LED step strips**
+- Room numbers: painted on the corridor floor outside each of the fourteen
+  doors, because two chapters give objectives in room numbers. Why the floor
+  and not a wall is three separate facts about the renderer — see
+  `docs/MECHANICS.md` §5.3
 - Registration: slatted warm wood, grey carpet, curved cast concrete
 
 The red step lighting in a dark auditorium is the single strongest image
@@ -393,9 +449,18 @@ thousand people. Nothing else does.
 ## 10. Open questions
 
 - [x] Final title. **Ghost Light** — settled 18 Sep 2026.
-- [ ] Chapter I: what is "the power", concretely, and what does finding it do?
-- [ ] Chapter III: what does issuing intent look like — click a destination,
-      draw a route, or assign a standing role?
-- [ ] Chapter II: what is the failure state for "keep every room running"?
-- [ ] Audio: generated, or library? Footsteps are the highest-value sound.
-- [ ] Does the player ever control Biggy directly, or is it always directed?
+- [x] Chapter I: what is "the power"? **Three distribution boards, each
+      lighting one zone. The third is the stage rack in Room 8: the ghost
+      light comes up and the projector starts running Chapter II.** 21 Sep.
+- [x] Chapter III: what does issuing intent look like? **It does not. Intent
+      was cut on 21 Sep — the chapter is the conference itself, twelve
+      activities against a six-minute day, with payload as real mass.**
+- [x] Chapter II: what is the failure state? **A room drains, goes dark and
+      never returns. Three dark rooms end the day early.** 21 Sep.
+- [ ] Audio: generated, or library? Footsteps are the highest-value sound —
+      and a loaded footfall should be heavier, which payload mass gives free.
+- [x] Does the player ever control Biggy directly? **Yes, in Chapter III, and
+      only there. Directing was cut with `direct-order`; Biggy is driven, and
+      confined to storey 0 for the whole chapter.** 21 Sep.
+- [ ] Where exactly, in metres, do Chapter III's twelve activities sit? The
+      rooms all exist; the coordinates do not.

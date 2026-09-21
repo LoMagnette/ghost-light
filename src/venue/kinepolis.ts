@@ -925,6 +925,7 @@ function auditoriums(): {
         solids.push(...sign.solids);
         decor.push(...sign.decor);
       }
+      decor.push(...roomNumeral(bounds, aud.number, side));
       y += aud.frontage;
       if (aud.number === gapAfter) y += WEST_GAP;
     }
@@ -997,8 +998,14 @@ const TREAD_SLAB = 0.25;
 /** Height of a seat back above the tier it stands on, metres. */
 const SEAT_BACK = 0.85;
 
-/** Depth behind the back row: the cross aisle you enter along. */
-const CROSS_AISLE = 2.5;
+/**
+ * Depth behind the back row: the cross aisle you enter along.
+ *
+ * Exported because it is the only clear floor in an auditorium that is not
+ * the stage, so it is where anything a robot has to reach inside a room has
+ * to stand. Chapter II's racks are placed down the middle of it.
+ */
+export const CROSS_AISLE = 2.5;
 
 /**
  * Depth of the stage — the flat plate in front of the first row, where the
@@ -1378,8 +1385,155 @@ function glyph(character: string): Bar[] {
     case 'X':
       return [...diagonal(0.06, 0, 0.94, 1), ...diagonal(0.94, 0, 0.06, 1)];
     default:
+      return digit(character);
+  }
+}
+
+/**
+ * The ten digits, as seven segments.
+ *
+ * Seven-segment rather than a drawn numeral, for the same reason the letters
+ * above are strokes: the renderer extrudes plan rectangles, so a shape made
+ * of seven rectangles is free and a shape made of curves is a font project.
+ * It also happens to be what a number painted on a floor looks like.
+ */
+function digit(character: string): Bar[] {
+  const su = SIGN_STROKE / GLYPH_WIDTH;
+  const sv = SIGN_STROKE / GLYPH_HEIGHT;
+
+  const top: Bar = { u0: 0, u1: 1, v0: 1 - sv, v1: 1 };
+  const middle: Bar = { u0: 0, u1: 1, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 };
+  const bottom: Bar = { u0: 0, u1: 1, v0: 0, v1: sv };
+  const upperLeft: Bar = { u0: 0, u1: su, v0: 0.5 - sv / 2, v1: 1 };
+  const upperRight: Bar = { u0: 1 - su, u1: 1, v0: 0.5 - sv / 2, v1: 1 };
+  const lowerLeft: Bar = { u0: 0, u1: su, v0: 0, v1: 0.5 + sv / 2 };
+  const lowerRight: Bar = { u0: 1 - su, u1: 1, v0: 0, v1: 0.5 + sv / 2 };
+
+  switch (character) {
+    case '0':
+      return [top, upperLeft, upperRight, lowerLeft, lowerRight, bottom];
+    case '1':
+      return [upperRight, lowerRight];
+    case '2':
+      return [top, upperRight, middle, lowerLeft, bottom];
+    case '3':
+      return [top, upperRight, middle, lowerRight, bottom];
+    case '4':
+      return [upperLeft, upperRight, middle, lowerRight];
+    case '5':
+      return [top, upperLeft, middle, lowerRight, bottom];
+    case '6':
+      return [top, upperLeft, middle, lowerLeft, lowerRight, bottom];
+    case '7':
+      return [top, upperRight, lowerRight];
+    case '8':
+      return [top, upperLeft, upperRight, middle, lowerLeft, lowerRight, bottom];
+    case '9':
+      return [top, upperLeft, upperRight, middle, lowerRight, bottom];
+    default:
       return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// The number on the floor outside each room
+// ---------------------------------------------------------------------------
+
+/**
+ * Which room is Room 5?
+ *
+ * Nothing in the building answered that, and both later chapters ask it out
+ * loud — "keep Room 5 running", "catch the talk in Room 11" — of a player
+ * looking at fourteen identical doors down a 126 m corridor. An objective
+ * that names a room the building does not name is an objective the player
+ * cannot even attempt.
+ *
+ * PAINTED ON THE FLOOR, and three separate facts about this renderer each
+ * rule out the sign you would expect:
+ *
+ *   - The view is fixed to the south-west, so the visible faces point south
+ *     and west. A number on the corridor's east wall reads and the identical
+ *     number on the west wall faces away, for the whole game. Half a
+ *     numbering system is worse than none.
+ *   - A blade hung out into the corridor solves that, and then meets
+ *     `MAX_DRAWN_HEIGHT`: nothing is drawn above 2.7 m, so a sign at head
+ *     height is sliced to a five-centimetre sliver of itself.
+ *   - The key light is almost overhead. A south-facing face reflects about a
+ *     third of what an upward-facing one does, so even unclipped, characters
+ *     on a vertical plate are the dimmest thing on screen.
+ *
+ * The floor has none of those problems: it is never clipped, it is never
+ * occluded, and it faces the one direction the light actually comes from. So
+ * the numbers are painted on it — a dark panel with light characters — which
+ * is what a venue with fourteen identical doors really does anyway.
+ *
+ * The cost is that floor text in a 45° projection reads at 45°. Every number
+ * is skewed the same way, which makes it a convention rather than a mistake,
+ * and the digits are seven-segment precisely because that survives the skew.
+ */
+const NUMERAL_HEIGHT = 3.2; // along x, which is "up" for a numeral on the floor
+const NUMERAL_WIDTH = 1.7; // along y, the reading direction
+const NUMERAL_GAP = 0.36;
+/** Painted margin around the characters, metres. */
+const NUMERAL_MARGIN = 0.45;
+/** Clear of the room's own wall, so the panel lies in the corridor. */
+const NUMERAL_OFFSET = 0.8;
+/*
+ * Paint, not kerbs. Both are far under every robot's `maxStepRise`, and in
+ * any case neither is an obstacle — this is `decor`, which is never collided.
+ * The characters stand a little proud of the panel so they take the light
+ * separately from it.
+ */
+const PANEL_THICKNESS = 0.02;
+const NUMERAL_THICKNESS = 0.05;
+
+function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
+  const glyphs = [...String(number)];
+  const length = glyphs.length * NUMERAL_WIDTH + (glyphs.length - 1) * NUMERAL_GAP;
+
+  // In the corridor, against the frontage of the room it names. Both sides
+  // read the same way up, so the whole building is numbered in one direction.
+  const xBase =
+    side === -1
+      ? -CORRIDOR_HALF + NUMERAL_OFFSET
+      : CORRIDOR_HALF - NUMERAL_OFFSET - NUMERAL_HEIGHT;
+
+  const start = room.y + room.h / 2 + length / 2;
+
+  const decor: Decor[] = [
+    {
+      floor: 1,
+      bounds: rect(
+        xBase - NUMERAL_MARGIN,
+        start - length - NUMERAL_MARGIN,
+        NUMERAL_HEIGHT + NUMERAL_MARGIN * 2,
+        length + NUMERAL_MARGIN * 2,
+      ),
+      base: 0,
+      height: PANEL_THICKNESS,
+      material: 'signPlate',
+    },
+  ];
+
+  glyphs.forEach((character, index) => {
+    const at = start - index * (NUMERAL_WIDTH + NUMERAL_GAP);
+    for (const bar of glyph(character)) {
+      decor.push({
+        floor: 1,
+        bounds: rect(
+          xBase + bar.v0 * NUMERAL_HEIGHT,
+          at - bar.u1 * NUMERAL_WIDTH,
+          (bar.v1 - bar.v0) * NUMERAL_HEIGHT,
+          (bar.u1 - bar.u0) * NUMERAL_WIDTH,
+        ),
+        base: 0,
+        height: NUMERAL_THICKNESS,
+        material: 'sign',
+      });
+    }
+  });
+
+  return decor;
 }
 
 /**
@@ -2173,9 +2327,34 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
   const solid: Obstacle[] = [];
   const soffits: Decor[] = [];
   for (const link of links) {
-    // A ramp is the accessible route by definition — leave it drivable. It is
-    // also the only way between the hall and the concourse until stairs work.
-    if (link.id === 'wheelchair-ramp') continue;
+    /*
+     * A ramp has no treads — it is a surface, and it is the accessible route
+     * by definition. It gets ONE solid: a threshold lip across the doorway at
+     * its foot, carrying the link's id like every tread in the building does.
+     *
+     * Without it the ramp was the one level change in the Kinepolis that
+     * nothing could be refused. That was true while `maxSlope` was a constant
+     * per robot and every robot cleared 10%; it stopped being true the day a
+     * robot could be CARRYING something, because the gradient it can hold
+     * falls with the weight on it. `canTraverse` then said no and no geometry
+     * said anything at all, so a laden Biggy walked up a ramp it cannot climb
+     * and the concourse plate lifted it the 1.2 m for free.
+     *
+     * `npm run traverse` found that within a minute of the assertion existing,
+     * which is the entire argument for the harness.
+     */
+    if (link.id === 'wheelchair-ramp') {
+      solid.push({
+        floor: link.from,
+        bounds: rect(RAMP_OPENING.x, link.bounds.y + link.bounds.h - 0.3, RAMP_DOOR, 0.6),
+        // A lip, not a wall: this is what a ramp meets a floor with. It is
+        // solid to a machine that may not use the ramp and invisible to one
+        // that may, which is the same rule as every staircase here.
+        height: 0.14,
+        linkId: link.id,
+      });
+      continue;
+    }
 
     // A flight that also climbs from its flanks is not a run of bands.
     if (link.wrap) {

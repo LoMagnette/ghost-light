@@ -43,6 +43,7 @@ import {
   MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
+  PointLight,
   RingGeometry,
   Scene,
   SphereGeometry,
@@ -50,6 +51,19 @@ import {
   type OrthographicCamera,
 } from 'three';
 import type { Actor } from '@/core/Sim';
+import {
+  Crowd,
+  PERSON_DEPTH,
+  PERSON_HEAD,
+  PERSON_HEIGHT,
+  PERSON_HIP,
+  PERSON_LEG_TOP,
+  PERSON_NECK,
+  PERSON_SHOULDER,
+  SEATED_NECK,
+  SEATED_PERSON_HEIGHT,
+  type Person,
+} from '@/core/Crowd';
 import { renderPos } from '@/core/Sim';
 import { groundAt, rect, type Level, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
@@ -167,6 +181,31 @@ const KEY_DIRECTION = new Vector3(-0.196, -0.355, 0.914);
 const LAMBERT_SCALE = Math.PI;
 
 /**
+ * Metres between the lights a reveal hangs. A cinema hangs them about this
+ * far apart, and it is also what keeps a 2500 m² hall from being lit by three
+ * bulbs down its middle.
+ */
+const REVEAL_SPACING = 15;
+
+/** Most movers a chapter may have on one storey. Sized for capacity. */
+const MAX_MOVERS = 400;
+/** Boxes per standing person: legs, torso, head. */
+const PERSON_PARTS = 3;
+
+/**
+ * How a person is coloured, from the one crowd colour the chapter gives.
+ *
+ * Derived rather than four more palette entries, the same way the skid
+ * marks derive from the floor. Trousers are the crowd colour darkened,
+ * clothing is it varied per person, and the head is it lifted towards
+ * whatever this era's near-white is — so a crowd stays the colour the
+ * chapter chose while still having a head you can see.
+ */
+const TROUSER_SHADE = 0.62;
+const CLOTHING_RANGE: [number, number] = [0.78, 1.34];
+const HEAD_LIFT = 0.46;
+
+/**
  * Exponent that carries the chapter's light level into the renderer's space.
  *
  * `lightLevel` and every palette colour were tuned against a renderer that
@@ -253,15 +292,52 @@ export class BlockoutRenderer {
    */
   telemetry = false;
 
+  /**
+   * World-space markers for the objective's activities.
+   *
+   * UNLIT, and that is the whole reason they exist as geometry rather than as
+   * something clever: Chapter I is played at a light level of 0.18, and a
+   * thing the player is supposed to find has to be visible in a building that
+   * is deliberately almost too dark to read. A Lambert post would be a rumour.
+   */
+  private readonly markerGroup = new Group();
+  private readonly markerMeshes = new Map<string, Mesh>();
+  private readonly markerGeometry = new BoxGeometry(0.45, 0.45, 2.3);
+  private readonly markerDisc = new CircleGeometry(1.3, 24);
+
+  /**
+   * The lamp the cast carries, and the lights the player switches back on.
+   *
+   * Both are real lights rather than a post-process, so a revealed zone lights
+   * the geometry that is actually in it and the building comes back a room at
+   * a time. See `Activity.Reveal`.
+   */
+  private lamp: PointLight | undefined;
+  private readonly revealed: PointLight[] = [];
+
+  /**
+   * The people on their feet, rewritten every frame.
+   *
+   * One mesh for the whole game rather than one per storey, because only the
+   * visible storey is ever written into it — a mover on the floor you are not
+   * looking at costs nothing at all.
+   */
+  private readonly crowd: Crowd;
+  private readonly moverMesh: InstancedMesh;
+
   constructor(
     camera: OrthographicCamera,
     venue: Venue,
     palette: Palette,
     lightLevel: number,
+    crowd: Crowd,
   ) {
     this.camera = camera;
     this.venue = venue;
     this.palette = palette;
+    // Before the storeys are built: each one bakes its own seated population
+    // in as it goes, which is what makes five thousand people free.
+    this.crowd = crowd;
 
     // The same curve the 2D renderer multiplied every colour by, applied to
     // the lights instead. Chapter I's darkness is its light level, not a
@@ -304,6 +380,212 @@ export class BlockoutRenderer {
       this.markMesh.setColorAt(i, this.markColour);
     }
     this.scene.add(this.markMesh);
+    this.scene.add(this.markerGroup);
+
+    this.moverMesh = new InstancedMesh(
+      new BoxGeometry(1, 1, 1),
+      // White, because the instance colour MULTIPLIES the material's. Tint
+      // it here and every person comes out the crowd colour squared.
+      new MeshLambertMaterial({ color: 0xffffff }),
+      MAX_MOVERS * PERSON_PARTS,
+    );
+    this.moverMesh.count = 0;
+    // Allocate the colour buffer up front: three thousand people is three
+    // parts each and the first frame would otherwise grow it mid-render.
+    this.moverMesh.setColorAt(0, SCRATCH_COLOUR.set(0xffffff));
+    // They are scattered over the whole building, so the bounding sphere of
+    // the mesh is meaningless and culling it by that sphere hides the lot.
+    this.moverMesh.frustumCulled = false;
+    this.scene.add(this.moverMesh);
+  }
+
+  /** Trousers, clothing and head for one person, in this era's colours. */
+  private personColours(person: Person): [number, number, number] {
+    const crowd = this.palette.crowd;
+    const [low, high] = CLOTHING_RANGE;
+    return [
+      shade(crowd, TROUSER_SHADE),
+      shade(crowd, low + person.tint * (high - low)),
+      mix(crowd, this.palette.sign, HEAD_LIFT),
+    ];
+  }
+
+  /**
+   * A seated person: head and shoulders over the seat back.
+   *
+   * Every part shares the person's own centre, which is what lets the
+   * standing version be rotated by a single heading without any of the parts
+   * having to be moved around each other.
+   */
+  private seatedBoxes(person: Person): Box[] {
+    const [, clothing, head] = this.personColours(person);
+    return [
+      {
+        bounds: rect(
+          person.x - PERSON_SHOULDER / 2,
+          person.y - PERSON_DEPTH / 2,
+          PERSON_SHOULDER,
+          PERSON_DEPTH,
+        ),
+        bottom: person.z,
+        top: person.z + SEATED_NECK,
+        colour: clothing,
+      },
+      {
+        bounds: rect(
+          person.x - PERSON_HEAD / 2,
+          person.y - PERSON_HEAD / 2,
+          PERSON_HEAD,
+          PERSON_HEAD,
+        ),
+        bottom: person.z + SEATED_NECK,
+        top: person.z + SEATED_PERSON_HEIGHT,
+        colour: head,
+      },
+    ];
+  }
+
+  /** Put the standing crowd where it is this frame. Visible storey only. */
+  private placeMovers(floor: Level): void {
+    let i = 0;
+    for (const person of this.crowd.movers) {
+      if (person.floor !== floor || i + PERSON_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
+      const [trousers, clothing, head] = this.personColours(person);
+
+      // Legs, torso, head — all on the same centre line, so the heading
+      // rotates the whole figure without any part having to orbit another.
+      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_HIP, PERSON_DEPTH * 0.8, trousers);
+      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_SHOULDER, PERSON_DEPTH, clothing);
+      i = this.placePart(i, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD, PERSON_HEAD, head);
+    }
+    this.moverMesh.count = i;
+    this.moverMesh.instanceMatrix.needsUpdate = true;
+    if (this.moverMesh.instanceColor) this.moverMesh.instanceColor.needsUpdate = true;
+  }
+
+  private placePart(
+    index: number,
+    person: Person,
+    from: number,
+    to: number,
+    width: number,
+    depth: number,
+    colour: number,
+  ): number {
+    SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
+    SCRATCH.scale.set(width, depth, to - from);
+    SCRATCH.rotation.set(0, 0, person.heading);
+    SCRATCH.updateMatrix();
+    this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
+    this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
+    return index + 1;
+  }
+
+  // -- the objective, drawn -------------------------------------------------
+
+  /**
+   * Put a post where each live activity is.
+   *
+   * The screen decides the colour, because the screen is what knows a status
+   * from a status; this only knows where things are and which storey is being
+   * looked at. Markers persist between calls and are hidden rather than
+   * rebuilt — there are forty of them in Chapter III and they move only when
+   * a robot is carrying one.
+   */
+  setMarkers(markers: readonly ObjectiveMarker[], floor: Level): void {
+    const seen = new Set<string>();
+
+    for (const marker of markers) {
+      seen.add(marker.id);
+      let mesh = this.markerMeshes.get(marker.id);
+      if (!mesh) {
+        mesh = new Mesh(this.markerGeometry, new MeshBasicMaterial({ color: marker.colour }));
+        const disc = new Mesh(this.markerDisc, new MeshBasicMaterial({ color: marker.colour }));
+        // Just off the floor, or it fights the floor plate for the same depth.
+        disc.position.z = -1.14;
+        mesh.add(disc);
+        this.markerMeshes.set(marker.id, mesh);
+        this.markerGroup.add(mesh);
+      }
+      const visible = marker.floor === floor;
+      mesh.visible = visible;
+      if (!visible) continue;
+      mesh.position.set(marker.x, marker.y, marker.z + 1.15);
+      const material = mesh.material as MeshBasicMaterial;
+      material.color.setHex(marker.colour);
+      for (const child of mesh.children) {
+        ((child as Mesh).material as MeshBasicMaterial).color.setHex(marker.colour);
+      }
+    }
+
+    for (const [id, mesh] of this.markerMeshes) {
+      if (!seen.has(id)) mesh.visible = false;
+    }
+  }
+
+  /**
+   * Give the cast a lamp. Chapter I only, and it is most of Chapter I.
+   *
+   * `distance` rather than an attenuation curve, because a hard edge to the
+   * light is the point: what the player can see is a decision the chapter
+   * makes, not a falloff.
+   */
+  enableLamp(range: number, intensity: number): void {
+    if (this.lamp) return;
+    this.lamp = new PointLight(0xfff0dc, intensity * LAMBERT_SCALE, range, 1.4);
+    this.scene.add(this.lamp);
+  }
+
+  moveLamp(x: number, y: number, z: number): void {
+    this.lamp?.position.set(x, y, z + 1.4);
+  }
+
+  /**
+   * Switch the lights back on over part of the building.
+   *
+   * Up to three point lights along the zone's long axis, because one light in
+   * the middle of a 30 m room lights the middle of a 30 m room. Hung at 4.5 m,
+   * which is where a cinema hangs them.
+   */
+  revealZone(bounds: Rect, floor: Level, level: number): void {
+    const storey = this.storeys.get(floor);
+
+    /*
+     * A GRID of them, not a line.
+     *
+     * The first version hung three lights down the long axis of the
+     * exhibition hall, which is 52 m by 49 m: everything more than about
+     * fifteen metres off that centre line stayed exactly as dark as it had
+     * been, so switching the hall on did nothing you could see from the west
+     * wall — where the board that switches it on happens to be.
+     *
+     * One light per SPACING metres in each direction, so a big room costs
+     * nine and a small one costs one, and the cost is proportional to the
+     * thing being lit rather than to its longest side.
+     */
+    const across = Math.max(1, Math.round(bounds.w / REVEAL_SPACING));
+    const along = Math.max(1, Math.round(bounds.h / REVEAL_SPACING));
+    const intensity = level * 5 * LAMBERT_SCALE;
+    const range = REVEAL_SPACING * 1.8;
+
+    for (let i = 0; i < across * along; i += 1) {
+      const x = bounds.x + (bounds.w * ((i % across) + 0.5)) / across;
+      const y = bounds.y + (bounds.h * (Math.floor(i / across) + 0.5)) / along;
+      const light = new PointLight(0xffe9c8, intensity, range, 1.0);
+      light.position.set(x, y, 4.5);
+      // Parented to the storey so it goes away with it: a light left in the
+      // scene while its floor is hidden lights the floor you ARE looking at,
+      // through six metres of concrete.
+      if (storey) storey.add(light);
+      else this.scene.add(light);
+      this.revealed.push(light);
+    }
+  }
+
+  /** Put the building back in the dark. Called when a round is restarted. */
+  clearReveals(): void {
+    for (const light of this.revealed) light.removeFromParent();
+    this.revealed.length = 0;
   }
 
   /**
@@ -327,6 +609,7 @@ export class BlockoutRenderer {
       if (view.group.visible) this.placeRobot(actor, view, alpha);
     }
 
+    this.placeMovers(floor);
     this.aimCutaway(floor, actors, alpha);
   }
 
@@ -347,6 +630,11 @@ export class BlockoutRenderer {
     });
     this.scene.clear();
     this.robots.clear();
+    // Shared between every marker, so the traversal above disposed it once per
+    // mesh and it still has to be dropped here — it is not owned by any of them.
+    this.markerGeometry.dispose();
+    this.markerDisc.dispose();
+    this.markerMeshes.clear();
   }
 
   // -- the building ---------------------------------------------------------
@@ -434,6 +722,24 @@ export class BlockoutRenderer {
     }
 
     group.add(instanceBoxes(plates, new MeshLambertMaterial()));
+
+    /*
+     * The audience, baked into the storey.
+     *
+     * Static for the life of the chapter, so it is built here with the walls
+     * rather than written every frame with the robots: a full house is five
+     * thousand people and costs one draw call and nothing per frame. It is
+     * also why the crowd had to be split into seated and standing at all.
+     */
+    const audience = this.crowd.seated.filter((person) => person.floor === floor);
+    if (audience.length) {
+      group.add(
+        instanceBoxes(
+          audience.flatMap((person) => this.seatedBoxes(person)),
+          new MeshLambertMaterial(),
+        ),
+      );
+    }
 
     /*
      * Glazing is its own mesh, because it is the one surface in the building
@@ -539,6 +845,8 @@ export class BlockoutRenderer {
         return this.palette.sign;
       case 'signAccent':
         return this.palette.accent;
+      case 'signPlate':
+        return this.palette.signPlate;
       case 'screen':
         return this.palette.screen;
       case 'glazing':
@@ -774,6 +1082,16 @@ function storeysOf(venue: Venue): Level[] {
  * `instanceColor` carries the palette, which is the whole reason the building
  * can be five thousand seats and still cost one draw.
  */
+/** Where to draw one activity, and in what state. The screen decides both. */
+export interface ObjectiveMarker {
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+  floor: Level;
+  colour: number;
+}
+
 function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {
   const mesh = new InstancedMesh(
     new BoxGeometry(1, 1, 1),
@@ -848,6 +1166,13 @@ function subtract(a: Rect, b: Rect): Rect[] {
   if (x0 > a.x) out.push(rect(a.x, y0, x0 - a.x, y1 - y0));
   if (x1 < a.x + a.w) out.push(rect(x1, y0, a.x + a.w - x1, y1 - y0));
   return out;
+}
+
+/** Blend two packed 0xRRGGBB colours. `t` of 0 is all `a`, 1 is all `b`. */
+export function mix(a: number, b: number, t: number): number {
+  const lerp = (shift: number): number =>
+    Math.round(((a >> shift) & 0xff) * (1 - t) + ((b >> shift) & 0xff) * t);
+  return (lerp(16) << 16) | (lerp(8) << 8) | lerp(0);
 }
 
 /** Multiply a packed 0xRRGGBB colour by a factor. */
