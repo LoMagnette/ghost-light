@@ -997,6 +997,11 @@ const TREAD_SLAB = 0.25;
 
 /** Height of a seat back above the tier it stands on, metres. */
 const SEAT_BACK = 0.85;
+/** Thickness of the backrest, front to back, metres. */
+const SEAT_BACK_DEPTH = 0.17;
+/** Top of the pan you sit on, above the tier. A cinema seat is low. */
+const SEAT_PAN_TOP = 0.42;
+const SEAT_PAN_THICKNESS = 0.09;
 
 /**
  * Depth behind the back row: the cross aisle you enter along.
@@ -1265,12 +1270,37 @@ function seatingFor(
     // Centre the seats in the row: the half seat the pitch does not divide
     // into becomes a little more elbow room at each end, not a gap at one.
     const first = y + (width - seats * SEAT_PITCH) / 2 + (SEAT_PITCH - SEAT_WIDTH) / 2;
+    /*
+     * A seat is a pan and a back, not a block.
+     *
+     * Five thousand identical boxes read as corrugation — the rake of a
+     * full auditorium came out as a ribbed slab rather than as seating.
+     * Two pieces is enough to fix it, because what the eye is looking for
+     * is the gap: a low pan with an upright behind it, and daylight over
+     * the row in front.
+     *
+     * The backrest goes at the end AWAY from the stage, which is the end
+     * the audience has its back to — high x in the west rooms, low x in
+     * the east ones, the same asymmetry `seatX` is already built on.
+     */
+    const backX = side === -1 ? seatX + SEAT_DEPTH - SEAT_BACK_DEPTH : seatX;
+    const panX = side === -1 ? seatX : seatX + SEAT_BACK_DEPTH;
     for (let n = 0; n < seats; n += 1) {
+      const y = first + n * SEAT_PITCH;
       decor.push({
         floor: 1,
-        bounds: rect(seatX, first + n * SEAT_PITCH, SEAT_DEPTH, SEAT_WIDTH),
+        bounds: rect(backX, y, SEAT_BACK_DEPTH, SEAT_WIDTH),
         base: tier,
         height: tier + SEAT_BACK,
+        material: 'seatBack',
+      });
+      // The pan is the piece the crowd sits on and counts itself by, so
+      // there is exactly one of these per seat in the building.
+      decor.push({
+        floor: 1,
+        bounds: rect(panX, y, SEAT_DEPTH - SEAT_BACK_DEPTH, SEAT_WIDTH),
+        base: tier + SEAT_PAN_TOP - SEAT_PAN_THICKNESS,
+        height: tier + SEAT_PAN_TOP,
         material: 'seat',
       });
     }
@@ -1444,96 +1474,115 @@ function digit(character: string): Bar[] {
  *
  * Nothing in the building answered that, and both later chapters ask it out
  * loud — "keep Room 5 running", "catch the talk in Room 11" — of a player
- * looking at fourteen identical doors down a 126 m corridor. An objective
- * that names a room the building does not name is an objective the player
- * cannot even attempt.
+ * looking at fourteen identical doors down a 126 m corridor.
  *
- * PAINTED ON THE FLOOR, and three separate facts about this renderer each
- * rule out the sign you would expect:
+ * The number goes on the wall at the back of the room, facing south, in
+ * characters a metre tall on a dark plate. Three separate facts about this
+ * renderer decide all three of those, and they have to be answered at once
+ * — a pass that fixed them one at a time ended up painting the numbers on
+ * the floor instead, which was a retreat rather than a design:
  *
- *   - The view is fixed to the south-west, so the visible faces point south
- *     and west. A number on the corridor's east wall reads and the identical
- *     number on the west wall faces away, for the whole game. Half a
- *     numbering system is worse than none.
- *   - A blade hung out into the corridor solves that, and then meets
- *     `MAX_DRAWN_HEIGHT`: nothing is drawn above 2.7 m, so a sign at head
- *     height is sliced to a five-centimetre sliver of itself.
- *   - The key light is almost overhead. A south-facing face reflects about a
- *     third of what an upward-facing one does, so even unclipped, characters
- *     on a vertical plate are the dimmest thing on screen.
- *
- * The floor has none of those problems: it is never clipped, it is never
- * occluded, and it faces the one direction the light actually comes from. So
- * the numbers are painted on it — a dark panel with light characters — which
- * is what a venue with fourteen identical doors really does anyway.
- *
- * The cost is that floor text in a 45° projection reads at 45°. Every number
- * is skewed the same way, which makes it a convention rather than a mistake,
- * and the digits are seven-segment precisely because that survives the skew.
+ *   - The view is fixed to the south-west, so the faces you can see point
+ *     south and west. A number on a north-south wall is either readable or
+ *     hidden behind the wall it is bolted to, depending only on which side
+ *     of the corridor its room is, and half a numbering system is worse
+ *     than none. The back wall of a room runs east-west and faces south,
+ *     so it is readable in every room in the building.
+ *   - `MAX_DRAWN_HEIGHT` clips everything 2.7 m above the storey datum, so
+ *     the sign hangs low — the characters top out at 2.15 m.
+ *   - The key light is nearly overhead: a south-facing face reflects about
+ *     a third of what an upward-facing one does, so light characters on a
+ *     light wall are invisible however large they are. Hence `signPlate`.
  */
-const NUMERAL_HEIGHT = 3.2; // along x, which is "up" for a numeral on the floor
-const NUMERAL_WIDTH = 1.7; // along y, the reading direction
-const NUMERAL_GAP = 0.36;
-/** Painted margin around the characters, metres. */
-const NUMERAL_MARGIN = 0.45;
-/** Clear of the room's own wall, so the panel lies in the corridor. */
-const NUMERAL_OFFSET = 0.8;
-/*
- * Paint, not kerbs. Both are far under every robot's `maxStepRise`, and in
- * any case neither is an obstacle — this is `decor`, which is never collided.
- * The characters stand a little proud of the panel so they take the light
- * separately from it.
+
+/** How far a character stands off the plate it is mounted on, metres. */
+const SIGN_FACE = 0.06;
+
+/** Across the wall at the back of the room, behind the last row. */
+const INSIDE_DIGIT_W = 0.66;
+const INSIDE_DIGIT_H = 1.05;
+const INSIDE_DIGIT_GAP = 0.18;
+const INSIDE_FOOT = 1.1;
+const INSIDE_PAD = 0.3;
+
+/**
+ * Characters on a surface that faces south.
+ *
+ * A south face spans x and z, so a glyph's `u` runs along x and its `v` up
+ * z. Reading runs +x: stand south of a plate looking north and east is on
+ * your right — the same single viewer the stage letters are laid out for.
  */
-const PANEL_THICKNESS = 0.02;
-const NUMERAL_THICKNESS = 0.05;
-
-function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
-  const glyphs = [...String(number)];
-  const length = glyphs.length * NUMERAL_WIDTH + (glyphs.length - 1) * NUMERAL_GAP;
-
-  // In the corridor, against the frontage of the room it names. Both sides
-  // read the same way up, so the whole building is numbered in one direction.
-  const xBase =
-    side === -1
-      ? -CORRIDOR_HALF + NUMERAL_OFFSET
-      : CORRIDOR_HALF - NUMERAL_OFFSET - NUMERAL_HEIGHT;
-
-  const start = room.y + room.h / 2 + length / 2;
-
-  const decor: Decor[] = [
-    {
-      floor: 1,
-      bounds: rect(
-        xBase - NUMERAL_MARGIN,
-        start - length - NUMERAL_MARGIN,
-        NUMERAL_HEIGHT + NUMERAL_MARGIN * 2,
-        length + NUMERAL_MARGIN * 2,
-      ),
-      base: 0,
-      height: PANEL_THICKNESS,
-      material: 'signPlate',
-    },
-  ];
-
-  glyphs.forEach((character, index) => {
-    const at = start - index * (NUMERAL_WIDTH + NUMERAL_GAP);
+function southFaceCharacters(
+  characters: string,
+  planeY: number,
+  x: number,
+  z: number,
+  width: number,
+  height: number,
+  gap: number,
+): Decor[] {
+  const out: Decor[] = [];
+  [...characters].forEach((character, index) => {
+    const ox = x + index * (width + gap);
     for (const bar of glyph(character)) {
-      decor.push({
+      out.push({
         floor: 1,
         bounds: rect(
-          xBase + bar.v0 * NUMERAL_HEIGHT,
-          at - bar.u1 * NUMERAL_WIDTH,
-          (bar.v1 - bar.v0) * NUMERAL_HEIGHT,
-          (bar.u1 - bar.u0) * NUMERAL_WIDTH,
+          ox + bar.u0 * width,
+          planeY - SIGN_FACE,
+          (bar.u1 - bar.u0) * width,
+          SIGN_FACE,
         ),
-        base: 0,
-        height: NUMERAL_THICKNESS,
-        material: 'sign',
+        base: z + bar.v0 * height,
+        height: z + bar.v1 * height,
+        material: 'signChar',
       });
     }
   });
+  return out;
+}
 
-  return decor;
+function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
+  const characters = String(number);
+  const runWidth =
+    characters.length * INSIDE_DIGIT_W + (characters.length - 1) * INSIDE_DIGIT_GAP;
+
+  /*
+   * The party wall closing the room's north end, seen from inside.
+   *
+   * Its south face looks back down the room at the camera, and nothing
+   * stands in front of it: the room's own south wall is twenty metres
+   * nearer the viewer and two metres tall, which at thirty degrees is far
+   * under the line of sight.
+   */
+  const wallFace = room.y + room.h - WALL_THICKNESS / 2;
+  // At the corridor end, over the cross aisle rather than over the seating,
+  // so it is what you are looking at as you come through the door.
+  const runX = side === -1 ? room.x + room.w - INSIDE_PAD - runWidth : room.x + INSIDE_PAD;
+
+  return [
+    {
+      floor: 1,
+      bounds: rect(
+        runX - INSIDE_PAD,
+        wallFace - SIGN_FACE / 2,
+        runWidth + INSIDE_PAD * 2,
+        SIGN_FACE / 2,
+      ),
+      base: INSIDE_FOOT - INSIDE_PAD,
+      height: INSIDE_FOOT + INSIDE_DIGIT_H + INSIDE_PAD,
+      material: 'signPlate',
+    },
+    ...southFaceCharacters(
+      characters,
+      wallFace - SIGN_FACE / 2,
+      runX,
+      INSIDE_FOOT,
+      INSIDE_DIGIT_W,
+      INSIDE_DIGIT_H,
+      INSIDE_DIGIT_GAP,
+    ),
+  ];
 }
 
 /**

@@ -159,11 +159,24 @@ export interface Obstacle {
  */
 export type Material =
   | 'structure' // concrete, terracing, anything the building is built of
-  | 'seat'
+  | 'seat' // the pan you sit on — and what the crowd counts
+  | 'seatBack' // the backrest over it. Same colour, a separate thing
   | 'desk' // the presenter's table and lectern
   | 'sign' // the letters of a sign, its body colour
   | 'signAccent' // the one letter that is not
   | 'signPlate' // the plate a sign's letters are mounted on
+  /*
+   * A character on a wayfinding sign — a room number — as opposed to the
+   * freestanding letters on a stage.
+   *
+   * Same colour as `sign` and a separate material anyway, because the two
+   * are different objects with different rules: `npm run venue` asserts
+   * that stage letters stand within two metres of the screen wall, which is
+   * how it catches #DEVOXX drifting into the seating, and a room number is
+   * a letter-shaped thing at the OTHER end of the room that would trip that
+   * check fourteen times over. It did, the first time.
+   */
+  | 'signChar'
   | 'screen' // the projection screen on an auditorium's end wall
   | 'glazing' // curtain wall: the glass front of the building
   | 'booth'; // an exhibitor's stand on the hall floor

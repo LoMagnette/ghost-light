@@ -393,10 +393,21 @@ A three.js scene rotates a mesh for free, so there are no facings to draw: one
 model per robot replaces eight views of it, and the ability animations become
 animations rather than eight copies of each.
 
-So: one model per robot, plus idle, walk, run and one ability animation each.
-The model sheets are multi-angle orthographic turnarounds, which is exactly the
-right input for modelling from — better input for a model than for a sprite
-sheet, in fact, because that is what a turnaround is for.
+**Changed again, 21 Sep, and in the cheaper direction.** The robots are now
+built in code from a handful of primitives each — ellipsoids and boxes,
+flat-shaded in their own livery — with the proportions measured off the
+front views of the model sheets: Voxxy 0.61 wide per unit tall, Droid 0.48,
+Biggy 1.11, all within 7% of what `RobotSpec` already said.
+
+That is not a compromise on the way to a real mesh; it is the right answer
+for this renderer. Everything else on screen is untextured boxes lit by one
+ambient and one directional light, and a detailed model dropped into that
+reads as a sticker on a blockout. At thirty pixels a character is its
+silhouette — the same lesson the crowd taught at twenty.
+
+What remains is animation: idle, walk, run and one ability each. A group of
+primitives animates by moving its parts, which is cheaper than it would have
+been with a rigged mesh.
 
 This is a real saving, and it is the largest single piece of remaining art
 work. It is also the one place where the renderer change alters the deliverable
@@ -416,10 +427,10 @@ model sheets.
 - Exhibition hall: white canopy, warm cove lighting, regular column grid
 - Corridors: dark carpet, pendant disc lights, exposed concrete ceiling
 - Auditoriums: raked seating, blue and red wall wash, **red LED step strips**
-- Room numbers: painted on the corridor floor outside each of the fourteen
-  doors, because two chapters give objectives in room numbers. Why the floor
-  and not a wall is three separate facts about the renderer — see
-  `docs/MECHANICS.md` §5.3
+- Room numbers: across the wall at the back of each auditorium, because two
+  chapters give objectives in room numbers. Facing south, which is the only
+  direction this camera can read, and why that is so is three separate facts
+  about the renderer. See `docs/MECHANICS.md` §5.3
 - Registration: slatted warm wood, grey carpet, curved cast concrete
 
 The red step lighting in a dark auditorium is the single strongest image

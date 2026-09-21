@@ -92,8 +92,17 @@ export interface RobotSpec {
    */
   payload: number;
 
-  /** Silhouette colour used by the placeholder renderer and UI accents. */
+  /** Body colour. Also used for this robot's UI accents. */
   tint: number;
+  /**
+   * The second colour in this machine's livery, off the model sheet.
+   *
+   * A fact about the robot rather than about the era, which is why it lives
+   * here and not in a chapter palette: Biggy has an orange belly under a
+   * blue-grey shell in every century. One colour made all three read as
+   * monoliths; two is what makes a silhouette look manufactured.
+   */
+  trim: number;
 }
 
 /** Gravity, m/s². Physical constant; nothing may redefine it. */
@@ -124,6 +133,7 @@ export const VOXXY: RobotSpec = {
   maxSlope: 0.55, //  60% of 405 N / (45 kg · g)
   payload: 10,  // a lanyard, a coffee, a bag of stickers. It is 45 kg itself
   tint: 0xff7a1a,
+  trim: 0xf2f0ea, // the white bands round its legs and the ring round its eye
 };
 
 export const DROID: RobotSpec = {
@@ -141,6 +151,7 @@ export const DROID: RobotSpec = {
   maxSlope: 0.27, //  60% of 855 N / (190 kg · g)
   payload: 90,  // a crate, and it still walks — reach and patience, laden
   tint: 0x6b7378,
+  trim: 0xb07434, // the ochre trim on its shoulders and hips
 };
 
 export const BIGGY: RobotSpec = {
@@ -158,6 +169,7 @@ export const BIGGY: RobotSpec = {
   maxSlope: 0.11, //  60% of 774 N / (430 kg · g) — Biggy needs a gentle ramp
   payload: 400, // freight. Nearly its own mass again, and it shows in every metre
   tint: 0x7d94a8,
+  trim: 0xd4622a, // the orange belly under the blue-grey shell
 };
 
 export const ROBOTS: Record<RobotId, RobotSpec> = {

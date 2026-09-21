@@ -299,6 +299,40 @@ seven-segment "2" and an "11" opposite, which proved the layout was right at
 a point when the screenshot still looked wrong — and that is what localised
 the bug to the lighting rather than to the glyph code.
 
+**Follow-up prompt, next session:**
+> the room number would better on the wall inside and outside the rooms
+
+They are right, and the floor was a retreat rather than a design. The
+mistake in the first attempt was fixing the three constraints one at a time:
+each fix was tested against the failure it addressed and then abandoned when
+a different one bit. Answered together — face south, stay under 2.7 m, light
+characters on a dark plate — a wall sign works, and every room now has its
+number on a pier beside the door and again across the wall at the back of
+the room.
+
+Facing south is what costs: a south face spans x and z while the corridor
+runs along y, so a sign out in the corridor needs depth — it came out as a
+pier beside each door with its digits stacked down it.
+
+**Then, one prompt later:**
+> Don't put the number outside the room
+
+The piers came out again, and the answer was better for it. The number lives
+only on the room's back wall now, and because the camera looks over a room's
+south wall it is legible from the corridor anyway — so the corridor reads as
+a corridor rather than as a row of fourteen pillars, and nothing was lost.
+Worth recording as the pattern: the model added a second sign to solve a
+problem the first one already solved, and only stopped when told to.
+
+**Caught by a harness, again:** `npm run venue` failed with 76 problems the
+moment the signs went up — it asserts stage letters stand within two metres
+of the screen wall, which is how it catches #DEVOXX drifting into the
+seating, and fourteen room numbers at the other end of their rooms are
+letter-shaped things that trip it. The fix went in the DATA rather than the
+test: a `signChar` material, the same ink as a stage letter and a different
+object. Weakening the check to accommodate the new thing would have thrown
+away the check.
+
 **Output:** seven-segment digits added to the existing `#DEVOXX` glyph set,
 `roomNumeral` in `kinepolis.ts`, a `signPlate` colour in all three palettes,
 and `npm run peek` — an arbitrary-frame screenshot tool, promoted from a
@@ -385,6 +419,242 @@ figure in the spec table while the harness went on reporting the old ones.
 Written down in `docs/MECHANICS.md` §5.4 rather than left as an omission.
 
 ## Robots
+
+### The cast, built from primitives instead of imported
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> I'm worried that the game is now a bit too low poly to use actual model one
+> the robots and I'm wondering if they size in the game reflect what they are
+> supposed to be
+
+Two questions, and the useful part is that the second one had already been
+answered and the first one turned out to point the other way.
+
+**Are the sizes right?** Yes. The model sheets were read and the front view
+of each measured against `RobotSpec`:
+
+| | Sheet, width per unit height | `RobotSpec` | Absolute |
+|---|---|---|---|
+| Voxxy | 0.61 | 0.59 | 0.68 × 1.15 m |
+| Droid | 0.48 | 0.45 | 0.92 × 2.05 m |
+| Biggy | 1.11 | 1.07 | 1.44 × 1.35 m |
+
+All within 7%. Absolute scale is not in the sheets — no scale bar, no human
+in frame — but it is now pinned from two directions: the masses are
+plausible for machines that size, and the 1.72 m crowd added earlier the
+same day puts Voxxy at chest height, Droid a head taller than a person and
+Biggy low and twice as wide. **The scale was only checkable because the
+building had people in it**, which it had not until that afternoon.
+
+Worth recording: `height` stopped being art when the objective system
+landed. Droid's 2.05 m is the reach gate that makes it the only machine
+that can work a 2 m counter, so these numbers are now gameplay.
+
+**Is the game too low-poly for real models?** It is the wrong way round. The
+robots were single boxes, and the crowd — three primitives each — had more
+shape than the cast did. The least detailed things on screen were the three
+characters the entry is judged on.
+
+So no model import. Each robot is now four to eleven primitives, positioned
+in the machine's own frame as fractions of `radius` and `height`, so the
+drawing scales off the collision shape and the two cannot drift. A textured
+mesh in a scene of flat-shaded boxes would read as a sticker; what carries a
+character at thirty pixels is silhouette, which is exactly what the crowd
+had just demonstrated at twenty.
+
+**Fell out of it:** the facing pip could go. A box is symmetrical and needed
+a bead stuck to its front to show which way it pointed; a machine with a
+head does not. And the contact shadow, at 2.1 x the body radius, had been
+sized for a era when the shadow was most of what told you where a robot was
+standing — under a shaped Biggy it read as a three-metre crater, so it came
+down to 1.45.
+
+**Fixed by hand:** nothing yet — but the numbers in the table above are the
+kind of claim that should be checked by a human looking at the screen, and
+whether Biggy is *satisfying* remains undelegable.
+
+**Follow-up prompt:**
+> that already better. Can you tweek the rest of the graphics to be on par
+> with the robots
+
+Four changes, all the same lesson the robots and the crowd had already
+taught — shape and a second tone, rather than detail:
+
+1. **A seat is a pan and a back, not a block.** Five thousand identical
+   boxes read as corrugation; the rake of a full auditorium came out as a
+   ribbed slab. Two pieces fix it, because what the eye is looking for is
+   the gap. The pan is the piece the crowd counts itself by, so the seated
+   population is unchanged — and it now sits ON the pan rather than at an
+   assumed height above the tier, which is one fewer number to keep true.
+2. **Every box is nudged in tone by where it stands.** A thirty-metre wall
+   painted in exactly the value of the column in front of it is one dead
+   slab; ±5.5%, keyed off position so it never shimmers, makes the same
+   geometry read as MADE of things. Left off glass and off signage, where
+   variation would read as a misprint.
+3. **The cutaway plane is drawn as a band.** `MAX_DRAWN_HEIGHT` slices
+   every wall and column at 2.7 m and they simply stopped. A pale 8 cm
+   band along the cut turns the artefact into the device it should have
+   been: the building reads as a sectioned architectural model, columns
+   get a capital and walls get a cornice, all out of geometry that was
+   already being clipped. The best-value change of the four, and it is
+   eleven lines.
+4. **Grouped objective markers shrank to studs.** Not strictly graphics —
+   but twenty-seven sticker markers at full height had turned the
+   exhibition hall into a pole farm, more marker than building. One thing
+   you are doing keeps its post; a sweep of many gets studs.
+
+**Follow-up prompt:**
+> It's better but I think the human model could be improved and the way they
+> sit in the seats is a bit strange
+
+Right on both, and magnifying a row to look properly turned up a third
+thing nobody had noticed.
+
+**Sitting was a post, not a pose.** A standing torso had been dropped onto
+the pan: no lap, no knees, and perched on the front edge because it was
+centred on the seat rather than pushed back against the rest. Now it is an
+L — thighs running forward, spine back, head and shoulders showing over the
+seat back in front. Every seat faces along x, so the direction comes out of
+the heading as a sign and the parts stay axis-aligned, which is what keeps
+three thousand of them in one instanced mesh with no rotation.
+
+**The walkers were rotated ninety degrees.** Found while renaming the
+parameters: the box dimensions were passed as (width, depth) and used as
+(x, y), so every person in the building was presenting a shoulder in the
+direction they were walking. Invisible standing still and unmistakable once
+named — `thick` for front-to-back and `wide` for side-to-side now, with the
+reason written above the constants.
+
+**Heads became ellipsoids and the torso got a shoulder line**, which is
+what actually carries a human at this size.
+
+**And arms were built and then deleted.** They were made, in a sleeve
+shade, and measured: a real arm hangs inside the shoulder width, protrudes
+about seven centimetres, and at this zoom that is two pixels. What would
+make an arm read is the gap between it and the body, and there is no room
+to draw one. They were costing two of five boxes per walker — forty per
+cent of the crowd's per-frame work — to say nothing. Removing work that
+does not register is as much a part of this pass as adding work that does.
+
+**A real mistake, recorded because it nearly cost the session:** the edit
+that introduced these constants was scripted as "replace everything between
+this comment and that one", and the closing marker sat *after* the `Crowd`
+class rather than before it. It deleted the class — 534 lines down to 160.
+It was committed, so `git checkout HEAD --` cost nothing, and the redo used
+narrow replacements anchored on both ends. Slicing a file between two
+markers is only safe when you have checked what lies between them.
+
+**Follow-up prompt, and a correction I had earned:**
+> the human have no arms and square shoulder
+
+Both true, and the arms were my own doing: I had built them, measured that
+they protrude about seven centimetres past the body, worked out that this
+is two pixels at this zoom, and deleted them as work that did not register.
+The measurement was right and the question was wrong. An arm at this size
+never was going to read as a silhouette — it reads as TONE, two darker
+strips either side of a lighter torso in the same plane. Rebuilt that way
+they are obvious. The shoulders were a flat slab across a narrow torso,
+which is why they read as epaulettes; they are a rounded blob now.
+
+The lesson is the one worth keeping: a measurement can be correct and still
+license the wrong conclusion, and "I measured it" is not the same as "I
+measured the thing that mattered". The user was looking at the screen,
+which beat my arithmetic.
+
+**And a performance finding that is honest rather than useful:** a packed
+Chapter III runs its simulation at about a quarter of real time in the
+headless harness, where an empty Chapter I keeps up. Halving the crowd's
+triangle count — five hundred thousand down to two hundred and fifty —
+moved it not at all, which rules out geometry and points at fill rate:
+thousands of small overlapping objects shaded pixel by pixel on a CPU.
+That is the one cost a GPU erases, so no number measured here means
+anything, and it has been written onto the human task list rather than
+guessed at. The frame-rate readout itself is unreliable in that harness for
+a related reason — with few frames, one near-zero delta pins the smoothed
+value at nonsense, which is why the `sim` clock is the figure to read.
+
+**Follow-up prompt:**
+> Can you animate the robot when they go over the stairs because it looks a
+> bit strange
+
+It was gliding, and the cause is a deliberate asymmetry nobody had looked
+at since the stairs were built: the SIMULATION treats a flight as a smooth
+ramp, because `surfaceHeight` interpolates the whole run and that is the
+stable thing to stand a rigid body on. Drawn honestly, that is a machine
+floating up an invisible slope with the steps passing underneath it.
+
+Fixed in the renderer alone, which is where it belongs. The drawn height
+is quantised to the tread the robot is over, with a small arc between one
+tread and the next scaled by speed so a parked machine does not hover. On
+ramps — where there are no treads and a dead-level machine is the thing
+that looks wrong — it leans into the gradient instead, by the component of
+the slope along its own facing, so crossing a slope sideways stays level.
+
+**Measured rather than eyeballed**, because a still frame cannot show a
+climb: a probe drove Voxxy up the west flight in the real sim and compared
+the two heights frame by frame. 36 distinct drawn heights against 775
+simulated ones — a staircase, not a ramp.
+
+**And that first version was wrong, which the user saw and the probe did
+not.**
+
+> can you improve it a bit more so it looks more natural an not jumping
+> from step to step
+
+Snapping to the NEAREST tread puts the feet on a step at every instant and
+pays for it with a 0.18 m teleport at the halfway point of every step. The
+probe had reported "36 distinct heights, worst disagreement 0.092 m" and
+called it a success, because it was measuring how close the drawing stayed
+to the solver and never once asked how far it moved BETWEEN FRAMES. The
+metric was right about the thing it measured and silent about the thing
+that mattered — the second time in this session that has happened.
+
+Rebuilt as dwell, rise, dwell: the height holds at the tread for the first
+fifth of the going, eases onto the next over the middle, and settles. Plus
+a rock backwards and a little extra lift, both hung off the rise rate, so
+the effort peaks in the middle of the step and is nothing at rest.
+Continuous everywhere, and it tracks the treads better than the snap did:
+
+| | snap | eased |
+|---|---|---|
+| worst disagreement with the solver | 0.092 m | **0.041 m** |
+| biggest jump between frames | **0.180 m** | **0.019 m** |
+
+The probe grew a between-frames check, which is the measurement it should
+have had first.
+
+**And then, from watching it rather than measuring it:**
+> So if I climb the stairs side way is looks really good but straigh on is
+> strange
+
+Straight on, the machine was rearing: pitched nose-UP, tipping away from
+the direction it was travelling, which reads as falling over backwards.
+Sideways it looked fine only because the same pitch is edge-on there and
+nearly invisible.
+
+Two mistakes behind one symptom. The rock was applied in the robot's own
+frame regardless of where it was going, so a machine cutting across a
+flight got the full pitch of one climbing it. And the direction was simply
+wrong: a ramp tips a chassis nose-up because the wheels follow the
+surface, but a staircase is WALKED, and a body walking up one leans
+forward over its feet. Both now scale by how much of the travel is
+actually up the flight — +1 straight up, 0 square across, -1 straight down
+— so crossing stays square, climbing leans in, and descending leans back.
+
+Worth noting what caught it: nothing could. The probe measured height
+against the solver frame by frame and was perfectly happy, because the
+pitch is not a height. It took a person driving up a staircase and saying
+it looked odd. It also grew a guard for the storey change — arriving on
+floor 1 re-bases z on the new datum, a 6.2 m step in the number and no
+movement at all, which the new check dutifully reported as the worst jump
+in the climb until it was told otherwise.
+
+**What was deliberately not done:** any change to the lighting. `AMBIENT`,
+`KEY` and the sRGB curve were tuned against photographs and every palette
+in the game is calibrated to them, so a second fill light would have been
+the cheapest-looking improvement here and the most expensive to unpick.
 
 ### _(pending)_ 8-direction sprite sheets from the model sheets
 

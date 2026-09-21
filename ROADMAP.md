@@ -49,6 +49,11 @@ is tuned and measured.
   **payload as real mass**: what a robot carries is added to `Body.mass` and
   divides every force, so a laden machine accelerates, brakes, turns and
   climbs worse by arithmetic rather than by a rule.
+- **The cast has faces.** Voxxy is a visored oval head on a teardrop body,
+  Droid is two metres of slab torso and ochre shoulders, Biggy is an orange
+  belly under a blue-grey cap. Built from primitives against the model
+  sheets, so the drawing scales off `RobotSpec` and cannot drift from the
+  body that collides.
 - **Chapter I is finishable.** Three distribution boards, each lighting a
   zone of the building when it is tapped, and a lamp on Voxxy so the dark is
   something you carry a hole in. Chapters II and III are authored as data
@@ -130,22 +135,31 @@ the palettes stay guesses until the files are on disk.
 
 ### Not blocking, but still human
 
-4. **Generate the robot art.** 8 facings × idle / walk / run per robot, plus
-   one ability animation each. The references page has a usable starting
-   prompt. Nothing derived from the Robot Lab robot — that is a zero on the 40
-   originality points.
+4. ~~**Generate the robot art.**~~ **Largely answered in code, 21 Sep.** Each
+   robot is a handful of primitives built from its model sheet's own
+   proportions and flat-shaded in its livery, which matches the blockout the
+   rest of the game is drawn in and needs no asset pipeline. Nothing is
+   derived from the Robot Lab robot. What is left is animation — idle, walk,
+   run, one ability each — which is moving parts of a group rather than
+   rigging a mesh, and is agent work.
 5. **Watch the four drone flights.** They give ceiling heights, room volumes
    and how one space opens into the next. Report anything that contradicts the
    blockout.
-6. **Judge the feel.** The agent can tune mass and force numbers and read them
+6. **Check the frame rate on real hardware.** The agent develops against a
+   headless software renderer, where a packed Chapter III runs its
+   simulation at a quarter of real time and an empty Chapter I keeps up.
+   Cutting the crowd's triangle count changed nothing, so the cost is fill
+   rate — the one thing a GPU makes free — and no measurement taken here
+   means anything. Five minutes with `npm run dev` and F1 settles it.
+7. **Judge the feel.** The agent can tune mass and force numbers and read them
    back, but cannot feel whether Biggy is satisfying to drive. That judgement
    is 20 points and is not delegable.
-7. **Audio.** Footfall per robot is the highest-value sound in the game — it is
+8. **Audio.** Footfall per robot is the highest-value sound in the game — it is
    what sells mass.
-8. **Playtest with a stranger.** Someone who has never seen it, while you stay
+9. **Playtest with a stranger.** Someone who has never seen it, while you stay
    completely silent. Write down every hesitation. This is the 15 playability
    points and it is the step people skip.
-9. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
+10. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
    description. Submit on the 25th and again at the end — they judge the most
    recent entry, so an early one is free insurance.
 

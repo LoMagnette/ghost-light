@@ -245,27 +245,30 @@ running", "catch the talk in Room 11" — and until 21 Sep the building did not
 say which of fourteen identical doors was which. An objective that names a
 room the venue does not name cannot be attempted, only guessed at.
 
-Every auditorium now has its number painted on the corridor floor outside it,
-on a dark panel, in seven-segment digits about three metres tall. All three
-of those choices are the renderer's doing rather than taste, and each one
-replaced a more obvious answer that did not survive contact:
+Every auditorium has its number on the wall at the back of the room, facing
+south, in characters a metre tall on a dark plate. Nothing is signed out in
+the corridor — the number belongs to the room, and because this camera looks
+over a room's south wall it is legible from the corridor anyway, which is
+where it is needed.
 
-| Wanted | Why it failed |
-|---|---|
-| A number on the corridor wall | The view is fixed to the south-west, so a plate on the east wall reads and the identical plate on the west wall faces away. Half a numbering system. |
-| A blade hung into the corridor | `MAX_DRAWN_HEIGHT` clips everything above 2.7 m. The sign came back as a five-centimetre sliver of itself. |
-| Characters standing on a plate | The key light is nearly overhead: a south-facing face reflects about a third of what an upward one does. Legible geometry, invisible on screen. |
-| Characters the size of real ones | The view takes in sixty metres. A 300 mm digit is eight pixels. |
+Facing south is the whole design, and three separate facts about the
+renderer force it. They have to be answered at once, which is why a pass
+that fixed them one at a time ended up painting the numbers on the floor
+instead:
 
-The floor has none of those problems — never clipped, never occluded, and
-facing the direction the light actually comes from. The cost is that floor
-text in a 45° projection reads at 45°, which is why the digits are
-seven-segment: that survives the skew, and every number in the building is
-skewed identically, which makes it a convention rather than a mistake.
+| Fact | What it kills | The answer |
+|---|---|---|
+| The view is fixed to the south-west, so only south and west faces are visible | A number on a north-south wall is readable or hidden behind the wall it is bolted to, depending only on which side of the corridor its room is. Half a numbering system | The back wall of a room runs east-west and faces south, so it reads in every room |
+| `MAX_DRAWN_HEIGHT` clips geometry 2.7 m above the storey datum | A sign hung where a real one hangs comes back as a five-centimetre sliver | The characters top out at 2.15 m |
+| The key light is nearly overhead — a south face reflects about a third of what an upward one does | Light characters on a light wall, legible in the geometry and invisible on screen | Light characters on a **dark plate** |
 
-The palette gained one entry for it, `signPlate`, dark in all three eras. It
-is the only thing in the game whose job is to supply contrast the lighting
-will not.
+Two supporting pieces came out of it. `signPlate` is a palette entry, dark in
+all three eras, and the only thing in the game whose job is to supply
+contrast the lighting will not. `signChar` is a material — the same ink as a
+stage letter, distinguished from it because `npm run venue` asserts that
+stage letters stand within two metres of the screen wall, and fourteen room
+numbers at the other end of their rooms tripped that check fourteen times
+over the first time they existed.
 
 #### The constraint the building handed us
 
@@ -355,14 +358,27 @@ holds the right number of people. Same rule `SPEC.md` §8 already applies to
 the seat counts: the geometry follows the plan, the crowd follows the modern
 number.
 
-**A person is three boxes, not one.** A single box is a chocolate bar. At
-twenty-odd pixels tall what makes a shape read as a human is almost entirely
-silhouette — a head narrower than the shoulders, shoulders wider than the
-hips, and a visible break between them — so it is legs, torso and head, all
-sharing one centre line so that a heading still rotates the whole figure
-with one number. Faces and arms would cost geometry to say nothing at this
-size. Seated people drop the legs, which are behind the seat in front of
-them and were three thousand boxes drawn to be hidden.
+**A person is three boxes and a blob.** Legs, torso, a shoulder line, and a
+rounded head — all sharing one centre line, so a heading rotates the whole
+figure with one number. At twenty-odd pixels what reads is silhouette: the
+head narrower than the shoulders and the shoulders wider than the waist.
+
+Arms read as **tone, not silhouette**, and that took two goes to get right.
+The first attempt built them sticking out, measured the seven centimetres a
+real arm protrudes past the body, found it came to two pixels, and deleted
+them — the right measurement answering the wrong question. An arm at this
+size is two darker strips either side of a lighter torso, in the same plane
+as it. The shoulders are a rounded blob rather than a flat cap, because a
+slab across the top of a narrow torso reads as epaulettes.
+
+**Sitting is an L, not a post.** The first version stood a torso on the pan
+and it read as a pillar planted in front of the chair: no lap, no knees, and
+perched on the front edge because it was centred on the seat. Sitting is the
+horizontal run of the thighs forward of a torso pushed back against the
+rest, with head and shoulders over the seat back in front. Every seat faces
+along x, so "forward" comes out of the heading as a sign and the parts stay
+axis-aligned — which is what lets three thousand of them bake into one
+instanced mesh with no rotation at all.
 
 Colour comes from the chapter's one `crowd` entry and is derived from there,
 the way the skid marks derive from the floor: trousers are it darkened,
@@ -375,6 +391,15 @@ figures reading as packaging.
 People also keep out of each other — resolved within a grid cell only, which
 at a couple of hundred people over a thousand cells costs nothing and breaks
 up the knots that form when several of them pick the same cell to walk to.
+
+**Performance is unmeasured and needs a human.** A packed Chapter III runs
+its simulation at about a quarter of real time under the headless software
+renderer this project is developed against — against an empty Chapter I,
+which keeps up. Halving the crowd's triangle count moved that not at all,
+so the cost is fill rate: thousands of small overlapping objects shaded
+pixel by pixel on a CPU, which is precisely what a GPU makes free. Nothing
+here can tell us whether it is a problem on real hardware, and it belongs
+next to "judge the feel" on the human list.
 
 **People get out of the way of robots; robots are unaffected by people.** The
 avoidance radius grows with the robot's speed, so a machine crossing the hall

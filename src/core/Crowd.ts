@@ -71,9 +71,7 @@ const PERSON_RADIUS = 0.34;
  */
 const ATTENDANCE = 3200;
 
-/** Seat pan height above the tier, and how tall a seated person is on it. */
-const SEAT_RISE = 0.34;
-const SEATED_HEIGHT = 0.92;
+
 /**
  * A person, in parts, metres.
  *
@@ -88,14 +86,45 @@ const SEATED_HEIGHT = 0.92;
  * in metres, like everything else in `core/`.
  */
 export const PERSON_HEIGHT = 1.72;
-/** Head, shoulders, hips — in metres from the floor. */
-export const PERSON_LEG_TOP = 0.82;
-export const PERSON_NECK = 1.48;
-/** Width across, and depth front to back. */
+/** Hips, and the neck, in metres from the floor. */
+export const PERSON_LEG_TOP = 0.8;
+export const PERSON_NECK = 1.46;
+/**
+ * WIDE is side to side and THICK is front to back, and the distinction is
+ * not pedantry: the two were the wrong way round to begin with, so every
+ * walker in the building was turned ninety degrees and led with a shoulder.
+ */
 export const PERSON_SHOULDER = 0.44;
+export const PERSON_TORSO_WIDE = 0.24;
 export const PERSON_HIP = 0.3;
-export const PERSON_HEAD = 0.2;
-export const PERSON_DEPTH = 0.28;
+export const PERSON_THICK = 0.26;
+/**
+ * Arms, flush with the torso rather than proud of it.
+ *
+ * A real arm hangs INSIDE the shoulder width, so it barely changes the
+ * outline — which is why the first attempt at them, built to stick out,
+ * was invisible and got deleted. That was the wrong conclusion from the
+ * right measurement: an arm at this size does not read as a silhouette, it
+ * reads as TONE. Two darker strips either side of a lighter torso, all in
+ * the same plane, and the body stops being one slab.
+ */
+export const PERSON_ARM_WIDE = 0.1;
+export const PERSON_ARM_TOP = 1.3;
+export const PERSON_ARM_BOTTOM = 0.86;
+/**
+ * The shoulders, as a rounded mass rather than a square cap.
+ *
+ * A flat slab across the top of the torso reads as epaulettes — a coat
+ * hanger with a ball on it. Shoulders are the widest part of a person and
+ * they are round, and rounding them is most of what separates a figure
+ * from a post.
+ */
+export const PERSON_SHOULDER_BOTTOM = 1.14;
+/**
+ * The head, as an ellipsoid rather than a cube. Its height is the gap
+ * between the neck and the top of the person, so there is only one number.
+ */
+export const PERSON_HEAD_WIDE = 0.21;
 
 /**
  * How close a robot has to be before people move out of its way, metres,
@@ -419,7 +448,10 @@ export class Crowd {
       this.seated.push({
         x,
         y,
-        z: (piece.base ?? 0) + SEAT_RISE,
+        // ON the pan: the seat states where its own surface is, so the
+        // height a person sits at is read off the furniture rather than
+        // assumed from the tier under it.
+        z: piece.height,
         floor: piece.floor,
         tint: this.random(),
         // Facing the stage, which is at the far end of the room from the
@@ -490,15 +522,31 @@ export class Crowd {
 }
 
 /**
- * Seated: head and shoulders above the pan, metres.
+ * Sitting down, measured up from the pan — and it is an L, not a post.
  *
- * No legs. The knees of the person in front are behind the seat back in
- * front of them, so nobody ever sees a seated person's legs from this
- * camera, and three thousand of them would be three thousand boxes drawn to
- * be hidden.
+ * The first version stood a torso on the seat, and it read as a pillar
+ * planted in front of the chair: no lap, no knees, and perched on the front
+ * edge because it was centred on the pan. What says "sitting" is the
+ * horizontal run of the thighs forward of a torso pushed back against the
+ * rest, with head and shoulders showing over the seat back in front.
  */
-export const SEATED_PERSON_HEIGHT = SEATED_HEIGHT;
-export const SEATED_NECK = 0.68;
+export const SEATED_PERSON_HEIGHT = 0.86;
+/** The lap: how far forward the thighs run, and how thick they are. */
+export const SEATED_THIGH_LONG = 0.36;
+export const SEATED_THIGH_HIGH = 0.16;
+/** The torso, pushed back against the rest. */
+export const SEATED_TORSO_TOP = 0.6;
+export const SEATED_TORSO_THICK = 0.24;
+export const SEATED_SHOULDER = 0.42;
+/** Seated arms and shoulders, measured up from the pan like everything else. */
+export const SEATED_TORSO_WIDE = 0.23;
+export const SEATED_ARM_WIDE = 0.09;
+export const SEATED_ARM_BOTTOM = 0.16;
+export const SEATED_ARM_TOP = 0.5;
+export const SEATED_SHOULDER_BOTTOM = 0.42;
+/** Spine behind the pan's centre, lap forward of it. */
+export const SEATED_SPINE_BACK = 0.07;
+export const SEATED_LAP_FORWARD = 0.15;
 
 const NEIGHBOURS = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, 1, -1, -1, 1, -1, -1];
 

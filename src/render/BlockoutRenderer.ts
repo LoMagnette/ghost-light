@@ -51,21 +51,39 @@ import {
   type OrthographicCamera,
 } from 'three';
 import type { Actor } from '@/core/Sim';
+import type { RobotSpec } from '@/core/RobotSpec';
+import { climbFraction, downhill } from '@/core/Traversal';
 import {
   Crowd,
-  PERSON_DEPTH,
-  PERSON_HEAD,
+  PERSON_ARM_BOTTOM,
+  PERSON_ARM_TOP,
+  PERSON_ARM_WIDE,
+  PERSON_HEAD_WIDE,
   PERSON_HEIGHT,
   PERSON_HIP,
   PERSON_LEG_TOP,
   PERSON_NECK,
   PERSON_SHOULDER,
-  SEATED_NECK,
+  PERSON_SHOULDER_BOTTOM,
+  PERSON_THICK,
+  PERSON_TORSO_WIDE,
+  SEATED_ARM_BOTTOM,
+  SEATED_ARM_TOP,
+  SEATED_ARM_WIDE,
+  SEATED_LAP_FORWARD,
   SEATED_PERSON_HEIGHT,
+  SEATED_SHOULDER,
+  SEATED_SHOULDER_BOTTOM,
+  SEATED_SPINE_BACK,
+  SEATED_TORSO_WIDE,
+  SEATED_THIGH_HIGH,
+  SEATED_THIGH_LONG,
+  SEATED_TORSO_THICK,
+  SEATED_TORSO_TOP,
   type Person,
 } from '@/core/Crowd';
 import { renderPos } from '@/core/Sim';
-import { groundAt, rect, type Level, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
+import { groundAt, rect, type Level, type Link, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 import {
   createCutawayUniforms,
@@ -187,10 +205,128 @@ const LAMBERT_SCALE = Math.PI;
  */
 const REVEAL_SPACING = 15;
 
+/**
+ * The two inks that are not a robot's own livery.
+ *
+ * A visor is dark whatever colour the machine is painted, and a lit eye is
+ * a lit eye. Both are `MeshLambert` like everything else rather than
+ * emissive: a glow would be the only bloom in a game that has none.
+ */
+const VISOR = 0x14171a;
+const EYES = 0xffc061;
+
+/**
+ * How much two boxes of the same material may differ in tone, either way.
+ *
+ * Everything in this building is one of about a dozen flat colours, and a
+ * thirty-metre wall painted in exactly the same value as the column in
+ * front of it reads as one dead slab with a line on it. Real surfaces are
+ * not uniform; more to the point, a blockout that varies slightly reads as
+ * MADE of things, which is the whole difference between a model and a
+ * placeholder.
+ *
+ * Keyed off the box's own position, so it is stable — a wall does not
+ * shimmer when the storey is rebuilt — and small enough that nobody can
+ * point at it and say a wall is two colours.
+ */
+const TONE_SPREAD = 0.055;
+
+/**
+ * Depth of the pale band drawn along the top of anything the cutaway cuts.
+ *
+ * `MAX_DRAWN_HEIGHT` slices every wall and column at 2.7 m, which left them
+ * as boxes that simply stop. Drawing the cut as a band turns the artefact
+ * into the device it should have been all along: the building now reads as
+ * a sectioned architectural model, the columns get a capital and the walls
+ * get a cornice, and all of it falls out of geometry that was already being
+ * clipped.
+ */
+const CUT_BAND = 0.08;
+const CUT_BAND_LIFT = 1.16;
+
+/**
+ * A stable 0..1 from a position. Not random: the same box must come back
+ * the same colour every time the chapter is entered.
+ */
+function tone(x: number, y: number, z: number): number {
+  const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return n - Math.floor(n);
+}
+
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
-/** Boxes per standing person: legs, torso, head. */
-const PERSON_PARTS = 3;
+/** Boxes per standing person: legs, torso, two arms. */
+const PERSON_PARTS = 4;
+/** Blobs per person: the shoulder mass and the head. */
+const PERSON_BLOBS = 2;
+
+/**
+ * Segments on a crowd blob. A head is about six pixels across, so six by
+ * four is indistinguishable from anything rounder and costs half as much.
+ *
+ * Kept for the saving, but NOT the fix for anything: a packed Chapter III
+ * runs its simulation at about a quarter of real time under the headless
+ * software renderer, and halving the crowd's triangle count from half a
+ * million moved that figure not at all. The cost is fill rate — thousands
+ * of small overlapping objects, shaded pixel by pixel on a CPU — which is
+ * the one thing a GPU makes free, and the reason this needs measuring on
+ * real hardware rather than here. See docs/PROMPTS.md.
+ */
+const CROWD_SEGMENTS = 6;
+
+/**
+ * How a robot is DRAWN on a flight, which is not how it is simulated.
+ *
+ * The simulation treats a staircase as a smooth ramp — `surfaceHeight`
+ * interpolates the whole flight — because that is the cheap, stable thing
+ * for a solver to stand a body on, and nothing about the physics wants a
+ * sawtooth. Drawn that way the machine glides up an invisible slope with
+ * the steps passing underneath it, which is exactly the escalator look.
+ *
+ * So the renderer quantises the height to the tread the robot is actually
+ * over, and adds a small arc between one tread and the next. The most it
+ * ever disagrees with the simulation by is half a riser — nine centimetres
+ * — and it is the difference between climbing and floating.
+ */
+/**
+ * Where in a tread's width the body starts and finishes rising, 0..1.
+ *
+ * It dwells at one tread, lifts over the middle of the going, and settles
+ * on the next — which is what a body climbing stairs actually does, and
+ * the reason this is not a snap to the nearest tread. Snapping was the
+ * first attempt: it put the feet on a tread at every instant and paid for
+ * it with a 0.18 m teleport at the halfway point of every single step.
+ * Continuous beats correct-at-every-instant when the eye is watching the
+ * motion rather than the frame.
+ */
+const STEP_DWELL_START = 0.18;
+const STEP_DWELL_END = 0.82;
+/** A little extra lift at the top of the swing, over the eased rise. */
+const STEP_ARC = 0.022;
+/**
+ * How a machine carries itself on a staircase, in radians.
+ *
+ * It leans INTO the climb, which is the opposite of what it does on a
+ * ramp and the opposite of what this did first. A ramp tips a chassis
+ * because the wheels follow the surface; a staircase is walked, and a
+ * body walking up one leans forward over its feet. Nose-up on stairs read
+ * as rearing — the machine appeared to be falling over backwards away
+ * from the direction it was going.
+ *
+ * Both are scaled by how much of the travel is actually up the flight, so
+ * a robot crossing a staircase sideways stays square and only one going
+ * straight up it leans the full amount.
+ */
+const STAIR_LEAN = 0.09;
+const STEP_ROCK = 0.05;
+/** How far a machine leans into a gradient, as a fraction of the real angle. */
+const SLOPE_LEAN = 0.8;
+
+/** Hermite ease between two edges. 0 below `from`, 1 above `to`. */
+function smoothstep(x: number, from: number, to: number): number {
+  const u = Math.max(0, Math.min(1, (x - from) / (to - from)));
+  return u * u * (3 - 2 * u);
+}
 
 /**
  * How a person is coloured, from the one crowd colour the chapter gives.
@@ -247,11 +383,42 @@ interface Box {
 /** The parts of a robot that move every frame. */
 interface RobotView {
   group: Group;
-  body: Mesh;
-  nose: Mesh;
+  /**
+   * Pitch, applied inside `body` so it is about the machine's own lateral
+   * axis and pivots on its feet rather than on the world's axes.
+   */
+  tilt: Group;
+  /**
+   * The machine itself, as a handful of primitives.
+   *
+   * A Group rather than a Mesh, and it is ROTATED by the robot's heading —
+   * which is what retired the facing pip. A box is symmetrical and needs a
+   * bead stuck on the front to show which way it is pointing; a shape with a
+   * head on it does not.
+   */
+  body: Group;
   shadow: Mesh;
   stopLine: Line;
   stopRing: Mesh;
+}
+
+/**
+ * One primitive of a robot, in metres, in the machine's own frame.
+ *
+ * `x` is forward, `y` is to its left, `z` is up from the soles of its feet.
+ * Everything is stated as a fraction of `radius` and `height` at the call
+ * site, so a change to `RobotSpec` moves the art with the collision shape
+ * instead of leaving the two to drift.
+ */
+interface RobotPart {
+  shape: 'box' | 'blob';
+  x?: number;
+  y?: number;
+  z: number;
+  w: number;
+  d: number;
+  h: number;
+  colour: number;
 }
 
 const SCRATCH = new Object3D();
@@ -324,6 +491,7 @@ export class BlockoutRenderer {
    */
   private readonly crowd: Crowd;
   private readonly moverMesh: InstancedMesh;
+  private readonly moverHeads: InstancedMesh;
 
   constructor(
     camera: OrthographicCamera,
@@ -397,6 +565,16 @@ export class BlockoutRenderer {
     // the mesh is meaningless and culling it by that sphere hides the lot.
     this.moverMesh.frustumCulled = false;
     this.scene.add(this.moverMesh);
+
+    this.moverHeads = new InstancedMesh(
+      new SphereGeometry(0.5, CROWD_SEGMENTS, CROWD_SEGMENTS - 2),
+      new MeshLambertMaterial({ color: 0xffffff }),
+      MAX_MOVERS * PERSON_BLOBS,
+    );
+    this.moverHeads.count = 0;
+    this.moverHeads.frustumCulled = false;
+    this.moverHeads.setColorAt(0, SCRATCH_COLOUR.set(0xffffff));
+    this.scene.add(this.moverHeads);
   }
 
   /** Trousers, clothing and head for one person, in this era's colours. */
@@ -411,34 +589,89 @@ export class BlockoutRenderer {
   }
 
   /**
-   * A seated person: head and shoulders over the seat back.
+   * A seated person: a lap, a torso against the rest, and a head over it.
    *
-   * Every part shares the person's own centre, which is what lets the
-   * standing version be rotated by a single heading without any of the parts
-   * having to be moved around each other.
+   * Every seat in the building faces along x — towards its own stage — so
+   * which way "forward" is comes out of the person's heading as a sign, and
+   * the parts can stay axis-aligned. That is what lets three thousand of
+   * them be baked into one instanced mesh with no rotation at all.
    */
   private seatedBoxes(person: Person): Box[] {
-    const [, clothing, head] = this.personColours(person);
+    const [trousers, clothing] = this.personColours(person);
+    const f = Math.cos(person.heading) >= 0 ? 1 : -1;
+
+    // The lap, running forward over the pan from the hips.
+    const lapCentre = person.x + f * SEATED_LAP_FORWARD;
+    // The spine, tucked back against the rest rather than centred on the pan.
+    const spine = person.x - f * SEATED_SPINE_BACK;
+
     return [
       {
         bounds: rect(
-          person.x - PERSON_SHOULDER / 2,
-          person.y - PERSON_DEPTH / 2,
-          PERSON_SHOULDER,
-          PERSON_DEPTH,
+          lapCentre - SEATED_THIGH_LONG / 2,
+          person.y - SEATED_SHOULDER / 2 + 0.03,
+          SEATED_THIGH_LONG,
+          SEATED_SHOULDER - 0.06,
         ),
         bottom: person.z,
-        top: person.z + SEATED_NECK,
+        top: person.z + SEATED_THIGH_HIGH,
+        colour: trousers,
+      },
+      {
+        bounds: rect(
+          spine - SEATED_TORSO_THICK / 2,
+          person.y - SEATED_TORSO_WIDE / 2,
+          SEATED_TORSO_THICK,
+          SEATED_TORSO_WIDE,
+        ),
+        // Overlapping the lap, so hip and thigh are one mass rather than two
+        // stacked slabs with a seam between them.
+        bottom: person.z + SEATED_THIGH_HIGH * 0.5,
+        top: person.z + SEATED_TORSO_TOP,
+        colour: clothing,
+      },
+      // Arms down either side, darker — the same tonal trick the walkers
+      // use, and the same reason: at this size an arm is a stripe, not a
+      // shape.
+      ...[1, -1].map((sideOf) => ({
+        bounds: rect(
+          spine - SEATED_TORSO_THICK / 2,
+          person.y + (sideOf * (SEATED_TORSO_WIDE + SEATED_ARM_WIDE)) / 2 - SEATED_ARM_WIDE / 2,
+          SEATED_TORSO_THICK,
+          SEATED_ARM_WIDE,
+        ),
+        bottom: person.z + SEATED_ARM_BOTTOM,
+        top: person.z + SEATED_ARM_TOP,
+        colour: shade(clothing, 0.74),
+      })),
+    ];
+  }
+
+  /** A seated person's rounded parts: the shoulder mass and the head. */
+  private seatedBlobs(person: Person): Box[] {
+    const [, clothing, head] = this.personColours(person);
+    const f = Math.cos(person.heading) >= 0 ? 1 : -1;
+    const spine = person.x - f * SEATED_SPINE_BACK;
+    return [
+      {
+        bounds: rect(
+          spine - SEATED_TORSO_THICK / 2,
+          person.y - SEATED_SHOULDER / 2,
+          SEATED_TORSO_THICK,
+          SEATED_SHOULDER,
+        ),
+        bottom: person.z + SEATED_SHOULDER_BOTTOM,
+        top: person.z + SEATED_TORSO_TOP,
         colour: clothing,
       },
       {
         bounds: rect(
-          person.x - PERSON_HEAD / 2,
-          person.y - PERSON_HEAD / 2,
-          PERSON_HEAD,
-          PERSON_HEAD,
+          spine - PERSON_HEAD_WIDE / 2,
+          person.y - PERSON_HEAD_WIDE / 2,
+          PERSON_HEAD_WIDE,
+          PERSON_HEAD_WIDE,
         ),
-        bottom: person.z + SEATED_NECK,
+        bottom: person.z + SEATED_TORSO_TOP - 0.03,
         top: person.z + SEATED_PERSON_HEIGHT,
         colour: head,
       },
@@ -448,36 +681,98 @@ export class BlockoutRenderer {
   /** Put the standing crowd where it is this frame. Visible storey only. */
   private placeMovers(floor: Level): void {
     let i = 0;
+    let h = 0;
     for (const person of this.crowd.movers) {
-      if (person.floor !== floor || i + PERSON_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
+      if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
       const [trousers, clothing, head] = this.personColours(person);
 
-      // Legs, torso, head — all on the same centre line, so the heading
-      // rotates the whole figure without any part having to orbit another.
-      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_HIP, PERSON_DEPTH * 0.8, trousers);
-      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_SHOULDER, PERSON_DEPTH, clothing);
-      i = this.placePart(i, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD, PERSON_HEAD, head);
+      /*
+       * Legs, torso, two arms — all on the same centre line, so the heading
+       * rotates the whole figure and no part has to orbit another.
+       *
+       * `thick` is front to back and `wide` is side to side. They were the
+       * wrong way round in the first version, which turned every walker
+       * ninety degrees: perfectly symmetrical at rest and unmistakable the
+       * moment anyone walked anywhere.
+       */
+      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_THICK, PERSON_TORSO_WIDE, clothing);
+
+      /*
+       * Arms: two darker strips either side of the torso, in the SAME
+       * plane as it rather than proud of it.
+       *
+       * The pass before this one built them sticking out, measured the
+       * seven centimetres they protrude, found it came to two pixels, and
+       * deleted them — the right measurement answering the wrong question.
+       * An arm at this size does not read as a silhouette. It reads as
+       * tone: dark, light, dark across the body, which is the difference
+       * between a person and a slab.
+       */
+      const sleeve = shade(clothing, 0.74);
+      const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
+      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, reach);
+      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, -reach);
+
+      // The shoulders as a rounded mass over the top of all three, and the
+      // head over that. A flat cap read as epaulettes.
+      h = this.placeBlob(h, person, PERSON_SHOULDER_BOTTOM, PERSON_NECK, PERSON_SHOULDER, PERSON_THICK, clothing);
+      h = this.placeBlob(h, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
     }
+
     this.moverMesh.count = i;
     this.moverMesh.instanceMatrix.needsUpdate = true;
     if (this.moverMesh.instanceColor) this.moverMesh.instanceColor.needsUpdate = true;
+
+    this.moverHeads.count = h;
+    this.moverHeads.instanceMatrix.needsUpdate = true;
+    if (this.moverHeads.instanceColor) this.moverHeads.instanceColor.needsUpdate = true;
   }
 
+  /**
+   * One box of a walking person, in its own frame. `across` offsets it to
+   * the figure's left, which is how an arm gets beside a torso without
+   * having to know which way the person is facing.
+   */
   private placePart(
     index: number,
     person: Person,
     from: number,
     to: number,
-    width: number,
-    depth: number,
+    thick: number,
+    wide: number,
     colour: number,
+    across = 0,
   ): number {
-    SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
-    SCRATCH.scale.set(width, depth, to - from);
+    SCRATCH.position.set(
+      person.x - Math.sin(person.heading) * across,
+      person.y + Math.cos(person.heading) * across,
+      person.z + (from + to) / 2,
+    );
+    SCRATCH.scale.set(thick, wide, to - from);
     SCRATCH.rotation.set(0, 0, person.heading);
     SCRATCH.updateMatrix();
     this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
     this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
+    return index + 1;
+  }
+
+  /** The same, for the rounded parts: the shoulders and the head. */
+  private placeBlob(
+    index: number,
+    person: Person,
+    from: number,
+    to: number,
+    wide: number,
+    thick: number,
+    colour: number,
+  ): number {
+    SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
+    SCRATCH.scale.set(thick, wide, to - from);
+    SCRATCH.rotation.set(0, 0, person.heading);
+    SCRATCH.updateMatrix();
+    this.moverHeads.setMatrixAt(index, SCRATCH.matrix);
+    this.moverHeads.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
   }
 
@@ -510,7 +805,9 @@ export class BlockoutRenderer {
       const visible = marker.floor === floor;
       mesh.visible = visible;
       if (!visible) continue;
-      mesh.position.set(marker.x, marker.y, marker.z + 1.15);
+      const scale = marker.low ? 0.34 : 1;
+      mesh.scale.set(1, 1, scale);
+      mesh.position.set(marker.x, marker.y, marker.z + 1.15 * scale);
       const material = mesh.material as MeshBasicMaterial;
       material.color.setHex(marker.colour);
       for (const child of mesh.children) {
@@ -701,8 +998,22 @@ export class BlockoutRenderer {
         // No material means the building itself, which takes the wall colour.
         // Only furniture names one. Same rule as Decor.material: the venue
         // says what a thing IS and the chapter says what that looks like.
-        colour: this.material(obstacle.material),
+        colour: this.varied(this.material(obstacle.material), bounds, obstacle.material),
       });
+
+      // Anything the cut plane passes through gets the band. Not flights —
+      // a staircase is exempt from the cutaway and has a real top — and not
+      // glass, which has no edge to catch the light.
+      const raw = datum + obstacle.height;
+      const cut = cutAt(datum);
+      if (!obstacle.linkId && obstacle.material !== 'glazing' && raw > cut + CUT_BAND) {
+        boxes.push({
+          bounds,
+          bottom: cut - CUT_BAND,
+          top: cut,
+          colour: shade(this.material(obstacle.material), CUT_BAND_LIFT),
+        });
+      }
     }
 
     // Dressing, by the same rules: same cutaway, same box. The only difference
@@ -717,7 +1028,7 @@ export class BlockoutRenderer {
         top: piece.linkId
           ? datum + piece.height
           : Math.min(datum + piece.height, cutAt(datum)),
-        colour: this.material(piece.material),
+        colour: this.varied(this.material(piece.material), bounds, piece.material),
       });
     }
 
@@ -736,6 +1047,12 @@ export class BlockoutRenderer {
       group.add(
         instanceBoxes(
           audience.flatMap((person) => this.seatedBoxes(person)),
+          new MeshLambertMaterial(),
+        ),
+      );
+      group.add(
+        instanceBlobs(
+          audience.flatMap((person) => this.seatedBlobs(person)),
           new MeshLambertMaterial(),
         ),
       );
@@ -829,6 +1146,19 @@ export class BlockoutRenderer {
   }
 
   /**
+   * A material's colour, nudged by where the thing is standing.
+   *
+   * Left alone for the surfaces where variation would read as a mistake
+   * rather than as texture: glass is one sheet, and a sign whose characters
+   * were each a slightly different white would look misprinted.
+   */
+  private varied(colour: number, bounds: Rect, material: Material | undefined): number {
+    if (material === 'glazing' || material === 'sign' || material === 'signChar') return colour;
+    const t = tone(bounds.x, bounds.y, bounds.w + bounds.h);
+    return shade(colour, 1 - TONE_SPREAD + t * TONE_SPREAD * 2);
+  }
+
+  /**
    * What a material looks like in this era.
    *
    * The venue names materials and never colours — see `Material` — so this is
@@ -839,6 +1169,11 @@ export class BlockoutRenderer {
     switch (of) {
       case 'seat':
         return this.palette.seat;
+      // A backrest is the same upholstery as the pan, darkened: it is the
+      // face you see from behind, which is the face turned away from the
+      // light in every row of every room.
+      case 'seatBack':
+        return shade(this.palette.seat, 0.86);
       case 'desk':
         return this.palette.desk;
       case 'sign':
@@ -847,6 +1182,10 @@ export class BlockoutRenderer {
         return this.palette.accent;
       case 'signPlate':
         return this.palette.signPlate;
+      // The same ink as a stage letter. They differ in what they are for,
+      // not in what they look like — see the note on Material.
+      case 'signChar':
+        return this.palette.sign;
       case 'screen':
         return this.palette.screen;
       case 'glazing':
@@ -896,30 +1235,226 @@ export class BlockoutRenderer {
 
   // -- robots ---------------------------------------------------------------
 
+  /**
+   * How a machine should be drawn on the flight it is standing on.
+   *
+   * `lift` is the gap between where the simulation put its feet — anywhere
+   * on a smooth ramp — and the tread it is actually over, plus a small arc
+   * as it crosses from one tread to the next. `lean` is the angle it tips
+   * into a gradient.
+   *
+   * Stairs get the step and no lean: a walking machine stays upright on a
+   * staircase, and tipping it would look like it was falling down one.
+   * Ramps get the lean and no step, for the same reason in reverse — there
+   * are no treads to find, and a machine on a slope that stays dead level
+   * is the thing that looks wrong there.
+   */
+  private climbOf(actor: Actor, heading: number): { lift: number; lean: number } {
+    const id = actor.onLink;
+    if (id === undefined) return { lift: 0, lean: 0 };
+    const link = this.venue.links.find((l) => l.id === id);
+    if (link === undefined) return { lift: 0, lean: 0 };
+
+    const { body } = actor;
+
+    if (link.riser > 0) {
+      const steps = Math.max(1, Math.round(link.rise / link.riser));
+      const f = climbFraction(link, body.x, body.y);
+      const exact = f * steps;
+      const tread = Math.floor(exact);
+      const across = exact - tread;
+
+      /*
+       * Dwell, rise, dwell — once per tread, and continuous throughout.
+       *
+       * The height tracks the tread the robot is over for most of the
+       * going and eases onto the next in between, so the feet are on a
+       * step whenever anyone would notice and the body never teleports.
+       * The worst it parts company with the solver's smooth ramp is about
+       * a fifth of a riser, which is tighter than the snap it replaced.
+       */
+      const eased = smoothstep(across, STEP_DWELL_START, STEP_DWELL_END);
+      const lift = ((tread + eased) / steps - f) * link.rise;
+
+      // The rise rate, normalised to peak at 1 halfway through the lift.
+      // Everything that reads as effort hangs off it: a little extra height
+      // at the top of the swing, and a deepening of the lean while pushing.
+      const rising = 4 * eased * (1 - eased);
+      const effort = rising * body.speedFraction;
+
+      /*
+       * How much of this is actually a climb.
+       *
+       * +1 driving straight up the flight, 0 crossing it square, -1 going
+       * straight down. Everything about the posture is multiplied by it,
+       * so a machine cutting across a staircase stays upright and only one
+       * pointed up it leans — which is the difference between the two the
+       * player noticed.
+       */
+      const aligned = this.alignment(link, heading);
+      // Negative is nose-down: forward, over its own feet, into the climb.
+      // Both terms fade with speed, because leaning is something a machine
+      // does while climbing — one parked on a flight stands square, and
+      // gets there smoothly rather than snapping upright.
+      return {
+        lift: lift + STEP_ARC * effort,
+        lean: -(STAIR_LEAN * body.speedFraction + STEP_ROCK * effort) * aligned,
+      };
+    }
+
+    /*
+     * A ramp tips the machine the OTHER way: nose-up going up.
+     *
+     * Not an inconsistency. A ramp is rolled, so the chassis follows the
+     * surface it is standing on; a staircase is walked, and a body walking
+     * up one leans forward over its feet instead. The two look right for
+     * opposite reasons.
+     */
+    const pull = downhill(link);
+    const along = pull.x * Math.cos(heading) + pull.y * Math.sin(heading);
+    return { lift: 0, lean: Math.asin(Math.max(-1, Math.min(1, -along))) * SLOPE_LEAN };
+  }
+
+  /**
+   * How much of a machine's facing is up the flight: +1 straight up, 0
+   * square across it, -1 straight down.
+   */
+  private alignment(link: Link, heading: number): number {
+    const pull = downhill(link);
+    const slope = Math.hypot(pull.x, pull.y);
+    if (slope < 1e-4) return 0;
+    const along = (pull.x * Math.cos(heading) + pull.y * Math.sin(heading)) / slope;
+    return Math.max(-1, Math.min(1, -along));
+  }
+
+  /**
+   * Each robot as primitives, read off its model sheet in `references/`.
+   *
+   * NOT a model import. Everything else in this game is untextured boxes
+   * lit by one ambient and one directional light, and a detailed mesh
+   * dropped into that reads as a sticker on a blockout. What carries a
+   * character at thirty pixels is its silhouette, which is the same thing
+   * the crowd taught: a head narrower than the shoulders is worth more than
+   * any amount of surface.
+   *
+   * The proportions are the sheets' own, measured off the front views —
+   * Voxxy 0.61 wide per unit tall, Droid 0.48, Biggy 1.11 — and they come
+   * out of `RobotSpec` rather than being typed again here, so the drawing
+   * cannot drift from the body that collides.
+   */
+  private robotParts(spec: RobotSpec): RobotPart[] {
+    const R = spec.radius;
+    const H = spec.height;
+    const dark = shade(spec.tint, 0.45);
+
+    switch (spec.id) {
+      /*
+       * A big oval head on a teardrop body, on two thin legs. The head is
+       * the widest thing on it — wider than the body it sits on — which is
+       * the whole of why Voxxy reads as small and friendly rather than as
+       * a canister.
+       */
+      case 'voxxy':
+        return [
+          { shape: 'box', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'box', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'blob', z: 0.24 * H, w: 1.5 * R, d: 1.32 * R, h: 0.45 * H, colour: spec.tint },
+          { shape: 'box', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'box', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'blob', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
+          // The dark visor across the front of the head, and the pale ring
+          // round it. Two of the three things anyone would draw from the
+          // sheet, and both survive being eight pixels wide.
+          { shape: 'box', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
+          { shape: 'box', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+        ];
+
+      /*
+       * Tall and thin: a slab of a torso on long legs, arms to the knee,
+       * and a small domed head a long way up. Two metres of it, which is
+       * what makes the 2 m reach gate believable when it operates a counter
+       * nothing else can.
+       */
+      case 'droid':
+        return [
+          { shape: 'box', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', z: 0.42 * H, w: 0.62 * R, d: 0.78 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', z: 0.5 * H, w: 0.72 * R, d: 1.42 * R, h: 0.28 * H, colour: spec.tint },
+          // Shoulders proud of the torso, which is what makes the top half
+          // read as a chest rather than as a post.
+          { shape: 'box', y: 0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', y: -0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
+          { shape: 'blob', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
+        ];
+
+      /*
+       * A sphere with a cap on it and almost no legs. Wider than it is
+       * tall, which no other machine in the building is, and the reason a
+       * corridor that Voxxy treats as open floor is a decision for Biggy.
+       */
+      default:
+        return [
+          { shape: 'box', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          // The belly, and it is the whole machine: 2R across, so the thing
+          // you see is exactly the thing that collides.
+          { shape: 'blob', z: 0.14 * H, w: 2 * R, d: 1.9 * R, h: 0.66 * H, colour: spec.trim },
+          { shape: 'blob', z: 0.5 * H, w: 1.6 * R, d: 1.55 * R, h: 0.42 * H, colour: spec.tint },
+          { shape: 'blob', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
+          { shape: 'box', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
+        ];
+    }
+  }
+
   private buildRobot(actor: Actor): RobotView {
     const { spec } = actor.body;
     const group = new Group();
 
-    const body = new Mesh(
-      new BoxGeometry(spec.radius * 2, spec.radius * 2, spec.height),
-      new MeshLambertMaterial({ color: spec.tint }),
-    );
+    /*
+     * The machine, assembled from its parts.
+     *
+     * Each part is positioned in the robot's OWN frame — x forward, z up
+     * from its soles — and the whole group is turned by the heading every
+     * frame, so the parts never have to know which way it is facing.
+     *
+     * Low segment counts on the blobs on purpose. The building is boxes and
+     * the crowd is boxes; a smooth sphere in the middle of that would be the
+     * one thing on screen pretending to be something else.
+     */
+    const body = new Group();
+    const tilt = new Group();
+    body.add(tilt);
+    for (const part of this.robotParts(spec)) {
+      const geometry =
+        part.shape === 'box'
+          ? new BoxGeometry(part.w, part.d, part.h)
+          : new SphereGeometry(0.5, 10, 7);
+      const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
+      if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
+      mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
+      tilt.add(mesh);
+    }
     group.add(body);
 
-    // Facing pip: a bead in the heading direction. It exists because a box is
-    // symmetrical and you cannot otherwise see which way a robot is pointing.
-    // A real model is simply rotated and needs none of this.
-    const nose = new Mesh(
-      new SphereGeometry(0.1, 10, 8),
-      new MeshBasicMaterial({ color: this.palette.accent }),
-    );
-    group.add(nose);
-
-    // Contact shadow. Tightens as the robot settles, which sells weight even
-    // before there is a model to look at.
+    /*
+     * Contact shadow, at 1.45 x the body rather than the 2.1 it was.
+     *
+     * The wider disc was right while a robot was a featureless box and the
+     * shadow was most of what told you where it was standing. Now that the
+     * machine has a shape, a pool three metres across under Biggy reads as
+     * a crater it is sitting in rather than as contact with the floor.
+     */
     const shadow = new Mesh(
-      new CircleGeometry(spec.radius * 2.1, 24),
-      new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }),
+      new CircleGeometry(spec.radius * 1.45, 24),
+      new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
     );
     shadow.renderOrder = 2;
     group.add(shadow);
@@ -938,7 +1473,7 @@ export class BlockoutRenderer {
     stopRing.renderOrder = 3;
     group.add(stopRing);
 
-    const view: RobotView = { group, body, nose, shadow, stopLine, stopRing };
+    const view: RobotView = { group, body, tilt, shadow, stopLine, stopRing };
     this.robots.set(actor, view);
     this.scene.add(group);
     return view;
@@ -946,23 +1481,22 @@ export class BlockoutRenderer {
 
   private placeRobot(actor: Actor, view: RobotView, alpha: number): void {
     const { body } = actor;
-    const { spec } = body;
     const pos = renderPos(actor, alpha);
 
     // A small vertical bob driven by stride phase, scaled by speed, so a
     // walking robot has gait and a stationary one is dead still.
     const bob = Math.abs(Math.sin(body.stridePhase * Math.PI)) * 0.035 * body.speedFraction;
 
-    // Standing ON whatever it is standing on, not on the storey datum. Its
-    // feet are at pos.z — halfway up its own height is where the box centre
-    // goes, because a BoxGeometry is centred on its origin.
-    view.body.position.set(pos.x, pos.y, pos.z + bob + spec.height / 2);
+    const climb = this.climbOf(actor, body.heading);
 
-    view.nose.position.set(
-      pos.x + Math.cos(body.heading) * (spec.radius + 0.22),
-      pos.y + Math.sin(body.heading) * (spec.radius + 0.22),
-      pos.z + bob + spec.height * 0.72,
-    );
+    // Standing ON whatever it is standing on, not on the storey datum: the
+    // group's origin is between the machine's feet, and every part measures
+    // its own height up from there.
+    view.body.position.set(pos.x, pos.y, pos.z + bob + climb.lift);
+    view.body.rotation.z = body.heading;
+    // Positive lean is nose-up, and a rotation about the local +y takes the
+    // nose DOWN, hence the sign.
+    view.tilt.rotation.y = -climb.lean;
 
     // No contact shadow on a staircase. The disc is 1.4 m across and a tread
     // is 0.62 m deep, so on a flight it is a flat decal spanning three steps:
@@ -1082,6 +1616,36 @@ function storeysOf(venue: Venue): Level[] {
  * `instanceColor` carries the palette, which is the whole reason the building
  * can be five thousand seats and still cost one draw.
  */
+/**
+ * The same as `instanceBoxes`, with an ellipsoid in place of the cube.
+ *
+ * Eight by six segments: enough that a head is not a die and few enough
+ * that it still belongs in a building made of boxes.
+ */
+function instanceBlobs(blobs: Box[], material: MeshLambertMaterial): InstancedMesh {
+  const mesh = new InstancedMesh(
+    new SphereGeometry(0.5, CROWD_SEGMENTS, CROWD_SEGMENTS - 2),
+    material,
+    Math.max(blobs.length, 1),
+  );
+
+  for (let i = 0; i < blobs.length; i += 1) {
+    const { bounds, bottom, top, colour } = blobs[i];
+    const height = Math.max(top - bottom, 0.01);
+    SCRATCH.position.set(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bottom + height / 2);
+    SCRATCH.scale.set(Math.max(bounds.w, 0.01), Math.max(bounds.h, 0.01), height);
+    SCRATCH.rotation.set(0, 0, 0);
+    SCRATCH.updateMatrix();
+    mesh.setMatrixAt(i, SCRATCH.matrix);
+    mesh.setColorAt(i, SCRATCH_COLOUR.set(colour));
+  }
+
+  mesh.count = blobs.length;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  return mesh;
+}
+
 /** Where to draw one activity, and in what state. The screen decides both. */
 export interface ObjectiveMarker {
   id: string;
@@ -1090,6 +1654,8 @@ export interface ObjectiveMarker {
   z: number;
   floor: Level;
   colour: number;
+  /** One of many. Drawn as a stud rather than a post. See `markers()`. */
+  low?: boolean;
 }
 
 function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {
