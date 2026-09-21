@@ -52,6 +52,7 @@ import {
 } from 'three';
 import type { Actor } from '@/core/Sim';
 import type { RobotSpec } from '@/core/RobotSpec';
+import { climbFraction, downhill } from '@/core/Traversal';
 import {
   Crowd,
   PERSON_ARM_BOTTOM,
@@ -274,6 +275,24 @@ const PERSON_BLOBS = 2;
 const CROWD_SEGMENTS = 6;
 
 /**
+ * How a robot is DRAWN on a flight, which is not how it is simulated.
+ *
+ * The simulation treats a staircase as a smooth ramp — `surfaceHeight`
+ * interpolates the whole flight — because that is the cheap, stable thing
+ * for a solver to stand a body on, and nothing about the physics wants a
+ * sawtooth. Drawn that way the machine glides up an invisible slope with
+ * the steps passing underneath it, which is exactly the escalator look.
+ *
+ * So the renderer quantises the height to the tread the robot is actually
+ * over, and adds a small arc between one tread and the next. The most it
+ * ever disagrees with the simulation by is half a riser — nine centimetres
+ * — and it is the difference between climbing and floating.
+ */
+const STEP_ARC = 0.055;
+/** How far a machine leans into a gradient, as a fraction of the real angle. */
+const SLOPE_LEAN = 0.8;
+
+/**
  * How a person is coloured, from the one crowd colour the chapter gives.
  *
  * Derived rather than four more palette entries, the same way the skid
@@ -328,6 +347,11 @@ interface Box {
 /** The parts of a robot that move every frame. */
 interface RobotView {
   group: Group;
+  /**
+   * Pitch, applied inside `body` so it is about the machine's own lateral
+   * axis and pivots on its feet rather than on the world's axes.
+   */
+  tilt: Group;
   /**
    * The machine itself, as a handful of primitives.
    *
@@ -1176,6 +1200,52 @@ export class BlockoutRenderer {
   // -- robots ---------------------------------------------------------------
 
   /**
+   * How a machine should be drawn on the flight it is standing on.
+   *
+   * `lift` is the gap between where the simulation put its feet — anywhere
+   * on a smooth ramp — and the tread it is actually over, plus a small arc
+   * as it crosses from one tread to the next. `lean` is the angle it tips
+   * into a gradient.
+   *
+   * Stairs get the step and no lean: a walking machine stays upright on a
+   * staircase, and tipping it would look like it was falling down one.
+   * Ramps get the lean and no step, for the same reason in reverse — there
+   * are no treads to find, and a machine on a slope that stays dead level
+   * is the thing that looks wrong there.
+   */
+  private climbOf(actor: Actor, heading: number): { lift: number; lean: number } {
+    const id = actor.onLink;
+    if (id === undefined) return { lift: 0, lean: 0 };
+    const link = this.venue.links.find((l) => l.id === id);
+    if (link === undefined) return { lift: 0, lean: 0 };
+
+    const { body } = actor;
+
+    if (link.riser > 0) {
+      const steps = Math.max(1, Math.round(link.rise / link.riser));
+      const f = climbFraction(link, body.x, body.y);
+      const exact = f * steps;
+      const tread = Math.round(exact);
+      // Nearest tread rather than the one below, so the drawing never
+      // disagrees with the solver by more than half a riser in either
+      // direction instead of a whole one in one.
+      const lift = (tread / steps - f) * link.rise;
+      // Highest halfway between two treads and nothing at all at rest, so
+      // a parked robot does not hover.
+      const between = Math.min(1, Math.abs(exact - tread) * 2);
+      const arc = Math.sin(between * Math.PI) * STEP_ARC * body.speedFraction;
+      return { lift: lift + arc, lean: 0 };
+    }
+
+    // A ramp: tip by the component of the gradient along the way it faces,
+    // so a machine crossing a slope sideways stays level and one driving
+    // straight up it leans the most.
+    const pull = downhill(link);
+    const along = pull.x * Math.cos(heading) + pull.y * Math.sin(heading);
+    return { lift: 0, lean: Math.asin(Math.max(-1, Math.min(1, -along))) * SLOPE_LEAN };
+  }
+
+  /**
    * Each robot as primitives, read off its model sheet in `references/`.
    *
    * NOT a model import. Everything else in this game is untextured boxes
@@ -1278,6 +1348,8 @@ export class BlockoutRenderer {
      * one thing on screen pretending to be something else.
      */
     const body = new Group();
+    const tilt = new Group();
+    body.add(tilt);
     for (const part of this.robotParts(spec)) {
       const geometry =
         part.shape === 'box'
@@ -1286,7 +1358,7 @@ export class BlockoutRenderer {
       const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
       if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
       mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
-      body.add(mesh);
+      tilt.add(mesh);
     }
     group.add(body);
 
@@ -1319,7 +1391,7 @@ export class BlockoutRenderer {
     stopRing.renderOrder = 3;
     group.add(stopRing);
 
-    const view: RobotView = { group, body, shadow, stopLine, stopRing };
+    const view: RobotView = { group, body, tilt, shadow, stopLine, stopRing };
     this.robots.set(actor, view);
     this.scene.add(group);
     return view;
@@ -1333,11 +1405,16 @@ export class BlockoutRenderer {
     // walking robot has gait and a stationary one is dead still.
     const bob = Math.abs(Math.sin(body.stridePhase * Math.PI)) * 0.035 * body.speedFraction;
 
+    const climb = this.climbOf(actor, body.heading);
+
     // Standing ON whatever it is standing on, not on the storey datum: the
     // group's origin is between the machine's feet, and every part measures
     // its own height up from there.
-    view.body.position.set(pos.x, pos.y, pos.z + bob);
+    view.body.position.set(pos.x, pos.y, pos.z + bob + climb.lift);
     view.body.rotation.z = body.heading;
+    // Positive lean is nose-up, and a rotation about the local +y takes the
+    // nose DOWN, hence the sign.
+    view.tilt.rotation.y = -climb.lean;
 
     // No contact shadow on a staircase. The disc is 1.4 m across and a tread
     // is 0.62 m deep, so on a flight it is a flat decal spanning three steps:

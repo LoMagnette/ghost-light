@@ -575,6 +575,31 @@ guessed at. The frame-rate readout itself is unreliable in that harness for
 a related reason — with few frames, one near-zero delta pins the smoothed
 value at nonsense, which is why the `sim` clock is the figure to read.
 
+**Follow-up prompt:**
+> Can you animate the robot when they go over the stairs because it looks a
+> bit strange
+
+It was gliding, and the cause is a deliberate asymmetry nobody had looked
+at since the stairs were built: the SIMULATION treats a flight as a smooth
+ramp, because `surfaceHeight` interpolates the whole run and that is the
+stable thing to stand a rigid body on. Drawn honestly, that is a machine
+floating up an invisible slope with the steps passing underneath it.
+
+Fixed in the renderer alone, which is where it belongs. The drawn height
+is quantised to the tread the robot is over, with a small arc between one
+tread and the next scaled by speed so a parked machine does not hover. On
+ramps — where there are no treads and a dead-level machine is the thing
+that looks wrong — it leans into the gradient instead, by the component of
+the slope along its own facing, so crossing a slope sideways stays level.
+
+**Measured rather than eyeballed**, because a still frame cannot show a
+climb: a probe drove Voxxy up the west flight in the real sim and compared
+the two heights frame by frame. 36 distinct drawn heights against 775
+simulated ones — it is a staircase now, not a ramp — and the worst
+disagreement with the solver is 0.092 m against the 0.090 half-riser the
+design allows. Exactly the intended bound, and the check is the only way
+to know the arc is not quietly lifting the machine off its own feet.
+
 **What was deliberately not done:** any change to the lighting. `AMBIENT`,
 `KEY` and the sRGB curve were tuned against photographs and every palette
 in the game is calibrated to them, so a second fill light would have been

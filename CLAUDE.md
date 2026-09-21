@@ -150,6 +150,7 @@ for a scoring criterion.
 | Change a robot's livery | `tint` / `trim` in `RobotSpec.ts` — a fact about the machine, not the era |
 | Change how much boxes vary in tone | `TONE_SPREAD` in `BlockoutRenderer`. Keyed off position, so it must stay deterministic |
 | Change the band drawn along the cutaway | `CUT_BAND` / `CUT_BAND_LIFT` in `BlockoutRenderer` |
+| Change how a robot climbs | `climbOf` in `BlockoutRenderer` — DRAWING only. The sim still walks a smooth ramp |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |
