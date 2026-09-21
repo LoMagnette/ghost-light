@@ -159,7 +159,8 @@ export interface Obstacle {
  */
 export type Material =
   | 'structure' // concrete, terracing, anything the building is built of
-  | 'seat'
+  | 'seat' // the pan you sit on — and what the crowd counts
+  | 'seatBack' // the backrest over it. Same colour, a separate thing
   | 'desk' // the presenter's table and lectern
   | 'sign' // the letters of a sign, its body colour
   | 'signAccent' // the one letter that is not

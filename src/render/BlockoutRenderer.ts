@@ -198,6 +198,44 @@ const REVEAL_SPACING = 15;
 const VISOR = 0x14171a;
 const EYES = 0xffc061;
 
+/**
+ * How much two boxes of the same material may differ in tone, either way.
+ *
+ * Everything in this building is one of about a dozen flat colours, and a
+ * thirty-metre wall painted in exactly the same value as the column in
+ * front of it reads as one dead slab with a line on it. Real surfaces are
+ * not uniform; more to the point, a blockout that varies slightly reads as
+ * MADE of things, which is the whole difference between a model and a
+ * placeholder.
+ *
+ * Keyed off the box's own position, so it is stable — a wall does not
+ * shimmer when the storey is rebuilt — and small enough that nobody can
+ * point at it and say a wall is two colours.
+ */
+const TONE_SPREAD = 0.055;
+
+/**
+ * Depth of the pale band drawn along the top of anything the cutaway cuts.
+ *
+ * `MAX_DRAWN_HEIGHT` slices every wall and column at 2.7 m, which left them
+ * as boxes that simply stop. Drawing the cut as a band turns the artefact
+ * into the device it should have been all along: the building now reads as
+ * a sectioned architectural model, the columns get a capital and the walls
+ * get a cornice, and all of it falls out of geometry that was already being
+ * clipped.
+ */
+const CUT_BAND = 0.08;
+const CUT_BAND_LIFT = 1.16;
+
+/**
+ * A stable 0..1 from a position. Not random: the same box must come back
+ * the same colour every time the chapter is entered.
+ */
+function tone(x: number, y: number, z: number): number {
+  const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return n - Math.floor(n);
+}
+
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
 /** Boxes per standing person: legs, torso, head. */
@@ -547,7 +585,9 @@ export class BlockoutRenderer {
       const visible = marker.floor === floor;
       mesh.visible = visible;
       if (!visible) continue;
-      mesh.position.set(marker.x, marker.y, marker.z + 1.15);
+      const scale = marker.low ? 0.34 : 1;
+      mesh.scale.set(1, 1, scale);
+      mesh.position.set(marker.x, marker.y, marker.z + 1.15 * scale);
       const material = mesh.material as MeshBasicMaterial;
       material.color.setHex(marker.colour);
       for (const child of mesh.children) {
@@ -738,8 +778,22 @@ export class BlockoutRenderer {
         // No material means the building itself, which takes the wall colour.
         // Only furniture names one. Same rule as Decor.material: the venue
         // says what a thing IS and the chapter says what that looks like.
-        colour: this.material(obstacle.material),
+        colour: this.varied(this.material(obstacle.material), bounds, obstacle.material),
       });
+
+      // Anything the cut plane passes through gets the band. Not flights —
+      // a staircase is exempt from the cutaway and has a real top — and not
+      // glass, which has no edge to catch the light.
+      const raw = datum + obstacle.height;
+      const cut = cutAt(datum);
+      if (!obstacle.linkId && obstacle.material !== 'glazing' && raw > cut + CUT_BAND) {
+        boxes.push({
+          bounds,
+          bottom: cut - CUT_BAND,
+          top: cut,
+          colour: shade(this.material(obstacle.material), CUT_BAND_LIFT),
+        });
+      }
     }
 
     // Dressing, by the same rules: same cutaway, same box. The only difference
@@ -754,7 +808,7 @@ export class BlockoutRenderer {
         top: piece.linkId
           ? datum + piece.height
           : Math.min(datum + piece.height, cutAt(datum)),
-        colour: this.material(piece.material),
+        colour: this.varied(this.material(piece.material), bounds, piece.material),
       });
     }
 
@@ -866,6 +920,19 @@ export class BlockoutRenderer {
   }
 
   /**
+   * A material's colour, nudged by where the thing is standing.
+   *
+   * Left alone for the surfaces where variation would read as a mistake
+   * rather than as texture: glass is one sheet, and a sign whose characters
+   * were each a slightly different white would look misprinted.
+   */
+  private varied(colour: number, bounds: Rect, material: Material | undefined): number {
+    if (material === 'glazing' || material === 'sign' || material === 'signChar') return colour;
+    const t = tone(bounds.x, bounds.y, bounds.w + bounds.h);
+    return shade(colour, 1 - TONE_SPREAD + t * TONE_SPREAD * 2);
+  }
+
+  /**
    * What a material looks like in this era.
    *
    * The venue names materials and never colours — see `Material` — so this is
@@ -876,6 +943,11 @@ export class BlockoutRenderer {
     switch (of) {
       case 'seat':
         return this.palette.seat;
+      // A backrest is the same upholstery as the pan, darkened: it is the
+      // face you see from behind, which is the face turned away from the
+      // light in every row of every room.
+      case 'seatBack':
+        return shade(this.palette.seat, 0.86);
       case 'desk':
         return this.palette.desk;
       case 'sign':
@@ -1227,6 +1299,8 @@ export interface ObjectiveMarker {
   z: number;
   floor: Level;
   colour: number;
+  /** One of many. Drawn as a stud rather than a post. See `markers()`. */
+  low?: boolean;
 }
 
 function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {

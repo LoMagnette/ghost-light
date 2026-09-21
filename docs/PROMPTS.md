@@ -475,6 +475,41 @@ down to 1.45.
 kind of claim that should be checked by a human looking at the screen, and
 whether Biggy is *satisfying* remains undelegable.
 
+**Follow-up prompt:**
+> that already better. Can you tweek the rest of the graphics to be on par
+> with the robots
+
+Four changes, all the same lesson the robots and the crowd had already
+taught — shape and a second tone, rather than detail:
+
+1. **A seat is a pan and a back, not a block.** Five thousand identical
+   boxes read as corrugation; the rake of a full auditorium came out as a
+   ribbed slab. Two pieces fix it, because what the eye is looking for is
+   the gap. The pan is the piece the crowd counts itself by, so the seated
+   population is unchanged — and it now sits ON the pan rather than at an
+   assumed height above the tier, which is one fewer number to keep true.
+2. **Every box is nudged in tone by where it stands.** A thirty-metre wall
+   painted in exactly the value of the column in front of it is one dead
+   slab; ±5.5%, keyed off position so it never shimmers, makes the same
+   geometry read as MADE of things. Left off glass and off signage, where
+   variation would read as a misprint.
+3. **The cutaway plane is drawn as a band.** `MAX_DRAWN_HEIGHT` slices
+   every wall and column at 2.7 m and they simply stopped. A pale 8 cm
+   band along the cut turns the artefact into the device it should have
+   been: the building reads as a sectioned architectural model, columns
+   get a capital and walls get a cornice, all out of geometry that was
+   already being clipped. The best-value change of the four, and it is
+   eleven lines.
+4. **Grouped objective markers shrank to studs.** Not strictly graphics —
+   but twenty-seven sticker markers at full height had turned the
+   exhibition hall into a pole farm, more marker than building. One thing
+   you are doing keeps its post; a sweep of many gets studs.
+
+**What was deliberately not done:** any change to the lighting. `AMBIENT`,
+`KEY` and the sRGB curve were tuned against photographs and every palette
+in the game is calibrated to them, so a second fill light would have been
+the cheapest-looking improvement here and the most expensive to unpick.
+
 ### _(pending)_ 8-direction sprite sheets from the model sheets
 
 Planned: generate per-robot turnarounds from the supplied model sheets

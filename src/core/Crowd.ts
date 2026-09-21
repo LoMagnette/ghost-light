@@ -71,8 +71,7 @@ const PERSON_RADIUS = 0.34;
  */
 const ATTENDANCE = 3200;
 
-/** Seat pan height above the tier, and how tall a seated person is on it. */
-const SEAT_RISE = 0.34;
+/** How tall a seated person is above the pan they are sitting on. */
 const SEATED_HEIGHT = 0.92;
 /**
  * A person, in parts, metres.
@@ -419,7 +418,10 @@ export class Crowd {
       this.seated.push({
         x,
         y,
-        z: (piece.base ?? 0) + SEAT_RISE,
+        // ON the pan: the seat states where its own surface is, so the
+        // height a person sits at is read off the furniture rather than
+        // assumed from the tier under it.
+        z: piece.height,
         floor: piece.floor,
         tint: this.random(),
         // Facing the stage, which is at the far end of the room from the

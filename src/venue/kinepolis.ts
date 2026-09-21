@@ -997,6 +997,11 @@ const TREAD_SLAB = 0.25;
 
 /** Height of a seat back above the tier it stands on, metres. */
 const SEAT_BACK = 0.85;
+/** Thickness of the backrest, front to back, metres. */
+const SEAT_BACK_DEPTH = 0.17;
+/** Top of the pan you sit on, above the tier. A cinema seat is low. */
+const SEAT_PAN_TOP = 0.42;
+const SEAT_PAN_THICKNESS = 0.09;
 
 /**
  * Depth behind the back row: the cross aisle you enter along.
@@ -1265,12 +1270,37 @@ function seatingFor(
     // Centre the seats in the row: the half seat the pitch does not divide
     // into becomes a little more elbow room at each end, not a gap at one.
     const first = y + (width - seats * SEAT_PITCH) / 2 + (SEAT_PITCH - SEAT_WIDTH) / 2;
+    /*
+     * A seat is a pan and a back, not a block.
+     *
+     * Five thousand identical boxes read as corrugation — the rake of a
+     * full auditorium came out as a ribbed slab rather than as seating.
+     * Two pieces is enough to fix it, because what the eye is looking for
+     * is the gap: a low pan with an upright behind it, and daylight over
+     * the row in front.
+     *
+     * The backrest goes at the end AWAY from the stage, which is the end
+     * the audience has its back to — high x in the west rooms, low x in
+     * the east ones, the same asymmetry `seatX` is already built on.
+     */
+    const backX = side === -1 ? seatX + SEAT_DEPTH - SEAT_BACK_DEPTH : seatX;
+    const panX = side === -1 ? seatX : seatX + SEAT_BACK_DEPTH;
     for (let n = 0; n < seats; n += 1) {
+      const y = first + n * SEAT_PITCH;
       decor.push({
         floor: 1,
-        bounds: rect(seatX, first + n * SEAT_PITCH, SEAT_DEPTH, SEAT_WIDTH),
+        bounds: rect(backX, y, SEAT_BACK_DEPTH, SEAT_WIDTH),
         base: tier,
         height: tier + SEAT_BACK,
+        material: 'seatBack',
+      });
+      // The pan is the piece the crowd sits on and counts itself by, so
+      // there is exactly one of these per seat in the building.
+      decor.push({
+        floor: 1,
+        bounds: rect(panX, y, SEAT_DEPTH - SEAT_BACK_DEPTH, SEAT_WIDTH),
+        base: tier + SEAT_PAN_TOP - SEAT_PAN_THICKNESS,
+        height: tier + SEAT_PAN_TOP,
         material: 'seat',
       });
     }

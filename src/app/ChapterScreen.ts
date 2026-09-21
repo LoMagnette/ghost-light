@@ -346,6 +346,11 @@ export class ChapterScreen implements Screen {
         z: groundAt(KINEPOLIS, state.floor, state.x, state.y),
         floor: state.floor,
         colour: status === 'locked' ? 0x4a5058 : accent,
+        // Twenty-seven stickers are twenty-seven markers, and at full height
+        // they turned the exhibition hall into a pole farm — more marker than
+        // building. One thing you are doing gets one post; a sweep of many
+        // gets studs, which say "here too" without competing with the room.
+        low: activity.group !== undefined,
       });
     }
 

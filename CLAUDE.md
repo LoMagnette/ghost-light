@@ -148,6 +148,8 @@ for a scoring criterion.
 | Change how the crowd behaves | `src/core/Crowd.ts`. Seeded — keep it deterministic |
 | Change what a robot looks like | `robotParts` in `BlockoutRenderer`. State everything as a fraction of `radius`/`height` so the art cannot drift from the collision shape |
 | Change a robot's livery | `tint` / `trim` in `RobotSpec.ts` — a fact about the machine, not the era |
+| Change how much boxes vary in tone | `TONE_SPREAD` in `BlockoutRenderer`. Keyed off position, so it must stay deterministic |
+| Change the band drawn along the cutaway | `CUT_BAND` / `CUT_BAND_LIFT` in `BlockoutRenderer` |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |
