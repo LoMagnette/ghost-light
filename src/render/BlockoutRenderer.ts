@@ -847,6 +847,10 @@ export class BlockoutRenderer {
         return this.palette.accent;
       case 'signPlate':
         return this.palette.signPlate;
+      // The same ink as a stage letter. They differ in what they are for,
+      // not in what they look like — see the note on Material.
+      case 'signChar':
+        return this.palette.sign;
       case 'screen':
         return this.palette.screen;
       case 'glazing':

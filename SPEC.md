@@ -416,9 +416,10 @@ model sheets.
 - Exhibition hall: white canopy, warm cove lighting, regular column grid
 - Corridors: dark carpet, pendant disc lights, exposed concrete ceiling
 - Auditoriums: raked seating, blue and red wall wash, **red LED step strips**
-- Room numbers: painted on the corridor floor outside each of the fourteen
-  doors, because two chapters give objectives in room numbers. Why the floor
-  and not a wall is three separate facts about the renderer — see
+- Room numbers: twice per auditorium, on a pier beside the door and across
+  the wall at the back of the room, because two chapters give objectives in
+  room numbers. Both face south — the only direction this camera can read —
+  and why that is so is three separate facts about the renderer. See
   `docs/MECHANICS.md` §5.3
 - Registration: slatted warm wood, grey carpet, curved cast concrete
 

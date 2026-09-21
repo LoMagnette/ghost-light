@@ -925,7 +925,7 @@ function auditoriums(): {
         solids.push(...sign.solids);
         decor.push(...sign.decor);
       }
-      decor.push(...roomNumeral(bounds, aud.number, side));
+      decor.push(...roomNumeral(bounds, aud.number, side, doorSide));
       y += aud.frontage;
       if (aud.number === gapAfter) y += WEST_GAP;
     }
@@ -1444,94 +1444,194 @@ function digit(character: string): Bar[] {
  *
  * Nothing in the building answered that, and both later chapters ask it out
  * loud — "keep Room 5 running", "catch the talk in Room 11" — of a player
- * looking at fourteen identical doors down a 126 m corridor. An objective
- * that names a room the building does not name is an objective the player
- * cannot even attempt.
+ * looking at fourteen identical doors down a 126 m corridor.
  *
- * PAINTED ON THE FLOOR, and three separate facts about this renderer each
- * rule out the sign you would expect:
+ * Every room gets its number twice: on a pier beside its door, and across
+ * the wall at the back of the room itself. Both are on SOUTH-FACING
+ * surfaces, and that single rule is the whole design, because three
+ * separate facts about this renderer each rule out the sign you would
+ * expect — and an earlier pass painted the numbers on the FLOOR having
+ * fixed only one of them at a time.
  *
- *   - The view is fixed to the south-west, so the visible faces point south
- *     and west. A number on the corridor's east wall reads and the identical
- *     number on the west wall faces away, for the whole game. Half a
- *     numbering system is worse than none.
- *   - A blade hung out into the corridor solves that, and then meets
- *     `MAX_DRAWN_HEIGHT`: nothing is drawn above 2.7 m, so a sign at head
- *     height is sliced to a five-centimetre sliver of itself.
- *   - The key light is almost overhead. A south-facing face reflects about a
- *     third of what an upward-facing one does, so even unclipped, characters
- *     on a vertical plate are the dimmest thing on screen.
+ *   - The view is fixed to the south-west, so the faces you can see point
+ *     south and west. A plate on the corridor's east wall reads; the
+ *     identical plate on the west wall is hidden behind the wall it is
+ *     bolted to, for the whole game. Half a numbering system is worse than
+ *     none.
+ *   - `MAX_DRAWN_HEIGHT` clips everything 2.7 m above the storey datum, so
+ *     a sign hung where a real one hangs comes back as a sliver of itself.
+ *   - The key light is nearly overhead: a south-facing face reflects about
+ *     a third of what an upward-facing one does, so light characters on a
+ *     light wall are invisible however large you make them.
  *
- * The floor has none of those problems: it is never clipped, it is never
- * occluded, and it faces the one direction the light actually comes from. So
- * the numbers are painted on it — a dark panel with light characters — which
- * is what a venue with fourteen identical doors really does anyway.
+ * So: facing south, under 2.7 m, and light characters on a DARK plate —
+ * which is what `signPlate` is for. All three together, or none of it
+ * works.
  *
- * The cost is that floor text in a 45° projection reads at 45°. Every number
- * is skewed the same way, which makes it a convention rather than a mistake,
- * and the digits are seven-segment precisely because that survives the skew.
+ * Facing south costs depth, because a south face spans x and z while the
+ * corridor runs along y. Outside, that buys a shallow pier beside each
+ * door with its digits stacked down it, which is a real cinema sign and
+ * takes half a metre of a fourteen-metre corridor. Inside, the back wall of
+ * the room faces south already and has thirty metres of x to write across.
  */
-const NUMERAL_HEIGHT = 3.2; // along x, which is "up" for a numeral on the floor
-const NUMERAL_WIDTH = 1.7; // along y, the reading direction
-const NUMERAL_GAP = 0.36;
-/** Painted margin around the characters, metres. */
-const NUMERAL_MARGIN = 0.45;
-/** Clear of the room's own wall, so the panel lies in the corridor. */
-const NUMERAL_OFFSET = 0.8;
-/*
- * Paint, not kerbs. Both are far under every robot's `maxStepRise`, and in
- * any case neither is an obstacle — this is `decor`, which is never collided.
- * The characters stand a little proud of the panel so they take the light
- * separately from it.
+
+/** How far a character stands off the plate it is mounted on, metres. */
+const SIGN_FACE = 0.06;
+
+/**
+ * Outside: a pier beside the door, standing in the corridor.
+ *
+ * Its depth is what the characters have to be written across, so the pier
+ * is deeper than a sign needs to be and the numbers are as wide as the pier
+ * allows. 0.7 m of a 14.3 m corridor, and it is dressing — nothing collides
+ * with it — so it costs the player nothing either.
  */
-const PANEL_THICKNESS = 0.02;
-const NUMERAL_THICKNESS = 0.05;
+const PIER_DEPTH = 0.7;
+const PIER_WIDTH = 1.15;
+const PIER_BASE = 0.45;
+const PIER_TOP = 2.55;
+const PIER_DIGIT_W = 0.55;
+const PIER_DIGIT_H = 0.8;
+const PIER_DIGIT_GAP = 0.12;
 
-function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
-  const glyphs = [...String(number)];
-  const length = glyphs.length * NUMERAL_WIDTH + (glyphs.length - 1) * NUMERAL_GAP;
+/** Inside: across the wall at the back of the room, behind the last row. */
+const INSIDE_DIGIT_W = 0.66;
+const INSIDE_DIGIT_H = 1.05;
+const INSIDE_DIGIT_GAP = 0.18;
+const INSIDE_FOOT = 1.1;
+const INSIDE_PAD = 0.3;
 
-  // In the corridor, against the frontage of the room it names. Both sides
-  // read the same way up, so the whole building is numbered in one direction.
-  const xBase =
-    side === -1
-      ? -CORRIDOR_HALF + NUMERAL_OFFSET
-      : CORRIDOR_HALF - NUMERAL_OFFSET - NUMERAL_HEIGHT;
-
-  const start = room.y + room.h / 2 + length / 2;
-
-  const decor: Decor[] = [
-    {
-      floor: 1,
-      bounds: rect(
-        xBase - NUMERAL_MARGIN,
-        start - length - NUMERAL_MARGIN,
-        NUMERAL_HEIGHT + NUMERAL_MARGIN * 2,
-        length + NUMERAL_MARGIN * 2,
-      ),
-      base: 0,
-      height: PANEL_THICKNESS,
-      material: 'signPlate',
-    },
-  ];
-
-  glyphs.forEach((character, index) => {
-    const at = start - index * (NUMERAL_WIDTH + NUMERAL_GAP);
+/**
+ * Characters on a surface that faces south.
+ *
+ * A south face spans x and z, so a glyph's `u` runs along x and its `v` up
+ * z. Reading runs +x: stand south of a plate looking north and east is on
+ * your right — the same single viewer the stage letters are laid out for.
+ *
+ * `stacked` turns the line through ninety degrees and hangs the characters
+ * under one another instead, for a sign with more height than width.
+ */
+function southFaceCharacters(
+  characters: string,
+  planeY: number,
+  x: number,
+  z: number,
+  width: number,
+  height: number,
+  gap: number,
+  stacked: boolean,
+): Decor[] {
+  const out: Decor[] = [];
+  [...characters].forEach((character, index) => {
+    const ox = stacked ? x : x + index * (width + gap);
+    const oz = stacked ? z - index * (height + gap) : z;
     for (const bar of glyph(character)) {
-      decor.push({
+      out.push({
         floor: 1,
         bounds: rect(
-          xBase + bar.v0 * NUMERAL_HEIGHT,
-          at - bar.u1 * NUMERAL_WIDTH,
-          (bar.v1 - bar.v0) * NUMERAL_HEIGHT,
-          (bar.u1 - bar.u0) * NUMERAL_WIDTH,
+          ox + bar.u0 * width,
+          planeY - SIGN_FACE,
+          (bar.u1 - bar.u0) * width,
+          SIGN_FACE,
         ),
-        base: 0,
-        height: NUMERAL_THICKNESS,
-        material: 'sign',
+        base: oz + bar.v0 * height,
+        height: oz + bar.v1 * height,
+        material: 'signChar',
       });
     }
   });
+  return out;
+}
+
+function roomNumeral(
+  room: Rect,
+  number: number,
+  side: -1 | 1,
+  doorSide: 'low' | 'high',
+): Decor[] {
+  const characters = String(number);
+  const decor: Decor[] = [];
+
+  // -- outside: a pier beside the door --------------------------------------
+
+  const doorY =
+    doorSide === 'low'
+      ? room.y + 1.2 + DOOR_WIDTH / 2
+      : room.y + room.h - 1.2 - DOOR_WIDTH / 2;
+  // Beside the door on the side towards the middle of the frontage, so the
+  // pier never hangs off the end of the room it belongs to.
+  const inwards = doorSide === 'low' ? 1 : -1;
+  const pierLow = doorY + inwards * (DOOR_WIDTH / 2 + 0.3) - (inwards < 0 ? PIER_WIDTH : 0);
+  const pierX = side === -1 ? -CORRIDOR_HALF : CORRIDOR_HALF - PIER_DEPTH;
+
+  decor.push({
+    floor: 1,
+    bounds: rect(pierX, pierLow, PIER_DEPTH, PIER_WIDTH),
+    base: PIER_BASE,
+    height: PIER_TOP,
+    material: 'signPlate',
+  });
+
+  // Centred on the plate, so Room 8 does not sit at the top of a pier with
+  // a metre of nothing under it while Room 11 fills one.
+  const stack = characters.length * PIER_DIGIT_H + (characters.length - 1) * PIER_DIGIT_GAP;
+  const stackTop = (PIER_BASE + PIER_TOP + stack) / 2 - PIER_DIGIT_H;
+
+  decor.push(
+    ...southFaceCharacters(
+      characters,
+      pierLow,
+      pierX + (PIER_DEPTH - PIER_DIGIT_W) / 2,
+      stackTop,
+      PIER_DIGIT_W,
+      PIER_DIGIT_H,
+      PIER_DIGIT_GAP,
+      true,
+    ),
+  );
+
+  // -- inside: the wall at the back of the room -----------------------------
+
+  const runWidth =
+    characters.length * INSIDE_DIGIT_W + (characters.length - 1) * INSIDE_DIGIT_GAP;
+  /*
+   * The party wall closing the room's north end, seen from inside.
+   *
+   * Its south face looks back down the room at the camera, and nothing
+   * stands in front of it: the room's own south wall is twenty metres
+   * nearer the viewer and two metres tall, which at thirty degrees is far
+   * under the line of sight.
+   */
+  const wallFace = room.y + room.h - WALL_THICKNESS / 2;
+  // At the corridor end, over the cross aisle rather than over the seating,
+  // so it is what you are looking at as you come through the door.
+  const runX = side === -1 ? room.x + room.w - INSIDE_PAD - runWidth : room.x + INSIDE_PAD;
+
+  decor.push({
+    floor: 1,
+    bounds: rect(
+      runX - INSIDE_PAD,
+      wallFace - SIGN_FACE / 2,
+      runWidth + INSIDE_PAD * 2,
+      SIGN_FACE / 2,
+    ),
+    base: INSIDE_FOOT - INSIDE_PAD,
+    height: INSIDE_FOOT + INSIDE_DIGIT_H + INSIDE_PAD,
+    material: 'signPlate',
+  });
+
+  decor.push(
+    ...southFaceCharacters(
+      characters,
+      wallFace - SIGN_FACE / 2,
+      runX,
+      INSIDE_FOOT,
+      INSIDE_DIGIT_W,
+      INSIDE_DIGIT_H,
+      INSIDE_DIGIT_GAP,
+      false,
+    ),
+  );
 
   return decor;
 }

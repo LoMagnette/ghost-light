@@ -299,6 +299,30 @@ seven-segment "2" and an "11" opposite, which proved the layout was right at
 a point when the screenshot still looked wrong — and that is what localised
 the bug to the lighting rather than to the glyph code.
 
+**Follow-up prompt, next session:**
+> the room number would better on the wall inside and outside the rooms
+
+They are right, and the floor was a retreat rather than a design. The
+mistake in the first attempt was fixing the three constraints one at a time:
+each fix was tested against the failure it addressed and then abandoned when
+a different one bit. Answered together — face south, stay under 2.7 m, light
+characters on a dark plate — a wall sign works, and every room now has its
+number on a pier beside the door and again across the wall at the back of
+the room.
+
+Facing south is what costs: a south face spans x and z while the corridor
+runs along y, so the outside sign needs depth. Hence a pier rather than a
+plaque, with its digits stacked vertically down it.
+
+**Caught by a harness, again:** `npm run venue` failed with 76 problems the
+moment the signs went up — it asserts stage letters stand within two metres
+of the screen wall, which is how it catches #DEVOXX drifting into the
+seating, and fourteen room numbers at the other end of their rooms are
+letter-shaped things that trip it. The fix went in the DATA rather than the
+test: a `signChar` material, the same ink as a stage letter and a different
+object. Weakening the check to accommodate the new thing would have thrown
+away the check.
+
 **Output:** seven-segment digits added to the existing `#DEVOXX` glyph set,
 `roomNumeral` in `kinepolis.ts`, a `signPlate` colour in all three palettes,
 and `npm run peek` — an arbitrary-frame screenshot tool, promoted from a

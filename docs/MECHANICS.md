@@ -245,27 +245,32 @@ running", "catch the talk in Room 11" — and until 21 Sep the building did not
 say which of fourteen identical doors was which. An objective that names a
 room the venue does not name cannot be attempted, only guessed at.
 
-Every auditorium now has its number painted on the corridor floor outside it,
-on a dark panel, in seven-segment digits about three metres tall. All three
-of those choices are the renderer's doing rather than taste, and each one
-replaced a more obvious answer that did not survive contact:
+Every auditorium now has its number **twice**: on a pier beside its door,
+and across the wall at the back of the room. Both are mounted on
+**south-facing** surfaces, and that single rule is the whole design, because
+three separate facts about the renderer each rule out the obvious sign — and
+each has to be answered at the same time, which is why a first pass that
+fixed them one at a time ended up painting the numbers on the floor instead.
 
-| Wanted | Why it failed |
-|---|---|
-| A number on the corridor wall | The view is fixed to the south-west, so a plate on the east wall reads and the identical plate on the west wall faces away. Half a numbering system. |
-| A blade hung into the corridor | `MAX_DRAWN_HEIGHT` clips everything above 2.7 m. The sign came back as a five-centimetre sliver of itself. |
-| Characters standing on a plate | The key light is nearly overhead: a south-facing face reflects about a third of what an upward one does. Legible geometry, invisible on screen. |
-| Characters the size of real ones | The view takes in sixty metres. A 300 mm digit is eight pixels. |
+| Fact | What it kills | The answer |
+|---|---|---|
+| The view is fixed to the south-west, so only south and west faces are visible | A plate on the corridor's east wall reads; the identical one on the west wall is hidden behind the wall it is bolted to. Half a numbering system | Face everything south |
+| `MAX_DRAWN_HEIGHT` clips geometry 2.7 m above the storey datum | A sign hung where a real one hangs comes back as a five-centimetre sliver | Keep it under 2.7 m |
+| The key light is nearly overhead — a south face reflects about a third of what an upward one does | Light characters on a light wall, legible in the geometry and invisible on screen | Light characters on a **dark plate** |
 
-The floor has none of those problems — never clipped, never occluded, and
-facing the direction the light actually comes from. The cost is that floor
-text in a 45° projection reads at 45°, which is why the digits are
-seven-segment: that survives the skew, and every number in the building is
-skewed identically, which makes it a convention rather than a mistake.
+Facing south costs depth, because a south face spans x and z while the
+corridor runs along y. Outside, that buys a shallow pier beside each door
+with its digits stacked down it — a real cinema sign, and 0.7 m of a 14.3 m
+corridor, dressing that nothing collides with. Inside, the wall at the back
+of the room faces south already and has thirty metres of x to write across.
 
-The palette gained one entry for it, `signPlate`, dark in all three eras. It
-is the only thing in the game whose job is to supply contrast the lighting
-will not.
+Two supporting pieces came out of it. `signPlate` is a palette entry, dark in
+all three eras, and the only thing in the game whose job is to supply
+contrast the lighting will not. `signChar` is a material — the same ink as a
+stage letter, distinguished from it because `npm run venue` asserts that
+stage letters stand within two metres of the screen wall, and fourteen room
+numbers at the other end of their rooms tripped that check fourteen times
+over the first time they existed.
 
 #### The constraint the building handed us
 
