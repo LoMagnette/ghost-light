@@ -51,6 +51,7 @@ import {
   type OrthographicCamera,
 } from 'three';
 import type { Actor } from '@/core/Sim';
+import type { RobotSpec } from '@/core/RobotSpec';
 import {
   Crowd,
   PERSON_DEPTH,
@@ -187,6 +188,16 @@ const LAMBERT_SCALE = Math.PI;
  */
 const REVEAL_SPACING = 15;
 
+/**
+ * The two inks that are not a robot's own livery.
+ *
+ * A visor is dark whatever colour the machine is painted, and a lit eye is
+ * a lit eye. Both are `MeshLambert` like everything else rather than
+ * emissive: a glow would be the only bloom in a game that has none.
+ */
+const VISOR = 0x14171a;
+const EYES = 0xffc061;
+
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
 /** Boxes per standing person: legs, torso, head. */
@@ -247,11 +258,37 @@ interface Box {
 /** The parts of a robot that move every frame. */
 interface RobotView {
   group: Group;
-  body: Mesh;
-  nose: Mesh;
+  /**
+   * The machine itself, as a handful of primitives.
+   *
+   * A Group rather than a Mesh, and it is ROTATED by the robot's heading —
+   * which is what retired the facing pip. A box is symmetrical and needs a
+   * bead stuck on the front to show which way it is pointing; a shape with a
+   * head on it does not.
+   */
+  body: Group;
   shadow: Mesh;
   stopLine: Line;
   stopRing: Mesh;
+}
+
+/**
+ * One primitive of a robot, in metres, in the machine's own frame.
+ *
+ * `x` is forward, `y` is to its left, `z` is up from the soles of its feet.
+ * Everything is stated as a fraction of `radius` and `height` at the call
+ * site, so a change to `RobotSpec` moves the art with the collision shape
+ * instead of leaving the two to drift.
+ */
+interface RobotPart {
+  shape: 'box' | 'blob';
+  x?: number;
+  y?: number;
+  z: number;
+  w: number;
+  d: number;
+  h: number;
+  colour: number;
 }
 
 const SCRATCH = new Object3D();
@@ -900,30 +937,132 @@ export class BlockoutRenderer {
 
   // -- robots ---------------------------------------------------------------
 
+  /**
+   * Each robot as primitives, read off its model sheet in `references/`.
+   *
+   * NOT a model import. Everything else in this game is untextured boxes
+   * lit by one ambient and one directional light, and a detailed mesh
+   * dropped into that reads as a sticker on a blockout. What carries a
+   * character at thirty pixels is its silhouette, which is the same thing
+   * the crowd taught: a head narrower than the shoulders is worth more than
+   * any amount of surface.
+   *
+   * The proportions are the sheets' own, measured off the front views —
+   * Voxxy 0.61 wide per unit tall, Droid 0.48, Biggy 1.11 — and they come
+   * out of `RobotSpec` rather than being typed again here, so the drawing
+   * cannot drift from the body that collides.
+   */
+  private robotParts(spec: RobotSpec): RobotPart[] {
+    const R = spec.radius;
+    const H = spec.height;
+    const dark = shade(spec.tint, 0.45);
+
+    switch (spec.id) {
+      /*
+       * A big oval head on a teardrop body, on two thin legs. The head is
+       * the widest thing on it — wider than the body it sits on — which is
+       * the whole of why Voxxy reads as small and friendly rather than as
+       * a canister.
+       */
+      case 'voxxy':
+        return [
+          { shape: 'box', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'box', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'blob', z: 0.24 * H, w: 1.5 * R, d: 1.32 * R, h: 0.45 * H, colour: spec.tint },
+          { shape: 'box', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'box', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'blob', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
+          // The dark visor across the front of the head, and the pale ring
+          // round it. Two of the three things anyone would draw from the
+          // sheet, and both survive being eight pixels wide.
+          { shape: 'box', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
+          { shape: 'box', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+        ];
+
+      /*
+       * Tall and thin: a slab of a torso on long legs, arms to the knee,
+       * and a small domed head a long way up. Two metres of it, which is
+       * what makes the 2 m reach gate believable when it operates a counter
+       * nothing else can.
+       */
+      case 'droid':
+        return [
+          { shape: 'box', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', z: 0.42 * H, w: 0.62 * R, d: 0.78 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', z: 0.5 * H, w: 0.72 * R, d: 1.42 * R, h: 0.28 * H, colour: spec.tint },
+          // Shoulders proud of the torso, which is what makes the top half
+          // read as a chest rather than as a post.
+          { shape: 'box', y: 0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', y: -0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
+          { shape: 'box', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
+          { shape: 'blob', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
+        ];
+
+      /*
+       * A sphere with a cap on it and almost no legs. Wider than it is
+       * tall, which no other machine in the building is, and the reason a
+       * corridor that Voxxy treats as open floor is a decision for Biggy.
+       */
+      default:
+        return [
+          { shape: 'box', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          // The belly, and it is the whole machine: 2R across, so the thing
+          // you see is exactly the thing that collides.
+          { shape: 'blob', z: 0.14 * H, w: 2 * R, d: 1.9 * R, h: 0.66 * H, colour: spec.trim },
+          { shape: 'blob', z: 0.5 * H, w: 1.6 * R, d: 1.55 * R, h: 0.42 * H, colour: spec.tint },
+          { shape: 'blob', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
+          { shape: 'box', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
+        ];
+    }
+  }
+
   private buildRobot(actor: Actor): RobotView {
     const { spec } = actor.body;
     const group = new Group();
 
-    const body = new Mesh(
-      new BoxGeometry(spec.radius * 2, spec.radius * 2, spec.height),
-      new MeshLambertMaterial({ color: spec.tint }),
-    );
+    /*
+     * The machine, assembled from its parts.
+     *
+     * Each part is positioned in the robot's OWN frame — x forward, z up
+     * from its soles — and the whole group is turned by the heading every
+     * frame, so the parts never have to know which way it is facing.
+     *
+     * Low segment counts on the blobs on purpose. The building is boxes and
+     * the crowd is boxes; a smooth sphere in the middle of that would be the
+     * one thing on screen pretending to be something else.
+     */
+    const body = new Group();
+    for (const part of this.robotParts(spec)) {
+      const geometry =
+        part.shape === 'box'
+          ? new BoxGeometry(part.w, part.d, part.h)
+          : new SphereGeometry(0.5, 10, 7);
+      const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
+      if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
+      mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
+      body.add(mesh);
+    }
     group.add(body);
 
-    // Facing pip: a bead in the heading direction. It exists because a box is
-    // symmetrical and you cannot otherwise see which way a robot is pointing.
-    // A real model is simply rotated and needs none of this.
-    const nose = new Mesh(
-      new SphereGeometry(0.1, 10, 8),
-      new MeshBasicMaterial({ color: this.palette.accent }),
-    );
-    group.add(nose);
-
-    // Contact shadow. Tightens as the robot settles, which sells weight even
-    // before there is a model to look at.
+    /*
+     * Contact shadow, at 1.45 x the body rather than the 2.1 it was.
+     *
+     * The wider disc was right while a robot was a featureless box and the
+     * shadow was most of what told you where it was standing. Now that the
+     * machine has a shape, a pool three metres across under Biggy reads as
+     * a crater it is sitting in rather than as contact with the floor.
+     */
     const shadow = new Mesh(
-      new CircleGeometry(spec.radius * 2.1, 24),
-      new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }),
+      new CircleGeometry(spec.radius * 1.45, 24),
+      new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
     );
     shadow.renderOrder = 2;
     group.add(shadow);
@@ -942,7 +1081,7 @@ export class BlockoutRenderer {
     stopRing.renderOrder = 3;
     group.add(stopRing);
 
-    const view: RobotView = { group, body, nose, shadow, stopLine, stopRing };
+    const view: RobotView = { group, body, shadow, stopLine, stopRing };
     this.robots.set(actor, view);
     this.scene.add(group);
     return view;
@@ -950,23 +1089,17 @@ export class BlockoutRenderer {
 
   private placeRobot(actor: Actor, view: RobotView, alpha: number): void {
     const { body } = actor;
-    const { spec } = body;
     const pos = renderPos(actor, alpha);
 
     // A small vertical bob driven by stride phase, scaled by speed, so a
     // walking robot has gait and a stationary one is dead still.
     const bob = Math.abs(Math.sin(body.stridePhase * Math.PI)) * 0.035 * body.speedFraction;
 
-    // Standing ON whatever it is standing on, not on the storey datum. Its
-    // feet are at pos.z — halfway up its own height is where the box centre
-    // goes, because a BoxGeometry is centred on its origin.
-    view.body.position.set(pos.x, pos.y, pos.z + bob + spec.height / 2);
-
-    view.nose.position.set(
-      pos.x + Math.cos(body.heading) * (spec.radius + 0.22),
-      pos.y + Math.sin(body.heading) * (spec.radius + 0.22),
-      pos.z + bob + spec.height * 0.72,
-    );
+    // Standing ON whatever it is standing on, not on the storey datum: the
+    // group's origin is between the machine's feet, and every part measures
+    // its own height up from there.
+    view.body.position.set(pos.x, pos.y, pos.z + bob);
+    view.body.rotation.z = body.heading;
 
     // No contact shadow on a staircase. The disc is 1.4 m across and a tread
     // is 0.62 m deep, so on a flight it is a flat decal spanning three steps:

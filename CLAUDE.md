@@ -146,6 +146,8 @@ for a scoring criterion.
 | Change how heavy a load feels | nothing — it is `mass + payload` in `Body`, and that is the point |
 | Change how full the building is | `crowdDensity` in `registry.ts`. It sets the population AND which rooms are in use |
 | Change how the crowd behaves | `src/core/Crowd.ts`. Seeded — keep it deterministic |
+| Change what a robot looks like | `robotParts` in `BlockoutRenderer`. State everything as a fraction of `radius`/`height` so the art cannot drift from the collision shape |
+| Change a robot's livery | `tint` / `trim` in `RobotSpec.ts` — a fact about the machine, not the era |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |

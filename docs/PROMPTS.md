@@ -420,6 +420,61 @@ Written down in `docs/MECHANICS.md` §5.4 rather than left as an omission.
 
 ## Robots
 
+### The cast, built from primitives instead of imported
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-21
+
+**Prompt:**
+> I'm worried that the game is now a bit too low poly to use actual model one
+> the robots and I'm wondering if they size in the game reflect what they are
+> supposed to be
+
+Two questions, and the useful part is that the second one had already been
+answered and the first one turned out to point the other way.
+
+**Are the sizes right?** Yes. The model sheets were read and the front view
+of each measured against `RobotSpec`:
+
+| | Sheet, width per unit height | `RobotSpec` | Absolute |
+|---|---|---|---|
+| Voxxy | 0.61 | 0.59 | 0.68 × 1.15 m |
+| Droid | 0.48 | 0.45 | 0.92 × 2.05 m |
+| Biggy | 1.11 | 1.07 | 1.44 × 1.35 m |
+
+All within 7%. Absolute scale is not in the sheets — no scale bar, no human
+in frame — but it is now pinned from two directions: the masses are
+plausible for machines that size, and the 1.72 m crowd added earlier the
+same day puts Voxxy at chest height, Droid a head taller than a person and
+Biggy low and twice as wide. **The scale was only checkable because the
+building had people in it**, which it had not until that afternoon.
+
+Worth recording: `height` stopped being art when the objective system
+landed. Droid's 2.05 m is the reach gate that makes it the only machine
+that can work a 2 m counter, so these numbers are now gameplay.
+
+**Is the game too low-poly for real models?** It is the wrong way round. The
+robots were single boxes, and the crowd — three primitives each — had more
+shape than the cast did. The least detailed things on screen were the three
+characters the entry is judged on.
+
+So no model import. Each robot is now four to eleven primitives, positioned
+in the machine's own frame as fractions of `radius` and `height`, so the
+drawing scales off the collision shape and the two cannot drift. A textured
+mesh in a scene of flat-shaded boxes would read as a sticker; what carries a
+character at thirty pixels is silhouette, which is exactly what the crowd
+had just demonstrated at twenty.
+
+**Fell out of it:** the facing pip could go. A box is symmetrical and needed
+a bead stuck to its front to show which way it pointed; a machine with a
+head does not. And the contact shadow, at 2.1 x the body radius, had been
+sized for a era when the shadow was most of what told you where a robot was
+standing — under a shaped Biggy it read as a three-metre crater, so it came
+down to 1.45.
+
+**Fixed by hand:** nothing yet — but the numbers in the table above are the
+kind of claim that should be checked by a human looking at the screen, and
+whether Biggy is *satisfying* remains undelegable.
+
 ### _(pending)_ 8-direction sprite sheets from the model sheets
 
 Planned: generate per-robot turnarounds from the supplied model sheets
