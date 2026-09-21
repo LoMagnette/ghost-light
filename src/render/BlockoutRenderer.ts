@@ -54,19 +54,27 @@ import type { Actor } from '@/core/Sim';
 import type { RobotSpec } from '@/core/RobotSpec';
 import {
   Crowd,
-  PERSON_HEAD_HIGH,
+  PERSON_ARM_BOTTOM,
+  PERSON_ARM_TOP,
+  PERSON_ARM_WIDE,
   PERSON_HEAD_WIDE,
   PERSON_HEIGHT,
   PERSON_HIP,
   PERSON_LEG_TOP,
   PERSON_NECK,
   PERSON_SHOULDER,
+  PERSON_SHOULDER_BOTTOM,
   PERSON_THICK,
   PERSON_TORSO_WIDE,
+  SEATED_ARM_BOTTOM,
+  SEATED_ARM_TOP,
+  SEATED_ARM_WIDE,
   SEATED_LAP_FORWARD,
   SEATED_PERSON_HEIGHT,
   SEATED_SHOULDER,
+  SEATED_SHOULDER_BOTTOM,
   SEATED_SPINE_BACK,
+  SEATED_TORSO_WIDE,
   SEATED_THIGH_HIGH,
   SEATED_THIGH_LONG,
   SEATED_TORSO_THICK,
@@ -246,8 +254,24 @@ function tone(x: number, y: number, z: number): number {
 
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
-/** Boxes per standing person: legs, torso, shoulders. The head is a blob. */
-const PERSON_PARTS = 3;
+/** Boxes per standing person: legs, torso, two arms. */
+const PERSON_PARTS = 4;
+/** Blobs per person: the shoulder mass and the head. */
+const PERSON_BLOBS = 2;
+
+/**
+ * Segments on a crowd blob. A head is about six pixels across, so six by
+ * four is indistinguishable from anything rounder and costs half as much.
+ *
+ * Kept for the saving, but NOT the fix for anything: a packed Chapter III
+ * runs its simulation at about a quarter of real time under the headless
+ * software renderer, and halving the crowd's triangle count from half a
+ * million moved that figure not at all. The cost is fill rate — thousands
+ * of small overlapping objects, shaded pixel by pixel on a CPU — which is
+ * the one thing a GPU makes free, and the reason this needs measuring on
+ * real hardware rather than here. See docs/PROMPTS.md.
+ */
+const CROWD_SEGMENTS = 6;
 
 /**
  * How a person is coloured, from the one crowd colour the chapter gives.
@@ -483,9 +507,9 @@ export class BlockoutRenderer {
     this.scene.add(this.moverMesh);
 
     this.moverHeads = new InstancedMesh(
-      new SphereGeometry(0.5, 8, 6),
+      new SphereGeometry(0.5, CROWD_SEGMENTS, CROWD_SEGMENTS - 2),
       new MeshLambertMaterial({ color: 0xffffff }),
-      MAX_MOVERS,
+      MAX_MOVERS * PERSON_BLOBS,
     );
     this.moverHeads.count = 0;
     this.moverHeads.frustumCulled = false;
@@ -536,9 +560,9 @@ export class BlockoutRenderer {
       {
         bounds: rect(
           spine - SEATED_TORSO_THICK / 2,
-          person.y - SEATED_SHOULDER / 2,
+          person.y - SEATED_TORSO_WIDE / 2,
           SEATED_TORSO_THICK,
-          SEATED_SHOULDER,
+          SEATED_TORSO_WIDE,
         ),
         // Overlapping the lap, so hip and thigh are one mass rather than two
         // stacked slabs with a seam between them.
@@ -546,25 +570,52 @@ export class BlockoutRenderer {
         top: person.z + SEATED_TORSO_TOP,
         colour: clothing,
       },
+      // Arms down either side, darker — the same tonal trick the walkers
+      // use, and the same reason: at this size an arm is a stripe, not a
+      // shape.
+      ...[1, -1].map((sideOf) => ({
+        bounds: rect(
+          spine - SEATED_TORSO_THICK / 2,
+          person.y + (sideOf * (SEATED_TORSO_WIDE + SEATED_ARM_WIDE)) / 2 - SEATED_ARM_WIDE / 2,
+          SEATED_TORSO_THICK,
+          SEATED_ARM_WIDE,
+        ),
+        bottom: person.z + SEATED_ARM_BOTTOM,
+        top: person.z + SEATED_ARM_TOP,
+        colour: shade(clothing, 0.74),
+      })),
     ];
   }
 
-  /** Where a seated person's head goes. Drawn as a blob, not a box. */
-  private seatedHead(person: Person): Box {
-    const [, , head] = this.personColours(person);
+  /** A seated person's rounded parts: the shoulder mass and the head. */
+  private seatedBlobs(person: Person): Box[] {
+    const [, clothing, head] = this.personColours(person);
     const f = Math.cos(person.heading) >= 0 ? 1 : -1;
     const spine = person.x - f * SEATED_SPINE_BACK;
-    return {
-      bounds: rect(
-        spine - PERSON_HEAD_WIDE / 2,
-        person.y - PERSON_HEAD_WIDE / 2,
-        PERSON_HEAD_WIDE,
-        PERSON_HEAD_WIDE,
-      ),
-      bottom: person.z + SEATED_TORSO_TOP - 0.03,
-      top: person.z + SEATED_PERSON_HEIGHT,
-      colour: head,
-    };
+    return [
+      {
+        bounds: rect(
+          spine - SEATED_TORSO_THICK / 2,
+          person.y - SEATED_SHOULDER / 2,
+          SEATED_TORSO_THICK,
+          SEATED_SHOULDER,
+        ),
+        bottom: person.z + SEATED_SHOULDER_BOTTOM,
+        top: person.z + SEATED_TORSO_TOP,
+        colour: clothing,
+      },
+      {
+        bounds: rect(
+          spine - PERSON_HEAD_WIDE / 2,
+          person.y - PERSON_HEAD_WIDE / 2,
+          PERSON_HEAD_WIDE,
+          PERSON_HEAD_WIDE,
+        ),
+        bottom: person.z + SEATED_TORSO_TOP - 0.03,
+        top: person.z + SEATED_PERSON_HEIGHT,
+        colour: head,
+      },
+    ];
   }
 
   /** Put the standing crowd where it is this frame. Visible storey only. */
@@ -572,7 +623,7 @@ export class BlockoutRenderer {
     let i = 0;
     let h = 0;
     for (const person of this.crowd.movers) {
-      if (person.floor !== floor || h >= MAX_MOVERS) continue;
+      if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
       const [trousers, clothing, head] = this.personColours(person);
 
       /*
@@ -587,30 +638,26 @@ export class BlockoutRenderer {
       i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_THICK * 0.8, PERSON_HIP, trousers);
       i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_THICK, PERSON_TORSO_WIDE, clothing);
 
-      // A shoulder line: the torso is narrow and this sits across the top of
-      // it at the full shoulder width. Without it the body is a plain
-      // upright box and the head looks stuck on a post.
-      i = this.placePart(i, person, PERSON_NECK - 0.15, PERSON_NECK, PERSON_THICK, PERSON_SHOULDER, clothing);
-
       /*
-       * No arms, and that is a measurement rather than laziness.
+       * Arms: two darker strips either side of the torso, in the SAME
+       * plane as it rather than proud of it.
        *
-       * They were built, in a sleeve shade, and they do not register: a
-       * real arm hangs INSIDE the shoulder width, so it protrudes about
-       * seven centimetres, which at this zoom is two pixels. What would
-       * make an arm read is the gap between it and the body, and there is
-       * no room to draw one. They cost two of five boxes per walker —
-       * forty per cent of the crowd's per-frame work — to say nothing, so
-       * the shoulder line does the job alone.
+       * The pass before this one built them sticking out, measured the
+       * seven centimetres they protrude, found it came to two pixels, and
+       * deleted them — the right measurement answering the wrong question.
+       * An arm at this size does not read as a silhouette. It reads as
+       * tone: dark, light, dark across the body, which is the difference
+       * between a person and a slab.
        */
+      const sleeve = shade(clothing, 0.74);
+      const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
+      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, reach);
+      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, -reach);
 
-      SCRATCH.position.set(person.x, person.y, person.z + (PERSON_NECK + PERSON_HEIGHT) / 2);
-      SCRATCH.scale.set(PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, PERSON_HEAD_HIGH);
-      SCRATCH.rotation.set(0, 0, person.heading);
-      SCRATCH.updateMatrix();
-      this.moverHeads.setMatrixAt(h, SCRATCH.matrix);
-      this.moverHeads.setColorAt(h, SCRATCH_COLOUR.set(head));
-      h += 1;
+      // The shoulders as a rounded mass over the top of all three, and the
+      // head over that. A flat cap read as epaulettes.
+      h = this.placeBlob(h, person, PERSON_SHOULDER_BOTTOM, PERSON_NECK, PERSON_SHOULDER, PERSON_THICK, clothing);
+      h = this.placeBlob(h, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
     }
 
     this.moverMesh.count = i;
@@ -622,7 +669,11 @@ export class BlockoutRenderer {
     if (this.moverHeads.instanceColor) this.moverHeads.instanceColor.needsUpdate = true;
   }
 
-  /** One box of a walking person, in its own frame. */
+  /**
+   * One box of a walking person, in its own frame. `across` offsets it to
+   * the figure's left, which is how an arm gets beside a torso without
+   * having to know which way the person is facing.
+   */
   private placePart(
     index: number,
     person: Person,
@@ -631,13 +682,37 @@ export class BlockoutRenderer {
     thick: number,
     wide: number,
     colour: number,
+    across = 0,
   ): number {
-    SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
+    SCRATCH.position.set(
+      person.x - Math.sin(person.heading) * across,
+      person.y + Math.cos(person.heading) * across,
+      person.z + (from + to) / 2,
+    );
     SCRATCH.scale.set(thick, wide, to - from);
     SCRATCH.rotation.set(0, 0, person.heading);
     SCRATCH.updateMatrix();
     this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
     this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
+    return index + 1;
+  }
+
+  /** The same, for the rounded parts: the shoulders and the head. */
+  private placeBlob(
+    index: number,
+    person: Person,
+    from: number,
+    to: number,
+    wide: number,
+    thick: number,
+    colour: number,
+  ): number {
+    SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
+    SCRATCH.scale.set(thick, wide, to - from);
+    SCRATCH.rotation.set(0, 0, person.heading);
+    SCRATCH.updateMatrix();
+    this.moverHeads.setMatrixAt(index, SCRATCH.matrix);
+    this.moverHeads.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
   }
 
@@ -917,7 +992,7 @@ export class BlockoutRenderer {
       );
       group.add(
         instanceBlobs(
-          audience.map((person) => this.seatedHead(person)),
+          audience.flatMap((person) => this.seatedBlobs(person)),
           new MeshLambertMaterial(),
         ),
       );
@@ -1389,7 +1464,11 @@ function storeysOf(venue: Venue): Level[] {
  * that it still belongs in a building made of boxes.
  */
 function instanceBlobs(blobs: Box[], material: MeshLambertMaterial): InstancedMesh {
-  const mesh = new InstancedMesh(new SphereGeometry(0.5, 8, 6), material, Math.max(blobs.length, 1));
+  const mesh = new InstancedMesh(
+    new SphereGeometry(0.5, CROWD_SEGMENTS, CROWD_SEGMENTS - 2),
+    material,
+    Math.max(blobs.length, 1),
+  );
 
   for (let i = 0; i < blobs.length; i += 1) {
     const { bounds, bottom, top, colour } = blobs[i];

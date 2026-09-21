@@ -363,11 +363,13 @@ rounded head — all sharing one centre line, so a heading rotates the whole
 figure with one number. At twenty-odd pixels what reads is silhouette: the
 head narrower than the shoulders and the shoulders wider than the waist.
 
-Arms were built and then removed, which is worth recording. A real arm
-hangs *inside* the shoulder width, so it protrudes about seven centimetres
-— two pixels here — and what would make it read is the gap between arm and
-body, for which there is no room. They cost two of five boxes per walker,
-forty per cent of the crowd's per-frame work, to say nothing.
+Arms read as **tone, not silhouette**, and that took two goes to get right.
+The first attempt built them sticking out, measured the seven centimetres a
+real arm protrudes past the body, found it came to two pixels, and deleted
+them — the right measurement answering the wrong question. An arm at this
+size is two darker strips either side of a lighter torso, in the same plane
+as it. The shoulders are a rounded blob rather than a flat cap, because a
+slab across the top of a narrow torso reads as epaulettes.
 
 **Sitting is an L, not a post.** The first version stood a torso on the pan
 and it read as a pillar planted in front of the chair: no lap, no knees, and
@@ -389,6 +391,15 @@ figures reading as packaging.
 People also keep out of each other — resolved within a grid cell only, which
 at a couple of hundred people over a thousand cells costs nothing and breaks
 up the knots that form when several of them pick the same cell to walk to.
+
+**Performance is unmeasured and needs a human.** A packed Chapter III runs
+its simulation at about a quarter of real time under the headless software
+renderer this project is developed against — against an empty Chapter I,
+which keeps up. Halving the crowd's triangle count moved that not at all,
+so the cost is fill rate: thousands of small overlapping objects shaded
+pixel by pixel on a CPU, which is precisely what a GPU makes free. Nothing
+here can tell us whether it is a problem on real hardware, and it belongs
+next to "judge the feel" on the human list.
 
 **People get out of the way of robots; robots are unaffected by people.** The
 avoidance radius grows with the robot's speed, so a machine crossing the hall

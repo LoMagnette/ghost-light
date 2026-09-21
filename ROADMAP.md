@@ -145,15 +145,21 @@ the palettes stay guesses until the files are on disk.
 5. **Watch the four drone flights.** They give ceiling heights, room volumes
    and how one space opens into the next. Report anything that contradicts the
    blockout.
-6. **Judge the feel.** The agent can tune mass and force numbers and read them
+6. **Check the frame rate on real hardware.** The agent develops against a
+   headless software renderer, where a packed Chapter III runs its
+   simulation at a quarter of real time and an empty Chapter I keeps up.
+   Cutting the crowd's triangle count changed nothing, so the cost is fill
+   rate — the one thing a GPU makes free — and no measurement taken here
+   means anything. Five minutes with `npm run dev` and F1 settles it.
+7. **Judge the feel.** The agent can tune mass and force numbers and read them
    back, but cannot feel whether Biggy is satisfying to drive. That judgement
    is 20 points and is not delegable.
-7. **Audio.** Footfall per robot is the highest-value sound in the game — it is
+8. **Audio.** Footfall per robot is the highest-value sound in the game — it is
    what sells mass.
-8. **Playtest with a stranger.** Someone who has never seen it, while you stay
+9. **Playtest with a stranger.** Someone who has never seen it, while you stay
    completely silent. Write down every hesitation. This is the 15 playability
    points and it is the step people skip.
-9. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
+10. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
    description. Submit on the 25th and again at the end — they judge the most
    recent entry, so an early one is free insurance.
 

@@ -546,6 +546,35 @@ It was committed, so `git checkout HEAD --` cost nothing, and the redo used
 narrow replacements anchored on both ends. Slicing a file between two
 markers is only safe when you have checked what lies between them.
 
+**Follow-up prompt, and a correction I had earned:**
+> the human have no arms and square shoulder
+
+Both true, and the arms were my own doing: I had built them, measured that
+they protrude about seven centimetres past the body, worked out that this
+is two pixels at this zoom, and deleted them as work that did not register.
+The measurement was right and the question was wrong. An arm at this size
+never was going to read as a silhouette — it reads as TONE, two darker
+strips either side of a lighter torso in the same plane. Rebuilt that way
+they are obvious. The shoulders were a flat slab across a narrow torso,
+which is why they read as epaulettes; they are a rounded blob now.
+
+The lesson is the one worth keeping: a measurement can be correct and still
+license the wrong conclusion, and "I measured it" is not the same as "I
+measured the thing that mattered". The user was looking at the screen,
+which beat my arithmetic.
+
+**And a performance finding that is honest rather than useful:** a packed
+Chapter III runs its simulation at about a quarter of real time in the
+headless harness, where an empty Chapter I keeps up. Halving the crowd's
+triangle count — five hundred thousand down to two hundred and fifty —
+moved it not at all, which rules out geometry and points at fill rate:
+thousands of small overlapping objects shaded pixel by pixel on a CPU.
+That is the one cost a GPU erases, so no number measured here means
+anything, and it has been written onto the human task list rather than
+guessed at. The frame-rate readout itself is unreliable in that harness for
+a related reason — with few frames, one near-zero delta pins the smoothed
+value at nonsense, which is why the `sim` clock is the figure to read.
+
 **What was deliberately not done:** any change to the lighting. `AMBIENT`,
 `KEY` and the sRGB curve were tuned against photographs and every palette
 in the game is calibrated to them, so a second fill light would have been

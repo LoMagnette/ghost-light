@@ -95,12 +95,36 @@ export const PERSON_NECK = 1.46;
  * walker in the building was turned ninety degrees and led with a shoulder.
  */
 export const PERSON_SHOULDER = 0.44;
-export const PERSON_TORSO_WIDE = 0.29;
+export const PERSON_TORSO_WIDE = 0.24;
 export const PERSON_HIP = 0.3;
 export const PERSON_THICK = 0.26;
-/** The head, as an ellipsoid rather than a cube. */
+/**
+ * Arms, flush with the torso rather than proud of it.
+ *
+ * A real arm hangs INSIDE the shoulder width, so it barely changes the
+ * outline — which is why the first attempt at them, built to stick out,
+ * was invisible and got deleted. That was the wrong conclusion from the
+ * right measurement: an arm at this size does not read as a silhouette, it
+ * reads as TONE. Two darker strips either side of a lighter torso, all in
+ * the same plane, and the body stops being one slab.
+ */
+export const PERSON_ARM_WIDE = 0.1;
+export const PERSON_ARM_TOP = 1.3;
+export const PERSON_ARM_BOTTOM = 0.86;
+/**
+ * The shoulders, as a rounded mass rather than a square cap.
+ *
+ * A flat slab across the top of the torso reads as epaulettes — a coat
+ * hanger with a ball on it. Shoulders are the widest part of a person and
+ * they are round, and rounding them is most of what separates a figure
+ * from a post.
+ */
+export const PERSON_SHOULDER_BOTTOM = 1.14;
+/**
+ * The head, as an ellipsoid rather than a cube. Its height is the gap
+ * between the neck and the top of the person, so there is only one number.
+ */
 export const PERSON_HEAD_WIDE = 0.21;
-export const PERSON_HEAD_HIGH = 0.26;
 
 /**
  * How close a robot has to be before people move out of its way, metres,
@@ -513,7 +537,13 @@ export const SEATED_THIGH_HIGH = 0.16;
 /** The torso, pushed back against the rest. */
 export const SEATED_TORSO_TOP = 0.6;
 export const SEATED_TORSO_THICK = 0.24;
-export const SEATED_SHOULDER = 0.4;
+export const SEATED_SHOULDER = 0.42;
+/** Seated arms and shoulders, measured up from the pan like everything else. */
+export const SEATED_TORSO_WIDE = 0.23;
+export const SEATED_ARM_WIDE = 0.09;
+export const SEATED_ARM_BOTTOM = 0.16;
+export const SEATED_ARM_TOP = 0.5;
+export const SEATED_SHOULDER_BOTTOM = 0.42;
 /** Spine behind the pan's centre, lap forward of it. */
 export const SEATED_SPINE_BACK = 0.07;
 export const SEATED_LAP_FORWARD = 0.15;
