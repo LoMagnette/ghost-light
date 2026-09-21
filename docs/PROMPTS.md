@@ -311,8 +311,18 @@ number on a pier beside the door and again across the wall at the back of
 the room.
 
 Facing south is what costs: a south face spans x and z while the corridor
-runs along y, so the outside sign needs depth. Hence a pier rather than a
-plaque, with its digits stacked vertically down it.
+runs along y, so a sign out in the corridor needs depth — it came out as a
+pier beside each door with its digits stacked down it.
+
+**Then, one prompt later:**
+> Don't put the number outside the room
+
+The piers came out again, and the answer was better for it. The number lives
+only on the room's back wall now, and because the camera looks over a room's
+south wall it is legible from the corridor anyway — so the corridor reads as
+a corridor rather than as a row of fourteen pillars, and nothing was lost.
+Worth recording as the pattern: the model added a second sign to solve a
+problem the first one already solved, and only stopped when told to.
 
 **Caught by a harness, again:** `npm run venue` failed with 76 problems the
 moment the signs went up — it asserts stage letters stand within two metres
