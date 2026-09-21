@@ -623,7 +623,30 @@ Continuous everywhere, and it tracks the treads better than the snap did:
 | biggest jump between frames | **0.180 m** | **0.019 m** |
 
 The probe grew a between-frames check, which is the measurement it should
-have had first. It also grew a guard for the storey change — arriving on
+have had first.
+
+**And then, from watching it rather than measuring it:**
+> So if I climb the stairs side way is looks really good but straigh on is
+> strange
+
+Straight on, the machine was rearing: pitched nose-UP, tipping away from
+the direction it was travelling, which reads as falling over backwards.
+Sideways it looked fine only because the same pitch is edge-on there and
+nearly invisible.
+
+Two mistakes behind one symptom. The rock was applied in the robot's own
+frame regardless of where it was going, so a machine cutting across a
+flight got the full pitch of one climbing it. And the direction was simply
+wrong: a ramp tips a chassis nose-up because the wheels follow the
+surface, but a staircase is WALKED, and a body walking up one leans
+forward over its feet. Both now scale by how much of the travel is
+actually up the flight — +1 straight up, 0 square across, -1 straight down
+— so crossing stays square, climbing leans in, and descending leans back.
+
+Worth noting what caught it: nothing could. The probe measured height
+against the solver frame by frame and was perfectly happy, because the
+pitch is not a height. It took a person driving up a staircase and saying
+it looked odd. It also grew a guard for the storey change — arriving on
 floor 1 re-bases z on the new datum, a 6.2 m step in the number and no
 movement at all, which the new check dutifully reported as the worst jump
 in the climb until it was told otherwise.

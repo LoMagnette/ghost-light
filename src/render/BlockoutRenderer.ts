@@ -83,7 +83,7 @@ import {
   type Person,
 } from '@/core/Crowd';
 import { renderPos } from '@/core/Sim';
-import { groundAt, rect, type Level, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
+import { groundAt, rect, type Level, type Link, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 import {
   createCutawayUniforms,
@@ -303,8 +303,22 @@ const STEP_DWELL_START = 0.18;
 const STEP_DWELL_END = 0.82;
 /** A little extra lift at the top of the swing, over the eased rise. */
 const STEP_ARC = 0.022;
-/** How far the machine rocks back as it takes a step, radians. */
-const STEP_ROCK = 0.1;
+/**
+ * How a machine carries itself on a staircase, in radians.
+ *
+ * It leans INTO the climb, which is the opposite of what it does on a
+ * ramp and the opposite of what this did first. A ramp tips a chassis
+ * because the wheels follow the surface; a staircase is walked, and a
+ * body walking up one leans forward over its feet. Nose-up on stairs read
+ * as rearing — the machine appeared to be falling over backwards away
+ * from the direction it was going.
+ *
+ * Both are scaled by how much of the travel is actually up the flight, so
+ * a robot crossing a staircase sideways stays square and only one going
+ * straight up it leans the full amount.
+ */
+const STAIR_LEAN = 0.09;
+const STEP_ROCK = 0.05;
 /** How far a machine leans into a gradient, as a fraction of the real angle. */
 const SLOPE_LEAN = 0.8;
 
@@ -1264,18 +1278,53 @@ export class BlockoutRenderer {
 
       // The rise rate, normalised to peak at 1 halfway through the lift.
       // Everything that reads as effort hangs off it: a little extra height
-      // at the top of the swing, and a rock backwards while pushing up.
+      // at the top of the swing, and a deepening of the lean while pushing.
       const rising = 4 * eased * (1 - eased);
       const effort = rising * body.speedFraction;
-      return { lift: lift + STEP_ARC * effort, lean: STEP_ROCK * effort };
+
+      /*
+       * How much of this is actually a climb.
+       *
+       * +1 driving straight up the flight, 0 crossing it square, -1 going
+       * straight down. Everything about the posture is multiplied by it,
+       * so a machine cutting across a staircase stays upright and only one
+       * pointed up it leans — which is the difference between the two the
+       * player noticed.
+       */
+      const aligned = this.alignment(link, heading);
+      // Negative is nose-down: forward, over its own feet, into the climb.
+      // Both terms fade with speed, because leaning is something a machine
+      // does while climbing — one parked on a flight stands square, and
+      // gets there smoothly rather than snapping upright.
+      return {
+        lift: lift + STEP_ARC * effort,
+        lean: -(STAIR_LEAN * body.speedFraction + STEP_ROCK * effort) * aligned,
+      };
     }
 
-    // A ramp: tip by the component of the gradient along the way it faces,
-    // so a machine crossing a slope sideways stays level and one driving
-    // straight up it leans the most.
+    /*
+     * A ramp tips the machine the OTHER way: nose-up going up.
+     *
+     * Not an inconsistency. A ramp is rolled, so the chassis follows the
+     * surface it is standing on; a staircase is walked, and a body walking
+     * up one leans forward over its feet instead. The two look right for
+     * opposite reasons.
+     */
     const pull = downhill(link);
     const along = pull.x * Math.cos(heading) + pull.y * Math.sin(heading);
     return { lift: 0, lean: Math.asin(Math.max(-1, Math.min(1, -along))) * SLOPE_LEAN };
+  }
+
+  /**
+   * How much of a machine's facing is up the flight: +1 straight up, 0
+   * square across it, -1 straight down.
+   */
+  private alignment(link: Link, heading: number): number {
+    const pull = downhill(link);
+    const slope = Math.hypot(pull.x, pull.y);
+    if (slope < 1e-4) return 0;
+    const along = (pull.x * Math.cos(heading) + pull.y * Math.sin(heading)) / slope;
+    return Math.max(-1, Math.min(1, -along));
   }
 
   /**
