@@ -133,6 +133,17 @@ const DECAL_LIFT = 0.025;
  * a light so near vertical that every unlit surface goes to pure black, which
  * is not a trade worth making for a wall you can already tell apart.
  */
+/**
+ * How much of what stands behind it a pane of glazing lets through.
+ *
+ * The front of the building is a wall of glass and the concourse is on the
+ * other side of it, so an opaque pane is a wall with a different colour —
+ * which is the one thing glass is not. Low enough that the surface still
+ * reads as a plane catching the light, high enough that you can see the
+ * reception desk through it from outside.
+ */
+const GLAZING_OPACITY = 0.42;
+
 const AMBIENT = 0.111;
 const KEY = 0.972;
 
@@ -363,6 +374,8 @@ export class BlockoutRenderer {
      */
     const plates: Box[] = [];
     const boxes: Box[] = [];
+    // The glass front, kept apart: it is the one thing here that is not opaque.
+    const glass: Box[] = [];
     const seams: number[] = [];
 
     for (const room of this.venue.rooms) {
@@ -390,7 +403,7 @@ export class BlockoutRenderer {
       if (obstacle.floor !== floor || obstacle.hidden) continue;
       const { bounds } = obstacle;
       const datum = this.datumFor(floor, obstacle);
-      boxes.push({
+      (obstacle.material === 'glazing' ? glass : boxes).push({
         bounds,
         bottom: datum + (obstacle.base ?? 0),
         // A flight is exempt from the cutaway: see MAX_DRAWN_HEIGHT.
@@ -410,7 +423,7 @@ export class BlockoutRenderer {
       if (piece.floor !== floor) continue;
       const { bounds } = piece;
       const datum = this.datumFor(floor, piece);
-      boxes.push({
+      (piece.material === 'glazing' ? glass : boxes).push({
         bounds,
         bottom: datum + (piece.base ?? 0),
         top: piece.linkId
@@ -421,6 +434,29 @@ export class BlockoutRenderer {
     }
 
     group.add(instanceBoxes(plates, new MeshLambertMaterial()));
+
+    /*
+     * Glazing is its own mesh, because it is the one surface in the building
+     * that is not opaque and an InstancedMesh has one material.
+     *
+     * No cutaway shader on it: a pane you can already see through has nothing
+     * to get out of the way of. It writes no depth, so whatever stands behind
+     * it draws normally and the glass simply tints it.
+     */
+    if (glass.length) {
+      const panes = instanceBoxes(
+        glass,
+        new MeshLambertMaterial({
+          transparent: true,
+          opacity: GLAZING_OPACITY,
+          depthWrite: false,
+        }),
+      );
+      // Last of all: after the solid building, after the robots, and after
+      // the cutaway's ghost pass at 4.
+      panes.renderOrder = 6;
+      group.add(panes);
+    }
 
     // Two meshes over ONE set of instance buffers and one geometry. The solid
     // pass discards the cutaway disc and writes depth; the ghost pass draws
@@ -505,6 +541,10 @@ export class BlockoutRenderer {
         return this.palette.accent;
       case 'screen':
         return this.palette.screen;
+      case 'glazing':
+        return this.palette.glazing;
+      case 'booth':
+        return this.palette.booth;
       default:
         return this.palette.wall;
     }

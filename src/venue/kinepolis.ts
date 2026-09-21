@@ -189,6 +189,195 @@ function exhibitionColumns(): Obstacle[] {
 }
 
 /**
+ * The exhibition stands, as Devoxx lays the floor out.
+ *
+ * From `references/venue/maps/booth-map.png`: five ranks running north-south
+ * in the southern half of the hall — two of small stands against the west
+ * wall, two of large ones either side of a broad central aisle, one of small
+ * ones to the east — plus two in the south-west corner by the curve. Twenty-
+ * seven in all, which is the number the plan lets.
+ *
+ * The ranks are placed off the COLUMN GRID rather than traced off the image,
+ * because that is what a stand fitter does: nothing is built round a column,
+ * and the two narrow gaps between back-to-back ranks each have a column
+ * standing in them, which is what makes them service gaps rather than aisles
+ * a robot can get itself wedged in. `npm run venue` holds us to the first
+ * half of that; laying this out broke it twice.
+ *
+ * They are solid, and that is the point of them as much as the look: an empty
+ * 2400 m² hall is a car park, and Biggy needs 3.8 m to stop.
+ */
+
+/**
+ * A stand is a shell scheme, and a shell scheme is a floor and some panels.
+ *
+ * They went in as solid 2.6 m boxes, which is what a stand looks like from
+ * the outside and nothing like what one IS: you walk into a stand off the
+ * aisle, and what stops you is the back of it. A block also throws away the
+ * best thing about putting them here — Voxxy slips between two small stands
+ * and Biggy has to go round, out of the same geometry.
+ *
+ * So each stand is a coloured platform you can drive onto, a back panel on
+ * the side away from the aisle, and — on the large ones only — a side panel
+ * wherever it has a neighbour to share one with. The small ones stand apart
+ * with a metre between them and have no sides at all.
+ */
+
+/** Panel thickness and height, metres. */
+const BOOTH_PANEL = 0.1;
+const BOOTH_WALL = 2.5;
+
+/** How proud of the hall floor a stand's platform sits, metres. */
+const BOOTH_PLATFORM = 0.05;
+
+/**
+ * The counter every stand is run from, at the FRONT of it.
+ *
+ * Which is where you meet one: you are talked to across it from the aisle,
+ * and a counter tucked against the backdrop is a stand nobody is manning.
+ * Set 0.3 m in from the edge so there is a lip of platform in front of it
+ * rather than the counter being the edge.
+ *
+ * `DESK_SHARE` of the frontage, capped, so the small stands get a metre of
+ * counter and the large ones two and a half rather than four — a desk, not a
+ * partition, and the rest of the frontage is the way in. Which end it sits
+ * at alternates up the rank, because a floor where every stand is the same
+ * object twenty-seven times reads as wallpaper.
+ */
+const DESK_HEIGHT = 1.0;
+const DESK_DEPTH = 0.6;
+const DESK_SETBACK = 0.3;
+const DESK_SHARE = 0.55;
+const DESK_MAX = 2.4;
+
+/** Gap between small stands in a rank, metres. You walk through it. */
+const BOOTH_GAP = 1.0;
+
+/**
+ * South end of the booth field.
+ *
+ * As far south as the hall's curved south-west corner allows the west rank to
+ * come: the curve is modelled in 1.25 m bands and the one below this reaches
+ * 0.73 m in off the wall, which is into the back of a stand.
+ */
+const BOOTH_SOUTH = -31.0;
+
+/**
+ * Stand sizes: 6 m² and 24 m², which is what the plan lets.
+ *
+ * A rank runs north-south, so a rank's WIDTH is how deep its stands are and
+ * the numbers below are their frontage onto the aisle. 3 x 2 and 4 x 6.
+ *
+ * The first pass had them at 7.2 and 22.7 m² — near enough to look right and
+ * wrong enough to matter, because every extra centimetre of stand comes
+ * straight out of the aisle beside it, and the floor ended up with gaps you
+ * could see through and not drive through.
+ */
+const STAND_S = 2.0;
+const STAND_L = 6.0;
+const RANK_S = 3.0;
+const RANK_L = 4.0;
+
+/**
+ * Each rank: its west edge and width, which side its stands turn their backs
+ * to, and the stands in it from the south up.
+ *
+ * Set against the column grid, which is what decides everything here. The
+ * columns sit 6.4 m apart, so a rank and a usable aisle do not fit between
+ * two of them: the ranks are paired instead, backing onto a column line from
+ * either side with nothing but the column between them, and the aisles get
+ * the whole of the next bay. That gives a 5.6 m aisle down the west side and
+ * a 10.7 m one down the middle, each with one line of columns standing in it,
+ * against the 1.6 m slots the first pass left.
+ *
+ * `back` follows from that pairing and is the same statement twice: a stand
+ * faces the aisle, so its back is the side against the wall or the column.
+ *
+ * The plan also has two stands turned into the south-west corner. They are
+ * the seven-and-seven in the west ranks here instead: square on the grid and
+ * out of the aisle, which is worth more than the irregularity.
+ */
+const BOOTH_RANKS: {
+  x: number;
+  w: number;
+  back: 'west' | 'east';
+  stands: number[];
+}[] = [
+  { x: -22.5, w: RANK_S, back: 'west', stands: Array<number>(7).fill(STAND_S) },
+  { x: -13.9, w: RANK_S, back: 'east', stands: Array<number>(7).fill(STAND_S) },
+  { x: -10.0, w: RANK_L, back: 'west', stands: [STAND_L, STAND_L, STAND_L] },
+  // All three large. The plan caps this rank with two small stands, and a
+  // small stand in a 4 m rank is 8 m², which is not a size the plan lets.
+  { x: 4.7, w: RANK_L, back: 'east', stands: [STAND_L, STAND_L, STAND_L] },
+  { x: 9.6, w: RANK_S, back: 'west', stands: Array<number>(7).fill(STAND_S) },
+];
+
+function exhibitionBooths(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  for (const rank of BOOTH_RANKS) {
+    // Large stands run together so they can share a side panel, which is what
+    // makes "a side wall where there is a neighbour" mean anything. Small ones
+    // stand apart.
+    const shared = rank.w === RANK_L;
+    let y = BOOTH_SOUTH;
+
+    for (let i = 0; i < rank.stands.length; i += 1) {
+      const depth = rank.stands[i];
+
+      // The platform: drawn, never collided. Drive onto a stand and you are
+      // standing on the stand.
+      decor.push({
+        floor: 0,
+        bounds: rect(rank.x, y, rank.w, depth),
+        height: BOOTH_PLATFORM,
+        material: 'booth',
+      });
+
+      const backX = rank.back === 'west' ? rank.x : rank.x + rank.w - BOOTH_PANEL;
+      solids.push({
+        floor: 0,
+        bounds: rect(backX, y, BOOTH_PANEL, depth),
+        height: BOOTH_WALL,
+        material: 'booth',
+      });
+
+      const counter = Math.min(depth * DESK_SHARE, DESK_MAX);
+      solids.push({
+        floor: 0,
+        bounds: rect(
+          rank.back === 'west'
+            ? rank.x + rank.w - DESK_SETBACK - DESK_DEPTH
+            : rank.x + DESK_SETBACK,
+          i % 2 === 0 ? y : y + depth - counter,
+          DESK_DEPTH,
+          counter,
+        ),
+        height: DESK_HEIGHT,
+        material: 'desk',
+      });
+
+      // One panel per boundary, not one per side: the stand to the north of
+      // it owns the same wall. So the end stands get one side and everything
+      // between them gets two, which is the rule stated the short way.
+      if (shared && i < rank.stands.length - 1) {
+        solids.push({
+          floor: 0,
+          bounds: rect(rank.x, y + depth - BOOTH_PANEL / 2, rank.w, BOOTH_PANEL),
+          height: BOOTH_WALL,
+          material: 'booth',
+        });
+      }
+
+      y += depth + (shared ? 0 : BOOTH_GAP);
+    }
+  }
+
+  return { solids, decor };
+}
+
+/**
  * The reception concourse — a SEPARATE room south of the hall, not part of it.
  *
  * This is the walk a judge sees first: in through the main entrance at the
@@ -2122,6 +2311,163 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
 // ---------------------------------------------------------------------------
 
 /**
+ * Elevations that are curtain wall rather than building.
+ *
+ * The front of the Kinepolis is glass. You walk up to a wall of it, and the
+ * concourse behind is lit through it all day — it is the first thing the
+ * building says and the reason the entrance reads as an entrance from fifty
+ * metres away. Drawn as a solid 3.2 m slab it is the back of a warehouse.
+ *
+ * A BAND rather than a wall rectangle, because the wall builder decides where
+ * the runs fall and merges them; this only has to say which elevation. The
+ * band is tight enough in x to leave the BOF rooms' own south wall alone,
+ * which sits 0.4 m further out and is not glass.
+ */
+const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
+  // The entrance itself: the same glazing, coming down to the floor, and
+  // some of it opens. "Windows that can be opened as a door" is the
+  // building's own description and it is the right one — a door here is a
+  // panel of the curtain wall on hinges, not a doorway cut in a wall.
+  {
+    floor: 0,
+    bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2),
+    kind: 'door',
+  },
+  /*
+   * The same elevation a storey up, over the entrance and facing the head of
+   * the grand stair.
+   *
+   * A curtain wall does not stop at the first floor slab, and this is the one
+   * piece of it you meet from inside: you come up the grand flight and the
+   * thing at the top of it is a window the height of the wall. Windows, not
+   * doors — there is no walking out of the first floor.
+   */
+  {
+    floor: 1,
+    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF * 2 + 1, 1.2),
+    kind: 'window',
+  },
+];
+
+/**
+ * Solid base under a window, metres. Glass does not meet the floor.
+ *
+ * A door does: that is most of what tells the two apart in plan and all of
+ * what tells them apart from across the concourse.
+ */
+const GLAZING_SILL = 0.45;
+
+/**
+ * Mullion centres and width, metres.
+ *
+ * ONE pitch for both storeys, because that is what a curtain wall is: a grid
+ * that runs up the whole elevation and lines up floor to floor. The entrance
+ * was drawn at a door leaf's 1.1 m on the theory that a bank of doors is
+ * framed leaf by leaf, and across 36 m that is thirty-three posts — a picket
+ * fence, and nothing like the photograph. The bays in that are wide enough to
+ * read as panes of glass with frames round them rather than the other way
+ * round, and the ground floor is the same grid coming down to the floor.
+ */
+const MULLION_PITCH = 2.6;
+const MULLION_WIDTH = 0.14;
+
+/**
+ * The bottom rail of a glazed door, metres.
+ *
+ * Half a spandrel, and that difference is the point: a window sits on a
+ * solid base you cannot walk through and a door comes down to the floor. A
+ * push rail across the bank at hand height was tried first and is not worth
+ * having — three pixels at this zoom, and the float check was right to call
+ * a 36 m bar held up by nothing but mullions a wall hanging in the air.
+ */
+const DOOR_KICK = 0.2;
+
+/** Thickness of the glass itself. Thin, so it reads as a plane. */
+const PANE_THICKNESS = 0.08;
+
+/**
+ * Turn the walls on a glazed elevation into a curtain wall.
+ *
+ * The wall still stops a robot — a window is not a door — so what was there
+ * stays, marked `hidden`. What you SEE instead is three things: the sill it
+ * stands on, the mullions dividing it into bays, and one pane of glass the
+ * length of the run. The pane is the only piece in the building that is
+ * drawn translucent; see GLAZING_OPACITY in the renderer.
+ */
+function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
+  const kept: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  for (const wall of walls) {
+    const b = wall.bounds;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    // In the band, and lying ALONG it. Without the second half a 0.4 m stub
+    // of the BOF rooms' west wall — the return at the corner where the
+    // entrance elevation stops — came out as a pane of glass on its own.
+    const glazing = CURTAIN_WALLS.find(
+      (c) =>
+        c.floor === wall.floor &&
+        rectContains(c.bounds, cx, cy) &&
+        (c.bounds.w >= c.bounds.h) === (b.w >= b.h),
+    );
+    if (!glazing) {
+      kept.push(wall);
+      continue;
+    }
+
+    /*
+     * The wall stays, for collision, and stops being drawn.
+     *
+     * The doors do not open in the simulation, and that is not an oversight
+     * about doors — there is nothing outside to open onto. South of this line
+     * the building's extents run out: no plate, no floor, a robot that got
+     * through would step off the concourse into 1.2 m of nothing and keep
+     * falling. They are doors when there is a forecourt to walk into.
+     */
+    kept.push({ ...wall, hidden: true });
+
+    const door = glazing.kind === 'door';
+    const along = b.w >= b.h; // which way the run lies
+    const run = along ? b.w : b.h;
+    // A window stands on a solid spandrel; a door comes down to its own
+    // bottom rail. Same piece, and with the grid now shared between the two
+    // storeys it is the ONLY thing that tells them apart — which is also all
+    // the photograph shows: one wall of glass, standing on something upstairs
+    // and reaching the pavement downstairs.
+    const foot = door ? DOOR_KICK : GLAZING_SILL;
+    decor.push({ floor: wall.floor, bounds: b, height: foot });
+
+    decor.push({
+      floor: wall.floor,
+      bounds: along
+        ? rect(b.x, cy - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
+        : rect(cx - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
+      base: foot,
+      height: wall.height,
+      material: 'glazing',
+    });
+
+    // One mullion at each end and the bays between them as near the pitch as
+    // the run allows, so a 36 m front does not end on half a bay.
+    const bays = Math.max(1, Math.round(run / MULLION_PITCH));
+    for (let i = 0; i <= bays; i += 1) {
+      const at = (i * (run - MULLION_WIDTH)) / bays;
+      decor.push({
+        floor: wall.floor,
+        bounds: along
+          ? rect(b.x + at, b.y, MULLION_WIDTH, b.h)
+          : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
+        base: foot,
+        height: wall.height,
+      });
+    }
+  }
+
+  return { walls: kept, decor };
+}
+
+/**
  * Stairwells whose flanking walls are balustrades rather than walls.
  *
  * The grand flight arrives between Rooms 6 and 7, so the corridor's own side
@@ -2186,6 +2532,7 @@ function splitBesideWell(wall: Obstacle, well: Link): Obstacle[] {
 }
 
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
+const FACADE = glazeFacade(WALLS.walls);
 
 /**
  * Balustrades down both sides of the two flights into the exhibition hall.
@@ -2431,6 +2778,7 @@ function grandWellHeadRails(): Obstacle[] {
   }));
 }
 
+const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 
@@ -2438,15 +2786,23 @@ export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
   obstacles: [
     ...exhibitionColumns(),
+    ...BOOTHS.solids,
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
     ...STAIRS.solids,
     ...RAILS.solids,
     ...grandWellHeadRails(),
     ...receptionFitOut(),
-    ...railBesideWells(WALLS.walls, staircases),
+    ...railBesideWells(FACADE.walls, staircases),
   ],
-  decor: [...auditoriumDecor, ...WALLS.decor, ...RAILS.decor, ...STAIRS.decor],
+  decor: [
+    ...auditoriumDecor,
+    ...WALLS.decor,
+    ...RAILS.decor,
+    ...STAIRS.decor,
+    ...FACADE.decor,
+    ...BOOTHS.decor,
+  ],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
 };
@@ -2457,8 +2813,10 @@ export const SPAWNS = {
   /** Inside the main entrance, east of the grand stair. */
   mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
   /** Where the concourse opens into the hall. */
-  // Between the two southernmost column rows, which sit at y -27.05 and -33.58.
-  hallEntrance: { floor: 0 as const, x: 2, y: -30.3 },
+  // Between the two southernmost column rows, which sit at y -27.05 and
+  // -33.58, and now on the centre line of the main aisle: the cast lines up
+  // eastward from here and the east rank of stands begins at x 4.0.
+  hallEntrance: { floor: 0 as const, x: -1, y: -32.4 },
   /**
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
@@ -2474,7 +2832,7 @@ export const SPAWNS = {
    * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: 0, y: -24 },
+  hallCentre: { floor: 0 as const, x: -2.6, y: -24 },
   /**
    * Just south of the west flight, below its TOP.
    *
@@ -2482,7 +2840,7 @@ export const SPAWNS = {
    * north from here and you meet it, which is what `npm run traverse` asserts.
    * The foot you can actually walk onto is at the far, northern end.
    */
-  stairFoot: { floor: 0 as const, x: -6.0, y: -10.2 },
+  stairFoot: { floor: 0 as const, x: -6.0, y: -9.6 },
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *

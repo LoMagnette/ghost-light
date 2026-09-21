@@ -1922,6 +1922,325 @@ on the hall floor, half a metre short.
 
 ---
 
+### Claude Opus — the glass front
+
+**Prompt:**
+> Btw the front part of the kinepolis so the reception entrance is made of
+> windows it should be reflected in the game
+
+**Iterations:** 1
+
+The whole south elevation of the concourse was one unbroken 36 m slab of
+concrete, which is the back of a warehouse and the opposite of what that
+building does to you when you walk up to it.
+
+It is a curtain wall now: a 0.45 m sill, mullions at 1.8 m centres, and one
+pane of glass the length of the run. The wall itself stays — a window is not a
+door, and the robot that could not drive out of the south wall still cannot —
+but it is `hidden`, and what you see is the three pieces in front of it.
+
+**The one thing in the building that is not opaque.** An `InstancedMesh` has
+one material, so glazing gets a mesh of its own: a plain translucent Lambert
+at 0.42, no cutaway shader — a pane you can already see through has nothing to
+get out of the way of — and no depth write, so what stands behind it draws
+normally and the glass tints it.
+
+**The palette does the era, as always.** The first pass gave each chapter a
+colour picked in the abstract, and Chapter II's glass vanished: warm tungsten
+glazing at 30% over the warm tan floor behind it is the same colour as the
+floor, so the façade came out as a row of posts standing on nothing. The cue
+that a thing is glass is that it reads DARKER than the frame it sits in,
+whatever the light — so all three are now well under their era's wall colour,
+and Chapter III's is cool grey against warm white rather than another warm.
+
+Two harness notes:
+
+- `npm run venue` caught the first attempt: "a piece of glazing at -13.6,
+  -60.4 is inside no room". Its test for *is this furniture or is it the
+  building* was "does it name a material", and glazing is the first piece of
+  building that needs a colour of its own. Wall faces are centred on a room's
+  edge by construction, so half of them is legitimately outside.
+- A 0.4 m stub of the BOF rooms' west wall — the return at the corner where
+  the entrance elevation stops — came out as a lone pane of glass. A curtain
+  wall glazes the runs lying ALONG it, not the ones crossing it.
+
+---
+
+### Claude Opus — two storeys of it, and doors
+
+**Prompt:**
+> it should still be windows in front of the stairs on the 1st floor. The
+> glass on the reception level are windows but can be opened as door
+
+**Iterations:** 1
+
+A curtain wall does not stop at the first floor slab. The corridor's south
+end is a 14.3 m run at exactly the same elevation as the entrance below it,
+and it is the one piece of the glass front you meet from INSIDE: you come up
+the grand flight and the thing at the top of it is a window the height of the
+wall. Glazed now, as windows.
+
+And the two elevations are not the same thing, so they are not drawn the
+same. `CURTAIN_WALLS` entries carry a kind:
+
+| | spandrel | mullions |
+|---|---|---|
+| window | 0.45 m solid base | 1.8 m |
+| door | 0.2 m bottom rail | 1.1 m — one per leaf |
+
+Glass down to the floor and a rhythm two-thirds tighter is what makes a bank
+of doors read as a way in rather than a window, and both cues survive being
+three hundred pixels wide on screen.
+
+**The doors do not open, and that is not about doors.** South of that line
+the building's extents run out — no plate, no floor. A robot that got through
+would step off the concourse into 1.2 m of nothing and keep falling, which is
+exactly the fault `Voxxy cannot drive out of the south wall` exists to catch.
+They become doors when there is a forecourt to walk into.
+
+**The float check was right and I was wrong.** The first attempt put a push
+rail across the whole bank at hand height, and `npm run venue` called it: *a
+wall at -13.6, -60.5 (35.8 x 0.3 m) is drawn from 2.25 m with nothing under
+it above 1.20 m*. A 36 m bar held up by nothing but mullions is a wall
+hanging in the air as far as that check can tell, and the honest answer was
+not to loosen the check — it was that a 0.12 m rail is three pixels at this
+zoom and was never going to earn its place.
+
+---
+
+### Claude Opus — the bays, from the photograph
+
+**Prompt:**
+> I think the windows should be a bit widder look at the image
+> 54842743975_b835884445_k.jpg
+
+**Iterations:** 1
+
+The photograph is the front of the building from the car park, and it
+corrects two things at once.
+
+The bays are wide — wide enough that you read panes of glass with frames
+round them rather than the other way round. And the ground floor is **the
+same grid as the storey above it**, coming down to the pavement. I had built
+the entrance at a door leaf's 1.1 m on the theory that a bank of doors is
+framed leaf by leaf, which across 36 m is thirty-three posts: a picket fence,
+and nothing like the building.
+
+So: one pitch for both storeys, 2.6 m, because that is what a curtain wall
+is — a grid that runs up the whole elevation and lines up floor to floor.
+Fourteen bays across the front instead of thirty-three, six across the
+first-floor window. The only thing left telling the two levels apart is the
+one the photograph shows: upstairs the glass stands on a spandrel, downstairs
+it reaches the floor.
+
+Which also settles what "windows that can be opened as a door" meant, and I
+had read it too literally the round before. A door here is a panel of the
+curtain wall on hinges, not a doorway cut in a wall — so it is not framed
+like a door, it is framed like the window it is.
+
+---
+
+### Claude Opus — the exhibition stands
+
+**Prompt:**
+> Can you adapt the exibition area to add some booth based on the image:
+> booth-map.png
+
+**Iterations:** 1
+
+Twenty-seven stands, laid out as the map lays them: two ranks of small ones
+against the west wall, two ranks of large ones either side of a 9.8 m central
+aisle, one rank of small ones east of it, and two in the south-west corner by
+the curve.
+
+**Placed off the column grid, not traced off the image.** That is what a stand
+fitter does — nothing gets built around a column — and it is the one thing
+about the layout that is not a matter of taste. It also turns out to be what
+makes the plan work: the two narrow gaps between back-to-back ranks each have
+a column standing in them, which is what makes them service gaps rather than
+1.6 m dead ends a robot can wedge itself into.
+
+`npm run venue` now holds the floor to it, and the check earns its keep
+immediately — laying these out broke it twice, both times by under half a
+metre, and both times invisibly. A column inside a booth draws as a booth and
+collides as a booth; the only thing wrong with it is that it could not exist.
+
+**Three things the harness caught that I did not:**
+
+- The spawn-safety check failed on three cast positions at once — `hallEntrance`,
+  `hallCentre` and `stairFoot` were all under a stand. The chapters line their
+  cast up EASTWARD from a spawn, so a point that looks clear is not: the third
+  robot lands 4 m away, which is exactly where the east rank begins.
+- `stairFoot` also showed that the west rank was a stand too long: it left
+  0.8 m between the back of a booth and the foot of the west flight. The plan
+  puts a small stand on the end of that rank; here it goes on the east one.
+- And the first colour for Chapter III was picked at the canopy's own warm
+  white, which made twenty-seven stands read as twenty-seven lumps of the
+  building — the hall looked demolished rather than fitted out. They are
+  deliberately cooler than the building they stand in now.
+
+They are solid, and that is as much the point as the look: an empty 2400 m²
+hall is a car park, and Biggy needs 3.8 m to stop. `npm run traverse` drives
+Biggy — widest robot, worst at changing its mind — the full length of the main
+aisle.
+
+Not done, and worth a look later: `Obstacle.movable` already exists, and a
+trade-show stand is the most shoveable thing in the building.
+
+---
+
+### Claude Opus — 6 m² and 24 m²
+
+**Prompt:**
+> I think the exposition floot is a bit too small since it's not possible to
+> circulate between some booth as a reminder the small one are suposed to be
+> 2*3m (6 sqm) et le largest are 24sqm
+
+**Iterations:** 1
+
+The floor was not too small; the stands were too big. They went in at 7.2 m²
+and 22.7 m² — near enough to look right off the map, and wrong enough to
+matter, because every extra centimetre of stand comes straight out of the
+aisle beside it. Two of the gaps came out at 1.6 m: wide enough to see
+through, not wide enough for Biggy at 1.44 m across.
+
+At the sizes the plan actually lets, the layout can be set against the column
+grid properly. The columns sit 6.4 m apart, so a rank and a usable aisle do
+NOT fit between two of them — which is the fact the first pass kept losing
+to. So the ranks are paired instead: two of them back onto the same column
+line from either side with nothing but the column between, and the aisles get
+the whole of the next bay. **5.6 m down the west side and 10.7 m down the
+middle**, each with one line of columns standing in it, instead of a 1.6 m
+slot.
+
+Two checks came out of it, and both fired straight away:
+
+- `npm run venue` now holds every stand to 6 m² or 24 m². It caught the two
+  small stands capping the east-central rank: a small stand in a 4 m deep
+  rank is 8 m², which is not a size that exists. That rank is three large
+  ones now, and the two it lost went to the east rank.
+- `npm run traverse` drives **Biggy** — widest robot, worst at changing its
+  mind — the full length of both aisles. It is the only honest test of "can
+  you circulate", because the two small robots fit down gaps that are not
+  aisles at all.
+
+The plan's two stands turned into the south-west corner are gone: they stood
+in the west aisle, and square-on-the-grid beats the irregularity. Still 27.
+
+---
+
+### Claude Opus — a stand is a floor and some panels
+
+**Prompt:**
+> So the booth should'nt be some boxeds, they should be a flat surface with a
+> different colors with a back wall and for the bigest one or too side walls
+> depending on the fact if they have a neighbout on that side.
+
+**Iterations:** 1
+
+Right, and a solid box was not a simplification of a stand — it was the
+opposite of one. You walk INTO a stand off the aisle; what stops you is the
+back of it. A box makes the inside of every stand somewhere nobody can be.
+
+Each one is now a coloured platform you can drive onto, a back panel on the
+side away from the aisle, and — on the large ones — a side panel wherever it
+has a neighbour to share one with. **One panel per boundary, not one per
+side**, which is the rule stated the short way: the end stands get one side
+and everything between them gets two, and it falls out of emitting a wall
+only where a next stand exists.
+
+That also decides something the box was hiding. A side panel is only
+meaningful if there is a neighbour close enough to share it, so the large
+stands run TOGETHER in their ranks and the small ones keep their metre
+between them. Which is what the map draws: the blue stands almost touch and
+the yellow ones plainly do not.
+
+`back` is the same statement twice — a stand faces the aisle, so its back is
+whatever it is pressed against, and the ranks were already paired against the
+column lines.
+
+**What it buys, beyond looking right.** Voxxy is 0.68 m across and the gaps
+between small stands are a metre; Biggy is 1.44 m and has to go round. Same
+geometry, different answer per robot, which is the rule the whole cast is
+built on — and it was impossible while a stand was a solid block.
+
+`npm run traverse` drives Voxxy off the aisle into a stand and asserts it
+ends up INSIDE the platform and not through the back of it. Re-emitting the
+platform as a solid box fails it at the front edge, 2.9 m short.
+
+---
+
+### Claude Opus — a counter on every stand
+
+**Prompt:**
+> most booth should have some kind of small desk
+
+**Iterations:** 1
+
+All twenty-seven have one. The interesting part is where it goes.
+
+The obvious place is across the frontage, and it is wrong: a counter on the
+aisle edge walls a 6 m² stand off completely, and the whole reason these
+stopped being solid blocks last round is that you can drive into one. So the
+counter sits **against the back panel**, which is also what a stand with an
+info desk actually looks like, and the frontage stays open.
+
+`DESK_SHARE` of the frontage and capped, so a small stand gets a metre of
+counter and a large one two and a half rather than four — a desk, not a
+partition. Which end it sits at alternates up the rank, because a floor where
+every stand is the same object twenty-seven times reads as wallpaper rather
+than as a trade floor.
+
+They are `material: 'desk'`, the same as the lecterns upstairs, which is the
+honest answer — it is the same kind of object and the chapters should dress
+it the same way. That only works because the presenter's-desk count was
+scoped to the auditorium level two rounds ago, when the reception counter
+tripped it.
+
+`npm run venue` holds every stand to exactly one counter, wholly inside it.
+The traversal scenario from last round still passes and now stops Voxxy 60 cm
+earlier — on the stand, against the counter, rather than against the back
+panel — so it got a name that says what it is testing: that you get ONTO a
+stand at all.
+
+---
+
+### Claude Opus — the counter belongs at the front
+
+**Prompt:**
+> the desk should be more in front of the booth then in the back
+
+**Iterations:** 1
+
+Correct, and my reasoning for putting it at the back was backwards. I argued
+that a counter on the aisle edge walls a small stand off — but it only takes
+`DESK_SHARE` of the frontage, so the rest of it is still the way in, and a
+counter tucked against the backdrop is a stand nobody is manning. You are
+talked to across a counter from the aisle. It sits 0.3 m in from the front
+edge now, so there is a lip of platform in front of it rather than the
+counter being the edge.
+
+**The traversal scenario broke, which is the useful part.** It drove Voxxy at
+the middle of the westmost stand and asserted it ended up inside the
+platform; with the counter moved it stopped dead ON the platform edge, 0 cm
+inside. That is the test telling me it had been passing for the wrong reason
+— it never knew where the counter was, so it happened to be aiming at open
+floor.
+
+Rewritten so it reads the stand instead of guessing at it. It now takes the
+largest stand, finds the counter inside it, and works out both **which side
+the aisle is on** (the side the counter sits nearer, because the counter is
+at the front by construction) and **where the way in is** (the frontage the
+counter does not cover). It drives at that.
+
+One number in it is a test detail rather than a building one, and is
+commented as such: the approach is a metre off the front edge and not the far
+side of the aisle, because the main aisle has a line of columns down the
+middle and a long straight run at the stand lands on one. Driving the aisles
+is what the two scenarios above it are for.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

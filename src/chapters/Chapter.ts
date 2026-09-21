@@ -55,6 +55,24 @@ export interface Palette {
    * decides whether you can see it. Give it a colour that reads as cloth.
    */
   screen: number;
+  /**
+   * An exhibitor's stand on the hall floor.
+   *
+   * Twenty-seven of them, and the one thing in the building that is neither
+   * the building nor its furniture: they are brought in for the week. That
+   * makes them the clearest thing a chapter has to say about WHEN it is —
+   * derelict, hand-made, or a full trade floor.
+   */
+  booth: number;
+  /**
+   * The glass front of the building.
+   *
+   * Drawn translucent, so this is a TINT over whatever is behind it rather
+   * than a surface colour: it is the colour the concourse takes on when you
+   * are looking at it through the entrance, which is a different question in
+   * daylight, under tungsten and at capacity.
+   */
+  glazing: number;
   /** Accent — signage, screens, step lighting. */
   accent: number;
   /** HUD text. */

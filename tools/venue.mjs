@@ -402,16 +402,93 @@ check(
 // measured with one ruler and furnished with another.
 check(ROW_PITCH === 1.0, `row pitch is ${ROW_PITCH} m; the auditorium plan was scaled at 1.0`);
 
+// --- the exhibition stands -------------------------------------------------
+//
+// Twenty-seven of them on the plan, and the one thing about laying them out
+// that is not a matter of taste: a stand is a shell built on the floor, and
+// the floor has a column grid through it. Nobody builds a booth around a
+// column, and a layout that does is one the hall could not actually hold.
+//
+// This is not hypothetical. Placing these broke it twice, both times by less
+// than half a metre, and both times invisibly — a column inside a booth draws
+// as a booth and collides as a booth, and the only thing wrong with it is
+// that it could not exist.
+// The PLATFORM is the stand: one per stand, and the thing whose size and
+// position the plan actually specifies. Its panels are obstacles and there
+// are a variable number of them, so counting those answers nothing.
+const stands = KINEPOLIS.decor.filter((d) => d.material === 'booth');
+check(stands.length === 27, `the plan lets 27 stands, the hall has ${stands.length}`);
+
+// 6 m² and 24 m², and nothing in between. The first pass built them at 7.2
+// and 22.7 — near enough to look right, and wrong enough that every extra
+// centimetre came out of the aisle beside it.
+for (const stand of stands) {
+  const area = stand.bounds.w * stand.bounds.h;
+  check(
+    Math.abs(area - 6) < 0.01 || Math.abs(area - 24) < 0.01,
+    `the stand at ${stand.bounds.x.toFixed(1)}, ${stand.bounds.y.toFixed(1)} is ` +
+      `${stand.bounds.w} x ${stand.bounds.h} m — ${area.toFixed(1)} m². The plan lets 6 and 24`,
+  );
+}
+
+const overlap = (a, b) =>
+  a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS &&
+  a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
+
+const pillars = KINEPOLIS.obstacles.filter(
+  (o) => o.floor === 0 && Math.abs(o.bounds.w - 0.7) < EPS && Math.abs(o.bounds.h - 0.7) < EPS,
+);
+check(pillars.length === 42, `expected 42 columns on the hall floor, found ${pillars.length}`);
+
+// One counter per stand, and inside the stand it belongs to. The counters
+// are the only thing on the hall floor made of the same stuff as the
+// lecterns upstairs, which is why the presenter's-desk count is scoped to
+// floor 1 — see the note there.
+const counters = KINEPOLIS.obstacles.filter((o) => o.floor === 0 && o.material === 'desk');
+for (const stand of stands) {
+  const b = stand.bounds;
+  const mine = counters.filter(
+    (c) =>
+      c.bounds.x >= b.x - EPS && c.bounds.x + c.bounds.w <= b.x + b.w + EPS &&
+      c.bounds.y >= b.y - EPS && c.bounds.y + c.bounds.h <= b.y + b.h + EPS,
+  );
+  check(
+    mine.length === 1,
+    `the stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} has ${mine.length} counters, expected 1`,
+  );
+}
+
+const hallBounds = KINEPOLIS.rooms.find((r) => r.id === 'hall').bounds;
+for (const stand of stands) {
+  const b = stand.bounds;
+  check(
+    b.x >= hallBounds.x - EPS && b.x + b.w <= hallBounds.x + hallBounds.w + EPS &&
+      b.y >= hallBounds.y - EPS && b.y + b.h <= hallBounds.y + hallBounds.h + EPS,
+    `a stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} is not on the exhibition floor`,
+  );
+  for (const pillar of pillars) {
+    check(
+      !overlap(b, pillar.bounds),
+      `the stand at ${b.x.toFixed(1)}, ${b.y.toFixed(1)} is built around the column at ` +
+        `${pillar.bounds.x.toFixed(2)}, ${pillar.bounds.y.toFixed(2)}`,
+    );
+  }
+}
+
 // --- nothing drawn may stand outside the room it belongs to ----------------
 // Dressing is not collided with, so nothing else would ever notice a sign
 // hanging in the corridor or a row of seats pushed through a party wall.
 for (const piece of KINEPOLIS.decor) {
   const b = piece.bounds;
-  // Furniture has to be wholly inside a room. A WALL face — the pieces with no
-  // material, cut from a wall so it can follow a rake down — is centred on a
-  // room's edge by construction, so half of it is legitimately outside and
-  // only its centre line can be tested.
-  const whole = piece.material !== undefined;
+  // Furniture has to be wholly inside a room. A piece of the BUILDING — a
+  // wall face cut from a wall so it can follow a rake down, a pane of the
+  // glass front — is centred on a room's edge by construction, so half of it
+  // is legitimately outside and only its centre line can be tested.
+  //
+  // "Has no material" used to be the test for that, and it stopped being one
+  // the moment a piece of building needed a colour of its own: glazing is a
+  // wall, and it is a wall the chapters dress differently.
+  const whole = piece.material !== undefined && piece.material !== 'glazing';
   const cx = b.x + b.w / 2;
   const cy = b.y + b.h / 2;
   const inside = KINEPOLIS.rooms.some((r) =>

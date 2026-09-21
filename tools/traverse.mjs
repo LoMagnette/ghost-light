@@ -88,6 +88,7 @@ function drive(robotId, from, dir, seconds, floor = 0) {
 const SOUTH = { x: 0, y: -1 };
 const NORTH = { x: 0, y: 1 };
 const EAST = { x: 1, y: 0 };
+const WEST = { x: -1, y: 0 };
 
 const failures = [];
 const rows = [];
@@ -379,6 +380,100 @@ scenario(
 // The building has to hold them in. This was a printed warning for as long as
 // rooms were floor plates rather than enclosures, and a robot at full throttle
 // drove clean out of the Kinepolis. Now it is an assertion.
+/*
+ * The main aisle through the exhibition stands.
+ *
+ * Twenty-seven solids went onto the hall floor and the hall stopped being a
+ * car park, which is the point of them — but the floor still has to be a
+ * floor. Biggy is the widest robot and the worst at changing its mind, so it
+ * is the one that has to get from the concourse end of the aisle to the far
+ * end of it in a straight line.
+ */
+// The platforms, one per stand — the panels are obstacles and there are a
+// variable number of them. Same rule as `npm run venue`.
+const STANDS = KINEPOLIS.decor.filter((d) => d.material === 'booth');
+const AISLE_SOUTH = Math.min(...STANDS.map((b) => b.bounds.y));
+const AISLE_NORTH = Math.max(...STANDS.map((b) => b.bounds.y + b.bounds.h));
+
+scenario(
+  'Biggy drives the length of the main aisle',
+  (r) => r.y > AISLE_NORTH,
+  () => drive('biggy', { x: -1, y: AISLE_SOUTH - 3 }, NORTH, 14),
+);
+
+/*
+ * And onto a stand, which is the point of them not being blocks.
+ *
+ * A stand is a platform with a panel across the back and a counter at the
+ * front of it, taking part of the frontage: you drive in past the counter
+ * and get stopped by the back. As solid boxes they stopped a robot at the
+ * front edge and the inside of a stand was somewhere nobody could ever be.
+ *
+ * Every coordinate here is read off the stand, including which SIDE of it
+ * to drive at. The counter is at the front by construction, so the side it
+ * sits nearer is the side the aisle is on, and the frontage it does not
+ * cover is the way in. Written out because the layout has already moved
+ * three times this week and a test that guesses at it is worth nothing.
+ */
+const inside = (outer, inner) =>
+  inner.x >= outer.x - 0.01 && inner.x + inner.w <= outer.x + outer.w + 0.01 &&
+  inner.y >= outer.y - 0.01 && inner.y + inner.h <= outer.y + outer.h + 0.01;
+
+const BIG_STAND = STANDS.reduce((a, b) =>
+  b.bounds.w * b.bounds.h > a.bounds.w * a.bounds.h ? b : a,
+).bounds;
+const COUNTER = KINEPOLIS.obstacles.find(
+  (o) => o.floor === 0 && o.material === 'desk' && inside(BIG_STAND, o.bounds),
+).bounds;
+
+/** The frontage the counter leaves clear, and the aisle side it opens onto. */
+const WAY_IN =
+  COUNTER.y - BIG_STAND.y > BIG_STAND.y + BIG_STAND.h - (COUNTER.y + COUNTER.h)
+    ? (BIG_STAND.y + COUNTER.y) / 2
+    : (COUNTER.y + COUNTER.h + BIG_STAND.y + BIG_STAND.h) / 2;
+const FRONT_WEST =
+  COUNTER.x - BIG_STAND.x < BIG_STAND.x + BIG_STAND.w - (COUNTER.x + COUNTER.w);
+
+/**
+ * A metre off the front edge, not the far side of the aisle.
+ *
+ * The main aisle has a line of columns down the middle of it, so a long
+ * straight run at it lands on one — and driving the aisles is what the two
+ * scenarios above are for. This one only has to cross the frontage.
+ */
+const STAND_APPROACH = 1.0;
+
+scenario(
+  'Voxxy drives off the aisle onto a stand',
+  (r) => r.x > BIG_STAND.x && r.x < BIG_STAND.x + BIG_STAND.w,
+  () =>
+    drive(
+      'voxxy',
+      {
+        x: FRONT_WEST
+          ? BIG_STAND.x - STAND_APPROACH
+          : BIG_STAND.x + BIG_STAND.w + STAND_APPROACH,
+        y: WAY_IN,
+      },
+      FRONT_WEST ? EAST : WEST,
+      6,
+    ),
+);
+
+/*
+ * And the west one, which is the tighter of the two.
+ *
+ * 5.6 m between the ranks with a line of columns down the middle of it, so
+ * what Biggy actually has is the 2.6 m lane east of the columns. The stands
+ * were 20 cm too deep and this lane was 1.6 m — passable by the two small
+ * robots, not by the one that most needs to get past.
+ */
+scenario(
+  'Biggy drives the west aisle',
+  (r) => r.y > AISLE_NORTH,
+  () => drive('biggy', { x: -15.2, y: AISLE_SOUTH - 3 }, NORTH, 16),
+);
+
 scenario(
   'Voxxy cannot drive out of the south wall',
   (r) => r.y > -62,

@@ -50,6 +50,8 @@ export const MOVEMENT_LAB: Chapter = {
     desk: 0x424b55,
     sign: 0xc8d0d6,
     screen: 0x9aa4ad,
+    booth: 0x4a545d,
+    glazing: 0x2f363c,
     accent: 0x4ec9b0,
     text: 0xdfe5e9,
   },
