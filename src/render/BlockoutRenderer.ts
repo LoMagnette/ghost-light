@@ -54,15 +54,23 @@ import type { Actor } from '@/core/Sim';
 import type { RobotSpec } from '@/core/RobotSpec';
 import {
   Crowd,
-  PERSON_DEPTH,
-  PERSON_HEAD,
+  PERSON_HEAD_HIGH,
+  PERSON_HEAD_WIDE,
   PERSON_HEIGHT,
   PERSON_HIP,
   PERSON_LEG_TOP,
   PERSON_NECK,
   PERSON_SHOULDER,
-  SEATED_NECK,
+  PERSON_THICK,
+  PERSON_TORSO_WIDE,
+  SEATED_LAP_FORWARD,
   SEATED_PERSON_HEIGHT,
+  SEATED_SHOULDER,
+  SEATED_SPINE_BACK,
+  SEATED_THIGH_HIGH,
+  SEATED_THIGH_LONG,
+  SEATED_TORSO_THICK,
+  SEATED_TORSO_TOP,
   type Person,
 } from '@/core/Crowd';
 import { renderPos } from '@/core/Sim';
@@ -238,7 +246,7 @@ function tone(x: number, y: number, z: number): number {
 
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
-/** Boxes per standing person: legs, torso, head. */
+/** Boxes per standing person: legs, torso, shoulders. The head is a blob. */
 const PERSON_PARTS = 3;
 
 /**
@@ -399,6 +407,7 @@ export class BlockoutRenderer {
    */
   private readonly crowd: Crowd;
   private readonly moverMesh: InstancedMesh;
+  private readonly moverHeads: InstancedMesh;
 
   constructor(
     camera: OrthographicCamera,
@@ -472,6 +481,16 @@ export class BlockoutRenderer {
     // the mesh is meaningless and culling it by that sphere hides the lot.
     this.moverMesh.frustumCulled = false;
     this.scene.add(this.moverMesh);
+
+    this.moverHeads = new InstancedMesh(
+      new SphereGeometry(0.5, 8, 6),
+      new MeshLambertMaterial({ color: 0xffffff }),
+      MAX_MOVERS,
+    );
+    this.moverHeads.count = 0;
+    this.moverHeads.frustumCulled = false;
+    this.moverHeads.setColorAt(0, SCRATCH_COLOUR.set(0xffffff));
+    this.scene.add(this.moverHeads);
   }
 
   /** Trousers, clothing and head for one person, in this era's colours. */
@@ -486,69 +505,135 @@ export class BlockoutRenderer {
   }
 
   /**
-   * A seated person: head and shoulders over the seat back.
+   * A seated person: a lap, a torso against the rest, and a head over it.
    *
-   * Every part shares the person's own centre, which is what lets the
-   * standing version be rotated by a single heading without any of the parts
-   * having to be moved around each other.
+   * Every seat in the building faces along x — towards its own stage — so
+   * which way "forward" is comes out of the person's heading as a sign, and
+   * the parts can stay axis-aligned. That is what lets three thousand of
+   * them be baked into one instanced mesh with no rotation at all.
    */
   private seatedBoxes(person: Person): Box[] {
-    const [, clothing, head] = this.personColours(person);
+    const [trousers, clothing] = this.personColours(person);
+    const f = Math.cos(person.heading) >= 0 ? 1 : -1;
+
+    // The lap, running forward over the pan from the hips.
+    const lapCentre = person.x + f * SEATED_LAP_FORWARD;
+    // The spine, tucked back against the rest rather than centred on the pan.
+    const spine = person.x - f * SEATED_SPINE_BACK;
+
     return [
       {
         bounds: rect(
-          person.x - PERSON_SHOULDER / 2,
-          person.y - PERSON_DEPTH / 2,
-          PERSON_SHOULDER,
-          PERSON_DEPTH,
+          lapCentre - SEATED_THIGH_LONG / 2,
+          person.y - SEATED_SHOULDER / 2 + 0.03,
+          SEATED_THIGH_LONG,
+          SEATED_SHOULDER - 0.06,
         ),
         bottom: person.z,
-        top: person.z + SEATED_NECK,
-        colour: clothing,
+        top: person.z + SEATED_THIGH_HIGH,
+        colour: trousers,
       },
       {
         bounds: rect(
-          person.x - PERSON_HEAD / 2,
-          person.y - PERSON_HEAD / 2,
-          PERSON_HEAD,
-          PERSON_HEAD,
+          spine - SEATED_TORSO_THICK / 2,
+          person.y - SEATED_SHOULDER / 2,
+          SEATED_TORSO_THICK,
+          SEATED_SHOULDER,
         ),
-        bottom: person.z + SEATED_NECK,
-        top: person.z + SEATED_PERSON_HEIGHT,
-        colour: head,
+        // Overlapping the lap, so hip and thigh are one mass rather than two
+        // stacked slabs with a seam between them.
+        bottom: person.z + SEATED_THIGH_HIGH * 0.5,
+        top: person.z + SEATED_TORSO_TOP,
+        colour: clothing,
       },
     ];
+  }
+
+  /** Where a seated person's head goes. Drawn as a blob, not a box. */
+  private seatedHead(person: Person): Box {
+    const [, , head] = this.personColours(person);
+    const f = Math.cos(person.heading) >= 0 ? 1 : -1;
+    const spine = person.x - f * SEATED_SPINE_BACK;
+    return {
+      bounds: rect(
+        spine - PERSON_HEAD_WIDE / 2,
+        person.y - PERSON_HEAD_WIDE / 2,
+        PERSON_HEAD_WIDE,
+        PERSON_HEAD_WIDE,
+      ),
+      bottom: person.z + SEATED_TORSO_TOP - 0.03,
+      top: person.z + SEATED_PERSON_HEIGHT,
+      colour: head,
+    };
   }
 
   /** Put the standing crowd where it is this frame. Visible storey only. */
   private placeMovers(floor: Level): void {
     let i = 0;
+    let h = 0;
     for (const person of this.crowd.movers) {
-      if (person.floor !== floor || i + PERSON_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
+      if (person.floor !== floor || h >= MAX_MOVERS) continue;
       const [trousers, clothing, head] = this.personColours(person);
 
-      // Legs, torso, head — all on the same centre line, so the heading
-      // rotates the whole figure without any part having to orbit another.
-      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_HIP, PERSON_DEPTH * 0.8, trousers);
-      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_SHOULDER, PERSON_DEPTH, clothing);
-      i = this.placePart(i, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD, PERSON_HEAD, head);
+      /*
+       * Legs, torso, two arms — all on the same centre line, so the heading
+       * rotates the whole figure and no part has to orbit another.
+       *
+       * `thick` is front to back and `wide` is side to side. They were the
+       * wrong way round in the first version, which turned every walker
+       * ninety degrees: perfectly symmetrical at rest and unmistakable the
+       * moment anyone walked anywhere.
+       */
+      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_THICK, PERSON_TORSO_WIDE, clothing);
+
+      // A shoulder line: the torso is narrow and this sits across the top of
+      // it at the full shoulder width. Without it the body is a plain
+      // upright box and the head looks stuck on a post.
+      i = this.placePart(i, person, PERSON_NECK - 0.15, PERSON_NECK, PERSON_THICK, PERSON_SHOULDER, clothing);
+
+      /*
+       * No arms, and that is a measurement rather than laziness.
+       *
+       * They were built, in a sleeve shade, and they do not register: a
+       * real arm hangs INSIDE the shoulder width, so it protrudes about
+       * seven centimetres, which at this zoom is two pixels. What would
+       * make an arm read is the gap between it and the body, and there is
+       * no room to draw one. They cost two of five boxes per walker —
+       * forty per cent of the crowd's per-frame work — to say nothing, so
+       * the shoulder line does the job alone.
+       */
+
+      SCRATCH.position.set(person.x, person.y, person.z + (PERSON_NECK + PERSON_HEIGHT) / 2);
+      SCRATCH.scale.set(PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, PERSON_HEAD_HIGH);
+      SCRATCH.rotation.set(0, 0, person.heading);
+      SCRATCH.updateMatrix();
+      this.moverHeads.setMatrixAt(h, SCRATCH.matrix);
+      this.moverHeads.setColorAt(h, SCRATCH_COLOUR.set(head));
+      h += 1;
     }
+
     this.moverMesh.count = i;
     this.moverMesh.instanceMatrix.needsUpdate = true;
     if (this.moverMesh.instanceColor) this.moverMesh.instanceColor.needsUpdate = true;
+
+    this.moverHeads.count = h;
+    this.moverHeads.instanceMatrix.needsUpdate = true;
+    if (this.moverHeads.instanceColor) this.moverHeads.instanceColor.needsUpdate = true;
   }
 
+  /** One box of a walking person, in its own frame. */
   private placePart(
     index: number,
     person: Person,
     from: number,
     to: number,
-    width: number,
-    depth: number,
+    thick: number,
+    wide: number,
     colour: number,
   ): number {
     SCRATCH.position.set(person.x, person.y, person.z + (from + to) / 2);
-    SCRATCH.scale.set(width, depth, to - from);
+    SCRATCH.scale.set(thick, wide, to - from);
     SCRATCH.rotation.set(0, 0, person.heading);
     SCRATCH.updateMatrix();
     this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
@@ -827,6 +912,12 @@ export class BlockoutRenderer {
       group.add(
         instanceBoxes(
           audience.flatMap((person) => this.seatedBoxes(person)),
+          new MeshLambertMaterial(),
+        ),
+      );
+      group.add(
+        instanceBlobs(
+          audience.map((person) => this.seatedHead(person)),
           new MeshLambertMaterial(),
         ),
       );
@@ -1291,6 +1382,32 @@ function storeysOf(venue: Venue): Level[] {
  * `instanceColor` carries the palette, which is the whole reason the building
  * can be five thousand seats and still cost one draw.
  */
+/**
+ * The same as `instanceBoxes`, with an ellipsoid in place of the cube.
+ *
+ * Eight by six segments: enough that a head is not a die and few enough
+ * that it still belongs in a building made of boxes.
+ */
+function instanceBlobs(blobs: Box[], material: MeshLambertMaterial): InstancedMesh {
+  const mesh = new InstancedMesh(new SphereGeometry(0.5, 8, 6), material, Math.max(blobs.length, 1));
+
+  for (let i = 0; i < blobs.length; i += 1) {
+    const { bounds, bottom, top, colour } = blobs[i];
+    const height = Math.max(top - bottom, 0.01);
+    SCRATCH.position.set(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bottom + height / 2);
+    SCRATCH.scale.set(Math.max(bounds.w, 0.01), Math.max(bounds.h, 0.01), height);
+    SCRATCH.rotation.set(0, 0, 0);
+    SCRATCH.updateMatrix();
+    mesh.setMatrixAt(i, SCRATCH.matrix);
+    mesh.setColorAt(i, SCRATCH_COLOUR.set(colour));
+  }
+
+  mesh.count = blobs.length;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  return mesh;
+}
+
 /** Where to draw one activity, and in what state. The screen decides both. */
 export interface ObjectiveMarker {
   id: string;

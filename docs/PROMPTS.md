@@ -505,6 +505,47 @@ taught — shape and a second tone, rather than detail:
    exhibition hall into a pole farm, more marker than building. One thing
    you are doing keeps its post; a sweep of many gets studs.
 
+**Follow-up prompt:**
+> It's better but I think the human model could be improved and the way they
+> sit in the seats is a bit strange
+
+Right on both, and magnifying a row to look properly turned up a third
+thing nobody had noticed.
+
+**Sitting was a post, not a pose.** A standing torso had been dropped onto
+the pan: no lap, no knees, and perched on the front edge because it was
+centred on the seat rather than pushed back against the rest. Now it is an
+L — thighs running forward, spine back, head and shoulders showing over the
+seat back in front. Every seat faces along x, so the direction comes out of
+the heading as a sign and the parts stay axis-aligned, which is what keeps
+three thousand of them in one instanced mesh with no rotation.
+
+**The walkers were rotated ninety degrees.** Found while renaming the
+parameters: the box dimensions were passed as (width, depth) and used as
+(x, y), so every person in the building was presenting a shoulder in the
+direction they were walking. Invisible standing still and unmistakable once
+named — `thick` for front-to-back and `wide` for side-to-side now, with the
+reason written above the constants.
+
+**Heads became ellipsoids and the torso got a shoulder line**, which is
+what actually carries a human at this size.
+
+**And arms were built and then deleted.** They were made, in a sleeve
+shade, and measured: a real arm hangs inside the shoulder width, protrudes
+about seven centimetres, and at this zoom that is two pixels. What would
+make an arm read is the gap between it and the body, and there is no room
+to draw one. They were costing two of five boxes per walker — forty per
+cent of the crowd's per-frame work — to say nothing. Removing work that
+does not register is as much a part of this pass as adding work that does.
+
+**A real mistake, recorded because it nearly cost the session:** the edit
+that introduced these constants was scripted as "replace everything between
+this comment and that one", and the closing marker sat *after* the `Crowd`
+class rather than before it. It deleted the class — 534 lines down to 160.
+It was committed, so `git checkout HEAD --` cost nothing, and the redo used
+narrow replacements anchored on both ends. Slicing a file between two
+markers is only safe when you have checked what lies between them.
+
 **What was deliberately not done:** any change to the lighting. `AMBIENT`,
 `KEY` and the sRGB curve were tuned against photographs and every palette
 in the game is calibrated to them, so a second fill light would have been

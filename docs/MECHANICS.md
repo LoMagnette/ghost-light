@@ -358,14 +358,25 @@ holds the right number of people. Same rule `SPEC.md` §8 already applies to
 the seat counts: the geometry follows the plan, the crowd follows the modern
 number.
 
-**A person is three boxes, not one.** A single box is a chocolate bar. At
-twenty-odd pixels tall what makes a shape read as a human is almost entirely
-silhouette — a head narrower than the shoulders, shoulders wider than the
-hips, and a visible break between them — so it is legs, torso and head, all
-sharing one centre line so that a heading still rotates the whole figure
-with one number. Faces and arms would cost geometry to say nothing at this
-size. Seated people drop the legs, which are behind the seat in front of
-them and were three thousand boxes drawn to be hidden.
+**A person is three boxes and a blob.** Legs, torso, a shoulder line, and a
+rounded head — all sharing one centre line, so a heading rotates the whole
+figure with one number. At twenty-odd pixels what reads is silhouette: the
+head narrower than the shoulders and the shoulders wider than the waist.
+
+Arms were built and then removed, which is worth recording. A real arm
+hangs *inside* the shoulder width, so it protrudes about seven centimetres
+— two pixels here — and what would make it read is the gap between arm and
+body, for which there is no room. They cost two of five boxes per walker,
+forty per cent of the crowd's per-frame work, to say nothing.
+
+**Sitting is an L, not a post.** The first version stood a torso on the pan
+and it read as a pillar planted in front of the chair: no lap, no knees, and
+perched on the front edge because it was centred on the seat. Sitting is the
+horizontal run of the thighs forward of a torso pushed back against the
+rest, with head and shoulders over the seat back in front. Every seat faces
+along x, so "forward" comes out of the heading as a sign and the parts stay
+axis-aligned — which is what lets three thousand of them bake into one
+instanced mesh with no rotation at all.
 
 Colour comes from the chapter's one `crowd` entry and is derived from there,
 the way the skid marks derive from the floor: trousers are it darkened,
