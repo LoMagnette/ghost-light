@@ -48,10 +48,17 @@ npm run preview     # serve dist/ locally
 npm run physics     # measure movement in the real sim, check the design envelope
 npm run venue       # check the building against the plans and against itself
 npm run traverse    # drive real robots at real stairs; assert who gets where
+npm run objectives  # hold every chapter's activities against the building
 npm run venue -- --svg   # draw both floors as a plan, to hold against the real one
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
+npm run peek -- '[["name","?chapter=silence&at=-21.8,-8",["KeyW"],1.6]]'
 ```
+
+`npm run peek` is `shoot`'s opposite: one frame of anywhere, with any keys
+held. `shoot` drives a fixed tour and is the regression check; almost every
+visual question is instead about one particular square metre of a 126 m
+building, and this answers those in a single build.
 
 Two query parameters exist for looking at the game rather than playing it, and
 neither is reachable from inside it:
@@ -134,6 +141,11 @@ for a scoring criterion.
 | Add something drawn but not collided | `decor` in `kinepolis.ts`, and a `Material` |
 | Change what the furniture looks like | `seat` / `desk` / `sign` in a chapter palette |
 | Add a control mode | `ControlMode` in `Chapter.ts`, handle in `ChapterScreen` |
+| Change what a chapter asks of the player | `src/chapters/objectives.ts` — then `npm run objectives` |
+| Add a new kind of thing to do | `src/core/Activity.ts`, then run it in `core/Objective.ts` |
+| Change how heavy a load feels | nothing — it is `mass + payload` in `Body`, and that is the point |
+| Change how full the building is | `crowdDensity` in `registry.ts`. It sets the population AND which rooms are in use |
+| Change how the crowd behaves | `src/core/Crowd.ts`. Seeded — keep it deterministic |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |
@@ -169,21 +181,27 @@ You cannot see the game. Close that gap rather than guessing:
    of them can be right while the behaviour is wrong. The failure is never an
    exception; it is Biggy quietly gliding up a staircase, or reaching a stage
    it is supposed to be shut out of.
-3. **`npm run physics` after every change that touches movement.** It measures
+3. **`npm run objectives` after every change that touches a chapter's
+   objective, the venue, or `RobotSpec`.** An activity is coordinates, and a
+   zone two metres out is inside a seat bank: the symptom is a chapter no
+   player can finish, and nothing else in the loop can see it. It also checks
+   that somebody in the cast both passes the gates AND can reach the storey,
+   which is where Biggy's `maxStepRise` of 0 keeps catching things.
+4. **`npm run physics` after every change that touches movement.** It measures
    what a player experiences rather than what the spec table claims, and it
    fails the build when a robot leaves its design envelope or when the cast
    stops being three distinguishable machines. It caught the constant that had
    flattened all three robots into one, which no amount of reading the code
    would have.
-4. `npm run dev`, then drive the page with the browser tools — screenshot the
+5. `npm run dev`, then drive the page with the browser tools — screenshot the
    canvas and read the console. A screenshot of the running game is worth more
    than any amount of reasoning about whether the geometry is right.
    `npm run shoot -- --lab` does this unattended for all three robots.
-5. Watch for console errors on screen transitions specifically. Menu → chapter
+6. Watch for console errors on screen transitions specifically. Menu → chapter
    → ESC → menu is the path most likely to leak objects — and a WebGL buffer
    has no garbage collector, so `Screen.dispose` has to give back every
    geometry and every material it made.
-6. When tuning movement, press `L` at the menu for the movement lab — all
+7. When tuning movement, press `L` at the menu for the movement lab — all
    three robots, one lit hall, `1`/`2`/`3` to swap between them mid-run. Turn
    on the readout (`F1`) and read the actual numbers rather than judging by
    eye. The agent cannot feel the difference; the lab is what lets a human

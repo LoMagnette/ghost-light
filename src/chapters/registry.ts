@@ -16,6 +16,7 @@
  */
 
 import type { Chapter } from './Chapter';
+import { CAPACITY_OBJECTIVE, JAVAPOLIS_OBJECTIVE, SILENCE_OBJECTIVE } from './objectives';
 
 /**
  * Every colour below was measured off the competition photographs in
@@ -70,6 +71,8 @@ export const CHAPTER_ONE: Chapter = {
     // years — which is the chapter in one object.
     desk: 0x3a4a6b,
     sign: 0xe4e9ec, // the letters on the keynote stage, still standing
+    // Dead signage in a dead building: darker than the concrete it hangs off.
+    signPlate: 0x232c36,
     // Fourteen screens with nothing on them. Cold and slightly grey, because
     // the only thing lighting them is whatever daylight reaches this far in.
     screen: 0xaeb6bd,
@@ -82,11 +85,14 @@ export const CHAPTER_ONE: Chapter = {
     // photograph of the auditorium with everything else switched off. It is
     // a hot crimson, not the brick orange this used to guess at — and SPEC
     // calls it the single strongest image available for this chapter.
+    // Nobody is here. Kept so the type is satisfied and so that `?at=` and
+    // the lab can be driven with a crowd switched on for comparison.
+    crowd: 0x5a6472,
     accent: 0xf24471,
     text: 0x9fa8b0,
   },
   startFloor: 0,
-  objective: 'Find the power',
+  objective: SILENCE_OBJECTIVE,
 };
 
 export const CHAPTER_TWO: Chapter = {
@@ -118,6 +124,8 @@ export const CHAPTER_TWO: Chapter = {
     // A trestle and a green baize, before anyone thought to brand the table.
     desk: 0x5d5236,
     sign: 0xefe2cc,
+    // Painted board under tungsten, and still the darkest thing on the wall.
+    signPlate: 0x3b2c1d,
     // Tungsten on the same cloth. The screens of this era were smaller and
     // greyer, and this is the one surface in the room that shows the light.
     screen: 0xcfc3ab,
@@ -126,11 +134,15 @@ export const CHAPTER_TWO: Chapter = {
     // Tungsten behind it, and glass still reads darker than the frame it
     // sits in — which is the whole cue that it IS glass and not more wall.
     glazing: 0x5c4f38,
+    // Tungsten on a room full of people, which is the warmest thing in the
+    // era and the reason this chapter reads as a photograph rather than a
+    // render.
+    crowd: 0x8c6249,
     accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
     text: 0xf2e8d8,
   },
   startFloor: 1,
-  objective: 'Keep every room running',
+  objective: JAVAPOLIS_OBJECTIVE,
 };
 
 export const CHAPTER_THREE: Chapter = {
@@ -138,11 +150,11 @@ export const CHAPTER_THREE: Chapter = {
   numeral: 'III',
   title: 'At Capacity',
   era: 'the full house',
-  tagline: 'Too much building to walk yourself.',
+  tagline: 'More conference than one day can hold.',
   brief:
-    'Every room is full. You cannot hand-drive three robots through this many people, ' +
-    'so you stop trying. Give them intent. They have their own mass.',
-  controlMode: 'direct-order',
+    'Every room is full and everything is running. Three robots, six minutes, ' +
+    'twelve things worth doing — and everything you pick up, you have to carry.',
+  controlMode: 'switch',
   cast: ['voxxy', 'droid', 'biggy'],
   crowdDensity: 1,
   lightLevel: 0.85,
@@ -160,6 +172,8 @@ export const CHAPTER_THREE: Chapter = {
     seat: 0x4a5573,
     desk: 0x44547a, // conference blue, catching the warm light off the screen
     sign: 0xf2f2ee, // the letters, lit from the screen behind them
+    // Charcoal, against the warm white canopy. The one cool dark at capacity.
+    signPlate: 0x2b2926,
     // The brightest thing in the building at capacity: every room is running.
     screen: 0xe8e4da,
     // A full trade floor: modular shell scheme, and deliberately COOLER than
@@ -174,11 +188,15 @@ export const CHAPTER_THREE: Chapter = {
     // The hall's warm cove lighting at capacity. SPEC calls this era "Devoxx
     // orange"; this is that orange as the building actually throws it, which
     // is softer and peachier than a brand hex.
+    // A full house under the peach cove light. Deliberately close in value
+    // to the seating it fills, so a packed room reads as ONE mass with a
+    // texture rather than as five hundred separate dots.
+    crowd: 0x6b6a72,
     accent: 0xc8895f,
     text: 0xf2f5f7,
   },
   startFloor: 0,
-  objective: 'Get everyone to the keynote',
+  objective: CAPACITY_OBJECTIVE,
 };
 
 export const CHAPTERS: Chapter[] = [CHAPTER_ONE, CHAPTER_TWO, CHAPTER_THREE];

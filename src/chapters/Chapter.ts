@@ -17,18 +17,32 @@
 
 import type { Level } from '@/core/Venue';
 import type { RobotId } from '@/core/RobotSpec';
+import type { Objective } from '@/core/Objective';
 
 /**
- * How the player acts on the robots. This is the spine of the whole game: the
- * control scheme itself evolves across the three chapters, from driving one
- * machine by hand to directing three that act without you. It is the Devoxx
- * 2026 "From Developer to Builder" theme expressed as a verb rather than a
+ * How the player acts on the robots.
+ *
+ * Driving is the only verb in all three chapters; what evolves is what you
+ * are deciding with it. Chapter I is one machine and one thing to find.
+ * Chapter II is two machines and a building falling behind you, so you react.
+ * Chapter III is three machines, each locked out of things the others can do,
+ * and a day too short to do everything, so you elect. That is the Devoxx 2026
+ * "From Developer to Builder" theme expressed as a verb rather than a
  * subtitle.
  */
 export type ControlMode =
   | 'direct' // Ch.1 — WASD one robot. You are the hands.
-  | 'switch' // Ch.2 — WASD, Tab to take over another. You are the hands, plural.
-  | 'direct-order'; // Ch.3 — you issue intent, robots execute with their own mass.
+  | 'switch'; // Ch.2 and Ch.3 — WASD, Tab to take over another.
+
+/*
+ * `direct-order` was here and is gone, cut 21 Sep along with the idea that the
+ * player ever stops driving. Four versions of "issue intent and the robots
+ * execute" were designed and all four were the same RTS order queue; what
+ * replaced it is the conference itself, where the robots differ by what they
+ * can physically do rather than by what you are allowed to tell them. The arc
+ * is no longer the keystroke — it is what you are deciding with it: drive,
+ * react, elect. See `docs/MECHANICS.md` and `docs/PROMPTS.md`.
+ */
 
 export interface Palette {
   /** Background void beyond the building envelope. */
@@ -47,6 +61,17 @@ export interface Palette {
   desk: number;
   /** The body of the letters on the keynote stages. */
   sign: number;
+  /**
+   * The plate a sign's characters are mounted on. DARK, in every era.
+   *
+   * Not a taste: the key light comes from almost overhead, so a face
+   * pointing south at the camera reflects about a third of what a face
+   * pointing at the sky does. A room number hung in the corridor is one of
+   * those south-facing faces, and light characters on a light plate are
+   * invisible however large they are. The plate carries the contrast the
+   * lighting will not.
+   */
+  signPlate: number;
   /**
    * The projection screen filling the end wall of every auditorium.
    *
@@ -73,6 +98,17 @@ export interface Palette {
    * daylight, under tungsten and at capacity.
    */
   glazing: number;
+  /**
+   * The people. Five thousand in the seats at capacity, and a few hundred
+   * on their feet.
+   *
+   * One colour for the whole crowd, and that is a decision rather than a
+   * shortcut: a stadium of individually tinted figures reads as confetti at
+   * this zoom, and the crowd is a MASS in this game — it is the thing the
+   * building is full of, not a cast. Per-era, because a crowd photographs
+   * as whatever is lighting it.
+   */
+  crowd: number;
   /** Accent — signage, screens, step lighting. */
   accent: number;
   /** HUD text. */
@@ -112,6 +148,13 @@ export interface Chapter {
   /** Which floor the chapter opens on. */
   startFloor: Level;
 
-  /** Short objective line shown in the HUD. Must be readable in one glance. */
-  objective: string;
+  /**
+   * What the player is trying to do, as data.
+   *
+   * It was a string until 21 Sep, which was the honest representation of a
+   * game in which nothing could be finished. It is still ONE of the four
+   * things a chapter may change — the structure is the sentence grown up, not
+   * a fifth field. See `core/Objective.ts`.
+   */
+  objective: Objective;
 }

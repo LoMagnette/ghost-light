@@ -74,9 +74,40 @@ export interface RobotSpec {
    */
   maxSlope: number;
 
+  /**
+   * Heaviest load this machine will pick up, in kilograms.
+   *
+   * CHOSEN, not derived — the one capability gate that is not already a
+   * dimension the robot had. The other three fall out of numbers above:
+   * `maxStepRise` decides who climbs, `height` decides who can reach a
+   * counter at 2 m, and `radius` decides who fits a 0.8 m gap between two
+   * exhibition stands.
+   *
+   * What a load DOES is not decided here. It is added to `Body.payload` and
+   * divides every force in the integrator, so a laden robot accelerates,
+   * brakes, turns and climbs worse by exactly the arithmetic its own weight
+   * implies. See `maxSlopeLoaded` for the one consequence that is not
+   * automatic, and `docs/MECHANICS.md` §2 for why the whole design rests on
+   * it.
+   */
+  payload: number;
+
   /** Silhouette colour used by the placeholder renderer and UI accents. */
   tint: number;
 }
+
+/** Gravity, m/s². Physical constant; nothing may redefine it. */
+export const G = 9.81;
+
+/**
+ * Fraction of the theoretical gradient limit a robot is allowed to be spec'd
+ * at, leaving enough force over to make progress rather than to balance.
+ *
+ * The `maxSlope` figures below are this times `driveForce / (mass · g)`. It is
+ * a constant rather than three magic literals because a LOADED robot has to
+ * re-derive the same number — see `maxSlopeLoaded`.
+ */
+export const SLOPE_SAFETY = 0.6;
 
 export const VOXXY: RobotSpec = {
   id: 'voxxy',
@@ -91,6 +122,7 @@ export const VOXXY: RobotSpec = {
   strideTime: 0.28,
   maxStepRise: 0.20, // clears the building's 0.18 m risers with room to spare
   maxSlope: 0.55, //  60% of 405 N / (45 kg · g)
+  payload: 10,  // a lanyard, a coffee, a bag of stickers. It is 45 kg itself
   tint: 0xff7a1a,
 };
 
@@ -107,6 +139,7 @@ export const DROID: RobotSpec = {
   strideTime: 0.46,
   maxStepRise: 0.18, // exactly the building's riser: these stairs and nothing steeper
   maxSlope: 0.27, //  60% of 855 N / (190 kg · g)
+  payload: 90,  // a crate, and it still walks — reach and patience, laden
   tint: 0x6b7378,
 };
 
@@ -123,6 +156,7 @@ export const BIGGY: RobotSpec = {
   strideTime: 0.62,
   maxStepRise: 0.0, // never. 430 kg on a staircase is an accident, not a route
   maxSlope: 0.11, //  60% of 774 N / (430 kg · g) — Biggy needs a gentle ramp
+  payload: 400, // freight. Nearly its own mass again, and it shows in every metre
   tint: 0x7d94a8,
 };
 
@@ -161,4 +195,33 @@ export function stoppingDistance(spec: RobotSpec): number {
 /** Derived: momentum at top speed in kg·m/s. The "weight" the player feels. */
 export function peakMomentum(spec: RobotSpec): number {
   return spec.mass * spec.maxSpeed;
+}
+
+/**
+ * What the simulation actually accelerates: the machine plus its load, kg.
+ *
+ * Every force in `Body.step` divides by this rather than by `spec.mass`, so
+ * carrying something is not a status effect — it is the same physics with a
+ * bigger number in the denominator.
+ */
+export function loadedMass(spec: RobotSpec, payload = 0): number {
+  return spec.mass + payload;
+}
+
+/**
+ * Steepest gradient this robot can hold while carrying `payload`.
+ *
+ * `maxSlope` is the unloaded figure and is what the spec table states. Weight
+ * does not care which part of it is cargo, so a laden robot re-derives the
+ * limit from the same formula the literals came from.
+ *
+ * This is not an abstract nicety. The building's only ramp is 1.2 m over 12 m
+ * — a 10% gradient against Biggy's 0.11, cleared EMPTY by one percentage
+ * point. With the 200 kg keg aboard the limit falls to 0.075 and Biggy cannot
+ * get up it at all, which is why anything heavy stays on the exhibition floor.
+ * See `docs/MECHANICS.md` §5.3 and the assertion in `npm run traverse`.
+ */
+export function maxSlopeLoaded(spec: RobotSpec, payload = 0): number {
+  if (payload <= 0) return spec.maxSlope;
+  return (SLOPE_SAFETY * spec.driveForce) / (loadedMass(spec, payload) * G);
 }

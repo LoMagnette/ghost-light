@@ -153,7 +153,7 @@ export class Sim {
     const link = this.venue.links.find((l) => l.id === linkId);
     if (!link) return false;
     const { body } = actor;
-    return canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor);
+    return canStepOnto(body.spec, link, body.x, body.y, body.z, actor.floor, body.payload);
   }
 
   /**
@@ -217,7 +217,7 @@ export class Sim {
   /** What this actor is standing on, where it is standing right now. */
   private footingFor(actor: Actor): Footing {
     const { body } = actor;
-    return footingAt(this.venue, body.spec, actor.floor, body.x, body.y, body.z);
+    return footingAt(this.venue, body.spec, actor.floor, body.x, body.y, body.z, body.payload);
   }
 
   /**
@@ -306,7 +306,7 @@ export class Sim {
         this.impacts.push({
           actor,
           speed: impactSpeed,
-          momentum: impactSpeed * body.spec.mass,
+          momentum: impactSpeed * body.loadedMass,
         });
       }
     }
@@ -332,8 +332,10 @@ export class Sim {
 
         // Separate in inverse proportion to mass: Voxxy bounces off Biggy,
         // Biggy barely registers Voxxy.
-        const ma = a.body.spec.mass;
-        const mb = b.body.spec.mass;
+        // Loaded mass, so a robot carrying a crate shoulders a lighter one
+        // aside rather than the other way round.
+        const ma = a.body.loadedMass;
+        const mb = b.body.loadedMass;
         const total = ma + mb;
         a.body.x -= nx * penetration * (mb / total);
         a.body.y -= ny * penetration * (mb / total);

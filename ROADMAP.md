@@ -42,10 +42,24 @@ is tuned and measured.
 - **Feel** — camera leads by the robot's own stopping distance, impact shake
   and footfall kick scale with momentum, skid marks show the arc a robot
   actually took, and a floor marker shows where it would stop if you braked now.
-- **Specs** — `SPEC.md` and `CLAUDE.md` written and committed.
+- **Specs** — `SPEC.md`, `CLAUDE.md` and `docs/MECHANICS.md` written and
+  committed.
+- **Mechanics** — settled and built on 21 Sep. One activity vocabulary in
+  `core/` (tap, dwell, haul, attend, shove, tend), an objective runner, and
+  **payload as real mass**: what a robot carries is added to `Body.mass` and
+  divides every force, so a laden machine accelerates, brakes, turns and
+  climbs worse by arithmetic rather than by a rule.
+- **Chapter I is finishable.** Three distribution boards, each lighting a
+  zone of the building when it is tapped, and a lamp on Voxxy so the dark is
+  something you carry a hole in. Chapters II and III are authored as data
+  against the same vocabulary and pass the placement harness, but have not
+  been played through.
+- **Verification** — a fourth harness, `npm run objectives`, holds every
+  activity against the building. It found four unreachable zones on its first
+  run, and `npm run traverse` found that a laden Biggy could walk up a ramp
+  it cannot climb.
 
-Not yet existing: any art, any audio, any objective logic, and any chapter you
-can actually finish.
+Not yet existing: any art, any audio, and a played-through Chapter II or III.
 
 **Next human step:** press `L` at the menu and drive all three. The numbers say
 the robots differ; only you can say whether Biggy is *satisfying*, and that
@@ -65,9 +79,9 @@ still days left to react.
 | Sat 19 Sep | **Public repo + Pages live.** Still the only real blocker | Human |
 | Sun 20 Sep | ~~Movement feel against grey boxes~~ — **done early.** Human to judge the feel in the lab and call the adjustments | Agent done, human judges |
 | Mon 21 Sep | ~~Venue geometry refined from the real floor plans~~ — **done early**, then re-measured after review | Agent, human caught it |
-| Tue 22 Sep | Chapter I objective and a finishable round. ~~Floor traversal~~ **done early** | Agent |
+| Tue 22 Sep | ~~Chapter I objective and a finishable round~~ — **done 21 Sep**, along with the whole mechanics spec and the objective system under it | Agent |
 | Wed 23 Sep | Chapter I lighting, end card, first-run experience | Agent |
-| Thu 24 Sep | Chapter III direct-order mode — the differentiator | Agent |
+| Thu 24 Sep | Chapter III — the conference day. The differentiator, and cheaper than the mode it replaced | Agent |
 | Fri 25 Sep | Chapter III finished. **First submission** | Both |
 | Sat 26 Sep | Chapter II | Agent |
 | Sun 27 Sep | Art pass: robot sprites from the model sheets | Human generates, agent integrates |
@@ -163,18 +177,21 @@ human answer is genuinely better than the agent's guess.
 
 | Decision | Needed by | Default if unanswered |
 |---|---|---|
-| What is "the power" in Chapter I? | Tue 22 Sep | A cached session recording in a projection booth; finding it opens the other chapters |
-| How does issuing intent work in Chapter III? | Thu 24 Sep | Click a destination; the robot paths to it under its own momentum |
-| Does the player ever drive Biggy directly? | Thu 24 Sep | No. Biggy is always directed, which is what makes it feel heavy |
+| ~~What is "the power" in Chapter I?~~ | ~~Tue 22 Sep~~ | **Settled 21 Sep: three distribution boards, each lighting one zone. The third brings up the ghost light and starts the recording that is Chapter II.** |
+| ~~How does issuing intent work in Chapter III?~~ | ~~Thu 24 Sep~~ | **Settled 21 Sep: it does not. `direct-order` is cut. Chapter III is the conference — twelve activities against a six-minute day, and payload is real mass.** |
+| ~~Does the player ever drive Biggy directly?~~ | ~~Thu 24 Sep~~ | **Settled 21 Sep: yes, in Chapter III and only there. Confined to storey 0 all chapter.** |
 | ~~How do robots climb stairs?~~ | ~~—~~ | **Settled 18 Sep: by `maxStepRise`. Voxxy 0.20 m, Droid 0.18 m, Biggy 0.00 — Biggy never climbs.** See SPEC § 5 |
-| Does Biggy ever reach floor 1? | Thu 24 Sep | No — it stays on the exhibition floor, unless a goods lift goes in |
-| What is the failure state in Chapter II? | Sat 26 Sep | A room empties if untended; lose three and the round ends |
+| ~~Does Biggy ever reach floor 1?~~ | ~~Thu 24 Sep~~ | **Settled 21 Sep: never. No goods lift. It is why Biggy cannot attend the keynote, and loaded it cannot even use the ramp.** |
+| ~~What is the failure state in Chapter II?~~ | ~~Sat 26 Sep~~ | **Settled 21 Sep: a room drains, goes dark and never returns. Three dark rooms end the day early.** |
 | Audio: generated or library? | Mon 28 Sep | Generated, so it belongs in the prompt log |
 | ~~Final title~~ | ~~Wed 30 Sep~~ | **Settled 18 Sep: _Ghost Light_** |
 
-The Chapter III decision deserves real thought. It is the mechanic the entry
-bets its originality on, and "click a destination" is the safe version rather
-than the interesting one.
+All five closed on 21 Sep in one design pass; `docs/MECHANICS.md` is the
+result and is now the authority on what the player does in each chapter. The
+Chapter III decision took four rejected pitches to get right — every version
+of "issue intent, the robots execute" was an RTS order queue wearing a hat.
+What replaced it is the conference itself, and the mechanic the entry now bets
+its originality on is that **everything you pick up is added to your mass.**
 
 ---
 
