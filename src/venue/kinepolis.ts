@@ -1675,6 +1675,46 @@ function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
 }
 
 /**
+ * The Kinepolis star, as a raster of bars.
+ *
+ * It is the largest single thing on the front of the building after the
+ * glass, and it is what makes the elevation that company's rather than any
+ * event centre's. A five-pointed star has no axis-aligned edge anywhere on
+ * it, and this renderer extrudes plan rectangles — so it is drawn the way a
+ * star is drawn on a low-resolution screen, as rows of decreasing width.
+ * Fourteen of them, and at thirty pixels nobody can tell.
+ *
+ * Same `Bar` space as the letters: u across, v up, both 0..1.
+ */
+function star(): Bar[] {
+  const rows: [number, number, number, number][] = [
+    // v0, v1, then the u extent of that row. Two entries where the legs
+    // have split and the row is two bars rather than one.
+    [0.88, 1.0, 0.44, 0.56],
+    [0.78, 0.88, 0.4, 0.6],
+    [0.7, 0.78, 0.36, 0.64],
+    [0.63, 0.7, 0.0, 1.0],
+    [0.56, 0.63, 0.07, 0.93],
+    [0.48, 0.56, 0.15, 0.85],
+    [0.4, 0.48, 0.2, 0.8],
+    [0.33, 0.4, 0.24, 0.76],
+  ];
+  const bars: Bar[] = rows.map(([v0, v1, u0, u1]) => ({ u0, u1, v0, v1 }));
+
+  // Below the waist the star is two legs, so each row is a pair.
+  const legs: [number, number, number, number][] = [
+    [0.22, 0.33, 0.19, 0.4],
+    [0.11, 0.22, 0.13, 0.36],
+    [0.0, 0.11, 0.06, 0.32],
+  ];
+  for (const [v0, v1, u0, u1] of legs) {
+    bars.push({ u0, u1, v0, v1 });
+    bars.push({ u0: 1 - u1, u1: 1 - u0, v0, v1 });
+  }
+  return bars;
+}
+
+/**
  * The sign, placed on the stage of one auditorium.
  *
  * Each letter is solid to a robot as one block; the strokes are dressing.
@@ -2655,14 +2695,26 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  * band is tight enough in x to leave the BOF rooms' own south wall alone,
  * which sits 0.4 m further out and is not glass.
  */
+/** Where the curtain wall starts, leaving solid precast west of it. */
+const GLAZING_START = -2.0;
+
 const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
   // The entrance itself: the same glazing, coming down to the floor, and
   // some of it opens. "Windows that can be opened as a door" is the
   // building's own description and it is the right one — a door here is a
   // panel of the curtain wall on hinges, not a doorway cut in a wall.
+  /*
+   * NOT the whole frontage.
+   *
+   * The photograph has the left third of the elevation in solid precast
+   * with a row of small windows at pavement level, and the glazed sweep
+   * starting about where the doors do. Glazing the full 36 m made the
+   * front one unbroken wall of glass, which is a different building — and
+   * it left nowhere to put the star.
+   */
   {
     floor: 0,
-    bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2),
+    bounds: rect(GLAZING_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - GLAZING_START, 1.2),
     kind: 'door',
   },
   /*
@@ -2985,6 +3037,17 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
       material: 'sign',
       exterior: true,
     });
+    // The panel at its head. Every banner in the photograph has one, and a
+    // blank white flag is the one thing that reads as unfinished rather
+    // than as blockout.
+    decor.push({
+      floor: 0,
+      bounds: rect(x - 0.42, FORECOURT.y + FORECOURT.h - 3.3, 1.06, 0.1),
+      base: ground + BANNER_HEIGHT - 1.6,
+      height: ground + BANNER_HEIGHT - 0.6,
+      material: 'signAccent',
+      exterior: true,
+    });
   }
 
   /*
@@ -3092,6 +3155,50 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
       });
     }
   });
+
+  /*
+   * The star, high on the precast west of the glazing.
+   *
+   * Where the photograph has it: above the small windows, left of the
+   * name, straddling the top of the elevation. `sign` rather than an
+   * accent, because it is a pale star on a pale wall in the photograph and
+   * it reads by its shape and its shadow line rather than by colour.
+   */
+  const starX = -12.4;
+  const starW = 3.4;
+  // Clear of the spandrel band, and topping out on the roof line. Sitting
+  // on the band, its legs read as part of the wall rather than as a star.
+  const starFoot = 5.55;
+  const starH = 2.65;
+  for (const bar of star()) {
+    decor.push({
+      floor: 0,
+      bounds: rect(starX + bar.u0 * starW, doorY - 0.1, (bar.u1 - bar.u0) * starW, 0.18),
+      base: starFoot + bar.v0 * starH,
+      height: starFoot + bar.v1 * starH,
+      material: 'sign',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The row of small windows in that precast, at pavement level.
+   *
+   * Eight of them, which is what the photograph shows left of the doors —
+   * and they are the one thing stopping the west third being a blank
+   * hoarding now that the glazing has been pulled back off it.
+   */
+  for (let i = 0; i < 8; i += 1) {
+    decor.push({
+      floor: 0,
+      // Proud of the wall face, not inside it. At doorY + 0.2 they sat
+      // within the wall's own 0.3 m thickness and were simply buried.
+      bounds: rect(RECEPTION.x + 0.8 + i * 1.6, doorY + 0.04, 1.15, PANE_THICKNESS),
+      base: ground + 0.9,
+      height: ground + 2.4,
+      material: 'glazing',
+    });
+  }
 
   /*
    * The neighbour across the way — the shed in the right of the photograph.

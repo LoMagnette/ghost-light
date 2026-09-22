@@ -818,6 +818,33 @@ then looking at the tinted frame said something better, which was "drawn,
 enormous, and I have been staring at it". The glass was never missing. It
 was the same colour as the night behind it.
 
+**Then, holding it against the photograph properly:**
+> take another look at the picture and try to make the front of the
+> building look like it
+
+Reading the frame again rather than from memory turned up four things, and
+the most important was a COMPOSITION error rather than a missing detail:
+the glass had been run across the entire 36 m frontage, when the photograph
+has solid precast over the west third and the glazed sweep starting about
+where the doors do. That one change did more than anything else, because it
+is the difference between this building and any glass box — and it made
+room for the things that live on that precast.
+
+On it now: the Kinepolis star, and the row of small square windows at
+pavement level. The star is drawn as a raster of horizontal bars, the way a
+star is drawn on a low-resolution screen, because a five-pointed star has
+no axis-aligned edge anywhere on it and this renderer extrudes plan
+rectangles. Fourteen rows, and at thirty pixels nobody can tell.
+
+The banners got the panel at their head that every banner in the frame has
+— a blank white flag reads as unfinished rather than as blockout.
+
+Two placement errors worth recording, both the same mistake in different
+clothes: the star was sitting ON the spandrel band so its legs read as part
+of the wall, and the small windows were at a depth that put them INSIDE the
+wall's own 0.3 m thickness, so they were drawn and buried. Neither is
+visible in code; both took one frame each.
+
 **Worth the detour:** Chapter I outside — one small robot with a lamp on an
 empty forecourt, a dead building behind it, bollards and banner poles as
 silhouettes — is the strongest image the game has. Nobody designed it; it
