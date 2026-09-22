@@ -432,6 +432,10 @@ model sheets.
   direction this camera can read, and why that is so is three separate facts
   about the renderer. See `docs/MECHANICS.md` §5.3
 - Registration: slatted warm wood, grey carpet, curved cast concrete
+- Outside: the forecourt, from photo 54842743975 — asphalt at the doors, a
+  line of bollards, a band of brick setts, the road. Two storeys of curtain
+  wall in a mullion grid between pale precast flanks, and three banner poles
+  in front of it. You can drive out of the doors and look back at it
 
 The red step lighting in a dark auditorium is the single strongest image
 available for Chapter I, and it costs nothing to draw.

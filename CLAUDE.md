@@ -151,6 +151,8 @@ for a scoring criterion.
 | Change how much boxes vary in tone | `TONE_SPREAD` in `BlockoutRenderer`. Keyed off position, so it must stay deterministic |
 | Change the band drawn along the cutaway | `CUT_BAND` / `CUT_BAND_LIFT` in `BlockoutRenderer` |
 | Change how a robot climbs | `climbOf` in `BlockoutRenderer` — DRAWING only. The sim still walks a smooth ramp |
+| Change what is outside the building | `forecourtFitOut` in `kinepolis.ts`, and `FORECOURT` for how far it reaches |
+| Make something visible from outside | `exterior: true` on the obstacle or decor. Anything taller than 2.7 m needs it, or the cutaway eats it |
 | Tune the camera | `CAMERA_LERP` in `config.ts` |
 | Change collision response | `RESTITUTION` in `Sim.ts` |
 | Change who can climb what | `maxStepRise` / `maxSlope` in `RobotSpec.ts` |

@@ -197,7 +197,9 @@ interface Floorplan {
 
 /** Rooms people are allowed to wander, by storey. Not the auditoriums. */
 const PUBLIC_ROOMS: Record<number, string[]> = {
-  0: ['hall', 'reception'],
+  // The forecourt counts: the photograph this was built from is mostly
+  // people walking across it towards the doors.
+  0: ['hall', 'reception', 'forecourt'],
   1: ['corridor', 'foyer'],
 };
 

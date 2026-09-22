@@ -22,7 +22,7 @@ import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
-import { groundAt, type Level } from '@/core/Venue';
+import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
@@ -39,6 +39,7 @@ import { css, el, label, MONO, SANS } from './dom';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
+  CAMERA_OUTSIDE_LIFT,
   DEBUG_DEFAULT,
   FOOTFALL_REFERENCE_MOMENTUM,
   IMPACT_REFERENCE_MOMENTUM,
@@ -84,6 +85,8 @@ export class ChapterScreen implements Screen {
   private dropRequested = false;
   /** Seconds left on the current notification. */
   private toastFor = 0;
+  /** True while the cast is on the forecourt. Changes what the camera frames. */
+  private outside = false;
 
   private readonly isoCamera: OrthographicCamera = createIsoCamera();
   private cameraX = 0;
@@ -237,6 +240,13 @@ export class ChapterScreen implements Screen {
       this.cameraZ = this.controlled.body.z;
       this.blockout.clearMarks();
     }
+
+    // Outside, the building has to be drawn its own height rather than cut
+    // off at the cutaway plane. Asked of the room the camera is watching,
+    // not of the storey, because the forecourt is on storey 0 like the hall.
+    const here = roomAt(KINEPOLIS, this.controlled.floor, this.controlled.body.x, this.controlled.body.y);
+    this.outside = here?.kind === 'outside';
+    this.blockout.setOutside(this.outside);
 
     this.applyFeedback();
     this.followControlled(dt);
@@ -408,14 +418,16 @@ export class ChapterScreen implements Screen {
    */
   private cameraTarget(): { x: number; y: number; z: number } {
     const body = this.controlled.body;
+    // Outside, frame the building rather than the machine. See the constant.
+    const z = body.z + (this.outside ? CAMERA_OUTSIDE_LIFT : 0);
     const speed = body.speed;
-    if (speed < 0.05) return { x: body.x, y: body.y, z: body.z };
+    if (speed < 0.05) return { x: body.x, y: body.y, z };
 
     const lead = Math.min(body.stoppingDistance, CAMERA_LEAD_CAP);
     return {
       x: body.x + (body.vx / speed) * lead,
       y: body.y + (body.vy / speed) * lead,
-      z: body.z,
+      z,
     };
   }
 

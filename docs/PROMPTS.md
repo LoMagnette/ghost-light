@@ -670,6 +670,64 @@ the 40 originality points. Robots are generated from the model sheets only.
 
 ## Venue
 
+### Stepping outside, and the building seen from its own forecourt
+**Tool:** Claude (Opus 5) via Claude Code
+**Date:** 2026-09-22
+
+**Prompt:**
+> Let move on create a new branch the goal is to be able to exit the movie
+> theater and via the glass door and see the building. For the visual you can
+> use this image 54842743975_b835884445_k.jpg
+
+**Read the photograph first**, which is the whole reason this looks like
+anywhere: asphalt at the doors, a line of bollards, a band of brick setts,
+then the road and its markings. Two storeys of curtain wall in a mullion
+grid between pale precast flanks, three banner poles in front of it, and a
+neighbour's shed off to the east. All of that is in the venue now.
+
+**Three problems, and only the first was the one that had been asked for.**
+
+1. **There was nothing outside to walk onto.** Everything the simulation
+   knows about standing anywhere comes from rooms, so the forecourt had to
+   BE a room — at concourse level, because the concourse is street level:
+   you come in at grade and go down into the hall. But a room outside the
+   glass makes the reception's south elevation a party wall between two
+   rooms, which is the one thing a curtain wall is not, so the wall builder
+   now ignores rooms of kind `outside`. Outside is the absence of walls,
+   not a room with different ones.
+
+2. **The building was a knee-high stump.** `MAX_DRAWN_HEIGHT` cuts
+   everything at 2.7 m so a player can see into rooms — correct from
+   inside, and from the forecourt it leaves a ten-metre building as a kerb.
+   The envelope is now drawn separately: the part above the cut on this
+   storey, plus the whole of the storey above, which is otherwise not drawn
+   at all because only one storey is ever visible. Shown only while the
+   player is outside, so it never stands between the camera and a room.
+
+3. **The camera framed the robot, so the building was off the top of the
+   frame.** A 1.15 m machine centred in the view puts ten metres of
+   elevation above the window. Outside, the look-at point lifts 5.5 m and
+   the elevation drops into frame — eased by the existing camera lerp, so
+   walking out is a pan rather than a cut.
+
+**The bug worth recording** was mine and took a probe to find. The flag
+that marks a wall as the building's envelope was computed one line too
+late, AFTER the loop index had walked on to the next run of wall, so every
+wall was classified by its neighbour's kind. The building came back with
+exactly one exterior wall in it. Nothing about it looked wrong in the code;
+counting the flagged pieces took a minute and pointed straight at it.
+
+**A comment in the codebase called this shot exactly.** `glazeFacade` said
+of the doors: *"there is nothing outside to open onto... They are doors
+when there is a forecourt to walk into."* They are doors now.
+
+**Worth the detour:** Chapter I outside — one small robot with a lamp on an
+empty forecourt, a dead building behind it, bollards and banner poles as
+silhouettes — is the strongest image the game has. Nobody designed it; it
+is what the existing light level does to a space that did not exist
+yesterday.
+
+
 ### The building, surveyed from the competition floor plans
 **Tool:** Claude (Opus 5) via Claude Code
 **Date:** 2026-09-18

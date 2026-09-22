@@ -493,9 +493,34 @@ const RAMP_OPENING = rect(
   2,
 );
 
+/**
+ * The forecourt, and the way out onto it.
+ *
+ * Photographed in `references/venue/photos/54842743975_b835884445_k.jpg`:
+ * you come out of a bank of glass doors onto a strip of asphalt, cross a
+ * line of bollards and a band of brick setts, and you are on the road. The
+ * building behind you is two storeys of curtain wall in a mullion grid
+ * between pale precast flanks, with the sign high up and three banner poles
+ * out front.
+ *
+ * It sits at CONCOURSE_LEVEL because that is what the concourse IS: you
+ * come in at street level and go DOWN into the hall. The forecourt is not
+ * a step down from reception, it is the same ground continuing.
+ */
+const FORECOURT = rect(-34, -88, 82, 27.6);
+
+/** The bank of doors, and how much of the elevation opens. */
+const ENTRANCE_WIDTH = 9.0;
+const ENTRANCE_X = RECEPTION.x + RECEPTION.w / 2 - ENTRANCE_WIDTH / 2;
+
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
   { floor: 0, bounds: HALL_OPENING },
   { floor: 0, bounds: RAMP_OPENING },
+  // The doors themselves. The curtain wall is "door" along the whole
+  // frontage — every panel of it is openable, which is what the building
+  // says of itself — but only this much of it is a hole a robot can drive
+  // through, and it is where the doors are in the photograph.
+  { floor: 0, bounds: rect(ENTRANCE_X, RECEPTION.y - 1.2, ENTRANCE_WIDTH, 2.4) },
 ];
 
 const floor0Rooms: Room[] = [
@@ -534,6 +559,14 @@ const floor0Rooms: Room[] = [
   { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
   { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
+  {
+    id: 'forecourt',
+    label: 'Outside',
+    kind: 'outside',
+    floor: 0,
+    bounds: FORECOURT,
+    elevation: CONCOURSE_LEVEL,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1807,10 +1840,22 @@ const CIRCULATION = new Set<RoomKind>(['hall', 'corridor', 'foyer', 'stairs']);
  * that separates a room from circulation. Two auditoriums side by side get no
  * door, because cinemas do not open into each other.
  */
-function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor: Decor[] } {
+function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: Decor[] } {
   const walls: Obstacle[] = [];
   const decor: Decor[] = [];
   const seen = new Set<string>();
+
+  /*
+   * Outside is not a room with walls; it is the absence of them.
+   *
+   * The forecourt has to BE a room, because everything the simulation knows
+   * about standing anywhere comes from rooms — but if the wall builder can
+   * see it, the reception's south elevation stops being "outside air" and
+   * becomes a party wall between two rooms, which is the one thing the
+   * glass front is not. Hidden from this pass, the envelope stays the
+   * envelope and the curtain wall still finds it.
+   */
+  const rooms = all.filter((room) => room.kind !== 'outside');
 
   for (const room of rooms) {
     // A stage is a PLATE, not an enclosure: a piece of floor lying inside the
@@ -1883,7 +1928,7 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
           (r) => r !== room && r.floor === room.floor && rectContains(r.bounds, ox, oy),
         );
         if (!neighbour) {
-          kind.push(1); // outside air
+          kind.push(3); // outside air — this one is the building's envelope
           continue;
         }
 
@@ -1917,6 +1962,9 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
         let a = edge.from + (i * span) / steps;
         let z = edge.from + (j * span) / steps;
         const doored = kind[i] === 2;
+        // Both read from the run being emitted, so both have to be taken
+        // BEFORE `i` walks on to the next one.
+        const envelope = kind[i] === 3;
         i = j;
 
         const pieces: [number, number][] = [];
@@ -1983,7 +2031,7 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               runsAlong(bounds, edge.horizontal, l.bounds),
           );
           if (!rake) {
-            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
+            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT, exterior: envelope });
             continue;
           }
 
@@ -2647,11 +2695,13 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     /*
      * The wall stays, for collision, and stops being drawn.
      *
-     * The doors do not open in the simulation, and that is not an oversight
-     * about doors — there is nothing outside to open onto. South of this line
-     * the building's extents run out: no plate, no floor, a robot that got
-     * through would step off the concourse into 1.2 m of nothing and keep
-     * falling. They are doors when there is a forecourt to walk into.
+     * Most of it, anyway. This used to note that the doors do not open
+     * because "there is nothing outside to open onto" — south of the line
+     * the building's extents ran out and a robot through the glass would
+     * step off the concourse into 1.2 m of nothing. There is a forecourt
+     * now, so the bank of doors is a hole in this run rather than a pane:
+     * see the entrance in WALL_OPENINGS, which stops the wall being built
+     * across it in the first place.
      */
     kept.push({ ...wall, hidden: true });
 
@@ -2664,7 +2714,11 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     // the photograph shows: one wall of glass, standing on something upstairs
     // and reaching the pavement downstairs.
     const foot = door ? DOOR_KICK : GLAZING_SILL;
-    decor.push({ floor: wall.floor, bounds: b, height: foot });
+    // The wall goes hidden and these take over drawing it, so they inherit
+    // its place on the envelope with it — otherwise the one elevation the
+    // player walks out to look at is the one left out of the elevation.
+    const skin = wall.exterior;
+    decor.push({ floor: wall.floor, bounds: b, height: foot, exterior: skin });
 
     decor.push({
       floor: wall.floor,
@@ -2674,6 +2728,7 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
       base: foot,
       height: wall.height,
       material: 'glazing',
+      exterior: skin,
     });
 
     // One mullion at each end and the bays between them as near the pitch as
@@ -2688,11 +2743,122 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
           : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
         base: foot,
         height: wall.height,
+        exterior: skin,
       });
     }
   }
 
   return { walls: kept, decor };
+}
+
+// ---------------------------------------------------------------------------
+// Outside
+// ---------------------------------------------------------------------------
+
+/**
+ * The forecourt, fitted out from the photograph.
+ *
+ * `references/venue/photos/54842743975_b835884445_k.jpg`: a strip of asphalt
+ * at the doors, a line of bollards across it, a band of brick setts, and
+ * then the road with its markings. Three banner poles stand in front of the
+ * glass, and a neighbour's shed sits off to the east.
+ *
+ * Everything taller than the cutaway plane is marked `exterior`, which is
+ * what gets it drawn its full height once a player is standing out here
+ * looking back at the building. See `BlockoutRenderer.buildEnvelope`.
+ */
+const BOLLARD_LINE = FORECOURT.y + FORECOURT.h - 7.5;
+const BOLLARD_PITCH = 2.6;
+const BOLLARD = 0.24;
+const BOLLARD_HEIGHT = 1.0;
+
+const BANNER_POLE = 0.22;
+const BANNER_HEIGHT = 8.4;
+
+function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const ground = CONCOURSE_LEVEL;
+
+  // The band of setts between the footway and the road. Lighter than the
+  // asphalt either side of it, which is the whole of how it reads.
+  decor.push({
+    floor: 0,
+    bounds: rect(FORECOURT.x + 2, FORECOURT.y + 9, FORECOURT.w - 4, 4.2),
+    base: ground,
+    height: ground + 0.02,
+    material: 'paving',
+  });
+
+  // Road markings: a broken centre line, well out from the building.
+  for (let x = FORECOURT.x + 5; x < FORECOURT.x + FORECOURT.w - 5; x += 6.5) {
+    decor.push({
+      floor: 0,
+      bounds: rect(x, FORECOURT.y + 4, 3.2, 0.16),
+      base: ground,
+      height: ground + 0.02,
+      material: 'sign',
+    });
+  }
+
+  /*
+   * Bollards, and they are SOLID.
+   *
+   * A row of posts you drive straight through would be worse than none —
+   * and they are on the line the photograph puts them on, between the
+   * footway and the road. The pitch leaves 2.36 m of gap, which Biggy's
+   * 1.44 m clears without having to aim.
+   */
+  for (let x = FORECOURT.x + 8; x < FORECOURT.x + FORECOURT.w - 8; x += BOLLARD_PITCH) {
+    solids.push({
+      floor: 0,
+      bounds: rect(x, BOLLARD_LINE, BOLLARD, BOLLARD),
+      base: ground,
+      height: ground + BOLLARD_HEIGHT,
+      material: 'paving',
+    });
+  }
+
+  // Three banner poles in front of the glass, as in the photograph. Tall
+  // enough to need the envelope, which is what `exterior` buys them.
+  for (const x of [ENTRANCE_X - 8, ENTRANCE_X + ENTRANCE_WIDTH / 2, ENTRANCE_X + 12]) {
+    decor.push({
+      floor: 0,
+      bounds: rect(x, FORECOURT.y + FORECOURT.h - 3.2, BANNER_POLE, BANNER_POLE),
+      base: ground,
+      height: ground + BANNER_HEIGHT,
+      material: 'paving',
+      exterior: true,
+    });
+    // The banner itself: thin the way the camera looks at it, so what you
+    // see is the face rather than the edge.
+    decor.push({
+      floor: 0,
+      bounds: rect(x - 0.42, FORECOURT.y + FORECOURT.h - 3.26, 1.06, 0.1),
+      base: ground + 4.2,
+      height: ground + BANNER_HEIGHT - 0.5,
+      material: 'sign',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The neighbour across the way — the shed in the right of the photograph.
+   *
+   * Not the Kinepolis and not pretending to be: a plain mass with a roof
+   * line, there so that stepping outside puts the building in a PLACE
+   * rather than on an empty plane. It stands on the ground rather than on
+   * the concourse plate, which is why its height is measured from zero.
+   */
+  solids.push({
+    floor: 0,
+    bounds: rect(FORECOURT.x + FORECOURT.w + 4, FORECOURT.y + 6, 30, 19),
+    height: ground + 6.4,
+    material: 'booth',
+    exterior: true,
+  });
+
+  return { solids, decor };
 }
 
 /**
@@ -3009,6 +3175,7 @@ function grandWellHeadRails(): Obstacle[] {
 const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
+const FORECOURT_FIT = forecourtFitOut();
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
@@ -3022,6 +3189,7 @@ export const KINEPOLIS: Venue = {
     ...grandWellHeadRails(),
     ...receptionFitOut(),
     ...railBesideWells(FACADE.walls, staircases),
+    ...FORECOURT_FIT.solids,
   ],
   decor: [
     ...auditoriumDecor,
@@ -3030,6 +3198,7 @@ export const KINEPOLIS: Venue = {
     ...STAIRS.decor,
     ...FACADE.decor,
     ...BOOTHS.decor,
+    ...FORECOURT_FIT.decor,
   ],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
@@ -3040,6 +3209,14 @@ export const SPAWNS = {
   /** Inside the main entrance, looking north up the reception concourse. */
   /** Inside the main entrance, east of the grand stair. */
   mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
+  /**
+   * On the forecourt, far enough out to have the whole elevation in frame.
+   *
+   * The building is ten metres tall and the camera frames a robot, so where
+   * you stand decides whether you are looking at a building or at a
+   * pavement. This is the spot the front of the Kinepolis reads from.
+   */
+  forecourt: { floor: 0 as const, x: 6, y: -72 },
   /** Where the concourse opens into the hall. */
   // Between the two southernmost column rows, which sit at y -27.05 and
   // -33.58, and now on the centre line of the main aisle: the cast lines up

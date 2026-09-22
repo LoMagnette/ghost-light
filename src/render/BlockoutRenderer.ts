@@ -83,7 +83,17 @@ import {
   type Person,
 } from '@/core/Crowd';
 import { renderPos } from '@/core/Sim';
-import { groundAt, rect, type Level, type Link, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
+import {
+  FLOOR_HEIGHT,
+  groundAt,
+  rect,
+  type Level,
+  type Link,
+  type Material,
+  type Rect,
+  type Room,
+  type Venue,
+} from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 import {
   createCutawayUniforms,
@@ -489,6 +499,21 @@ export class BlockoutRenderer {
    * visible storey is ever written into it — a mover on the floor you are not
    * looking at costs nothing at all.
    */
+  /**
+   * The building as seen from OUTSIDE it, above the cutaway plane.
+   *
+   * Everything is drawn to 2.7 m so a player can see into rooms, which is
+   * right from inside and leaves a ten-metre building as a knee-high stump
+   * the moment you walk out of the front door. This holds the rest of the
+   * elevation — the part above the cut on this storey, and the whole of the
+   * storey above, which is otherwise not drawn at all because only one
+   * storey is ever visible.
+   *
+   * Shown only while the player is outside, so it never stands between the
+   * camera and a room.
+   */
+  private readonly envelope = new Group();
+
   private readonly crowd: Crowd;
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
@@ -549,6 +574,10 @@ export class BlockoutRenderer {
     }
     this.scene.add(this.markMesh);
     this.scene.add(this.markerGroup);
+
+    this.buildEnvelope();
+    this.envelope.visible = false;
+    this.scene.add(this.envelope);
 
     this.moverMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
@@ -910,6 +939,69 @@ export class BlockoutRenderer {
     this.aimCutaway(floor, actors, alpha);
   }
 
+  /**
+   * Draw the building its own height, for a viewer standing in front of it.
+   *
+   * Storey 0's envelope runs from the cut up to the next floor's datum, so
+   * the spandrel between the two levels is not a gap; storey 1's is drawn
+   * whole, because the storey it belongs to is hidden while the player is
+   * down here. Together with what the visible storey already draws below
+   * the cut, that is one continuous elevation.
+   */
+  private buildEnvelope(): void {
+    const solid: Box[] = [];
+    const glass: Box[] = [];
+
+    // Walls AND the dressing that replaces them. The curtain wall hides its
+    // own wall and draws itself as a sill, a pane and a row of mullions, so
+    // an envelope built only from obstacles would leave out the one elevation
+    // a player ever walks out to look at.
+    const pieces = [
+      ...this.venue.obstacles.filter((o) => !o.hidden),
+      ...this.venue.decor,
+    ];
+
+    for (const piece of pieces) {
+      if (!piece.exterior) continue;
+      const datum = this.datumFor(piece.floor, piece);
+      const top = datum + piece.height;
+      const from = piece.floor === 0 ? cutAt(datum) : datum + (piece.base ?? 0);
+      const to = piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
+      if (to <= from) continue;
+
+      (piece.material === 'glazing' ? glass : solid).push({
+        bounds: piece.bounds,
+        bottom: from,
+        top: to,
+        colour: this.varied(this.material(piece.material), piece.bounds, piece.material),
+      });
+    }
+
+    if (solid.length) this.envelope.add(instanceBoxes(solid, new MeshLambertMaterial()));
+    if (glass.length) {
+      const panes = instanceBoxes(
+        glass,
+        new MeshLambertMaterial({
+          transparent: true,
+          opacity: GLAZING_OPACITY,
+          depthWrite: false,
+        }),
+      );
+      panes.renderOrder = 5;
+      this.envelope.add(panes);
+    }
+  }
+
+  /**
+   * Whether the player is standing outside the building.
+   *
+   * The one thing that decides whether the elevation is drawn or the rooms
+   * behind it are. Set by the screen, which is what knows where the cast is.
+   */
+  setOutside(outside: boolean): void {
+    this.envelope.visible = outside;
+  }
+
   /** Forget every mark. Call on reset so a tuning run starts on clean floor. */
   clearMarks(): void {
     this.marks.length = 0;
@@ -1192,6 +1284,10 @@ export class BlockoutRenderer {
         return this.palette.glazing;
       case 'booth':
         return this.palette.booth;
+      // Lighter than the ground it is laid on, which is the only thing that
+      // tells a band of setts from the asphalt either side of it.
+      case 'paving':
+        return shade(this.palette.floor, 1.5);
       default:
         return this.palette.wall;
     }
