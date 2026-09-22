@@ -756,6 +756,37 @@ in a screenshot:
   starts higher up. It had already pulled the banners down their poles, and
   would have smeared the sign into a bar.
 
+**And then the two things that were actually wrong:**
+> the second level is totally missing and you miss-spelled kine polis
+
+Both real, and neither was a matter of taste.
+
+**The second storey was being drawn at ground level.** Every storey in this
+venue is modelled from its own datum and only one is ever visible, so a
+piece on floor 1 states its height as though the first floor were the
+ground — which is right everywhere except the envelope, the one place in
+the renderer that draws two storeys at once. Without the offset the upper
+floor was buried inside the lower one, and from the forecourt the building
+simply had no second level.
+
+**KINEPOLIS came out as `| | | | POLIS`,** and the cause had been sitting
+in the venue since the stage letters were written. `diagonal()` walks a
+stroke in steps and writes each band's ends into `v0` and `v1` in the order
+it walks them — so a stroke that goes DOWN produced bands with their top in
+`v0` and their bottom in `v1`. An inverted box, which every consumer turned
+into a one-centimetre sliver at the wrong height.
+
+Nobody had noticed because the only things using diagonals were the V and
+the two Xs of `#DEVOXX`, thirty metres away across a dark auditorium, each
+quietly missing one of its two strokes. Putting a K and an N on the front
+of the building at eye level made it obvious. Fixing `diagonal()` at the
+source fixed the stage letters too — `#DEVOXX` has complete Xs for the
+first time.
+
+The lesson is the one this project keeps relearning: a fault that is
+invisible at the scale you first used something is still a fault, and the
+day you use it somewhere legible it will be waiting.
+
 **Worth the detour:** Chapter I outside — one small robot with a lamp on an
 empty forecourt, a dead building behind it, bollards and banner poles as
 silhouettes — is the strongest image the game has. Nobody designed it; it

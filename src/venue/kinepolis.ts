@@ -1397,11 +1397,25 @@ function diagonal(u0: number, v0: number, u1: number, v1: number, steps = 10): B
   const half = SIGN_STROKE / GLYPH_WIDTH / 2;
   for (let i = 0; i < steps; i += 1) {
     const u = u0 + (u1 - u0) * ((i + 0.5) / steps);
+    const a = v0 + (v1 - v0) * (i / steps);
+    const b = v0 + (v1 - v0) * ((i + 1) / steps);
     bars.push({
       u0: u - half,
       u1: u + half,
-      v0: v0 + (v1 - v0) * (i / steps),
-      v1: v0 + (v1 - v0) * ((i + 1) / steps),
+      /*
+       * Low edge first, and it matters for every stroke that goes DOWN.
+       *
+       * A stroke from v 1 to v 0 walks its steps downward, so each band
+       * came out with its top in `v0` and its bottom in `v1` — an inverted
+       * box, which every consumer turned into a one-centimetre sliver at
+       * the wrong height. It has been wrong since the stage letters were
+       * written: the falling diagonal of every V and X in `#DEVOXX` was
+       * missing, and at thirty metres across a dark auditorium nobody
+       * noticed. KINEPOLIS put a K and an N on the front of the building
+       * at eye level and they came out as bare uprights.
+       */
+      v0: Math.min(a, b),
+      v1: Math.max(a, b),
     });
   }
   return bars;
@@ -2918,7 +2932,11 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
 
   // Three banner poles in front of the glass, as in the photograph. Tall
   // enough to need the envelope, which is what `exterior` buys them.
-  for (const x of [ENTRANCE_X - 8, ENTRANCE_X + ENTRANCE_WIDTH / 2, ENTRANCE_X + 12]) {
+  // West of the sign, all three of them. They stand in front of the glass
+  // in the photograph and they may overlap it here — but one of them was
+  // parked squarely on the E of KINEPOLIS, and a name with a letter missing
+  // is worse than a pole in the wrong place.
+  for (const x of [ENTRANCE_X - 9, ENTRANCE_X - 4, ENTRANCE_X + 2]) {
     decor.push({
       floor: 0,
       bounds: rect(x, FORECOURT.y + FORECOURT.h - 3.2, BANNER_POLE, BANNER_POLE),

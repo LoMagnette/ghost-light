@@ -973,7 +973,17 @@ export class BlockoutRenderer {
 
     for (const { piece, wall } of pieces) {
       if (!piece.exterior) continue;
-      const datum = this.datumFor(piece.floor, piece);
+      /*
+       * Every storey is modelled from its own datum and only one is ever
+       * visible, so a piece on floor 1 states its height as though the
+       * first floor were the ground. The envelope is the one place in the
+       * renderer that draws two storeys at once, so it is the one place
+       * that has to put them back on top of each other — without this the
+       * upper floor was drawn buried inside the ground floor, and the
+       * building had no second storey at all from outside.
+       */
+      const storey = piece.floor * FLOOR_HEIGHT;
+      const datum = storey + this.datumFor(piece.floor, piece);
       const top = datum + piece.height;
       const from = Math.max(cutAt(datum), datum + (piece.base ?? 0));
       const to = wall && piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
