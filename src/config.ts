@@ -31,9 +31,10 @@ export const CAMERA_LEAD_CAP = 5.0;
  * elevation into it.
  *
  * Eased in by the usual camera lerp, so stepping out is a pan rather than a
- * cut.
+ * cut. 7.5 m frames the whole elevation — roof line included — from about
+ * ten metres out, which is where a robot coming through the doors ends up.
  */
-export const CAMERA_OUTSIDE_LIFT = 5.5;
+export const CAMERA_OUTSIDE_LIFT = 7.5;
 
 /**
  * Momentum, kg·m/s, that saturates the impact and footfall feedback.

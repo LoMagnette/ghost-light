@@ -982,19 +982,56 @@ export class BlockoutRenderer {
        * upper floor was drawn buried inside the ground floor, and the
        * building had no second storey at all from outside.
        */
-      const storey = piece.floor * FLOOR_HEIGHT;
-      const datum = storey + this.datumFor(piece.floor, piece);
-      const top = datum + piece.height;
-      const from = Math.max(cutAt(datum), datum + (piece.base ?? 0));
+      /*
+       * Worked out in the storey's OWN space, then lifted into the world.
+       *
+       * The cutaway plane is 2.7 m above the storey datum, and every storey
+       * is modelled from its own. Adding the lift first put the plane at
+       * 8.9 m for the upper floor and left half a metre of it — the first
+       * floor's glazing came back as a sliver you could not see.
+       */
+      const local = this.datumFor(piece.floor, piece);
+      const base = local + (piece.base ?? 0);
+      const top = local + piece.height;
+
+      /*
+       * The storey the player is standing on is already drawn up to the
+       * cut, so the envelope only owes it what is above. Every OTHER storey
+       * is not drawn at all — only one is ever visible — so the envelope
+       * owes those their whole height.
+       */
+      const from = piece.floor === 0 ? Math.max(cutAt(local), base) : base;
       const to = wall && piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
       if (to <= from) continue;
 
-      (piece.material === 'glazing' ? glass : solid).push({
+      const lift = piece.floor * FLOOR_HEIGHT;
+      const box = {
         bounds: piece.bounds,
-        bottom: from,
-        top: to,
+        bottom: lift + from,
+        top: lift + to,
         colour: this.varied(this.material(piece.material), piece.bounds, piece.material),
-      });
+      };
+
+      if (piece.material !== 'glazing') {
+        solid.push(box);
+        continue;
+      }
+
+      /*
+       * A window seen from outside is dark, because the room behind it is
+       * not being drawn.
+       *
+       * Glass is translucent and writes no depth, so over the void beyond
+       * the building it came out as nothing at all: the first floor's
+       * glazing was there the whole time and invisible. An opaque panel
+       * behind each pane gives it something to be glass IN FRONT OF, which
+       * is all a window needs to read as one from the street.
+       */
+      // Near the glass's own tone rather than far under it: a window from
+      // the street is darker than the wall around it and nothing like a
+      // hole, and the translucent pane in front of this darkens it again.
+      solid.push({ ...box, colour: shade(this.palette.glazing, 0.92) });
+      glass.push(box);
     }
 
     if (solid.length) this.envelope.add(instanceBoxes(solid, new MeshLambertMaterial()));

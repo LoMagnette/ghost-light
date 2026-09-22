@@ -2827,6 +2827,36 @@ function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; dec
      * has four or five horizontals for every upright. One more loop over
      * the same run.
      */
+    /*
+     * The spandrel: the solid band at the floor line above a glazed storey.
+     *
+     * The ground floor's glass tops out at the wall head and the first
+     * floor's starts at its own datum, which left nearly two metres of
+     * nothing between them — from the forecourt, a stripe of sky across the
+     * middle of the building. Every curtain wall has a panel there hiding
+     * the floor slab.
+     *
+     * Only the ground storey needs one: above the first floor is the roof.
+     * The height is measured to the next floor from the concourse this run
+     * stands on, which is the one plate a glazed elevation sits on here.
+     */
+    if (skin && wall.floor === 0) {
+      decor.push({
+        floor: wall.floor,
+        // In the plane of the curtain wall and on the inner face of it, for
+        // the same reason the transoms are: a panel centred on the wall
+        // line belongs to the rooms on both sides of it, and dressing has
+        // to belong to one.
+        bounds: along
+          ? rect(b.x, cy + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.w, PANE_THICKNESS * 2)
+          : rect(cx + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.y, PANE_THICKNESS * 2, b.h),
+        base: wall.height,
+        height: FLOOR_HEIGHT - CONCOURSE_LEVEL,
+        material: 'structure',
+        exterior: true,
+      });
+    }
+
     const lifts = Math.max(1, Math.round((wall.height - foot) / TRANSOM_PITCH));
     for (let i = 1; i < lifts; i += 1) {
       const z = foot + ((wall.height - foot) * i) / lifts;

@@ -787,6 +787,37 @@ The lesson is the one this project keeps relearning: a fault that is
 invisible at the scale you first used something is still a fault, and the
 day you use it somewhere legible it will be waiting.
 
+**And once more, because it still was not right:**
+> the glass part of the 1st floor is still missing
+
+Three faults stacked on top of each other, which is why it took a
+diagnostic rather than a guess.
+
+1. **I had broken it in the previous fix.** Lifting each piece into world
+   space BEFORE working out where the cutaway plane falls put that plane at
+   8.9 m for the upper storey and left half a metre of glazing. The
+   arithmetic has to happen in the storey's own space and be lifted after.
+
+2. **There was a stripe of sky across the middle of the building.** The
+   ground floor's glass tops out at its wall head and the first floor's
+   starts at its own datum, leaving nearly two metres of nothing between
+   them. Every curtain wall has a spandrel panel there hiding the floor
+   slab; this one now does too.
+
+3. **The glass was drawn and invisible.** A pane is translucent and writes
+   no depth, and from outside there is nothing behind it — the storey it
+   belongs to is not drawn at all. So it was glazing over the void, which
+   is glazing over nothing. Each exterior pane now gets an opaque backing
+   near its own tone, which is all a window needs to read as one from the
+   street.
+
+**The diagnostic is the part worth keeping.** After two wrong guesses I
+tinted the first floor's backing bright red and counted red pixels in the
+frame: 69, scattered. That said "drawn, and almost entirely hidden" — and
+then looking at the tinted frame said something better, which was "drawn,
+enormous, and I have been staring at it". The glass was never missing. It
+was the same colour as the night behind it.
+
 **Worth the detour:** Chapter I outside — one small robot with a lamp on an
 empty forecourt, a dead building behind it, bollards and banner poles as
 silhouettes — is the strongest image the game has. Nobody designed it; it
