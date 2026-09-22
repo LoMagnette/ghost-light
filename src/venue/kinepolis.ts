@@ -1447,6 +1447,48 @@ function glyph(character: string): Bar[] {
       ];
     case 'X':
       return [...diagonal(0.06, 0, 0.94, 1), ...diagonal(0.94, 0, 0.06, 1)];
+    /*
+     * The rest of KINEPOLIS, which is what the building calls itself.
+     *
+     * Not a borrowed wordmark: it is the name on the elevation in the
+     * photograph, and putting it there is the difference between "a large
+     * glazed building" and "the Kinepolis". Same strokes as the stage
+     * letters, so a sign anywhere in the venue is drawn one way.
+     */
+    case 'K':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        ...diagonal(0.92, 1, su, 0.52, 7),
+        ...diagonal(su, 0.48, 0.92, 0, 7),
+      ];
+    case 'I':
+      return [{ u0: 0.5 - su / 2, u1: 0.5 + su / 2, v0: 0, v1: 1 }];
+    case 'N':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: 1 - su, u1: 1, v0: 0, v1: 1 },
+        ...diagonal(su, 1, 1 - su, 0, 9),
+      ];
+    case 'P':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.8, v0: 1 - sv, v1: 1 },
+        { u0: 0.8, u1: 0.8 + su, v0: 0.5, v1: 1 - sv },
+        { u0: su, u1: 0.8 + su, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+      ];
+    case 'L':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.9, v0: 0, v1: sv },
+      ];
+    case 'S':
+      return [
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0, u1: su, v0: 0.5 - sv / 2, v1: 1 - sv },
+        { u0: 0, u1: 1, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+        { u0: 1 - su, u1: 1, v0: sv, v1: 0.5 + sv / 2 },
+        { u0: 0, u1: 1, v0: 0, v1: sv },
+      ];
     default:
       return digit(character);
   }
@@ -2646,6 +2688,8 @@ const GLAZING_SILL = 0.45;
  */
 const MULLION_PITCH = 2.6;
 const MULLION_WIDTH = 0.14;
+/** Height between transoms, metres. The grid runs both ways or it is slots. */
+const TRANSOM_PITCH = 1.5;
 
 /**
  * The bottom rail of a glazed door, metres.
@@ -2670,7 +2714,7 @@ const PANE_THICKNESS = 0.08;
  * length of the run. The pane is the only piece in the building that is
  * drawn translucent; see GLAZING_OPACITY in the renderer.
  */
-function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
+function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; decor: Decor[] } {
   const kept: Obstacle[] = [];
   const decor: Decor[] = [];
 
@@ -2713,6 +2757,19 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     // storeys it is the ONLY thing that tells them apart — which is also all
     // the photograph shows: one wall of glass, standing on something upstairs
     // and reaching the pavement downstairs.
+    /*
+     * Which side of this run the building is on: +1 for the far side in
+     * the thin direction, -1 for the near one.
+     */
+    const probe = (sign: number): boolean => {
+      const px = along ? cx : cx + sign * 0.35;
+      const py = along ? cy + sign * 0.35 : cy;
+      return rooms.some(
+        (r) => r.floor === wall.floor && r.kind !== 'outside' && rectContains(r.bounds, px, py),
+      );
+    };
+    const inward = probe(1) ? 1 : -1;
+
     const foot = door ? DOOR_KICK : GLAZING_SILL;
     // The wall goes hidden and these take over drawing it, so they inherit
     // its place on the envelope with it — otherwise the one elevation the
@@ -2743,6 +2800,46 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
           : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
         base: foot,
         height: wall.height,
+        exterior: skin,
+      });
+    }
+
+    /*
+     * And the transoms, which the first pass simply did not have.
+     *
+     * A curtain wall is a GRID. Drawn with uprights alone, every bay is one
+     * tall sheet of glass and the elevation reads from the forecourt as a
+     * row of dark slots rather than as a wall of windows — the photograph
+     * has four or five horizontals for every upright. One more loop over
+     * the same run.
+     */
+    const lifts = Math.max(1, Math.round((wall.height - foot) / TRANSOM_PITCH));
+    for (let i = 1; i < lifts; i += 1) {
+      const z = foot + ((wall.height - foot) * i) / lifts;
+      decor.push({
+        floor: wall.floor,
+        /*
+         * Thin, in the plane of the glass, and on the INSIDE face.
+         *
+         * Given the wall's own 0.3 m depth a transom reads as a slab of
+         * building hanging in mid-air, which is what `npm run venue` said
+         * of it — and rightly: a glazing bar is held by the mullions
+         * either side, so it is dressing and names a material rather than
+         * being a piece of wall that has lost its support.
+         *
+         * Naming a material then brings the other rule with it — dressing
+         * has to sit wholly within one room — and a bar centred on the
+         * wall line sits in two. So it is pushed to whichever face has a
+         * room behind it, which is asked of the building rather than
+         * assumed: these two elevations both face south, and the day one
+         * does not, guessing would be silently wrong.
+         */
+        bounds: along
+          ? rect(b.x, cy + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
+          : rect(cx + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
+        base: z,
+        height: z + MULLION_WIDTH,
+        material: 'structure',
         exterior: skin,
       });
     }
@@ -2843,6 +2940,112 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   }
 
   /*
+   * The entrance, made to read as one.
+   *
+   * WALL_OPENINGS takes the wall away so a robot can drive through, which
+   * leaves a nine-metre hole in a wall of glass and nothing to say it is a
+   * door. The photograph has a bank of leaves under a head, with a canopy
+   * over the lot. All drawn and none of it collided — the way through has
+   * to stay a way through.
+   */
+  const doorHead = ground + 2.6;
+  /*
+   * Just OUTSIDE the line, not across it.
+   *
+   * `npm run venue` asks that every piece of dressing sit wholly inside one
+   * room, which is how it catches furniture straddling a wall. The first
+   * pass put the door leaves on the boundary itself, half in the reception
+   * and half on the forecourt, and got fifty-eight complaints for it. They
+   * belong to the forecourt: it is the side you see them from.
+   */
+  const doorY = RECEPTION.y - 0.34;
+
+  // The head over the doors, and the glazing above it carried across.
+  decor.push({
+    floor: 0,
+    bounds: rect(ENTRANCE_X, doorY, ENTRANCE_WIDTH, 0.16),
+    base: doorHead,
+    height: doorHead + 0.22,
+    material: 'structure',
+    exterior: true,
+  });
+  decor.push({
+    floor: 0,
+    bounds: rect(ENTRANCE_X, doorY + 0.04, ENTRANCE_WIDTH, PANE_THICKNESS),
+    base: doorHead + 0.22,
+    height: ground + WALL_HEIGHT,
+    material: 'glazing',
+    exterior: true,
+  });
+
+  // The leaves. Five stiles across the opening: the frame you walk between.
+  const leaves = 5;
+  for (let i = 0; i <= leaves; i += 1) {
+    decor.push({
+      floor: 0,
+      bounds: rect(
+        ENTRANCE_X + (i * (ENTRANCE_WIDTH - MULLION_WIDTH)) / leaves,
+        doorY,
+        MULLION_WIDTH,
+        0.16,
+      ),
+      base: ground,
+      height: doorHead,
+      material: 'structure',
+    });
+  }
+
+  /*
+   * The canopy over the doors.
+   *
+   * Every entrance in the photograph has one and it is what makes a hole in
+   * a glass wall read as somewhere you are meant to walk in. It projects
+   * far enough to throw the doors into shade at this sun angle, which is
+   * most of the effect.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(ENTRANCE_X - 1.6, doorY - 3.3, ENTRANCE_WIDTH + 3.2, 3.3),
+    base: ground + 3.1,
+    height: ground + 3.42,
+    material: 'structure',
+    exterior: true,
+  });
+
+  /*
+   * The name on the building.
+   *
+   * High on the precast east of the entrance, where the photograph puts it.
+   * `signAccent` rather than a blue, because a sign is lit by whatever the
+   * era lights it with — the same rule the seats and the screens follow —
+   * and a hard brand blue would be the one colour in the game that ignores
+   * the chapter it is standing in.
+   */
+  const NAME = 'KINEPOLIS';
+  const letter = 1.32;
+  const gap = 0.3;
+  const nameX = 9.5;
+  // Heights are measured from the FORECOURT, because that is the plate this
+  // storey-0 dressing stands over — 5.2 m up the elevation puts it on the
+  // precast above the glazing and below the roof line, where the photograph
+  // has it.
+  const nameFoot = 5.2;
+  const nameHigh = 1.75;
+  [...NAME].forEach((character, index) => {
+    const at = nameX + index * (letter + gap);
+    for (const bar of glyph(character)) {
+      decor.push({
+        floor: 0,
+        bounds: rect(at + bar.u0 * letter, doorY - 0.1, (bar.u1 - bar.u0) * letter, 0.16),
+        base: nameFoot + bar.v0 * nameHigh,
+        height: nameFoot + bar.v1 * nameHigh,
+        material: 'signAccent',
+        exterior: true,
+      });
+    }
+  });
+
+  /*
    * The neighbour across the way — the shed in the right of the photograph.
    *
    * Not the Kinepolis and not pretending to be: a plain mass with a roof
@@ -2926,7 +3129,7 @@ function splitBesideWell(wall: Obstacle, well: Link): Obstacle[] {
 }
 
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
-const FACADE = glazeFacade(WALLS.walls);
+const FACADE = glazeFacade(WALLS.walls, [...floor0Rooms, ...floor1Rooms]);
 
 /**
  * Balustrades down both sides of the two flights into the exhibition hall.

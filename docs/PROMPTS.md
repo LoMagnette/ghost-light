@@ -721,6 +721,41 @@ counting the flagged pieces took a minute and pointed straight at it.
 of the doors: *"there is nothing outside to open onto... They are doors
 when there is a forecourt to walk into."* They are doors now.
 
+**Then, from looking at it against the photograph:**
+> it's missing some element of the front face of building at the moment
+
+Four things, and the photograph names all of them. The curtain wall had
+uprights and no TRANSOMS, so every bay was one tall sheet of glass and the
+elevation read as a row of dark slots rather than a wall of windows. The
+doorway was a nine-metre hole with nothing to say it was a door — it has
+leaves, a head and a canopy now. And the building did not say its own name.
+
+`KINEPOLIS` needed six letters the glyph set did not have — K, I, N, P, L,
+S — which turned out to be an hour's work against the machinery already
+there for `#DEVOXX` and the room numbers, rather than the font project it
+had been written off as. It is `signAccent`, so it takes the era's light
+like everything else: tungsten orange at Devoxx, and in Chapter I a crimson
+sign still lit on a dead building, which is the one thing in the frame with
+power in it while the player is out there looking for some.
+
+**Three checks caught three different mistakes**, none of which was visible
+in a screenshot:
+
+- the entrance dressing sat ON the boundary, half in the reception and half
+  on the forecourt — 58 complaints from the rule that a piece of furniture
+  belongs to one room;
+- the transoms had no material, so the harness read them as slabs of
+  building hanging in mid-air. It was right: a glazing bar is held by the
+  mullions either side, so it is dressing. Naming a material then brought
+  the containment rule with it, and a bar centred on a wall line sits in
+  two rooms — so which face it goes on is now asked of the building rather
+  than assumed, because these two elevations happen to face south and the
+  day one does not, guessing would be silently wrong;
+- and the envelope was stretching every exterior piece from the cutaway
+  plane to its top, which is right for a wall and wrong for anything that
+  starts higher up. It had already pulled the banners down their poles, and
+  would have smeared the sign into a bar.
+
 **Worth the detour:** Chapter I outside — one small robot with a lamp on an
 empty forecourt, a dead building behind it, bollards and banner poles as
 silhouettes — is the strongest image the game has. Nobody designed it; it

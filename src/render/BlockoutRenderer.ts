@@ -952,21 +952,31 @@ export class BlockoutRenderer {
     const solid: Box[] = [];
     const glass: Box[] = [];
 
-    // Walls AND the dressing that replaces them. The curtain wall hides its
-    // own wall and draws itself as a sill, a pane and a row of mullions, so
-    // an envelope built only from obstacles would leave out the one elevation
-    // a player ever walks out to look at.
+    /*
+     * Walls AND the dressing that replaces them.
+     *
+     * The curtain wall hides its own wall and draws itself as a sill, a
+     * pane, mullions and transoms, so an envelope built from obstacles alone
+     * would leave out the one elevation a player ever walks out to look at.
+     *
+     * The two are not treated alike, though. A wall on the ground storey is
+     * carried up to the next floor's datum so the spandrel between the two
+     * levels is not a gap; a piece of dressing is drawn exactly where it
+     * says it is. Stretching everything was the first version, and it pulled
+     * the banners down their poles and would have smeared the sign into a
+     * bar: a thing that starts above the cut does not start AT it.
+     */
     const pieces = [
-      ...this.venue.obstacles.filter((o) => !o.hidden),
-      ...this.venue.decor,
+      ...this.venue.obstacles.filter((o) => !o.hidden).map((o) => ({ piece: o, wall: true })),
+      ...this.venue.decor.map((d) => ({ piece: d, wall: false })),
     ];
 
-    for (const piece of pieces) {
+    for (const { piece, wall } of pieces) {
       if (!piece.exterior) continue;
       const datum = this.datumFor(piece.floor, piece);
       const top = datum + piece.height;
-      const from = piece.floor === 0 ? cutAt(datum) : datum + (piece.base ?? 0);
-      const to = piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
+      const from = Math.max(cutAt(datum), datum + (piece.base ?? 0));
+      const to = wall && piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
       if (to <= from) continue;
 
       (piece.material === 'glazing' ? glass : solid).push({
@@ -1114,6 +1124,11 @@ export class BlockoutRenderer {
       if (piece.floor !== floor) continue;
       const { bounds } = piece;
       const datum = this.datumFor(floor, piece);
+      // Signage high on an elevation starts above the cutaway plane, and
+      // clamping its top to the cut while its bottom stayed put drew a
+      // sliver of it upside down at the wrong height. Above the cut is the
+      // envelope's business, not the storey's.
+      if (datum + (piece.base ?? 0) >= cutAt(datum)) continue;
       (piece.material === 'glazing' ? glass : boxes).push({
         bounds,
         bottom: datum + (piece.base ?? 0),
