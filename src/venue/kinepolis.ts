@@ -509,17 +509,51 @@ const RAMP_OPENING = rect(
  */
 const FORECOURT = rect(-34, -88, 82, 27.6);
 
-/** The bank of doors, and how much of the elevation opens. */
-const ENTRANCE_WIDTH = 9.0;
-const ENTRANCE_X = RECEPTION.x + RECEPTION.w / 2 - ENTRANCE_WIDTH / 2;
+/**
+ * Where the curtain wall starts, leaving solid precast west of it.
+ *
+ * Up here with the entrance rather than down with `CURTAIN_WALLS`, because
+ * the two are laid out against each other: the precast flank carries the
+ * star and the doors are punched into it, and the glass east of this line
+ * carries the name. One number decides where the elevation changes.
+ */
+const GLAZING_START = -2.0;
+
+/**
+ * The bank of doors, hard against the WEST corner of the building.
+ *
+ * This is the only thing on the elevation placed by the route rather than
+ * by the picture, and it is placed by the route because the route is what a
+ * player uses. `exhibition-floor.jpg` leaves a clear 6.3 m aisle up the west
+ * side of the concourse — west wall to the reception counter, with the grand
+ * flight starting at x -5.65 — and that aisle runs the whole depth of the
+ * building to the hall. Enter here and the stair is on your right and you
+ * walk straight past it.
+ *
+ * Every other position fails that. Centred on the frontage, which is where
+ * this started, put the doors dead in front of the grand flight: you came in
+ * and the first thing you met was eight metres of staircase across your
+ * nose. Moving it to the west end of the GLAZING — which is where the
+ * photograph shows the crowd going in, and which was the last pass at this —
+ * moved it 1.6 m and changed nothing about that.
+ *
+ * So the doors are a glazed bay in the precast rather than the first bay of
+ * the curtain wall. That is the one place the elevation gives up something
+ * to the plan: the photograph has the leaves where the glass begins. A
+ * glazed slot in a precast flank is an ordinary way to build an entrance and
+ * it keeps the star, the name and the sweep of glass where they belong,
+ * which is more of the photograph than moving the glazing west would have
+ * left.
+ */
+const ENTRANCE_WIDTH = 5.6;
+const ENTRANCE_X = RECEPTION.x + 0.7;
 
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
   { floor: 0, bounds: HALL_OPENING },
   { floor: 0, bounds: RAMP_OPENING },
-  // The doors themselves. The curtain wall is "door" along the whole
-  // frontage — every panel of it is openable, which is what the building
-  // says of itself — but only this much of it is a hole a robot can drive
-  // through, and it is where the doors are in the photograph.
+  // The doors themselves, and the only hole in this elevation. The curtain
+  // wall east of them is WINDOW — see CURTAIN_WALLS — so this is the whole
+  // of the way in and out of the building on foot.
   { floor: 0, bounds: rect(ENTRANCE_X, RECEPTION.y - 1.2, ENTRANCE_WIDTH, 2.4) },
 ];
 
@@ -2725,14 +2759,21 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  * band is tight enough in x to leave the BOF rooms' own south wall alone,
  * which sits 0.4 m further out and is not glass.
  */
-/** Where the curtain wall starts, leaving solid precast west of it. */
-const GLAZING_START = -2.0;
-
 const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
-  // The entrance itself: the same glazing, coming down to the floor, and
-  // some of it opens. "Windows that can be opened as a door" is the
-  // building's own description and it is the right one — a door here is a
-  // panel of the curtain wall on hinges, not a doorway cut in a wall.
+  /*
+   * The glazed sweep east of the precast — WINDOW, not door.
+   *
+   * It was `door` on the reading that "windows that can be opened as a
+   * door" is the building's own description of its front, and so every
+   * panel of 26 m of curtain wall came down to a 0.2 m kick rail. That is
+   * a shopfront. The photograph has a solid base under the glass along the
+   * whole run and leaves only at the entrance, which is also what
+   * `exhibition-floor.jpg` draws: plain mullion ticks over most of the
+   * frontage and door swings only where you go in.
+   *
+   * The difference is one number — GLAZING_SILL against DOOR_KICK — and it
+   * is the difference between a wall of windows and a wall of doors.
+   */
   /*
    * NOT the whole frontage.
    *
@@ -2745,7 +2786,7 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
   {
     floor: 0,
     bounds: rect(GLAZING_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - GLAZING_START, 1.2),
-    kind: 'door',
+    kind: 'window',
   },
   /*
    * The same elevation a storey up, over the entrance and facing the head of
@@ -3029,7 +3070,7 @@ const BANNER_HEIGHT = 8.4;
 /** Across the face of a banner, metres. Measured off the photograph's mast. */
 const BANNER_WIDTH = 1.06;
 /** Where the printed sleeve starts, metres above the forecourt. */
-const BANNER_FOOT = 2.2;
+const BANNER_FOOT = 2.95;
 /** The blue panel and its star, at the head of every one of them. */
 const BANNER_HEAD = 1.5;
 
@@ -3242,14 +3283,18 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * squarely on the E of KINEPOLIS, and a name with a letter missing is
    * worse than a pole in the wrong place.
    *
-   * So all three land on the precast flank, west of both the name and the
-   * star. The photograph has them over the glass and crossing the sign;
-   * that reads as a foreground object through a lens and as a hole in the
-   * lettering in a flat isometric, which is the same call the file makes
-   * for the auditorium signs.
+   * So all three land on the pier between the doors and the glazing: east
+   * of the one opening a player has to find, west of the name and the
+   * star. The masts themselves stand in front of the entrance bay, which
+   * is where a venue puts its flags and where the photograph has them —
+   * the offset is what carries them clear on screen. Standing them where
+   * they LOOK like they stand would put them over the glass, crossing the
+   * sign; that reads as a foreground object through a lens and as a hole
+   * in the lettering in a flat isometric, which is the same call the file
+   * makes for the auditorium signs.
    */
   const poleY = FORECOURT.y + FORECOURT.h - 3.2;
-  for (const lands of [-12.6, -8.6, -4.6]) {
+  for (const lands of [-6.9, -5.1, -3.3]) {
     const x = lands - (RECEPTION.y - 0.34 - poleY);
     decor.push({
       floor: 0,
@@ -3373,33 +3418,36 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   }
 
   /*
-   * The canopy over the doors, and the two floodlights on its nose.
+   * The floodlights over the doors. There is NO canopy.
    *
-   * It is what makes a hole in a glass wall read as somewhere you are meant
-   * to walk in. A 3.3 m projection was what this had first and it was a
-   * porte-cochère: from the forecourt it hid the doors, the head and the
-   * bottom third of the sign under one enormous slab of concrete. The
-   * photograph's is a shallow hood over the leaves with a pair of lamps
-   * bracketed off it, pointing down at the doors — about a metre and a
-   * half, which is the difference between an entrance canopy and a roof.
+   * There was, and it was wrong twice over. The first one projected 3.3 m
+   * and read as a porte-cochère — from the forecourt it hid the doors, the
+   * head and the bottom of the sign under a slab of concrete. Cutting it to
+   * a 1.5 m hood made it a better-proportioned thing that the building still
+   * does not have: the photograph runs glass from the pavement to the head
+   * straight past the entrance, with nothing over it but a pair of lamps on
+   * brackets. An unbroken sheet of glass IS the entrance here, and the
+   * canopy was the model inventing a cue the building does not need.
+   *
+   * The lamps stay. They are the one thing in the photograph that says this
+   * elevation is lit at night, and they sit where it puts them — bracketed
+   * off the mullions just over the door head, looking down at the leaves.
    */
-  const canopy = 1.5;
-  decor.push({
-    floor: 0,
-    bounds: rect(ENTRANCE_X - 0.9, doorY - canopy, ENTRANCE_WIDTH + 1.8, canopy),
-    base: 3.15,
-    height: 3.42,
-    material: 'structure',
-    exterior: true,
-  });
-  // The lamps. Small, dark and hanging under the nose of it — the one thing
-  // in the photograph that says this elevation is lit at night.
   for (const at of [0.3, 0.7]) {
     decor.push({
       floor: 0,
-      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.2, doorY - canopy + 0.25, 0.4, 0.26),
-      base: 2.85,
-      height: 3.15,
+      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.17, doorY - 0.28, 0.34, 0.26),
+      base: doorHead + 0.52,
+      height: doorHead + 0.78,
+      material: 'signPlate',
+      exterior: true,
+    });
+    // The bracket back to the glass, so a lamp is held by something.
+    decor.push({
+      floor: 0,
+      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.04, doorY - 0.04, 0.08, 0.26),
+      base: doorHead + 0.68,
+      height: doorHead + 0.76,
       material: 'signPlate',
       exterior: true,
     });
@@ -3468,7 +3516,9 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * than by colour.
    */
   const starW = 3.6;
-  const starX = GLAZING_START - starW / 2 + 0.4;
+  // Sitting a little more over the glass than over the precast, which is
+  // what leaves the pier beside the entrance clear for the banner poles.
+  const starX = GLAZING_START - 0.6;
   const starFoot = nameFoot + nameHigh - 0.3;
   const starH = PARAPET_FOOT + 0.4 - starFoot;
   for (const bar of star()) {
@@ -3485,16 +3535,25 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   /*
    * The row of small windows in that precast, at pavement level.
    *
-   * Eight of them, which is what the photograph shows left of the doors —
-   * and they are the one thing stopping the west third being a blank
-   * hoarding now that the glazing has been pulled back off it.
+   * They used to run the whole flank — eight of them — because the flank
+   * was blank for its whole length. The entrance takes the west end of it
+   * now, so what is left is the pier between the doors and the glazing,
+   * and they fill that. Fewer, and still the thing that stops the precast
+   * being a hoarding.
    */
-  for (let i = 0; i < 8; i += 1) {
+  const pier = GLAZING_START - (ENTRANCE_X + ENTRANCE_WIDTH);
+  const lights = Math.max(1, Math.floor(pier / 1.7));
+  for (let i = 0; i < lights; i += 1) {
     decor.push({
       floor: 0,
       // Proud of the wall face, not inside it. At doorY + 0.2 they sat
       // within the wall's own 0.3 m thickness and were simply buried.
-      bounds: rect(RECEPTION.x + 0.8 + i * 1.6, doorY + 0.04, 1.15, PANE_THICKNESS),
+      bounds: rect(
+        ENTRANCE_X + ENTRANCE_WIDTH + (pier - lights * 1.7) / 2 + 0.28 + i * 1.7,
+        doorY + 0.04,
+        1.15,
+        PANE_THICKNESS,
+      ),
       base: 0.9,
       height: 2.4,
       material: 'glazing',
@@ -3867,9 +3926,17 @@ export const KINEPOLIS: Venue = {
 
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
-  /** Inside the main entrance, looking north up the reception concourse. */
-  /** Inside the main entrance, east of the grand stair. */
-  mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
+  /**
+   * Inside the main entrance, at the foot of the west aisle.
+   *
+   * It used to be at x 18, "east of the grand stair", which was true of the
+   * building when the doors were in the middle of the frontage and is not
+   * true of it now: the way in is at the west corner and the aisle it opens
+   * onto runs north between the west wall and the grand flight. A spawn
+   * called `mainEntrance` thirty metres from the entrance is worse than no
+   * spawn at all.
+   */
+  mainEntrance: { floor: 0 as const, x: -12.4, y: -58.4 }, // 1.2 m up, in the concourse
   /**
    * On the forecourt, far enough out to have the whole elevation in frame.
    *
@@ -3877,7 +3944,7 @@ export const SPAWNS = {
    * you stand decides whether you are looking at a building or at a
    * pavement. This is the spot the front of the Kinepolis reads from.
    */
-  forecourt: { floor: 0 as const, x: 6, y: -72 },
+  forecourt: { floor: 0 as const, x: -4, y: -72 },
   /** Where the concourse opens into the hall. */
   // Between the two southernmost column rows, which sit at y -27.05 and
   // -33.58, and now on the centre line of the main aisle: the cast lines up

@@ -1652,6 +1652,95 @@ frame of `npm run peek`.
 
 ---
 
+### Claude Opus — the doors are at the west end, and there is no canopy
+
+**Prompt:**
+> just two things usually people enter on the left side of the building. There no small rooth over the entrance
+
+**Iterations:** 1
+
+Both right, and the second one was a cue the model invented.
+
+**The entrance was placed by arithmetic.** `ENTRANCE_X` was
+`RECEPTION.x + RECEPTION.w / 2 - ENTRANCE_WIDTH / 2` — the middle of the
+frontage, which is a reasonable-looking line of code and is not where the
+building's door is. The photograph has the precast flank with its row of
+small windows running a third of the way along, the glass starting, and the
+doors as the first thing in it: they begin under the K of the sign. So the
+bank is measured off `GLAZING_START` now, the same number the sign and the
+flank are measured off, and the constant moved up the file to sit with the
+entrance because three things depend on it agreeing with itself.
+
+It is the better arrival as well as the truer one. You come in at the west
+end with the grand stair ahead of you and the length of the concourse opening
+away east, instead of walking in at the middle with the building split either
+side of you.
+
+**The canopy was a cue, not a feature.** It had already been cut this round
+from a 3.3 m porte-cochère to a 1.5 m hood, and the argument in the comment —
+"it is what makes a hole in a glass wall read as somewhere you are meant to
+walk in" — was the model reasoning about what an entrance needs rather than
+looking at what this one has. The photograph runs glass from the pavement to
+the head straight past the doors with nothing over them but two floodlights
+on brackets. Cutting it removed the last thing sitting between the forecourt
+and the elevation.
+
+**Fixed by hand:** nothing in the geometry — but `GLAZING_START` was declared
+1200 lines below the entrance it now feeds, which `const` in a module makes a
+temporal-dead-zone crash at import rather than a type error. `npm run
+typecheck` would have passed it. Moved with a note saying why it lives there.
+
+---
+
+### Claude Opus — the entrance goes to the west corner, and the rest is windows
+
+**Prompt:**
+> You failed you replace the some of glass doors with simple window and you didn't move the entrance to the left side allowing to directly go past the stairs on the right
+
+**Iterations:** 1
+
+Two corrections, and the second one was a correction of a correction: the
+previous round had been told "people enter on the left side" and moved the
+doors 1.6 m, from the middle of the frontage to the west end of the GLAZING.
+That is a different sentence from the one that was said.
+
+**The test is the route, not the elevation.** "Directly go past the stairs on
+the right" is checkable and it failed: the grand flight runs x -5.65 to 5.65
+and the doors were at -1.6 to 7.4, so you came in and met eight metres of
+staircase across your nose. `exhibition-floor.jpg` has a clear 6.3 m aisle up
+the west side of the concourse — west wall to the reception counter, the
+flight starting east of it — running the whole depth of the building to the
+hall. The doors are at the west corner now and that aisle is what they open
+onto. Driven in `npm run peek` with the keys held: in through the leaves,
+past the stair on the right, up the concourse.
+
+**The whole frontage was doors.** `CURTAIN_WALLS` marked the ground storey
+`kind: 'door'` on the reading that "windows that can be opened as a door" is
+the building's own description of its front — so 26 m of curtain wall came
+down to a 0.2 m kick rail. That is a shopfront. The photograph has a solid
+base under the glass along the whole run, and the plan draws plain mullion
+ticks over most of the frontage with door swings only where you go in. One
+word, and it is the difference between a wall of windows and a wall of doors.
+
+**What this cost the picture, stated rather than hidden.** The photograph has
+the leaves where the glass begins; they are now a glazed bay punched into the
+precast flank, with the star, the name and the sweep of glass left where they
+were. That is more of the photograph than dragging the glazing west would
+have left, and the comment on `ENTRANCE_X` says so.
+
+**Fixed by hand:** everything that was measured off the old entrance and
+silently went on pointing at it. The three banner poles landed squarely over
+the new doors and had to be re-placed on the pier beside them — with the star
+moved half a bay east to make room — because a flag over the one opening a
+player has to find is worse than a flag in the wrong place. `SPAWNS.mainEntrance`
+still said "east of the grand stair" at x 18, thirty metres from the
+entrance; `npm run venue` then caught the replacement putting the third robot
+of the cast line-up inside the stair balustrade, which is the check earning
+its keep. The row of small windows was eight lights across a flank that is no
+longer blank, and is now however many fit the pier.
+
+---
+
 ## Engine
 
 ### Migrating the renderer from Phaser 4 to three.js
