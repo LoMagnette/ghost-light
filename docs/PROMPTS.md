@@ -1596,6 +1596,62 @@ the walls for a smear across the floor.
 
 ---
 
+### Claude Opus — the front elevation, held against the photograph
+
+**Prompt:**
+> take a look at the picture at @references/venue/photos/54842743975_b835884445_k.jpg and try to make the front of the building look like it
+
+**Iterations:** 3
+
+The front had been built from that photograph once already, so this was a
+re-read of the same frame rather than new ground — and the re-read found four
+things, only one of which was a matter of taste.
+
+**The forecourt was drawn 1.2 m in the air.** Every piece of it took its
+height as `CONCOURSE_LEVEL + h`, and the renderer had already added
+`CONCOURSE_LEVEL` for it: `datumFor` resolves a piece to the smallest room
+containing it, and the forecourt IS a room, with an elevation. So the bollards
+floated a metre over their own pavement, the door leaves hung clear of the
+ground, and the setts band was a slab of paving in mid-air. Nothing could
+catch it — `npm run venue` checks plan containment, not height, and a floating
+object in a fixed isometric with no contact shadow looks exactly like one
+standing on the ground until you go and look at it from a metre away. What
+found it was reading the renderer to answer a different question and noticing
+the double count in passing.
+
+**The elevation had one storey and the sign hung off the end of it.** The
+building is two storeys of curtain wall in the photograph. Here the ground
+storey's glass stopped at 6.2 m and above it there was a room only over the
+corridor — 15 m of a 36 m frontage — so the name, 5.2 m up, was mounted on
+nothing at all for most of its length. It is drawn now as what it honestly is:
+an `exterior` skin on storey 0, above the cutaway plane, so the envelope draws
+it and no interior ever sees it. The corridor's real window sits 0.6 m behind
+it and is simply hidden, which is what a facade in one plane does.
+
+**"KINEPOLIS" was a third of the name.** The photograph says KINEPOLIS EVENT
+CENTER across the whole glazed sweep. The missing two words needed a T, a C
+and an R, and letters small enough to fit 22 characters in 24 m — which is
+also the proportion the photograph has, and which the old 1.32 m letters never
+could be.
+
+**Fixed by hand:** the banner poles, twice. The first pass moved them back in
+front of the glass where the photograph has them and lost the K and the O
+behind two of them. The fix is not a nudge: at a fixed 45° azimuth `project`
+gives `sx = (x - y) * PPM`, so a pole 2.86 m out in the forecourt screens at
+the same column as a point 2.86 m further EAST on the facade. They are placed
+by where they land now, with that offset written down — the previous pass had
+hit the same rock and left a comment about "the E of KINEPOLIS" without
+working out why.
+
+Also by hand: the canopy, which was a 3.3 m slab and read as a porte-cochère
+hiding the doors, the head and the bottom of the sign; and the plane of the
+new upper storey, which was built off `doorY` and so overhung the storey below
+by a quarter of a metre — a string course across the whole front that the
+photograph has no trace of. Both were invisible in the code and obvious in one
+frame of `npm run peek`.
+
+---
+
 ## Engine
 
 ### Migrating the renderer from Phaser 4 to three.js

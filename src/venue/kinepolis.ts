@@ -1503,6 +1503,36 @@ function glyph(character: string): Bar[] {
         { u0: 1 - su, u1: 1, v0: sv, v1: 0.5 + sv / 2 },
         { u0: 0, u1: 1, v0: 0, v1: sv },
       ];
+    /*
+     * T, C and R, which exist for one reason: the name over the door is
+     * "KINEPOLIS EVENT CENTER" and not "KINEPOLIS".
+     *
+     * The photograph is unambiguous about it and the two words are half the
+     * length of the sign — cutting them was cutting the thing that says this
+     * is a venue rather than a cinema.
+     */
+    case 'T':
+      return [
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0.5 - su / 2, u1: 0.5 + su / 2, v0: 0, v1: 1 - sv },
+      ];
+    case 'C':
+      return [
+        { u0: 0, u1: su, v0: sv, v1: 1 - sv },
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0, u1: 1, v0: 0, v1: sv },
+      ];
+    case 'R':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.8, v0: 1 - sv, v1: 1 },
+        { u0: 0.8, u1: 0.8 + su, v0: 0.5, v1: 1 - sv },
+        { u0: su, u1: 0.8 + su, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+        // The leg. Nine bands rather than the diagonal helper's default,
+        // because over half a glyph's height a coarser stair reads as a
+        // staircase rather than as a stroke.
+        ...diagonal(0.42, 0.5, 0.94, 0, 9),
+      ];
     default:
       return digit(character);
   }
@@ -2754,8 +2784,15 @@ const GLAZING_SILL = 0.45;
  */
 const MULLION_PITCH = 2.6;
 const MULLION_WIDTH = 0.14;
-/** Height between transoms, metres. The grid runs both ways or it is slots. */
-const TRANSOM_PITCH = 1.5;
+/**
+ * Height between transoms, metres. The grid runs both ways or it is slots.
+ *
+ * 1.5 put a single bar across a 3.2 m storey, which is a wall of glass cut in
+ * half rather than a grid. The photograph's bays are near enough square
+ * against a 2.6 m mullion pitch, so two bars a storey — and the elevation
+ * gains the texture that tells a curtain wall from a painted rectangle.
+ */
+const TRANSOM_PITCH = 1.1;
 
 /**
  * The bottom rail of a glazed door, metres.
@@ -2965,21 +3002,203 @@ const BOLLARD_PITCH = 2.6;
 const BOLLARD = 0.24;
 const BOLLARD_HEIGHT = 1.0;
 
+/**
+ * The elevation above the ground storey, in metres over the forecourt.
+ *
+ * The building has two storeys of curtain wall at the front and this file
+ * only ever had one. The upper one is real over the corridor — that is the
+ * window at the head of the grand stair — and over the other 30 m of
+ * frontage there is no room up there at all, so above the spandrel the
+ * elevation simply stopped at 6.2 m and the name hung in mid-air over it.
+ *
+ * From the forecourt that is the whole of what the photograph shows: a grid
+ * of glass two storeys high between pale precast flanks, under a parapet.
+ * So the upper storey is drawn as what it is — a skin, `exterior` only,
+ * never collided and never seen from inside, in the plane of the ground
+ * floor's own glass. The corridor's real window sits 0.6 m behind it and is
+ * simply hidden by it, which is what a facade in one plane does.
+ */
+const UPPER_SILL = FLOOR_HEIGHT - CONCOURSE_LEVEL;
+const UPPER_HEAD = UPPER_SILL + WALL_HEIGHT;
+/** The parapet, and how far the roof stands above the top of the glass. */
+const PARAPET_FOOT = UPPER_HEAD;
+const PARAPET_HEIGHT = 1.0;
+
 const BANNER_POLE = 0.22;
 const BANNER_HEIGHT = 8.4;
+/** Across the face of a banner, metres. Measured off the photograph's mast. */
+const BANNER_WIDTH = 1.06;
+/** Where the printed sleeve starts, metres above the forecourt. */
+const BANNER_FOOT = 2.2;
+/** The blue panel and its star, at the head of every one of them. */
+const BANNER_HEAD = 1.5;
+
+/**
+ * The upper storey of the front elevation, the parapet over it, and the
+ * panel joints in the precast flank.
+ *
+ * All of it `exterior` dressing on storey 0, which is the one thing that
+ * makes this honest rather than a cheat: every piece starts above the
+ * cutaway plane, so the storey never draws it and only the envelope does —
+ * it exists for a player standing in the forecourt looking back, and for
+ * nobody else. See `BlockoutRenderer.buildEnvelope`.
+ *
+ * The y of every piece is the facade plane, `doorY`, so the whole front is
+ * ONE surface: sign, star, glass and parapet all sit in the same 0.2 m of
+ * depth and the elevation reads flat, the way the photograph's does.
+ */
+function frontElevation(): Decor[] {
+  const decor: Decor[] = [];
+  const west = RECEPTION.x;
+  const east = RECEPTION.x + RECEPTION.w + 1;
+  const run = east - GLAZING_START;
+
+  /*
+   * The plane the whole elevation is built in.
+   *
+   * The south FACE of the reception's own wall, which is where the storey
+   * below draws its glass — not `doorY`, which is where the signage and the
+   * doors stand and is a quarter of a metre further out. Built off doorY the
+   * upper storey overhung the lower one by that quarter metre and the
+   * building came out with a string course across it at 6.2 m that the
+   * photograph has no trace of.
+   *
+   * Everything here also has to finish north of `RECEPTION.y`: `npm run
+   * venue` asks that dressing sit wholly within one room, and this is all
+   * the forecourt's — the side it is seen from.
+   */
+  const face = RECEPTION.y - WALL_THICKNESS / 2;
+  const inner = RECEPTION.y - face; // depth available before the room line
+  /** How far signage and the parapet stand off that plane. */
+  const PROUD = 0.06;
+
+  /*
+   * The precast flank, carried up.
+   *
+   * The wall builder stretches a ground-floor wall to the next floor's
+   * datum and stops, so the west third topped out at 6.2 m — a two-storey
+   * building with one storey of wall on a third of its front. This is the
+   * rest of it, and it is what the star has to be mounted ON.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(west, face, GLAZING_START - west, inner),
+    base: UPPER_SILL,
+    height: PARAPET_FOOT,
+    material: 'structure',
+    exterior: true,
+  });
+
+  /*
+   * The upper glass: one pane the length of the run, the same grid over it
+   * as the storey below.
+   *
+   * One pitch for both storeys — see MULLION_PITCH. The bays have to line
+   * up floor to floor or the elevation reads as two buildings stacked.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(GLAZING_START, face + 0.06, run, PANE_THICKNESS),
+    base: UPPER_SILL,
+    height: UPPER_HEAD,
+    material: 'glazing',
+    exterior: true,
+  });
+
+  const bays = Math.max(1, Math.round(run / MULLION_PITCH));
+  for (let i = 0; i <= bays; i += 1) {
+    decor.push({
+      floor: 0,
+      bounds: rect(
+        GLAZING_START + (i * (run - MULLION_WIDTH)) / bays,
+        face,
+        MULLION_WIDTH,
+        inner,
+      ),
+      base: UPPER_SILL,
+      height: UPPER_HEAD,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  const lifts = Math.max(1, Math.round(WALL_HEIGHT / TRANSOM_PITCH));
+  for (let i = 1; i < lifts; i += 1) {
+    const z = UPPER_SILL + (WALL_HEIGHT * i) / lifts;
+    decor.push({
+      floor: 0,
+      bounds: rect(GLAZING_START, face, run, inner - 0.04),
+      base: z,
+      height: z + MULLION_WIDTH,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The parapet, across the whole front.
+   *
+   * A curtain wall that stops at the head of its own glass leaves the sky
+   * sitting straight on the top transom, and from the forecourt that is the
+   * one thing that says "model" rather than "building". The photograph has
+   * a solid precast band over the lot, standing proud of the glass — which
+   * is why it is a little deeper than everything else here.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(west, face - PROUD * 2, east - west, inner + PROUD * 2),
+    base: PARAPET_FOOT,
+    height: PARAPET_FOOT + PARAPET_HEIGHT,
+    material: 'structure',
+    exterior: true,
+  });
+
+  /*
+   * And the joints between the precast panels on that flank.
+   *
+   * The photograph's west third is not a blank wall: it is a grid of big
+   * cast panels with a shadow line between them, and that grid is most of
+   * what gives the elevation its scale. Drawn as strips standing 6 cm proud
+   * rather than as recesses, because the renderer extrudes plan rectangles
+   * and a groove cut into a wall is a box inside a box — invisible. A proud
+   * strip turns its own south face away from the key light and reads as the
+   * line it is standing in for.
+   */
+  const panel = 3.6;
+  for (let x = west + panel; x < GLAZING_START - 0.2; x += panel) {
+    decor.push({
+      floor: 0,
+      bounds: rect(x, face - PROUD, 0.1, PROUD + 0.06),
+      base: 0.2,
+      height: PARAPET_FOOT,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+  for (let z = 3.0; z < PARAPET_FOOT - 0.2; z += 3.0) {
+    decor.push({
+      floor: 0,
+      bounds: rect(west, face - PROUD, GLAZING_START - west, PROUD + 0.06),
+      base: z,
+      height: z + 0.1,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  return decor;
+}
 
 function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   const solids: Obstacle[] = [];
   const decor: Decor[] = [];
-  const ground = CONCOURSE_LEVEL;
 
   // The band of setts between the footway and the road. Lighter than the
   // asphalt either side of it, which is the whole of how it reads.
   decor.push({
     floor: 0,
     bounds: rect(FORECOURT.x + 2, FORECOURT.y + 9, FORECOURT.w - 4, 4.2),
-    base: ground,
-    height: ground + 0.02,
+    height: 0.02,
     material: 'paving',
   });
 
@@ -2988,8 +3207,7 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
     decor.push({
       floor: 0,
       bounds: rect(x, FORECOURT.y + 4, 3.2, 0.16),
-      base: ground,
-      height: ground + 0.02,
+      height: 0.02,
       material: 'sign',
     });
   }
@@ -3006,48 +3224,93 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
     solids.push({
       floor: 0,
       bounds: rect(x, BOLLARD_LINE, BOLLARD, BOLLARD),
-      base: ground,
-      height: ground + BOLLARD_HEIGHT,
+      height: BOLLARD_HEIGHT,
       material: 'paving',
     });
   }
 
-  // Three banner poles in front of the glass, as in the photograph. Tall
-  // enough to need the envelope, which is what `exterior` buys them.
-  // West of the sign, all three of them. They stand in front of the glass
-  // in the photograph and they may overlap it here — but one of them was
-  // parked squarely on the E of KINEPOLIS, and a name with a letter missing
-  // is worse than a pole in the wrong place.
-  for (const x of [ENTRANCE_X - 9, ENTRANCE_X - 4, ENTRANCE_X + 2]) {
+  /*
+   * Three banner poles in front of the glass, as in the photograph. Tall
+   * enough to need the envelope, which is what `exterior` buys them.
+   *
+   * Placed by where they LAND on the elevation rather than by their own x,
+   * which is the only way to keep them off the name. The view is fixed at
+   * 45° from the south-west, so `project` puts a point at the same screen
+   * column as one `(doorY - poleY)` metres further east on the facade — a
+   * pole nearly three metres out in the forecourt covers a letter three
+   * metres east of it. Guessing at that is how the last pass parked one
+   * squarely on the E of KINEPOLIS, and a name with a letter missing is
+   * worse than a pole in the wrong place.
+   *
+   * So all three land on the precast flank, west of both the name and the
+   * star. The photograph has them over the glass and crossing the sign;
+   * that reads as a foreground object through a lens and as a hole in the
+   * lettering in a flat isometric, which is the same call the file makes
+   * for the auditorium signs.
+   */
+  const poleY = FORECOURT.y + FORECOURT.h - 3.2;
+  for (const lands of [-12.6, -8.6, -4.6]) {
+    const x = lands - (RECEPTION.y - 0.34 - poleY);
     decor.push({
       floor: 0,
-      bounds: rect(x, FORECOURT.y + FORECOURT.h - 3.2, BANNER_POLE, BANNER_POLE),
-      base: ground,
-      height: ground + BANNER_HEIGHT,
+      bounds: rect(x, poleY, BANNER_POLE, BANNER_POLE),
+      height: BANNER_HEIGHT,
       material: 'paving',
       exterior: true,
     });
-    // The banner itself: thin the way the camera looks at it, so what you
-    // see is the face rather than the edge.
+    /*
+     * The banner itself: thin the way the camera looks at it, so what you
+     * see is the face rather than the edge.
+     *
+     * It hangs nearly the whole pole. The photograph's banners are four
+     * times as tall as they are wide and start at head height — a short
+     * pennant near the top reads as a flag, and these are the long printed
+     * sleeves a venue hangs down the length of a mast.
+     */
     decor.push({
       floor: 0,
-      bounds: rect(x - 0.42, FORECOURT.y + FORECOURT.h - 3.26, 1.06, 0.1),
-      base: ground + 4.2,
-      height: ground + BANNER_HEIGHT - 0.5,
+      bounds: rect(x - 0.42, poleY - 0.06, BANNER_WIDTH, 0.1),
+      base: BANNER_FOOT,
+      height: BANNER_HEIGHT - BANNER_HEAD - 0.1,
       material: 'sign',
       exterior: true,
     });
     // The panel at its head. Every banner in the photograph has one, and a
     // blank white flag is the one thing that reads as unfinished rather
     // than as blockout.
+    const headFoot = BANNER_HEIGHT - BANNER_HEAD;
     decor.push({
       floor: 0,
-      bounds: rect(x - 0.42, FORECOURT.y + FORECOURT.h - 3.3, 1.06, 0.1),
-      base: ground + BANNER_HEIGHT - 1.6,
-      height: ground + BANNER_HEIGHT - 0.6,
+      bounds: rect(x - 0.42, poleY - 0.1, BANNER_WIDTH, 0.1),
+      base: headFoot,
+      height: BANNER_HEIGHT,
       material: 'signAccent',
       exterior: true,
     });
+    /*
+     * And the star on that panel, which is the thing the photograph's
+     * banners actually say.
+     *
+     * Proud of the panel by four centimetres, because the two are the same
+     * plane otherwise and a star drawn inside its own plate is invisible.
+     * Same shape as the one on the elevation — one star, drawn one way.
+     */
+    const badge = BANNER_WIDTH * 0.52;
+    for (const bar of star()) {
+      decor.push({
+        floor: 0,
+        bounds: rect(
+          x - 0.42 + (BANNER_WIDTH - badge) / 2 + bar.u0 * badge,
+          poleY - 0.14,
+          (bar.u1 - bar.u0) * badge,
+          0.08,
+        ),
+        base: headFoot + 0.14 + bar.v0 * (BANNER_HEAD - 0.28),
+        height: headFoot + 0.14 + bar.v1 * (BANNER_HEAD - 0.28),
+        material: 'sign',
+        exterior: true,
+      });
+    }
   }
 
   /*
@@ -3059,7 +3322,7 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * over the lot. All drawn and none of it collided — the way through has
    * to stay a way through.
    */
-  const doorHead = ground + 2.6;
+  const doorHead = 2.6;
   /*
    * Just OUTSIDE the line, not across it.
    *
@@ -3070,6 +3333,10 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * belong to the forecourt: it is the side you see them from.
    */
   const doorY = RECEPTION.y - 0.34;
+
+  // The two storeys above the door head, which is the rest of the building
+  // the photograph shows. Same plane, so it is put in from the same datum.
+  decor.push(...frontElevation());
 
   // The head over the doors, and the glazing above it carried across.
   decor.push({
@@ -3084,7 +3351,7 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
     floor: 0,
     bounds: rect(ENTRANCE_X, doorY + 0.04, ENTRANCE_WIDTH, PANE_THICKNESS),
     base: doorHead + 0.22,
-    height: ground + WALL_HEIGHT,
+    height: WALL_HEIGHT,
     material: 'glazing',
     exterior: true,
   });
@@ -3100,28 +3367,43 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
         MULLION_WIDTH,
         0.16,
       ),
-      base: ground,
       height: doorHead,
       material: 'structure',
     });
   }
 
   /*
-   * The canopy over the doors.
+   * The canopy over the doors, and the two floodlights on its nose.
    *
-   * Every entrance in the photograph has one and it is what makes a hole in
-   * a glass wall read as somewhere you are meant to walk in. It projects
-   * far enough to throw the doors into shade at this sun angle, which is
-   * most of the effect.
+   * It is what makes a hole in a glass wall read as somewhere you are meant
+   * to walk in. A 3.3 m projection was what this had first and it was a
+   * porte-cochère: from the forecourt it hid the doors, the head and the
+   * bottom third of the sign under one enormous slab of concrete. The
+   * photograph's is a shallow hood over the leaves with a pair of lamps
+   * bracketed off it, pointing down at the doors — about a metre and a
+   * half, which is the difference between an entrance canopy and a roof.
    */
+  const canopy = 1.5;
   decor.push({
     floor: 0,
-    bounds: rect(ENTRANCE_X - 1.6, doorY - 3.3, ENTRANCE_WIDTH + 3.2, 3.3),
-    base: ground + 3.1,
-    height: ground + 3.42,
+    bounds: rect(ENTRANCE_X - 0.9, doorY - canopy, ENTRANCE_WIDTH + 1.8, canopy),
+    base: 3.15,
+    height: 3.42,
     material: 'structure',
     exterior: true,
   });
+  // The lamps. Small, dark and hanging under the nose of it — the one thing
+  // in the photograph that says this elevation is lit at night.
+  for (const at of [0.3, 0.7]) {
+    decor.push({
+      floor: 0,
+      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.2, doorY - canopy + 0.25, 0.4, 0.26),
+      base: 2.85,
+      height: 3.15,
+      material: 'signPlate',
+      exterior: true,
+    });
+  }
 
   /*
    * The name on the building.
@@ -3132,16 +3414,30 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * and a hard brand blue would be the one colour in the game that ignores
    * the chapter it is standing in.
    */
-  const NAME = 'KINEPOLIS';
-  const letter = 1.32;
-  const gap = 0.3;
-  const nameX = 9.5;
+  /*
+   * The whole name, not a third of it.
+   *
+   * "KINEPOLIS" alone was what would fit at letters a metre and a third
+   * tall, and a metre and a third was chosen before there was an upper
+   * storey for the sign to be mounted on. The photograph's letters are
+   * smaller than that against the elevation and the sign is far longer:
+   * it runs the whole glazed sweep, from the precast edge to the east
+   * corner, which is exactly the proportion that makes the building read
+   * as a hall someone books rather than as a cinema.
+   */
+  const NAME = 'KINEPOLIS EVENT CENTER';
+  const letter = 0.92;
+  const gap = 0.2;
+  // Starting on the precast edge, where the photograph starts it, and ending
+  // at the east corner: 22 characters at 1.12 m is 24.5 m of sign across a
+  // 25.7 m sweep of glass.
+  const nameX = GLAZING_START + 0.4;
   // Heights are measured from the FORECOURT, because that is the plate this
-  // storey-0 dressing stands over — 5.2 m up the elevation puts it on the
-  // precast above the glazing and below the roof line, where the photograph
-  // has it.
-  const nameFoot = 5.2;
-  const nameHigh = 1.75;
+  // storey-0 dressing stands over. 5.4 m puts the letters just over the
+  // spandrel — on the upper storey's glass, standing on the first floor
+  // line, which is where the photograph hangs them.
+  const nameFoot = 5.4;
+  const nameHigh = 1.3;
   [...NAME].forEach((character, index) => {
     const at = nameX + index * (letter + gap);
     for (const bar of glyph(character)) {
@@ -3157,23 +3453,28 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   });
 
   /*
-   * The star, high on the precast west of the glazing.
+   * The star, straddling the top of the elevation where the glazing meets
+   * the precast.
    *
-   * Where the photograph has it: above the small windows, left of the
-   * name, straddling the top of the elevation. `sign` rather than an
-   * accent, because it is a pale star on a pale wall in the photograph and
-   * it reads by its shape and its shadow line rather than by colour.
+   * The photograph is precise about this and it was wrong here in both
+   * axes: the star sat at the far west corner, clear of everything, at half
+   * the size. It belongs directly over the head of the name, half on the
+   * precast flank and half on the glass, running from the sign's own top
+   * up to the parapet — a piece of signage large enough to be the thing you
+   * see from the car park, which is the job it does on the real building.
+   *
+   * `sign` rather than an accent, because it is a pale star on a pale wall
+   * in the photograph and it reads by its shape and its shadow line rather
+   * than by colour.
    */
-  const starX = -12.4;
-  const starW = 3.4;
-  // Clear of the spandrel band, and topping out on the roof line. Sitting
-  // on the band, its legs read as part of the wall rather than as a star.
-  const starFoot = 5.55;
-  const starH = 2.65;
+  const starW = 3.6;
+  const starX = GLAZING_START - starW / 2 + 0.4;
+  const starFoot = nameFoot + nameHigh - 0.3;
+  const starH = PARAPET_FOOT + 0.4 - starFoot;
   for (const bar of star()) {
     decor.push({
       floor: 0,
-      bounds: rect(starX + bar.u0 * starW, doorY - 0.1, (bar.u1 - bar.u0) * starW, 0.18),
+      bounds: rect(starX + bar.u0 * starW, doorY - 0.14, (bar.u1 - bar.u0) * starW, 0.18),
       base: starFoot + bar.v0 * starH,
       height: starFoot + bar.v1 * starH,
       material: 'sign',
@@ -3194,8 +3495,8 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
       // Proud of the wall face, not inside it. At doorY + 0.2 they sat
       // within the wall's own 0.3 m thickness and were simply buried.
       bounds: rect(RECEPTION.x + 0.8 + i * 1.6, doorY + 0.04, 1.15, PANE_THICKNESS),
-      base: ground + 0.9,
-      height: ground + 2.4,
+      base: 0.9,
+      height: 2.4,
       material: 'glazing',
     });
   }
@@ -3205,13 +3506,15 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    *
    * Not the Kinepolis and not pretending to be: a plain mass with a roof
    * line, there so that stepping outside puts the building in a PLACE
-   * rather than on an empty plane. It stands on the ground rather than on
-   * the concourse plate, which is why its height is measured from zero.
+   * rather than on an empty plane. It stands outside the forecourt, so
+   * nothing gives it a datum and its height is measured from zero — hence
+   * the concourse level spelled out in it, which everything standing ON the
+   * forecourt gets for free and must not add again.
    */
   solids.push({
     floor: 0,
     bounds: rect(FORECOURT.x + FORECOURT.w + 4, FORECOURT.y + 6, 30, 19),
-    height: ground + 6.4,
+    height: CONCOURSE_LEVEL + 6.4,
     material: 'booth',
     exterior: true,
   });
