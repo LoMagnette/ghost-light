@@ -219,6 +219,9 @@ const REVEAL_SPACING = 15;
 /** Peak intensity of one reveal light, before the Lambert scale. */
 const REVEAL_POWER = 5;
 
+/** Scale of an instance that is not there any more. Not zero: see instanceBoxes. */
+const GONE = 1e-4;
+
 /**
  * The two inks that are not a robot's own livery.
  *
@@ -528,6 +531,8 @@ export class BlockoutRenderer {
 
   private readonly crowd: Crowd;
   private readonly decay: Decay;
+  /** The baked audience of each storey, by room, so a room can be emptied. */
+  private readonly seated = new Map<Level, SeatedStorey>();
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
 
@@ -957,6 +962,75 @@ export class BlockoutRenderer {
     this.zoneLights.set(id, made);
   }
 
+  /**
+   * Take a room's audience out of its seats, a fraction at a time.
+   *
+   * `gone` is how far through `order` we are, so calling this every frame
+   * with a rising fraction costs only the people who have stood up since the
+   * last one. It is one-way: `docs/MECHANICS.md` §5.2 is that a dark room
+   * "never comes back", and a room that could refill would make losing one a
+   * setback rather than a loss.
+   *
+   * The instances are scaled down to nothing rather than removed, because an
+   * `InstancedMesh` has one buffer and you cannot take a hole out of the
+   * middle of it. A hair over zero, not zero — see `instanceBoxes`.
+   */
+  emptySeats(room: string, fraction: number): void {
+    for (const storey of this.seated.values()) {
+      const run = storey.seats.get(room);
+      if (!run) continue;
+
+      const target = Math.min(run.people.length, Math.floor(fraction * run.people.length));
+      if (target <= run.gone) continue;
+
+      SCRATCH.position.set(0, 0, 0);
+      SCRATCH.scale.set(GONE, GONE, GONE);
+      SCRATCH.rotation.set(0, 0, 0);
+      SCRATCH.updateMatrix();
+
+      while (run.gone < target) {
+        const who = run.order[run.gone];
+        run.gone += 1;
+        for (let i = 0; i < run.perBox; i += 1) {
+          storey.boxMesh.setMatrixAt(run.box0 + who * run.perBox + i, SCRATCH.matrix);
+        }
+        for (let i = 0; i < run.perBlob; i += 1) {
+          storey.blobMesh.setMatrixAt(run.blob0 + who * run.perBlob + i, SCRATCH.matrix);
+        }
+      }
+
+      storey.boxMesh.instanceMatrix.needsUpdate = true;
+      storey.blobMesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Put every emptied room back in its seats. Called when a round restarts.
+   *
+   * Rewrites the instances from the people rather than from a saved copy of
+   * the matrices — same people, same order, same builders, so the same
+   * numbers come out.
+   */
+  refillSeats(): void {
+    for (const storey of this.seated.values()) {
+      let touched = false;
+      for (const run of storey.seats.values()) {
+        if (run.gone === 0) continue;
+        for (let i = 0; i < run.people.length; i += 1) {
+          const person = run.people[i];
+          writeInstances(storey.boxMesh, run.box0 + i * run.perBox, this.seatedBoxes(person));
+          writeInstances(storey.blobMesh, run.blob0 + i * run.perBlob, this.seatedBlobs(person));
+        }
+        run.gone = 0;
+        touched = true;
+      }
+      if (touched) {
+        storey.boxMesh.instanceMatrix.needsUpdate = true;
+        storey.blobMesh.instanceMatrix.needsUpdate = true;
+      }
+    }
+  }
+
   /** Put the building back in the dark. Called when a round is restarted. */
   clearReveals(): void {
     for (const light of this.revealed) light.removeFromParent();
@@ -1275,18 +1349,54 @@ export class BlockoutRenderer {
 
     const audience = this.crowd.seated.filter((person) => person.floor === floor);
     if (audience.length) {
-      group.add(
-        instanceBoxes(
-          audience.flatMap((person) => this.seatedBoxes(person)),
-          new MeshLambertMaterial(),
-        ),
-      );
-      group.add(
-        instanceBlobs(
-          audience.flatMap((person) => this.seatedBlobs(person)),
-          new MeshLambertMaterial(),
-        ),
-      );
+      /*
+       * Baked ROOM BY ROOM, so each room's audience is one contiguous run of
+       * instances and can be taken back out again.
+       *
+       * It used to be one `flatMap` over everybody on the storey, which is
+       * the same picture and gives no way to empty a room: the instances of
+       * the five hundred people in Room 5 were interleaved with everyone
+       * else's by whatever order `fillSeats` happened to walk the seats in.
+       * Grouping costs nothing at build time and is the whole of what makes
+       * `emptySeats` possible.
+       */
+      const boxes: Box[] = [];
+      const blobs: Box[] = [];
+      const rooms = new Map<string, Person[]>();
+      for (const person of audience) {
+        const key = person.room ?? '';
+        const list = rooms.get(key);
+        if (list) list.push(person);
+        else rooms.set(key, [person]);
+      }
+
+      const seats = new Map<string, SeatedRun>();
+      for (const [room, people] of rooms) {
+        const box0 = boxes.length;
+        const blob0 = blobs.length;
+        for (const person of people) {
+          boxes.push(...this.seatedBoxes(person));
+          blobs.push(...this.seatedBlobs(person));
+        }
+        seats.set(room, {
+          box0,
+          blob0,
+          people,
+          // Read off the run rather than hard-coded: a seated person is
+          // however many boxes `seatedBoxes` decides, and the day somebody
+          // gives them a bag it must not be two places that know.
+          perBox: (boxes.length - box0) / people.length,
+          perBlob: (blobs.length - blob0) / people.length,
+          order: departureOrder(people.length),
+          gone: 0,
+        });
+      }
+
+      const boxMesh = instanceBoxes(boxes, new MeshLambertMaterial());
+      const blobMesh = instanceBlobs(blobs, new MeshLambertMaterial());
+      group.add(boxMesh);
+      group.add(blobMesh);
+      this.seated.set(floor, { boxMesh, blobMesh, seats });
     }
 
     /*
@@ -1907,6 +2017,62 @@ function instanceBlobs(blobs: Box[], material: MeshLambertMaterial): InstancedMe
 }
 
 /** Where to draw one activity, and in what state. The screen decides both. */
+/** One room's audience inside a storey's baked instance buffers. */
+interface SeatedRun {
+  box0: number;
+  blob0: number;
+  /**
+   * The people themselves, in the order they were baked.
+   *
+   * Kept rather than counted because `R` restarts the round and the seats
+   * have to come back: emptying overwrites instance matrices in place, and an
+   * `InstancedMesh` has no memory of what was in them. Re-deriving from the
+   * same people in the same order is cheaper than keeping 2800 matrices
+   * against a key the player presses once a session.
+   */
+  people: Person[];
+  perBox: number;
+  perBlob: number;
+  /** The order they get up in. See `departureOrder`. */
+  order: Uint16Array;
+  /** How many of them have already gone. Only ever goes up. */
+  gone: number;
+}
+
+interface SeatedStorey {
+  boxMesh: InstancedMesh;
+  blobMesh: InstancedMesh;
+  seats: Map<string, SeatedRun>;
+}
+
+/**
+ * The order an audience gets up in — scattered, and the same every time.
+ *
+ * Emptying a room in seat order is a wipe: a visible line moving across the
+ * seating, which reads as the room being deleted rather than as people
+ * leaving. Scattered, it reads as a room thinning out. Deterministic, because
+ * everything else about this crowd is, and a screenshot harness is worth more
+ * when the same room empties the same way twice.
+ *
+ * A prefix of this array is "who has gone", which is what makes emptying cost
+ * only the people who have just left rather than a pass over the whole room.
+ */
+function departureOrder(count: number): Uint16Array {
+  const order = new Uint16Array(count);
+  for (let i = 0; i < count; i += 1) order[i] = i;
+  // Fisher-Yates off a fixed-seed integer hash, so no RNG has to be threaded
+  // in here and no other stream's sequence is disturbed by it.
+  let a = 0x9e3779b9 ^ count;
+  for (let i = count - 1; i > 0; i -= 1) {
+    a = Math.imul(a ^ (a >>> 16), 0x45d9f3b) >>> 0;
+    const j = a % (i + 1);
+    const t = order[i];
+    order[i] = order[j];
+    order[j] = t;
+  }
+  return order;
+}
+
 export interface ObjectiveMarker {
   id: string;
   x: number;
@@ -1916,6 +2082,26 @@ export interface ObjectiveMarker {
   colour: number;
   /** One of many. Drawn as a stud rather than a post. See `markers()`. */
   low?: boolean;
+}
+
+/**
+ * Write a run of boxes into an instanced mesh at `from`.
+ *
+ * The same arithmetic `instanceBoxes` does when it builds one, factored out
+ * because refilling a room's seats has to reproduce it exactly — the day
+ * those two disagree is the day a restarted round puts an audience back six
+ * inches to the left.
+ */
+function writeInstances(mesh: InstancedMesh, from: number, boxes: Box[]): void {
+  for (let i = 0; i < boxes.length; i += 1) {
+    const { bounds, bottom, top } = boxes[i];
+    const height = Math.max(top - bottom, 0.01);
+    SCRATCH.position.set(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bottom + height / 2);
+    SCRATCH.scale.set(Math.max(bounds.w, 0.01), Math.max(bounds.h, 0.01), height);
+    SCRATCH.rotation.set(0, 0, 0);
+    SCRATCH.updateMatrix();
+    mesh.setMatrixAt(from + i, SCRATCH.matrix);
+  }
 }
 
 function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {

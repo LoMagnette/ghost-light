@@ -149,6 +149,16 @@ export interface ShoveActivity extends Common {
  */
 export interface TendActivity extends Common {
   kind: 'tend';
+  /**
+   * The room this session is in.
+   *
+   * Stated rather than derived from the id or found by testing the zone
+   * against every room in the venue, because when the session ends the
+   * PEOPLE in that room have to be found — the audience in the seats and the
+   * speaker on the stage — and "the room whose bounds contain the centre of
+   * `at`" is a lookup that happens to work rather than a link that is meant.
+   */
+  room: string;
   /** Seconds on the clock when full. */
   capacity: number;
   /** Seconds of meter lost per second, at the start of the round. */

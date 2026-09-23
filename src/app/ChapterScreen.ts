@@ -50,6 +50,16 @@ import {
 /** Where the card sits, design pixels from the top of the design frame. */
 const CARD_TOP = 70;
 
+/**
+ * How long a dead room takes to empty, seconds.
+ *
+ * Long enough to read as people leaving and short enough to be over before
+ * the player's attention has moved on. Not observable in the default
+ * no-input run, where three rooms die within two seconds of each other and
+ * the day ends — that is a degenerate case, not a tuning signal.
+ */
+const EMPTY_SECONDS = 5;
+
 export class ChapterScreen implements Screen {
   private readonly chapter: Chapter;
   private readonly routes: Routes;
@@ -77,6 +87,8 @@ export class ChapterScreen implements Screen {
   private talkPrompt!: HTMLElement;
   /** Edge-triggered, exactly like `dropRequested`. */
   private talkRequested = false;
+  /** Seconds since each dead room started emptying. See `EMPTY_SECONDS`. */
+  private readonly emptying = new Map<string, number>();
   /**
    * How much of the current line has been typed out, in characters.
    *
@@ -279,6 +291,7 @@ export class ChapterScreen implements Screen {
     }
     this.dropRequested = false;
     this.talkRequested = false;
+    this.showSessions(dt);
     this.updateTalk(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
@@ -347,6 +360,9 @@ export class ChapterScreen implements Screen {
     // Put the building back in the dark and the card back to empty. A restart
     // that kept the lights on would hand the player the answer to Chapter I.
     this.blockout.clearReveals();
+    // And put the audiences back in the rooms they walked out of.
+    this.blockout.refillSeats();
+    this.emptying.clear();
     this.run = new ObjectiveRun(this.chapter.objective);
     this.endCard?.remove();
     this.endCard = undefined;
@@ -363,6 +379,27 @@ export class ChapterScreen implements Screen {
     }
     this.run.reveals.length = 0;
 
+    const events = this.run.events;
+    if (events.length > 0) {
+      this.toast.textContent = events[events.length - 1].text;
+      this.toastFor = 2.6;
+      events.length = 0;
+    }
+  }
+
+  /**
+   * How each session's room looks, every frame, whether the round is running
+   * or not.
+   *
+   * Outside `consumeObjective` on purpose: that is gated on the round still
+   * being live, and the last thing that happens in Chapter II is three rooms
+   * going dark at once and ending the day. Driven from in there, the losing
+   * room's audience got two seconds of an eight second walk-out and then
+   * froze half gone behind the end card, which reads as the renderer giving
+   * up rather than as a room emptying. The day is over; the building is still
+   * there, and what is happening in it finishes.
+   */
+  private showSessions(dt: number): void {
     /*
      * A room is as lit as its session has left in it.
      *
@@ -383,13 +420,24 @@ export class ChapterScreen implements Screen {
       if (a.kind !== 'tend' || !a.reveal) continue;
       const left = state.status === 'failed' ? 0 : Math.max(0, state.progress) / a.capacity;
       this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * Math.sqrt(left));
-    }
 
-    const events = this.run.events;
-    if (events.length > 0) {
-      this.toast.textContent = events[events.length - 1].text;
-      this.toastFor = 2.6;
-      events.length = 0;
+      /*
+       * And when it goes dark, the room empties.
+       *
+       * `MECHANICS.md` §5.2: "a room at zero goes dark, its attendees leave,
+       * and it never comes back." The light going out was only ever half of
+       * that — a dark room with five hundred people still sitting in it is a
+       * power cut, not a session that ended, and the difference is the whole
+       * reason losing a room is supposed to feel like losing something.
+       *
+       * Over EMPTY_SECONDS rather than at once, because two hundred people
+       * vanishing on one frame is a rendering artefact and two hundred people
+       * leaving over eight seconds is an audience.
+       */
+      if (state.status !== 'failed') continue;
+      const since = (this.emptying.get(a.room) ?? 0) + dt;
+      this.emptying.set(a.room, since);
+      this.blockout.emptySeats(a.room, since / EMPTY_SECONDS);
     }
   }
 

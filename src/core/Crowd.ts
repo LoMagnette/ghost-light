@@ -190,6 +190,14 @@ export interface Person {
    * see `personColours`.
    */
   posted?: boolean;
+  /**
+   * The room this person is in, for the ones who are in a room.
+   *
+   * Only the seated audience and the speakers carry it. Roamers belong to a
+   * corridor and an attendant belongs to a post, and neither is a thing that
+   * can be emptied.
+   */
+  room?: string;
 }
 
 /**
@@ -540,6 +548,7 @@ export class Crowd {
       if (this.random() > occupancy) continue;
 
       this.seated.push({
+        room: room.id,
         x,
         y,
         // ON the pan: the seat states where its own surface is, so the
@@ -584,6 +593,9 @@ export class Crowd {
       if (!stage) continue;
       const b = stage.bounds;
       const mover: Mover = {
+        // The stage is `<room>-stage`; the speaker belongs to the room, so
+        // that when the room empties they walk off with everybody else.
+        room: id,
         x: b.x + b.w / 2,
         y: b.y + b.h / 2,
         z: stage.elevation ?? 0,

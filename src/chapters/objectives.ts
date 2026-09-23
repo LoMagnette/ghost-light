@@ -142,6 +142,7 @@ function tendRoom(id: string, label: string, drain: number): Activity {
     kind: 'tend',
     id: `tend-${id}`,
     label,
+    room: id,
     at: backOfHouse(id),
     capacity: 45,
     drain,
