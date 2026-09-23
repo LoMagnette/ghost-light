@@ -71,6 +71,18 @@ interface Common {
    * about a conference.
    */
   window?: { from: number; to: number };
+  /**
+   * Beside the point. Doing it is worth something; not doing it is not a
+   * failure to finish.
+   *
+   * `ObjectiveRun` ends a round when everything finishable is settled, which
+   * is how Chapter I knows it is over. A side quest must not count towards
+   * that or it ends the round the moment the player takes the detour — and
+   * for Chapter II, whose round ends on its clock or on three dark rooms, an
+   * optional activity that could end it early would be worse than not having
+   * one at all.
+   */
+  optional?: boolean;
   /** Ids that must be done first. Freeing the shutter opens the loading bay. */
   after?: string[];
   /**

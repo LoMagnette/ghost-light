@@ -476,7 +476,11 @@ export class ObjectiveRun {
       return;
     }
 
-    const finishable = this.states.filter((s) => s.activity.kind !== 'tend');
+    // A tend room never finishes and a side quest does not have to, so
+    // neither is evidence that the round is over.
+    const finishable = this.states.filter(
+      (s) => s.activity.kind !== 'tend' && !s.activity.optional,
+    );
     const settled = finishable.filter((s) => s.status === 'done' || s.status === 'missed');
     if (finishable.length > 0 && settled.length === finishable.length) {
       this.phase = 'ended';

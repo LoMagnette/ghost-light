@@ -931,7 +931,11 @@ export class ChapterScreen implements Screen {
       el(
         'div',
         { font: `15px ${SANS}`, color: css(chapter.palette.accent) },
-        this.run.total > 0 ? `${this.run.done} of ${this.run.total}` : 'Nothing left running',
+        // Same rule as the header, and it has to be: a chapter about keeping
+        // five rooms alive does not end on a score out of the side quest.
+        this.run.states.some((s) => s.activity.kind === 'tend')
+          ? `${this.run.states.filter((s) => s.activity.kind === 'tend' && s.status !== 'failed').length} of ${this.run.states.filter((s) => s.activity.kind === 'tend').length} still running`
+          : `${this.run.done} of ${this.run.total}`,
       ),
     );
 
@@ -959,12 +963,23 @@ export class ChapterScreen implements Screen {
     this.hud.textContent = this.run.objective.line;
 
     const remaining = this.run.remaining;
-    // Chapter II has nothing to finish, only things to keep — so it counts
-    // what is still running rather than what is done.
+    /*
+     * A chapter with rooms to KEEP counts what is still running; one with
+     * things to FINISH counts what is done.
+     *
+     * Keyed off whether there are any tend rooms, not off whether there is
+     * anything finishable. The old test was the second one, which was true of
+     * Chapter II only for as long as Chapter II had nothing in it but rooms:
+     * adding one optional conversation flipped the header to "0/2" and took
+     * away the five-rooms-running count the whole chapter is read from. The
+     * denominator was wrong in the same way — it counted every state, so a
+     * side quest would have made it "11/11 running".
+     */
+    const rooms = this.run.states.filter((s) => s.activity.kind === 'tend');
     const tally =
-      this.run.total > 0
-        ? `${this.run.done}/${this.run.total}`
-        : `${this.run.states.length - this.run.lost}/${this.run.states.length} running`;
+      rooms.length > 0
+        ? `${rooms.filter((s) => s.status !== 'failed').length}/${rooms.length} running`
+        : `${this.run.done}/${this.run.total}`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
     this.cardText.textContent = this.card();

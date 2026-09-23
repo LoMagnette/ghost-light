@@ -224,6 +224,43 @@ function tendRoom(id: string, label: string, drain: number): Activity {
   };
 }
 
+/**
+ * The people who actually built this conference, standing in the corridor of
+ * the building they built it in.
+ *
+ * Every one of them really spoke at JavaPolis, which is the only reason they
+ * are in here: Chapter II IS JavaPolis, and a conference is the people at it.
+ * They are drawn and written as a cameo — warm, about the room and the
+ * moment, and putting no claim in anybody's mouth that is not plainly true of
+ * their public work.
+ *
+ * The chain is one conversation that opens four more: you meet Stephan, who
+ * founded the thing, and he sends you down the corridor. `optional` keeps it
+ * a side quest — the round still ends on its clock or on three dark rooms,
+ * never because the player went and said hello — and `group` keeps four rows
+ * off a card that already carries five.
+ *
+ * The cost is the point, and it is the same cost the chapter is about. The
+ * corridor is 126 m, the four of them are spread up its west side outside
+ * the rooms they are speaking in, and every second spent being sociable is a
+ * second five session meters are draining without you.
+ */
+function speaker(id: string, who: string, lines: string[], y: number): Activity {
+  return {
+    kind: 'talk',
+    id: `met-${id}`,
+    label: `Say hello to ${who}`,
+    who,
+    // The corridor's west side, outside the room they are on in. Not the
+    // south end: floor 1 has no floor there, it has the grand stairwell.
+    at: spot(1, -4.0, y, 3.2),
+    group: 'the speakers',
+    optional: true,
+    after: ['met-stephan'],
+    lines,
+  };
+}
+
 export const JAVAPOLIS_OBJECTIVE: Objective = {
   line: 'Keep every room running',
   clock: 240,
@@ -234,6 +271,59 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
     tendRoom('aud-6', 'Room 6', 1.15),
     tendRoom('aud-3', 'Room 3', 1.0),
     tendRoom('aud-2', 'Room 2', 1.0),
+
+    {
+      kind: 'talk',
+      id: 'met-stephan',
+      label: 'Say hello to Stephan',
+      who: 'Stephan Janssen',
+      optional: true,
+      // Four metres up the corridor from where the chapter starts, so the
+      // host is the first thing in the building that talks to you.
+      at: spot(1, 0.0, -40.0, 3.2),
+      lines: [
+        'You found the AV cupboard. That is most of what running a conference is.',
+        'Five rooms today. The first year it was one, and we thought that was ambitious.',
+        'There are four people down the corridor who came a long way. Go and say hello — the rooms will hold for a minute.',
+      ],
+    },
+    speaker(
+      'gosling',
+      'James Gosling',
+      [
+        'They have put me in the big room again.',
+        'Somebody asked me this morning whether any of this lasts. I have never known how to answer that.',
+        'Keep the projector running and we will find out.',
+      ],
+      -31.0,
+    ),
+    speaker(
+      'goetz',
+      'Brian Goetz',
+      [
+        'Two robots, five rooms, one of you. You are doing concurrency.',
+        'The hard part was never the doing. It is agreeing on what happened, and in what order.',
+      ],
+      -11.0,
+    ),
+    speaker(
+      'king',
+      'Gavin King',
+      [
+        'Everything in this building is in a database somewhere — the seats, the badges, the running order.',
+        'Somebody has to get all of that onto objects. It is less glamorous than it sounds.',
+      ],
+      5.3,
+    ),
+    speaker(
+      'johnson',
+      'Rod Johnson',
+      [
+        'Half this room is here because something was heavy and somebody made a lighter one.',
+        'That is most of what we do. It is not a small thing.',
+      ],
+      18.9,
+    ),
   ],
 };
 
