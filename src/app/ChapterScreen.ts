@@ -359,9 +359,31 @@ export class ChapterScreen implements Screen {
   /** Drain the frame's reveals and notifications into the world and the HUD. */
   private consumeObjective(): void {
     for (const reveal of this.run.reveals) {
-      this.blockout.revealZone(reveal.bounds, reveal.floor, reveal.to);
+      this.blockout.lightZone(reveal.id, reveal.bounds, reveal.floor, reveal.to);
     }
     this.run.reveals.length = 0;
+
+    /*
+     * A room is as lit as its session has left in it.
+     *
+     * Driven every frame rather than queued on an event, because this is not
+     * a thing that happens — it is a thing that is true. A room at 40 of its
+     * 45 seconds is a room you would not look at twice; one at 6 is a room
+     * you can see going out from the far end of a 126 m corridor, which is
+     * where the player is when it matters.
+     *
+     * Eased, and the curve is the point. Linear, a room spends most of the
+     * round looking fine and then falls off a cliff in the last few seconds,
+     * which is too late to drive there. Square-rooted, it starts losing
+     * light early and slowly — so "that one is dimmer than the others" is a
+     * thing you notice while you can still do something about it.
+     */
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if (a.kind !== 'tend' || !a.reveal) continue;
+      const left = state.status === 'failed' ? 0 : Math.max(0, state.progress) / a.capacity;
+      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * Math.sqrt(left));
+    }
 
     const events = this.run.events;
     if (events.length > 0) {

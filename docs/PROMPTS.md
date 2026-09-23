@@ -3484,6 +3484,79 @@ is the feature and both would have shipped wrong:
 
 ---
 
+### Claude Opus — a room you can see going out
+
+**Prompt:**
+> commit the change. then tackle the dimming zone
+
+**Iterations:** 1
+
+`docs/MECHANICS.md` §5.2 has said this since the mechanics spec was written:
+*"Read the building, not the HUD: a draining room visibly dims from the
+corridor. The meter is a fallback, not the primary signal."* Nothing
+implemented it, so the meter WAS the primary signal and the building was the
+fallback — exactly backwards, in the one chapter whose whole idea is that you
+are reading five rooms at once.
+
+**The machinery already existed and was the wrong shape twice over.**
+`revealZone` builds a grid of point lights over a rectangle, which is what
+Chapter I's three distribution boards use. It appends, so calling it once a
+frame hangs nine more lights on the storey every frame; and it is a verb
+— *switch this on* — where a tend room needs a state: *this room is as lit as
+its session has left in it*. It is keyed and idempotent now, so the first
+call builds the rig and every call after it re-aims the same one. Chapter I's
+reveals carry the id of the activity that fired them for the same reason.
+
+**The real problem was headroom, and it is a thing worth remembering about
+additive light: you cannot subtract with it.** Chapter II was at
+`lightLevel: 0.62`, which lit every room to most of its final brightness
+before its own rig contributed anything, so a room losing ALL of its house
+lights barely changed. The fix is not a stronger rig, it is a darker base:
+0.45, which sits between Chapter I's 0.18 and Chapter III's 0.85 and means
+the corridor is the building with nothing running in it. Each session then
+adds its own light on top. Measured off the screenshots, on Room 5's seating
+against the corridor it is read from:
+
+| | Room 5 seating | corridor |
+|---|---|---|
+| full session | 78.3 | 63.7 |
+| 13 s of 45 left | 65.5 | 60.6 |
+| dark | 43.3 | 55.8 |
+
+A 45% swing on the room against 12% on the corridor — so the room goes out
+and the building does not, which is the whole trick. A dead room ends up
+DARKER than the corridor it is seen from, which is what makes "Room 5 is
+gone" legible at a glance from sixty metres away.
+
+**The easing is the design decision.** Light is `sqrt(meter)`, not `meter`.
+Linear, a room looks fine for most of its life and then falls off a cliff in
+the last few seconds — by which time it is too late to drive there, and the
+signal has told you nothing you could act on. Square-rooted it starts losing
+light early and slowly, so *that one is dimmer than the others* is a thing
+you notice while there is still something to be done about it.
+
+Reusing `Reveal` rather than adding a field: it is the same data — a floor, a
+rectangle, a level — and the only difference is that Chapter I fires it once
+on completion and Chapter II drives it every frame off a meter. `to` stops
+meaning "the level to arrive at" and starts meaning "what a running room is
+worth", which the comment on `tendRoom` says out loud.
+
+**Confirmed the other two chapters through the refactor**, because a keyed
+light rig is exactly the kind of change that silently breaks the thing it was
+refactored out of: Chapter I's hall board still lights the hall and leaves
+the concourse dark, and Chapter III is untouched.
+
+**Still not done in Chapter II**, and named here so it is not mistaken for
+finished: a dark room keeps its audience. §5.2 says *"its attendees leave"*.
+The seated crowd is baked into the storey as static instances at load, which
+is what makes five thousand people cost one draw call and also what makes
+them unremovable. And nobody has played the chapter — the meter economy needs
+the cast to sustain about 7.1 s/s for four minutes against a ceiling of
+roughly 6 to 9, so whether it is winnable at all is still an open question
+and not one reading the code can answer.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

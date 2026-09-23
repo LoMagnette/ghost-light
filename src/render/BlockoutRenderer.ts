@@ -216,6 +216,9 @@ const LAMBERT_SCALE = Math.PI;
  */
 const REVEAL_SPACING = 15;
 
+/** Peak intensity of one reveal light, before the Lambert scale. */
+const REVEAL_POWER = 5;
+
 /**
  * The two inks that are not a robot's own livery.
  *
@@ -492,6 +495,14 @@ export class BlockoutRenderer {
    */
   private lamp: PointLight | undefined;
   private readonly revealed: PointLight[] = [];
+  /**
+   * The reveal rigs, by the id of whatever owns them.
+   *
+   * Keyed rather than accumulated because Chapter II drives one of these
+   * EVERY FRAME off a draining meter, and the unkeyed version hung a fresh
+   * grid of point lights on the storey each time it was asked.
+   */
+  private readonly zoneLights = new Map<string, PointLight[]>();
 
   /**
    * The people on their feet, rewritten every frame.
@@ -887,14 +898,30 @@ export class BlockoutRenderer {
   }
 
   /**
-   * Switch the lights back on over part of the building.
+   * How much light a zone adds to the storey it is on, 0..1.
+   *
+   * Idempotent and keyed, so it is both "switch the hall on" and "this room
+   * is dying". Chapter I calls it once per distribution board and never
+   * again; Chapter II calls it once per room per frame with the room's own
+   * meter, and the rig is built on the first call and only re-aimed after
+   * that. Building it fresh each time is what the first version did, and at
+   * sixty frames a second it hung nine point lights on the storey per room
+   * per frame until the renderer gave up.
    *
    * Up to three point lights along the zone's long axis, because one light in
    * the middle of a 30 m room lights the middle of a 30 m room. Hung at 4.5 m,
    * which is where a cinema hangs them.
    */
-  revealZone(bounds: Rect, floor: Level, level: number): void {
+  lightZone(id: string, bounds: Rect, floor: Level, level: number): void {
+    const existing = this.zoneLights.get(id);
+    if (existing) {
+      const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
+      for (const light of existing) light.intensity = intensity;
+      return;
+    }
+
     const storey = this.storeys.get(floor);
+    const made: PointLight[] = [];
 
     /*
      * A GRID of them, not a line.
@@ -911,7 +938,7 @@ export class BlockoutRenderer {
      */
     const across = Math.max(1, Math.round(bounds.w / REVEAL_SPACING));
     const along = Math.max(1, Math.round(bounds.h / REVEAL_SPACING));
-    const intensity = level * 5 * LAMBERT_SCALE;
+    const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
     const range = REVEAL_SPACING * 1.8;
 
     for (let i = 0; i < across * along; i += 1) {
@@ -925,13 +952,16 @@ export class BlockoutRenderer {
       if (storey) storey.add(light);
       else this.scene.add(light);
       this.revealed.push(light);
+      made.push(light);
     }
+    this.zoneLights.set(id, made);
   }
 
   /** Put the building back in the dark. Called when a round is restarted. */
   clearReveals(): void {
     for (const light of this.revealed) light.removeFromParent();
     this.revealed.length = 0;
+    this.zoneLights.clear();
   }
 
   /**

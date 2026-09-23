@@ -149,6 +149,21 @@ function tendRoom(id: string, label: string, drain: number): Activity {
     tapBonus: 8,
     repairSeconds: 3,
     repairReach: 2.0,
+    /*
+     * The room's own house lights, and the whole reason this chapter can be
+     * read off the building rather than off the HUD.
+     *
+     * `reveal` elsewhere is what COMPLETING something switches on — Chapter
+     * I's three boards. A tend room never completes, so the screen drives
+     * this continuously from the meter instead: full session, full light;
+     * half a session, half lit; dark when it goes dark. Same data, same
+     * renderer call, and `docs/MECHANICS.md` §5.2 asks for exactly this —
+     * "a draining room visibly dims from the corridor. The meter is a
+     * fallback, not the primary signal."
+     *
+     * `to` is what a running room is worth, not a target to arrive at.
+     */
+    reveal: { ...roomBounds(id), to: 1 },
   };
 }
 

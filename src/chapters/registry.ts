@@ -119,7 +119,23 @@ export const CHAPTER_TWO: Chapter = {
   controlMode: 'switch',
   cast: ['voxxy', 'droid'],
   crowdDensity: 0.35,
-  lightLevel: 0.62,
+  /*
+   * Lower than it looks, and it has to be: this is the one chapter where the
+   * ROOMS carry their own light.
+   *
+   * Every other chapter's `lightLevel` is the whole answer. Here it is only
+   * the corridor — the building with nothing running in it — and each of the
+   * five sessions adds its own house lights on top, driven off its meter (see
+   * `tendRoom`). At 0.62 the base was doing so much of the work that a room
+   * losing all of its own light barely changed, which made `MECHANICS.md`
+   * §5.2 a lie: the meter was the primary signal and the building was the
+   * fallback, exactly backwards.
+   *
+   * So the corridor sits between Chapter I's 0.18 and Chapter III's 0.85,
+   * and a running room is brighter than it while a dead one is not. Which is
+   * also what a half-used conference floor looks like from the corridor.
+   */
+  lightLevel: 0.45,
   palette: {
     void: 0x0a0806,
     floor: 0x6d6154, // an older, warmer carpet than the one there now

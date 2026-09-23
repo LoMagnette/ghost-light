@@ -97,7 +97,15 @@ export class ObjectiveRun {
   /** Consumed and cleared by the screen each frame. */
   readonly events: ObjectiveEvent[] = [];
   /** Zones to light, pushed as they are earned. Consumed by the renderer. */
-  readonly reveals: Reveal[] = [];
+  /**
+   * Zones to light, drained by the screen each frame.
+   *
+   * Carries the id of the activity that asked, because the renderer keys its
+   * light rigs by it — see `lightZone`. Without it two boards lighting the
+   * same room would build two rigs, and a room whose light is DRIVEN rather
+   * than switched would build one a frame.
+   */
+  readonly reveals: (Reveal & { id: string })[] = [];
 
   constructor(objective: Objective) {
     this.objective = objective;
@@ -410,7 +418,7 @@ export class ObjectiveRun {
     state.status = 'done';
     state.progress = 1;
     this.say(state.activity.label);
-    if (state.activity.reveal) this.reveals.push(state.activity.reveal);
+    if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
   }
 
   private say(text: string): void {
