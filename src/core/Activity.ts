@@ -235,6 +235,17 @@ export interface TalkActivity extends Common {
   shape?: 'cat' | 'dog';
   /** What they look like, for the ones who are a person. See `Look`. */
   look?: Look;
+  /**
+   * A SECOND conversation with somebody the objective has already put in the
+   * building, in the same place as the first.
+   *
+   * Every `talk` activity stands a person at its zone, which is the rule
+   * that stops a conversation being written with nobody to have it — see
+   * `ChapterScreen`. Going back to somebody you have already met is the one
+   * case that rule gets wrong: without this it puts a second, identical host
+   * inside the first one.
+   */
+  alreadyHere?: boolean;
   /** What they say, one boxful at a time. */
   lines: string[];
 }

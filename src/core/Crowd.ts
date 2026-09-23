@@ -30,6 +30,7 @@
 import { rectContains, type Level, type Rect, type Venue } from './Venue';
 import { groundAt } from './Venue';
 import type { Actor } from './Sim';
+import { ISO_AZIMUTH } from './Iso';
 
 /** Crowd steps per second. Not the physics rate, deliberately. */
 export const CROWD_HZ = 20;
@@ -47,6 +48,28 @@ const EVACUEES = 36;
 
 /** How close a robot has to be before an attendant turns to it, metres. */
 const ATTENDANT_NOTICE = 6;
+
+/**
+ * Which way somebody stands when they are waiting for you, and how far off it
+ * they will turn once you arrive.
+ *
+ * The camera is fixed to the south-west and a face is on the FRONT of a head,
+ * so an attendant who turns to track the player exactly will, half the time,
+ * present the back of their skull to the only viewpoint this game has. That
+ * cost nothing while a named person was a shirt and a haircut. It costs
+ * everything now that the beard, the hairline and the glasses — the whole of
+ * a likeness — are on the side of the head the player is not guaranteed to
+ * see.
+ *
+ * So they face the viewer by default and turn no more than this off it. They
+ * still turn towards whoever comes over, which is the one piece of body
+ * language this renderer has and worth keeping; they just do it the way an
+ * actor does, without ever playing the scene upstage. 75 degrees is the
+ * widest angle that keeps both the beard and one lens of the glasses on
+ * screen, found by photographing it rather than by reasoning about it.
+ */
+const TOWARDS_VIEWER = ISO_AZIMUTH + Math.PI;
+const FACE_ARC = 1.31;
 
 /** How fast an attendant walks back to its mark after being shoved, m/s. */
 const POST_RETURN = 0.55;
@@ -181,21 +204,53 @@ const PERSONAL_SPACE = 0.55;
  * is not part of a mass, and five of them standing in one corridor all in
  * the same shirt is five of nobody.
  *
- * Four levers, and they are the only four that survive at twenty pixels
- * tall: what colour their shirt is, what colour their hair is, whether they
- * have a beard, and how tall they are. Everything finer than that — a face,
- * glasses, a logo — is under a pixel and would be a lie about how much this
- * renderer can say.
+ * **The pixel budget, measured rather than assumed.** The first version of
+ * this said a figure was twenty pixels tall and refused everything finer
+ * than a shirt on that basis. It is not twenty. The camera fits 32 m across
+ * 1280 px, which is 40 px/m across and — at 30 degrees of elevation — 34.6
+ * px/m up, so a 1.72 m person stands 60 px tall and their head is 9 px by 8.
+ * A spectacle frame is 0.035 m, which is 1.2 px: a thin dark line across a
+ * nine-pixel head, and thin dark lines across heads are exactly what reads
+ * at this size. Three of the levers below were cut by that bad number and
+ * are back because the number was bad.
+ *
+ * What is still refused: anything that needs more than about a pixel to say
+ * — an expression, an eye, a nose, a logo on a shirt. These are real people,
+ * and a bad likeness is worse than an honest abstraction. Everything here is
+ * a silhouette fact, the kind you would use to point somebody out across a
+ * room: the one with the long grey hair, the one with the amber glasses.
  */
 export interface Look {
   /** Torso and sleeves. Overrides the era's crowd colour entirely. */
   shirt?: number;
-  /** A cap of it on the crown, and the beard if there is one. */
+  /** Hair, and the beard too unless `beardHair` says otherwise. */
   hair?: number;
-  beard?: boolean;
+  /**
+   * Where the hair starts. `receding` walks the cap back off the forehead;
+   * `bald` takes the crown away entirely and leaves what grows at the sides,
+   * which with `long` is the whole of one famous silhouette.
+   */
+  hairline?: 'full' | 'receding' | 'bald';
+  /** Hair down past the ears to the shoulder, either side of the face. */
+  long?: boolean;
+  /**
+   * How much beard, as a shape rather than a flag. The three are genuinely
+   * different silhouettes at 9 px: stubble is a shading of the jaw, a goatee
+   * is a narrow tab under the mouth, a full beard is wider than the mouth
+   * and reaches the cheekbone.
+   */
+  beard?: 'stubble' | 'goatee' | 'full';
+  /**
+   * Beard colour, when it is not hair colour — which is not a detail. A man
+   * with dark hair and a grey beard is a specific person, and rendering him
+   * dark-bearded makes him a different one.
+   */
+  beardHair?: number;
+  /** Frame colour. Glasses are 1.2 px and 1.2 px of frame is a face. */
+  glasses?: number;
   /**
    * Multiplier on the whole figure. People differ by a head, which is 8% and
-   * about four pixels — small, and the difference between five figures and
+   * about five pixels — small, and the difference between five figures and
    * five of the same figure.
    */
   scale?: number;
@@ -428,7 +483,12 @@ export class Crowd {
       }
     }
     if (!at) return;
-    mover.heading = Math.atan2(at.body.y - mover.y, at.body.x - mover.x);
+    const want = Math.atan2(at.body.y - mover.y, at.body.x - mover.x);
+    // Turn towards them, but not past the point where the camera loses their
+    // face. See FACE_ARC.
+    let off = want - TOWARDS_VIEWER;
+    off = Math.atan2(Math.sin(off), Math.cos(off));
+    mover.heading = TOWARDS_VIEWER + Math.max(-FACE_ARC, Math.min(FACE_ARC, off));
   }
 
   /** Stop people standing inside each other. See PERSONAL_SPACE. */
@@ -731,7 +791,7 @@ export class Crowd {
     }
   }
 
-  /** One person at each post, facing nowhere in particular until asked. */
+  /** One person at each post, facing the viewer until somebody comes over. */
   private placeAttendants(posts: readonly Post[]): void {
     for (const post of posts) {
       const mover: Mover = {
@@ -739,7 +799,7 @@ export class Crowd {
         y: post.y,
         z: groundAt(this.venue, post.floor, post.x, post.y),
         floor: post.floor,
-        heading: 0,
+        heading: TOWARDS_VIEWER,
         tint: this.random(),
         speed: 0,
         tx: post.x,

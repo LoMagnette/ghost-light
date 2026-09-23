@@ -235,16 +235,30 @@ function tendRoom(id: string, label: string, drain: number): Activity {
  * moment, and putting no claim in anybody's mouth that is not plainly true of
  * their public work.
  *
- * The chain is one conversation that opens four more: you meet Stephan, who
- * founded the thing, and he sends you down the corridor. `optional` keeps it
- * a side quest — the round still ends on its clock or on three dark rooms,
- * never because the player went and said hello — and `group` keeps four rows
- * off a card that already carries five.
+ * **Everything they say is era-locked**, which is a rule this side quest
+ * broke before it kept it. The chapter is JavaPolis, so the corridor is
+ * somewhere around 2006: Java 5's memory model is new, Spring is arguing
+ * with EJB, Hibernate is two years into being the thing everybody uses and
+ * complains about. Where any of these four went NEXT is public and
+ * interesting and belongs to a chapter this is not.
  *
- * The cost is the point, and it is the same cost the chapter is about. The
- * corridor is 126 m, the four of them are spread up its west side outside
- * the rooms they are speaking in, and every second spent being sociable is a
- * second five session meters are draining without you.
+ * **What the conversations are for.** The first version of them was five
+ * people taking turns to tell the player to get back to work, which wasted
+ * the only five people in the game worth stopping for. They are a STORY now,
+ * and the story is what a conference is: the talks are recorded and the
+ * corridor is not. Stephan opens it by saying so, the four of them are each
+ * one thing you cannot get from a recording — an author admitting he does
+ * not know, an argument that ends in a drink, a question answered by the
+ * person the answer belongs to — and Stephan closes it once you have met all
+ * four.
+ *
+ * The cost is still the point, and it is the same cost the chapter is about.
+ * The corridor is 126 m, the four of them are spread up its west side
+ * outside the rooms they are speaking in, and every second spent being
+ * sociable is a second five session meters are draining without you. The
+ * round still ends on its clock or on three dark rooms and never because the
+ * player went and said hello — but the chapter is asking a real question
+ * now, and both answers are defensible.
  */
 function speaker(
   id: string,
@@ -269,6 +283,27 @@ function speaker(
   };
 }
 
+/**
+ * Where Stephan stands, and stays.
+ *
+ * Both of his conversations are here — the one that sends you down the
+ * corridor and the one that is waiting when you come back — so the second
+ * one is `alreadyHere` and does not stand a second host inside the first.
+ */
+const STEPHAN_AT = spot(1, 0.0, -40.0, 3.2);
+
+/**
+ * The host, as he actually looks: dark Devoxx polo, short grey crop, and the
+ * amber glasses, which are the single most recognisable thing about him and
+ * cost one box.
+ */
+const STEPHAN_LOOK: Look = {
+  shirt: 0x333630,
+  hair: 0x55514b,
+  glasses: 0xb5822f,
+  scale: 1.0,
+};
+
 export const JAVAPOLIS_OBJECTIVE: Objective = {
   line: 'Keep every room running',
   clock: 240,
@@ -285,74 +320,155 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       id: 'met-stephan',
       label: 'Say hello to Stephan',
       who: 'Stephan Janssen',
-      look: { shirt: 0x2f6f8c, hair: 0x322c27, scale: 1.0 },
+      look: STEPHAN_LOOK,
       optional: true,
       // Four metres up the corridor from where the chapter starts, so the
       // host is the first thing in the building that talks to you.
-      at: spot(1, 0.0, -40.0, 3.2),
+      at: STEPHAN_AT,
       lines: [
-        'Ah — maintenance. Good. Room 4 has been making a noise since nine.',
-        'Five rooms today. The first year it was one room and eighty people, and we thought we had overreached.',
-        'Before you go: there are four people down that corridor who flew in for this. Say hello. The rooms will survive a minute without you.',
+        'Maintenance. Good. Room 4 has been making a noise since nine and nobody will own up to hearing it.',
+        'You are going to spend today keeping five rooms alive. Before you do, let me tell you what the rooms are for.',
+        'Every talk in this building is being filmed. All of it goes out afterwards, for nothing, to anyone.',
+        'So if the talk were the reason to fly to Antwerp in December, nobody would fly to Antwerp in December.',
+        'There are four people down that corridor with an hour to kill. THAT does not go out afterwards.',
+        'Go and use them. The rooms will still be here, more or less.',
       ],
     },
     /*
-     * Five people, five silhouettes.
+     * Five people, five silhouettes, all five off photographs rather than
+     * out of my head.
      *
-     * `Look` carries what survives at twenty pixels and nothing else: a
-     * shirt, a hair colour, a beard, a height. That is enough to tell five
-     * figures apart down a 126 m corridor and deliberately not enough to be
-     * a portrait of anybody — a face, glasses or a logo would all be under a
-     * pixel, so attempting them would be a claim the renderer cannot make.
+     * `Look` carries what survives at a 9-pixel head: a shirt, a hairline,
+     * hair colour and length, the shape of a beard, and glasses. That is
+     * enough to tell five figures apart down a 126 m corridor and
+     * deliberately not enough to be a portrait — no expression, no eyes, no
+     * logo. Silhouette facts only, the kind you would use to point somebody
+     * out across a room.
      *
      * The heights are the quiet one. People differ by a head, which is 8%
-     * and about four pixels, and without it five distinct shirts still read
+     * and about five pixels, and without it five distinct shirts still read
      * as one figure repainted.
      */
     speaker(
       'gosling',
       'James Gosling',
-      { shirt: 0x4a5058, hair: 0xd2d4cf, beard: true, scale: 0.98 },
+      // Bald on top, the rest silver and worn long, a full white beard and
+      // the glasses. Black t-shirt, which is the other half of it.
+      {
+        shirt: 0x1f2124,
+        hair: 0xd6d3cb,
+        hairline: 'bald',
+        long: true,
+        beard: 'full',
+        glasses: 0x8f9195,
+        scale: 1.0,
+      },
       [
         'They have put me in the big room again. I keep telling them I do not need the big room.',
-        'Somebody asked me this morning where all this ends up in twenty years. I have never been able to answer that one.',
-        'Keep the projector alive and we will find out together.',
+        'Somebody in the second row this morning asked what all of this looks like in twenty years.',
+        'I said I had no idea. You could hear the room decide whether that was a disappointment.',
+        'It is not. Nobody wrote that down anywhere, and I could only say it out loud, to people, in a room.',
+        'Come and stand at the back for the Q&A if your rooms will spare you. The questions are the good part.',
       ],
       -31.0,
     ),
     speaker(
       'goetz',
       'Brian Goetz',
-      { shirt: 0x7d4a3a, hair: 0x5c554e, scale: 1.03 },
+      // Dark hair going back off the forehead, and a grey goatee — which is
+      // a different colour from the hair, and that is not a detail. Dark
+      // hair plus dark beard is a different man. Pale striped shirt.
+      {
+        shirt: 0x94a5b6,
+        hair: 0x4a3d33,
+        hairline: 'receding',
+        beard: 'goatee',
+        beardHair: 0x7c746a,
+        scale: 1.02,
+      },
       [
         'Two machines, five rooms, one of you. You have written this program before.',
-        'And you already know where it goes wrong. It is never the doing — it is agreeing on what happened, and in what order.',
-        'Go on. Something is draining while we talk.',
+        'And you already know where it goes wrong. It is never the doing. It is agreeing on what happened, and in what order.',
+        'People have been reading that chapter all year and writing to me to say it cannot be right.',
+        'Not one of them has been wrong in the same way twice, and I only ever find that out in a corridor.',
+        'So thank you. That is not a pleasantry — the corridor is where I learn what I got away with.',
       ],
       -11.0,
     ),
     speaker(
       'king',
       'Gavin King',
-      { shirt: 0x3f5c48, hair: 0x2f2b27, scale: 1.01 },
+      // Short, fair, and clean-shaven, which at this size is itself the
+      // distinguishing mark in a corridor of beards. Dark t-shirt, lean.
+      // The hair is darker here than the photograph reads, and deliberately.
+      // His is fair, and fair hair under tungsten light rendered at its own
+      // value came out the exact tone of a lit forehead — which made the one
+      // man in this corridor with a full head of hair read as bald.
+      { shirt: 0x2b2f36, hair: 0x8d6a40, hairline: 'full', scale: 1.03 },
       [
         'Everything in this building is a row somewhere. The seats, the badges, the running order, you.',
-        "Getting all of that onto objects is nobody's idea of a good afternoon. Somebody has to.",
-        'Mind the door on the way out. It sticks.',
+        "Getting all of that onto objects is nobody's idea of a good afternoon, and I am the one who said I had a way.",
+        'Half that room uses it every day and has a list. The other half has a longer list.',
+        'They will bring me the lists tonight, in the bar, to my face. That is worth more to me than the talk was.',
+        'You cannot have that argument by post. Somebody always goes quiet and nobody buys anybody a drink.',
       ],
       5.3,
     ),
     speaker(
       'johnson',
       'Rod Johnson',
-      { shirt: 0x6b6078, hair: 0x8e8272, scale: 0.99 },
+      // A high hairline, mid-brown, a few days of stubble, and the plain
+      // olive-grey t-shirt. Nothing loud, which is its own silhouette next
+      // to the white beard twenty metres up the corridor.
+      {
+        shirt: 0x74766b,
+        hair: 0x6b5744,
+        hairline: 'receding',
+        beard: 'stubble',
+        scale: 0.99,
+      },
       [
         'Half the people in that room came because something was too heavy and somebody built a lighter one.',
-        'That is most of the job, and it is not a small one.',
-        'You are doing it now, incidentally. Nobody thanks whoever keeps the lights on either.',
+        'I wrote a book about it, which is the slowest possible way to have a conversation with anybody.',
+        'You write for a year, it arrives, and you never once find out which part landed.',
+        'Then a man in Belgium puts everyone who read it inside one building for a week. I have learned more this morning than in the whole year I spent writing.',
+        'Ask me the thing you have been arguing about at work. Genuinely. That is what I am standing here for.',
       ],
       18.9,
     ),
+    /*
+     * The way back.
+     *
+     * A side quest with four stops and no ending is four errands. This is
+     * the ending: it only exists once all four are done, it is with the one
+     * person who has been there the whole time, and it says out loud what
+     * the player has just spent their round doing. `alreadyHere` because
+     * Stephan is already standing on this spot — see `TalkActivity`.
+     *
+     * It is still `optional`, and it still costs you the rooms to come and
+     * get it. If a player finishes the chapter never knowing this is here
+     * because they chose to keep five rooms alive instead, that is not a
+     * failure of the design. That is the design.
+     */
+    {
+      kind: 'talk',
+      id: 'met-stephan-again',
+      label: 'Back to Stephan',
+      who: 'Stephan Janssen',
+      look: STEPHAN_LOOK,
+      optional: true,
+      alreadyHere: true,
+      at: STEPHAN_AT,
+      after: ['met-gosling', 'met-goetz', 'met-king', 'met-johnson'],
+      lines: [
+        'All four. And your rooms are still up, which I did not expect.',
+        'I started this in a user group. A room above a pub, a projector we borrowed, forty of us.',
+        'Last year two thousand eight hundred people came to Antwerp in the winter, and that made this the biggest independent Java conference anywhere.',
+        'Nobody came for the slides. The slides were always going to be online.',
+        'They came because the man who wrote the thing you use is standing in a corridor with nothing to do for an hour.',
+        'Keep the rooms running. But that — what you just did — is the conference.',
+      ],
+    },
   ],
 };
 

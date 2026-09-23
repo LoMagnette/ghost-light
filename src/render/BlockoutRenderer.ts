@@ -80,6 +80,7 @@ import {
   SEATED_THIGH_LONG,
   SEATED_TORSO_THICK,
   SEATED_TORSO_TOP,
+  type Look,
   type Person,
 } from '@/core/Crowd';
 import type { Decay, DecayPiece } from '@/core/Decay';
@@ -896,44 +897,10 @@ export class BlockoutRenderer {
         );
       }
 
-      /*
-       * Hair and a beard, for the people who are somebody.
-       *
-       * Boxes rather than blobs, which is not laziness: the blob budget is
-       * two a head and every one of the three thousand people in Chapter III
-       * pays for it, where the box budget already has room for an animal's
-       * thirteen. A cap of hair on a rounded head reads as hair at this size
-       * either way.
-       *
-       * The beard is the one piece of this that is nearly a likeness, and it
-       * is one box. Anything finer — a face, glasses, a logo on a shirt — is
-       * under a pixel, so attempting it would be a claim this renderer cannot
-       * make.
-       */
-      if (look?.hair !== undefined) {
-        i = this.placePart(
-          i,
-          person,
-          up(PERSON_HEIGHT) - 0.07 * k,
-          up(PERSON_HEIGHT) + 0.01 * k,
-          PERSON_HEAD_WIDE * 0.94,
-          PERSON_HEAD_WIDE * 0.94,
-          look.hair,
-        );
-        if (look.beard) {
-          i = this.placePart(
-            i,
-            person,
-            up(PERSON_NECK) + 0.02 * k,
-            up(PERSON_NECK) + 0.15 * k,
-            0.07,
-            PERSON_HEAD_WIDE * 0.72,
-            look.hair,
-            0,
-            PERSON_HEAD_WIDE * 0.42,
-          );
-        }
-      }
+      // Hair, beard and glasses, for the people who are somebody. Up to
+      // five more boxes on one head — well inside the headroom the loop
+      // already checks for, which is an animal's thirteen.
+      if (look !== undefined) i = this.placeFace(i, person, look, k, head);
 
       // The shoulders as a rounded mass over the top of all three, and the
       // head over that. A flat cap read as epaulettes.
@@ -1000,6 +967,117 @@ export class BlockoutRenderer {
     this.moverHeads.setMatrixAt(index, SCRATCH.matrix);
     this.moverHeads.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
+  }
+
+  /**
+   * One named person's head, above the neck: hair, beard, glasses.
+   *
+   * Boxes rather than blobs, and that is a budget decision rather than a
+   * shortcut. The blob budget is two a head and every one of the three
+   * thousand people in Chapter III pays for it; the box budget already has
+   * room for an animal's thirteen and these cost at most five.
+   *
+   * Everything here is measured off `PERSON_HEAD_WIDE`, so a person who is
+   * 3% taller has a 3% bigger beard rather than a normal beard floating at
+   * the wrong height.
+   */
+  private placeFace(index: number, person: Person, look: Look, k: number, skin: number): number {
+    if (look.hair === undefined) return index;
+    let i = index;
+    const w = PERSON_HEAD_WIDE;
+    const crown = PERSON_HEIGHT * k;
+    const chin = PERSON_NECK * k;
+    const hair = look.hair;
+
+    /*
+     * The crown.
+     *
+     * `receding` walks the cap BACKWARD off the forehead rather than
+     * shrinking it, which is the whole difference: a smaller cap centred on
+     * the crown reads as a smaller head, and the same cap moved three
+     * centimetres back reads as a forehead. Three centimetres is one pixel,
+     * and one pixel of forehead is a hairline.
+     */
+    if (look.hairline !== 'bald') {
+      const back = look.hairline === 'receding' ? -w * 0.2 : 0;
+      const deep = look.hairline === 'receding' ? w * 0.7 : w * 0.94;
+      i = this.placePart(i, person, crown - 0.07 * k, crown + 0.01 * k, deep, w * 0.94, hair, 0, back);
+    }
+
+    /*
+     * What grows at the sides when the crown does not, and what falls past
+     * the ears when it is long. One band either side of the head.
+     *
+     * Everybody has hair here; it is only a SILHOUETTE when the top is gone
+     * or the length is there, so it is drawn only then. The two together —
+     * nothing on top, and what is left worn to the shoulder — is the most
+     * recognisable head in this building, and it costs two boxes.
+     */
+    if (look.hairline === 'bald' || look.long) {
+      const foot = look.long ? chin + 0.03 * k : crown - 0.17 * k;
+      // Stopped below the crown rather than level with it. The head is a
+      // rounded blob and these are square: run them to the top and the
+      // corners stand proud of the skull as two pale tabs, which from the
+      // fixed camera read as horns and not as hair.
+      for (const side of [w * 0.46, -w * 0.46]) {
+        i = this.placePart(i, person, foot, crown - 0.055 * k, w * 0.78, w * 0.13, hair, side, -w * 0.04);
+      }
+    }
+
+    /*
+     * The beard, as a shape rather than a flag.
+     *
+     * Stubble is not hair at this size, it is a jaw a shade darker than the
+     * face — so it is mixed most of the way back to the skin rather than
+     * drawn in beard colour, which at three days' growth is what it
+     * actually looks like from four metres away.
+     */
+    if (look.beard !== undefined) {
+      const whiskers = look.beardHair ?? hair;
+      /*
+       * Placed against a real head rather than against the box that holds
+       * it, which is the mistake the first two passes made.
+       *
+       * `chin` here is the NECK joint, and the head is a blob sitting on it:
+       * a beard hung off the bottom of that blob is hung off the narrowest
+       * part of a sphere, so it lands on the neck and the shirt, and at four
+       * metres it reads as a shadow under the jaw rather than as hair. The
+       * face is the 0.22 m above 1.48, and the features go where they go on
+       * a face — mouth a fifth of the way up it, eyes at just under half.
+       *
+       * Sizes are measured too, and the first guess was double: a beard is
+       * the bottom third of a face, about 0.10 m, which is three and a half
+       * pixels. Twice that is a scarf.
+       */
+      const [foot, top, wide, colour] =
+        look.beard === 'full'
+          ? [0.005, 0.105, 0.76, whiskers]
+          : look.beard === 'goatee'
+            ? [0.04, 0.105, 0.5, whiskers]
+            : [0.025, 0.1, 0.68, mix(skin, whiskers, 0.55)];
+      i = this.placePart(i, person, chin + foot * k, chin + top * k, 0.07, w * wide, colour, 0, w * 0.42);
+    }
+
+    /*
+     * Glasses: one bar across the face at eye height.
+     *
+     * 0.035 m is 1.2 px, which sounds like nothing and is in fact the same
+     * budget every feature on this figure works to — the arms are two pixels
+     * of tone and they are the reason a person does not read as a slab. A
+     * dark line across a nine-pixel head reads as glasses because there is
+     * nothing else a dark line across a head can be.
+     */
+    if (look.glasses !== undefined) {
+      // Just under half way up the face, which is where eyes are, and which
+      // lands one pixel clear of the top of even a full beard.
+      const eyes = chin + 0.115 * k;
+      // Narrower than the head is WIDE, because the head is a blob: at eye
+      // height the skull has already started to curve away, and a bar cut to
+      // the full width hangs off both temples in mid-air.
+      i = this.placePart(i, person, eyes, eyes + 0.035 * k, 0.05, w * 0.86, look.glasses, 0, w * 0.44);
+    }
+
+    return i;
   }
 
   // -- the objective, drawn -------------------------------------------------

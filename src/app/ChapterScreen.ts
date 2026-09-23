@@ -26,7 +26,7 @@ import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
-import { Crowd } from '@/core/Crowd';
+import { Crowd, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, inZone, zoneCentre, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
@@ -197,6 +197,9 @@ export class ChapterScreen implements Screen {
     // whole of this was built to stop: twelve errands run past nobody.
     const posts = chapter.objective.activities
       .filter((a): a is TalkActivity => a.kind === 'talk')
+      // Somebody you go BACK to is already standing there. See
+      // `TalkActivity.alreadyHere`.
+      .filter((a) => !a.alreadyHere)
       .map((a) => {
         const at = zoneCentre(a.at);
         // Beside the marker, not under it. A marker post is 0.8 m even at its
@@ -832,14 +835,14 @@ export class ChapterScreen implements Screen {
     /*
      * The box takes the speaker's own colour.
      *
-     * A name in the chapter accent is a label; a name in the shirt of the
-     * person standing in front of you is the same person twice, and at this
-     * zoom the figure is twenty pixels tall and the box is the only place
-     * their colour is legible. Lifted well up first — half these shirts are
-     * dark, and dark text on a near-black box is a name nobody reads.
+     * A name in the chapter accent is a label; a name in the colour of the
+     * person standing in front of you is the same person twice. Which of
+     * their colours, and why it is not simply the shirt, is `ink`. Lifted
+     * well up first — half of these people are in black, and dark text on a
+     * near-black box is a name nobody reads.
      */
-    const ink = activity.look?.shirt;
-    const tint = css(ink === undefined ? this.chapter.palette.accent : lift(ink));
+    const look = activity.look;
+    const tint = css(look === undefined ? this.chapter.palette.accent : lift(ink(look)));
     this.talkWho.style.color = tint;
     this.talkMore.style.color = tint;
     this.talkBox.style.borderColor = tint;
@@ -882,6 +885,19 @@ export class ChapterScreen implements Screen {
     const groups = new Map<string, { done: number; total: number }>();
 
     for (const state of this.run.states) {
+      /*
+       * A side quest you have not been told about yet is not on the card.
+       *
+       * Required work is listed the moment the chapter starts, locked or
+       * not, because a player who cannot see the last board does not know
+       * the chapter has one. An OPTIONAL thing behind a gate is the
+       * opposite: listing "Back to Stephan" before the player has met
+       * Stephan hands them the end of a thread they have not been given the
+       * start of. The corridor appears on the card when the host tells them
+       * about the corridor, and the way back appears when there is one.
+       */
+      if (state.activity.optional && state.status === 'locked') continue;
+
       const group = state.activity.group;
       if (group) {
         const tally = groups.get(group) ?? { done: 0, total: 0 };
@@ -1109,7 +1125,40 @@ function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
 }
 
 /**
- * A shirt colour, pulled up until it can be read as text on a dark box.
+ * Which of somebody's colours the dialogue box borrows.
+ *
+ * The rule used to be "the shirt", and the rule used to work, because the
+ * shirts were invented. They are off photographs now, and three of the five
+ * people in Chapter II's corridor turn out to wear black — so three names
+ * came up the same washed grey, and a box that is meant to say WHO is
+ * speaking said nothing three times out of five.
+ *
+ * So it takes whichever of their colours is furthest from grey: the amber
+ * glasses, the ochre hair, the blue-grey shirt. That is the same thing a
+ * person does when they point somebody out across a room, and it lands on a
+ * different answer for each of the five.
+ *
+ * When everything about somebody IS grey, grey is the honest answer and it
+ * survives the lift: a white-haired man in a black t-shirt has a silver
+ * name, and that is a description of him rather than a failure to find one.
+ */
+function ink(look: Look): number {
+  const saturation = (colour: number): number => {
+    const r = (colour >> 16) & 0xff;
+    const g = (colour >> 8) & 0xff;
+    const b = colour & 0xff;
+    const high = Math.max(r, g, b);
+    return high === 0 ? 0 : (high - Math.min(r, g, b)) / high;
+  };
+  let best = look.shirt ?? 0x9aa0a6;
+  for (const colour of [look.hair, look.glasses]) {
+    if (colour !== undefined && saturation(colour) > saturation(best)) best = colour;
+  }
+  return best;
+}
+
+/**
+ * A colour, pulled up until it can be read as text on a dark box.
  *
  * Not `shade`, which multiplies: a very dark navy multiplied by three is a
  * slightly less dark navy. This mixes toward white instead, so every shirt
