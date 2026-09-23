@@ -44,7 +44,16 @@ export type RoomKind =
   | 'auditorium'
   | 'stage' // the flat plate at the bottom of an auditorium's rake
   | 'stairs'
-  | 'service';
+  | 'service'
+  /**
+   * Ground outside the building. Paving, not floor.
+   *
+   * A room because everything the simulation knows about where a robot may
+   * stand comes from rooms — `groundAt` answers from them and nothing else —
+   * so the forecourt has to be one or stepping out of the door is stepping
+   * off the world.
+   */
+  | 'outside';
 
 export interface Room {
   id: string;
@@ -134,6 +143,17 @@ export interface Obstacle {
    */
   hidden?: boolean;
 
+  /**
+   * This wall is the building's envelope: air on the far side of it.
+   *
+   * Only the renderer reads it, and only to answer a question the cutaway
+   * created. Everything is drawn to 2.7 m so you can see into rooms, which
+   * from OUTSIDE leaves a ten-metre building as a knee-high stump. The
+   * envelope is the part that has to be drawn full height once the player
+   * is standing in front of it.
+   */
+  exterior?: boolean;
+
   /** Biggy can shove this out of the way if its momentum is high enough. */
   movable?: boolean;
   /** kg, only meaningful when movable. */
@@ -179,7 +199,9 @@ export type Material =
   | 'signChar'
   | 'screen' // the projection screen on an auditorium's end wall
   | 'glazing' // curtain wall: the glass front of the building
-  | 'booth'; // an exhibitor's stand on the hall floor
+  | 'booth' // an exhibitor's stand on the hall floor
+  /** Made ground outside: the setts band, the kerbs, the road markings. */
+  | 'paving';
 
 /**
  * Dressing: DRAWN, never simulated.
@@ -196,6 +218,8 @@ export type Material =
 export interface Decor {
   floor: Level;
   bounds: Rect;
+  /** On the building's envelope. Same reason as `Obstacle.exterior`. */
+  exterior?: boolean;
   /** Top above its storey datum, metres. */
   height: number;
   /** Bottom above its storey datum, metres. Defaults to 0. */

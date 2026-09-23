@@ -13,7 +13,7 @@
 
 import type { Activity, Zone } from '@/core/Activity';
 import type { Objective } from '@/core/Objective';
-import { CROSS_AISLE, KINEPOLIS } from '@/venue/kinepolis';
+import { CROSS_AISLE, KINEPOLIS, RECEPTION_DESK } from '@/venue/kinepolis';
 import { rect, type Level, type Rect } from '@/core/Venue';
 
 /** A small square zone around a point. The usual shape of a thing to touch. */
@@ -149,6 +149,21 @@ function tendRoom(id: string, label: string, drain: number): Activity {
     tapBonus: 8,
     repairSeconds: 3,
     repairReach: 2.0,
+    /*
+     * The room's own house lights, and the whole reason this chapter can be
+     * read off the building rather than off the HUD.
+     *
+     * `reveal` elsewhere is what COMPLETING something switches on — Chapter
+     * I's three boards. A tend room never completes, so the screen drives
+     * this continuously from the meter instead: full session, full light;
+     * half a session, half lit; dark when it goes dark. Same data, same
+     * renderer call, and `docs/MECHANICS.md` §5.2 asks for exactly this —
+     * "a draining room visibly dims from the corridor. The meter is a
+     * fallback, not the primary signal."
+     *
+     * `to` is what a running room is worth, not a target to arrive at.
+     */
+    reveal: { ...roomBounds(id), to: 1 },
   };
 }
 
@@ -204,8 +219,8 @@ function stickerSweep(): Activity[] {
 }
 
 /**
- * `docs/MECHANICS.md` §5.3. Six minutes, twelve things, and no day is long
- * enough for twelve.
+ * `docs/MECHANICS.md` §5.3. Six minutes, fifteen things — twelve of them until
+ * three conversations were added — and no day is long enough for fifteen.
  *
  * The one constraint everything else is arranged around: the keg is 200 kg,
  * and a Biggy carrying 200 kg cannot climb the building's only ramp — its
@@ -221,8 +236,84 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'dwell',
       id: 'badge',
       label: 'Get your badge scanned',
-      at: spot(0, -5.0, -45.0, 3.0),
+      // In the west aisle, in FRONT of the reception counter, not behind it.
+      // It used to be at -5.0, -45.0, which was the middle of the old desk
+      // enclosure — a 9.8 m box you could stand a marker in the middle of.
+      // The concourse now carries the island the plan draws, 5.6 m across
+      // with a metre of staff space behind the counter, so that point was
+      // wedged between the counter and the office: the marker read as a
+      // thing standing on the wrong side of the desk, and only Voxxy and
+      // Droid could ever have got to it.
+      //
+      // Taken FROM the venue rather than typed, because the island has since
+      // moved 3.5 m north and a literal would have been left standing in the
+      // aisle beside a blank wall.
+      at: spot(RECEPTION_DESK.floor, RECEPTION_DESK.x, RECEPTION_DESK.y, 3.0),
       seconds: 2,
+    },
+
+    /*
+     * Three conversations, and they are doing three different jobs.
+     *
+     * A conference is people talking. Twelve activities that are all "drive
+     * somewhere and wait" makes one out of a week of it, so these are the
+     * counterweight — and each one also carries something the player would
+     * otherwise have to be told by a tutorial box, which is the only reason
+     * there is no tutorial box.
+     *
+     * Kept to three. A card with twelve lines on it is already at the limit
+     * of what `SPEC.md` §3 will call one objective line on screen, and a game
+     * where you stop every thirty metres to read is a game nobody finishes in
+     * a six-minute day.
+     */
+    {
+      kind: 'talk',
+      id: 'talk-desk',
+      // The same counter the badge is scanned at, and deliberately: you are
+      // already stopped there, so the first conversation in the game costs
+      // nothing but the press that discovers the key exists.
+      label: 'Say hello at the desk',
+      who: 'Registration',
+      at: spot(RECEPTION_DESK.floor, RECEPTION_DESK.x, RECEPTION_DESK.y, 3.0),
+      after: ['badge'],
+      lines: [
+        'There you are. Badge is on, so you are officially at a conference.',
+        'Twelve things worth doing and one day to do them in. You will not get all of them. Nobody does.',
+        'Pick the ones you will be sad to have missed.',
+      ],
+    },
+
+    {
+      kind: 'talk',
+      id: 'talk-stand',
+      label: 'Talk to the stand crew',
+      who: 'Stand 11',
+      // On the hall floor among the stands, where a robot is already driving
+      // past on the sticker sweep.
+      at: spot(0, 14.0, -24.0, 3.2),
+      lines: [
+        'Careful with that crate, it is heavier than it looks.',
+        'Anything with weight in it changes how you stop, not how you start. Same motor, twice the distance.',
+        'And the ramp is the one place that catches people out. Try it empty first.',
+      ],
+    },
+
+    {
+      kind: 'talk',
+      id: 'talk-keynote',
+      label: 'Ask the steward about the keynote',
+      who: 'Steward',
+      // Outside Room 8, upstairs, on the way to the thing everyone is going
+      // to. Reach-gated: a steward leaning over a barrier talks to whoever is
+      // tall enough to be at eye level, which is Voxxy and Droid, not Biggy —
+      // and Biggy cannot get up here at all, which is the joke.
+      at: spot(1, -3.0, -27.5, 3.4),
+      gates: { reach: 1.0 },
+      lines: [
+        'Room 8, and it fills. If you are coming, come early.',
+        'No, your big friend cannot. No goods lift in this building, and it will not do the stairs.',
+        'It is not missing much. The talk is being recorded.',
+      ],
     },
 
     ...stickerSweep(),

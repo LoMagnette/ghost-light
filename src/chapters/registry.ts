@@ -88,6 +88,18 @@ export const CHAPTER_ONE: Chapter = {
     // Nobody is here. Kept so the type is satisfied and so that `?at=` and
     // the lab can be driven with a crowd switched on for comparison.
     crowd: 0x5a6472,
+    // Silt. PALE and slightly warm against everything else in this chapter,
+    // which is the point: the building is cold blue-grey concrete and carpet,
+    // and what has settled on it came from outside. A drift that matches the
+    // floor is a floor with a lighter edge, not thirty years of dust.
+    dust: 0xa9a08e,
+    // Growth. The only green in the game — see `Palette.growth`. Dry rather
+    // than lush: this comes up through a floor slab in a building with no
+    // water and not much light, so it is a scrubby olive and not a lawn.
+    growth: 0x6f7a4a,
+    // Water off the roof, on carpet. Darker than the floor it marks and
+    // faintly warm, which is how a stain reads against anything cold.
+    damp: 0x2b3038,
     accent: 0xf24471,
     text: 0x9fa8b0,
   },
@@ -107,7 +119,23 @@ export const CHAPTER_TWO: Chapter = {
   controlMode: 'switch',
   cast: ['voxxy', 'droid'],
   crowdDensity: 0.35,
-  lightLevel: 0.62,
+  /*
+   * Lower than it looks, and it has to be: this is the one chapter where the
+   * ROOMS carry their own light.
+   *
+   * Every other chapter's `lightLevel` is the whole answer. Here it is only
+   * the corridor — the building with nothing running in it — and each of the
+   * five sessions adds its own house lights on top, driven off its meter (see
+   * `tendRoom`). At 0.62 the base was doing so much of the work that a room
+   * losing all of its own light barely changed, which made `MECHANICS.md`
+   * §5.2 a lie: the meter was the primary signal and the building was the
+   * fallback, exactly backwards.
+   *
+   * So the corridor sits between Chapter I's 0.18 and Chapter III's 0.85,
+   * and a running room is brighter than it while a dead one is not. Which is
+   * also what a half-used conference floor looks like from the corridor.
+   */
+  lightLevel: 0.45,
   palette: {
     void: 0x0a0806,
     floor: 0x6d6154, // an older, warmer carpet than the one there now
@@ -138,6 +166,12 @@ export const CHAPTER_TWO: Chapter = {
     // era and the reason this chapter reads as a photograph rather than a
     // render.
     crowd: 0x8c6249,
+    // Never drawn: `Decay` builds nothing above a crowd density of zero, and
+    // this era has people in it. Tungsten values, so that switching decay on
+    // in the lab shows what it would look like rather than a hole.
+    dust: 0xb8a482,
+    growth: 0x7c7a42,
+    damp: 0x3a3022,
     accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
     text: 0xf2e8d8,
   },
@@ -153,7 +187,7 @@ export const CHAPTER_THREE: Chapter = {
   tagline: 'More conference than one day can hold.',
   brief:
     'Every room is full and everything is running. Three robots, six minutes, ' +
-    'twelve things worth doing — and everything you pick up, you have to carry.',
+    'fifteen things worth doing — and everything you pick up, you have to carry.',
   controlMode: 'switch',
   cast: ['voxxy', 'droid', 'biggy'],
   crowdDensity: 1,
@@ -192,6 +226,10 @@ export const CHAPTER_THREE: Chapter = {
     // to the seating it fills, so a packed room reads as ONE mass with a
     // texture rather than as five hundred separate dots.
     crowd: 0x6b6a72,
+    // Never drawn, as in Chapter II — see there.
+    dust: 0xaea79a,
+    growth: 0x74804f,
+    damp: 0x26241f,
     accent: 0xc8895f,
     text: 0xf2f5f7,
   },

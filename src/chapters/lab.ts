@@ -54,6 +54,12 @@ export const MOVEMENT_LAB: Chapter = {
     booth: 0x4a545d,
     glazing: 0x2f363c,
     crowd: 0x5b6570,
+    // The lab is empty like Chapter I and lit like Chapter III, which is
+    // exactly the combination `abandoned()` exists to exclude — nothing
+    // here is ever drawn. Neutral values, for the type.
+    dust: 0x4a4f54,
+    growth: 0x4a5444,
+    damp: 0x1c2024,
     accent: 0x4ec9b0,
     text: 0xdfe5e9,
   },

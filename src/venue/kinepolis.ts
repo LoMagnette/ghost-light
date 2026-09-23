@@ -465,24 +465,66 @@ const HALL_OPENING = rect(
 );
 
 /**
- * The toilets off the south-east of the concourse, and the corridor to them.
+ * The toilets in the NORTH-EAST of the concourse, and the corridor to them.
  *
- * Same 19.8 m frontage as the BOF rooms below, because on the plan all three
- * are one block of building served by one wall — and served, on the plan, off
- * a corridor along their south side, which is what gets a robot in there.
- * The rooms themselves are left empty on purpose for now.
+ * These had been sitting in the eastern service strip with the BOF rooms, on
+ * the same 19.8 m frontage, because that is where `exhibition-floor.jpg` —
+ * the annotated Devoxx plan — writes "Toilets >". The architect's drawing
+ * disagrees, and it is the drawing that has walls on it: `hollywood-area.png`
+ * puts the block INSIDE the concourse, in the corner between the hall's south
+ * wall and the east elevation, 9.27 m of frontage and not 19.8.
+ *
+ * The two are not equally good evidence about a wall. An annotation says a
+ * room is somewhere; a drawn wall says where it is. So the block moves 9 m
+ * west into the concourse, and the strip it leaves becomes a third BOF room —
+ * which is the right answer to that conflict as well, because a BOF room is a
+ * partition Devoxx puts up for a week and the toilets are building.
+ *
+ * MEASURED, and the depths come out almost exactly where the old guess had
+ * them — 4.10 m of cubicles against 3.6, 1.78 m of corridor against 2.2. It
+ * was only ever the frontage and the x that were wrong.
+ *
+ *   corridor along the hall wall   1.77 m   (red on the marked-up plan)
+ *   the cubicles                   4.10 m
+ *   the lobby you queue in         1.78 m
+ *
+ * Anchored NORTH to the hall's south wall and WEST to x 16.93, both measured.
+ * Its EAST side is the concourse's east wall, and that is the one line where
+ * the drawing and this building disagree: 26.2 m against 22.7. So the block
+ * ends where this concourse ends and comes out 5.8 m across instead of 9.3.
+ *
+ * West is the anchor rather than east because the west side is the wall the
+ * marked-up plan actually points at — an interior wall, drawn, measurable —
+ * where the east side is just wherever the building stops. It is also what
+ * leaves the wheelchair ramp its ground: the ramp is a 12 m straight run
+ * standing in for a switchback (see `RAMP`), it was invented, and an invented
+ * object does not get to sit on a drawn one.
  */
-const TOILET_CORRIDOR = rect(22.3, -45.2, 19.8, 2.2);
-const TOILETS = rect(22.3, -43.0, 19.8, 3.6);
+const TOILET_BLOCK_X = 16.93;
+const TOILET_STRIP = 1.77;
+
+const TOILETS = rect(
+  TOILET_BLOCK_X,
+  HALL.y - TOILET_STRIP - 4.1,
+  RECEPTION.x + RECEPTION.w - TOILET_BLOCK_X,
+  4.1,
+);
+const TOILET_CORRIDOR = rect(TOILETS.x, TOILETS.y - 1.78, TOILETS.w, 1.78);
 
 /**
  * The wheelchair ramp from the concourse down into the hall.
  *
- * Ten metres wide because it stands for a ramp nobody draws — see the note on
- * the reception's plate — and the width is what makes it comfortably drivable
+ * Wide because it stands for a ramp nobody draws — see the note on the
+ * reception's plate — and the width is what makes it comfortably drivable
  * rather than what the building has.
+ *
+ * It was 10 m across at x 11.5, and that put it under the toilets: this run
+ * is invented and the toilet block is measured, so the ramp is the one that
+ * moves. What is left for it is the 6.1 m between the east end of the
+ * threshold terrace and the block's west wall, so it takes 5.5 m of that —
+ * still four times Biggy's 1.44 m, which is all the width was ever for.
  */
-const RAMP = rect(11.5, -49.4, 10.0, 12.0);
+const RAMP = rect(11.0, -49.4, 5.5, 12.0);
 
 /** The gap it needs in the wall at the bottom. A ramp, not a ten-metre hole. */
 const RAMP_DOOR = 4.0;
@@ -493,9 +535,68 @@ const RAMP_OPENING = rect(
   2,
 );
 
+/**
+ * The forecourt, and the way out onto it.
+ *
+ * Photographed in `references/venue/photos/54842743975_b835884445_k.jpg`:
+ * you come out of a bank of glass doors onto a strip of asphalt, cross a
+ * line of bollards and a band of brick setts, and you are on the road. The
+ * building behind you is two storeys of curtain wall in a mullion grid
+ * between pale precast flanks, with the sign high up and three banner poles
+ * out front.
+ *
+ * It sits at CONCOURSE_LEVEL because that is what the concourse IS: you
+ * come in at street level and go DOWN into the hall. The forecourt is not
+ * a step down from reception, it is the same ground continuing.
+ */
+const FORECOURT = rect(-34, -88, 82, 27.6);
+
+/**
+ * Where the curtain wall starts, leaving solid precast west of it.
+ *
+ * Up here with the entrance rather than down with `CURTAIN_WALLS`, because
+ * the two are laid out against each other: the precast flank carries the
+ * star and the doors are punched into it, and the glass east of this line
+ * carries the name. One number decides where the elevation changes.
+ */
+const GLAZING_START = -2.0;
+
+/**
+ * The bank of doors, hard against the WEST corner of the building.
+ *
+ * This is the only thing on the elevation placed by the route rather than
+ * by the picture, and it is placed by the route because the route is what a
+ * player uses. `exhibition-floor.jpg` leaves a clear 6.3 m aisle up the west
+ * side of the concourse — west wall to the reception counter, with the grand
+ * flight starting at x -5.65 — and that aisle runs the whole depth of the
+ * building to the hall. Enter here and the stair is on your right and you
+ * walk straight past it.
+ *
+ * Every other position fails that. Centred on the frontage, which is where
+ * this started, put the doors dead in front of the grand flight: you came in
+ * and the first thing you met was eight metres of staircase across your
+ * nose. Moving it to the west end of the GLAZING — which is where the
+ * photograph shows the crowd going in, and which was the last pass at this —
+ * moved it 1.6 m and changed nothing about that.
+ *
+ * So the doors are a glazed bay in the precast rather than the first bay of
+ * the curtain wall. That is the one place the elevation gives up something
+ * to the plan: the photograph has the leaves where the glass begins. A
+ * glazed slot in a precast flank is an ordinary way to build an entrance and
+ * it keeps the star, the name and the sweep of glass where they belong,
+ * which is more of the photograph than moving the glazing west would have
+ * left.
+ */
+const ENTRANCE_WIDTH = 5.6;
+const ENTRANCE_X = RECEPTION.x + 0.7;
+
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
   { floor: 0, bounds: HALL_OPENING },
   { floor: 0, bounds: RAMP_OPENING },
+  // The doors themselves, and the only hole in this elevation. The curtain
+  // wall east of them is WINDOW — see CURTAIN_WALLS — so this is the whole
+  // of the way in and out of the building on foot.
+  { floor: 0, bounds: rect(ENTRANCE_X, RECEPTION.y - 1.2, ENTRANCE_WIDTH, 2.4) },
 ];
 
 const floor0Rooms: Room[] = [
@@ -523,17 +624,28 @@ const floor0Rooms: Room[] = [
   // way up to the cinema rooms". See `receptionStairs`.
   { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6), elevation: CONCOURSE_LEVEL },
   { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7), elevation: CONCOURSE_LEVEL },
+  // The strip the toilets used to hold. Three rooms of 7.6, 7.7 and 7.8 m on
+  // one 19.8 m frontage is what that side of the building always was; the
+  // toilets were only ever standing in the third of them. See `TOILETS`.
+  { id: 'bof-3', label: 'BOF 3', kind: 'service', floor: 0, bounds: rect(22.3, -45.2, 19.8, 7.8), elevation: CONCOURSE_LEVEL },
   /*
-   * The toilets, north of the BOF rooms and labelled on the plan.
+   * The toilets, in the concourse's north-east corner — see `TOILETS` for why
+   * they are there and not out in the service strip with the BOF rooms.
    *
-   * Modelled because the south-east corner of the concourse was 400 m² of
-   * nothing, and because a building people believe in has the dull rooms in
-   * it. The cubicle partitions are what makes it read as a toilet block
-   * rather than a store — see `receptionFitOut`.
+   * Modelled because that corner of the concourse was 400 m² of nothing, and
+   * because a building people believe in has the dull rooms in it.
    */
   { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
   { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
+  {
+    id: 'forecourt',
+    label: 'Outside',
+    kind: 'outside',
+    floor: 0,
+    bounds: FORECOURT,
+    elevation: CONCOURSE_LEVEL,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -659,27 +771,6 @@ const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, S
 const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
- * Tread depth, metres — how much floor each step of a flight takes up.
- *
- * With the building's 0.18 m riser this is a 31 degree stair, which is what
- * every flight in here except one already was. The grand flight was typed in
- * at 5.6 m deep for a 5.0 m rise, which is 28 steps of 20 cm: an 89% gradient
- * and a tread you cannot get a foot on. It read as a cliff standing in the
- * middle of the reception concourse, because that is what it was.
- *
- * So the run is DERIVED from the rise rather than measured off a drawing. A
- * flight's depth is not a free choice — it is the rise divided by the riser,
- * times this — and the plans do not carry a scale bar accurate enough to argue
- * with arithmetic.
- */
-const GOING = 0.3;
-
-/** How deep a flight has to be to climb `rise` metres at the building's riser. */
-function runFor(rise: number): number {
-  return Math.round(rise / RISER) * GOING;
-}
-
-/**
  * How much corridor is left at each side of the grand flight, metres.
  *
  * It used to be none: the flight was the full 14.3 m width of the corridor it
@@ -696,12 +787,42 @@ function runFor(rise: number): number {
 const GRAND_SIDE = 1.5;
 
 /**
- * The grand flight out of the reception concourse — see the Link below.
+ * The grand flight is not an ordinary staircase, and does not use the
+ * building's stair.
  *
- * Its long axis is the one you walk ACROSS: 11.3 m wide, centred in the 14.3 m
- * corridor it delivers you to, and 8.4 m deep for the 5.0 m it has to climb.
+ * `RISER`/`GOING` is the fire stair that appears fourteen times in here: 0.18
+ * over 0.30, a 31 degree flight you climb because you have to. At that pitch
+ * the 5.0 m out of the concourse takes 8.4 m of run, and 8.4 m under a
+ * fourteen-metre width is not a grand flight — it is a wide fire stair, and it
+ * read as one: short, steep and stubby with the whole concourse in front of
+ * it.
+ *
+ * So this one gets a ceremonial pitch of its own: a 0.15 m riser on a 0.36 m
+ * going, 23 degrees, which is what a flight built to be walked DOWN in a crowd
+ * measures. 5.0 m then takes 33 risers and 11.9 m of run — half again as deep,
+ * and the difference between a stair in a room and a stair that is the room.
+ *
+ * Shallower is safe for the cast in both directions: Droid's `maxStepRise` is
+ * the building's 0.18 and this is under it, so everything that could climb the
+ * flight still can, and Biggy's is 0, so the one machine that could not still
+ * cannot. `npm run traverse` asserts both.
  */
-const GRAND_RUN = runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL);
+/**
+ * Tread depth on the grand flight, metres — how much floor each step takes.
+ *
+ * A flight's depth is not a free choice: it is the rise divided by the riser,
+ * times the going. The grand flight had been TYPED IN at 5.6 m deep for a
+ * 5.0 m rise, which is 28 steps of 20 cm — an 89% gradient and a tread you
+ * cannot get a foot on — because the plans carry no scale bar accurate enough
+ * to argue with arithmetic. So it is derived, and it has been derived twice:
+ * once at the building's 0.18/0.30, and now here.
+ */
+const GRAND_RISER = 0.15;
+const GRAND_GOING = 0.36;
+
+/** Risers in the grand flight, and the run they need. */
+const GRAND_STEPS = Math.round((FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_RISER);
+const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
 
 /**
  * The WELL — the hole the grand flight comes up through — which is the full
@@ -1364,11 +1485,25 @@ function diagonal(u0: number, v0: number, u1: number, v1: number, steps = 10): B
   const half = SIGN_STROKE / GLYPH_WIDTH / 2;
   for (let i = 0; i < steps; i += 1) {
     const u = u0 + (u1 - u0) * ((i + 0.5) / steps);
+    const a = v0 + (v1 - v0) * (i / steps);
+    const b = v0 + (v1 - v0) * ((i + 1) / steps);
     bars.push({
       u0: u - half,
       u1: u + half,
-      v0: v0 + (v1 - v0) * (i / steps),
-      v1: v0 + (v1 - v0) * ((i + 1) / steps),
+      /*
+       * Low edge first, and it matters for every stroke that goes DOWN.
+       *
+       * A stroke from v 1 to v 0 walks its steps downward, so each band
+       * came out with its top in `v0` and its bottom in `v1` — an inverted
+       * box, which every consumer turned into a one-centimetre sliver at
+       * the wrong height. It has been wrong since the stage letters were
+       * written: the falling diagonal of every V and X in `#DEVOXX` was
+       * missing, and at thirty metres across a dark auditorium nobody
+       * noticed. KINEPOLIS put a K and an N on the front of the building
+       * at eye level and they came out as bare uprights.
+       */
+      v0: Math.min(a, b),
+      v1: Math.max(a, b),
     });
   }
   return bars;
@@ -1414,6 +1549,78 @@ function glyph(character: string): Bar[] {
       ];
     case 'X':
       return [...diagonal(0.06, 0, 0.94, 1), ...diagonal(0.94, 0, 0.06, 1)];
+    /*
+     * The rest of KINEPOLIS, which is what the building calls itself.
+     *
+     * Not a borrowed wordmark: it is the name on the elevation in the
+     * photograph, and putting it there is the difference between "a large
+     * glazed building" and "the Kinepolis". Same strokes as the stage
+     * letters, so a sign anywhere in the venue is drawn one way.
+     */
+    case 'K':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        ...diagonal(0.92, 1, su, 0.52, 7),
+        ...diagonal(su, 0.48, 0.92, 0, 7),
+      ];
+    case 'I':
+      return [{ u0: 0.5 - su / 2, u1: 0.5 + su / 2, v0: 0, v1: 1 }];
+    case 'N':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: 1 - su, u1: 1, v0: 0, v1: 1 },
+        ...diagonal(su, 1, 1 - su, 0, 9),
+      ];
+    case 'P':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.8, v0: 1 - sv, v1: 1 },
+        { u0: 0.8, u1: 0.8 + su, v0: 0.5, v1: 1 - sv },
+        { u0: su, u1: 0.8 + su, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+      ];
+    case 'L':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.9, v0: 0, v1: sv },
+      ];
+    case 'S':
+      return [
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0, u1: su, v0: 0.5 - sv / 2, v1: 1 - sv },
+        { u0: 0, u1: 1, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+        { u0: 1 - su, u1: 1, v0: sv, v1: 0.5 + sv / 2 },
+        { u0: 0, u1: 1, v0: 0, v1: sv },
+      ];
+    /*
+     * T, C and R, which exist for one reason: the name over the door is
+     * "KINEPOLIS EVENT CENTER" and not "KINEPOLIS".
+     *
+     * The photograph is unambiguous about it and the two words are half the
+     * length of the sign — cutting them was cutting the thing that says this
+     * is a venue rather than a cinema.
+     */
+    case 'T':
+      return [
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0.5 - su / 2, u1: 0.5 + su / 2, v0: 0, v1: 1 - sv },
+      ];
+    case 'C':
+      return [
+        { u0: 0, u1: su, v0: sv, v1: 1 - sv },
+        { u0: 0, u1: 1, v0: 1 - sv, v1: 1 },
+        { u0: 0, u1: 1, v0: 0, v1: sv },
+      ];
+    case 'R':
+      return [
+        { u0: 0, u1: su, v0: 0, v1: 1 },
+        { u0: su, u1: 0.8, v0: 1 - sv, v1: 1 },
+        { u0: 0.8, u1: 0.8 + su, v0: 0.5, v1: 1 - sv },
+        { u0: su, u1: 0.8 + su, v0: 0.5 - sv / 2, v1: 0.5 + sv / 2 },
+        // The leg. Nine bands rather than the diagonal helper's default,
+        // because over half a glyph's height a coarser stair reads as a
+        // staircase rather than as a stroke.
+        ...diagonal(0.42, 0.5, 0.94, 0, 9),
+      ];
     default:
       return digit(character);
   }
@@ -1583,6 +1790,46 @@ function roomNumeral(room: Rect, number: number, side: -1 | 1): Decor[] {
       INSIDE_DIGIT_GAP,
     ),
   ];
+}
+
+/**
+ * The Kinepolis star, as a raster of bars.
+ *
+ * It is the largest single thing on the front of the building after the
+ * glass, and it is what makes the elevation that company's rather than any
+ * event centre's. A five-pointed star has no axis-aligned edge anywhere on
+ * it, and this renderer extrudes plan rectangles — so it is drawn the way a
+ * star is drawn on a low-resolution screen, as rows of decreasing width.
+ * Fourteen of them, and at thirty pixels nobody can tell.
+ *
+ * Same `Bar` space as the letters: u across, v up, both 0..1.
+ */
+function star(): Bar[] {
+  const rows: [number, number, number, number][] = [
+    // v0, v1, then the u extent of that row. Two entries where the legs
+    // have split and the row is two bars rather than one.
+    [0.88, 1.0, 0.44, 0.56],
+    [0.78, 0.88, 0.4, 0.6],
+    [0.7, 0.78, 0.36, 0.64],
+    [0.63, 0.7, 0.0, 1.0],
+    [0.56, 0.63, 0.07, 0.93],
+    [0.48, 0.56, 0.15, 0.85],
+    [0.4, 0.48, 0.2, 0.8],
+    [0.33, 0.4, 0.24, 0.76],
+  ];
+  const bars: Bar[] = rows.map(([v0, v1, u0, u1]) => ({ u0, u1, v0, v1 }));
+
+  // Below the waist the star is two legs, so each row is a pair.
+  const legs: [number, number, number, number][] = [
+    [0.22, 0.33, 0.19, 0.4],
+    [0.11, 0.22, 0.13, 0.36],
+    [0.0, 0.11, 0.06, 0.32],
+  ];
+  for (const [v0, v1, u0, u1] of legs) {
+    bars.push({ u0, u1, v0, v1 });
+    bars.push({ u0: 1 - u1, u1: 1 - u0, v0, v1 });
+  }
+  return bars;
 }
 
 /**
@@ -1807,10 +2054,22 @@ const CIRCULATION = new Set<RoomKind>(['hall', 'corridor', 'foyer', 'stairs']);
  * that separates a room from circulation. Two auditoriums side by side get no
  * door, because cinemas do not open into each other.
  */
-function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor: Decor[] } {
+function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: Decor[] } {
   const walls: Obstacle[] = [];
   const decor: Decor[] = [];
   const seen = new Set<string>();
+
+  /*
+   * Outside is not a room with walls; it is the absence of them.
+   *
+   * The forecourt has to BE a room, because everything the simulation knows
+   * about standing anywhere comes from rooms — but if the wall builder can
+   * see it, the reception's south elevation stops being "outside air" and
+   * becomes a party wall between two rooms, which is the one thing the
+   * glass front is not. Hidden from this pass, the envelope stays the
+   * envelope and the curtain wall still finds it.
+   */
+  const rooms = all.filter((room) => room.kind !== 'outside');
 
   for (const room of rooms) {
     // A stage is a PLATE, not an enclosure: a piece of floor lying inside the
@@ -1883,7 +2142,7 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
           (r) => r !== room && r.floor === room.floor && rectContains(r.bounds, ox, oy),
         );
         if (!neighbour) {
-          kind.push(1); // outside air
+          kind.push(3); // outside air — this one is the building's envelope
           continue;
         }
 
@@ -1917,6 +2176,9 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
         let a = edge.from + (i * span) / steps;
         let z = edge.from + (j * span) / steps;
         const doored = kind[i] === 2;
+        // Both read from the run being emitted, so both have to be taken
+        // BEFORE `i` walks on to the next one.
+        const envelope = kind[i] === 3;
         i = j;
 
         const pieces: [number, number][] = [];
@@ -1983,7 +2245,7 @@ function derivedWalls(rooms: Room[], links: Link[]): { walls: Obstacle[]; decor:
               runsAlong(bounds, edge.horizontal, l.bounds),
           );
           if (!rake) {
-            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT });
+            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT, exterior: envelope });
             continue;
           }
 
@@ -2171,7 +2433,11 @@ const receptionStairs: Link[] = [
    * cannot be wider than the corridor it lands in, so it takes the corridor's
    * full width and loses the surveyed 1.4 m.
    */
-  { id: 'grand-stair', from: 0, to: 1, bounds: GRAND_STAIR, base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: RISER },
+  // The one flight in the building with a riser of its own — see GRAND_RISER.
+  // Stated as the rise over its own step count rather than as GRAND_RISER, so
+  // the tread a robot is drawn on and the height it is drawn at cannot drift
+  // apart when the rounding lands anywhere but exactly.
+  { id: 'grand-stair', from: 0, to: 1, bounds: GRAND_STAIR, base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: (FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_STEPS },
 ];
 
 /**
@@ -2552,14 +2818,33 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  * which sits 0.4 m further out and is not glass.
  */
 const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
-  // The entrance itself: the same glazing, coming down to the floor, and
-  // some of it opens. "Windows that can be opened as a door" is the
-  // building's own description and it is the right one — a door here is a
-  // panel of the curtain wall on hinges, not a doorway cut in a wall.
+  /*
+   * The glazed sweep east of the precast — WINDOW, not door.
+   *
+   * It was `door` on the reading that "windows that can be opened as a
+   * door" is the building's own description of its front, and so every
+   * panel of 26 m of curtain wall came down to a 0.2 m kick rail. That is
+   * a shopfront. The photograph has a solid base under the glass along the
+   * whole run and leaves only at the entrance, which is also what
+   * `exhibition-floor.jpg` draws: plain mullion ticks over most of the
+   * frontage and door swings only where you go in.
+   *
+   * The difference is one number — GLAZING_SILL against DOOR_KICK — and it
+   * is the difference between a wall of windows and a wall of doors.
+   */
+  /*
+   * NOT the whole frontage.
+   *
+   * The photograph has the left third of the elevation in solid precast
+   * with a row of small windows at pavement level, and the glazed sweep
+   * starting about where the doors do. Glazing the full 36 m made the
+   * front one unbroken wall of glass, which is a different building — and
+   * it left nowhere to put the star.
+   */
   {
     floor: 0,
-    bounds: rect(RECEPTION.x - 1, RECEPTION.y - 0.6, RECEPTION.w + 2, 1.2),
-    kind: 'door',
+    bounds: rect(GLAZING_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - GLAZING_START, 1.2),
+    kind: 'window',
   },
   /*
    * The same elevation a storey up, over the entrance and facing the head of
@@ -2598,6 +2883,15 @@ const GLAZING_SILL = 0.45;
  */
 const MULLION_PITCH = 2.6;
 const MULLION_WIDTH = 0.14;
+/**
+ * Height between transoms, metres. The grid runs both ways or it is slots.
+ *
+ * 1.5 put a single bar across a 3.2 m storey, which is a wall of glass cut in
+ * half rather than a grid. The photograph's bays are near enough square
+ * against a 2.6 m mullion pitch, so two bars a storey — and the elevation
+ * gains the texture that tells a curtain wall from a painted rectangle.
+ */
+const TRANSOM_PITCH = 1.1;
 
 /**
  * The bottom rail of a glazed door, metres.
@@ -2622,7 +2916,7 @@ const PANE_THICKNESS = 0.08;
  * length of the run. The pane is the only piece in the building that is
  * drawn translucent; see GLAZING_OPACITY in the renderer.
  */
-function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
+function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; decor: Decor[] } {
   const kept: Obstacle[] = [];
   const decor: Decor[] = [];
 
@@ -2647,11 +2941,13 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     /*
      * The wall stays, for collision, and stops being drawn.
      *
-     * The doors do not open in the simulation, and that is not an oversight
-     * about doors — there is nothing outside to open onto. South of this line
-     * the building's extents run out: no plate, no floor, a robot that got
-     * through would step off the concourse into 1.2 m of nothing and keep
-     * falling. They are doors when there is a forecourt to walk into.
+     * Most of it, anyway. This used to note that the doors do not open
+     * because "there is nothing outside to open onto" — south of the line
+     * the building's extents ran out and a robot through the glass would
+     * step off the concourse into 1.2 m of nothing. There is a forecourt
+     * now, so the bank of doors is a hole in this run rather than a pane:
+     * see the entrance in WALL_OPENINGS, which stops the wall being built
+     * across it in the first place.
      */
     kept.push({ ...wall, hidden: true });
 
@@ -2663,8 +2959,25 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
     // storeys it is the ONLY thing that tells them apart — which is also all
     // the photograph shows: one wall of glass, standing on something upstairs
     // and reaching the pavement downstairs.
+    /*
+     * Which side of this run the building is on: +1 for the far side in
+     * the thin direction, -1 for the near one.
+     */
+    const probe = (sign: number): boolean => {
+      const px = along ? cx : cx + sign * 0.35;
+      const py = along ? cy + sign * 0.35 : cy;
+      return rooms.some(
+        (r) => r.floor === wall.floor && r.kind !== 'outside' && rectContains(r.bounds, px, py),
+      );
+    };
+    const inward = probe(1) ? 1 : -1;
+
     const foot = door ? DOOR_KICK : GLAZING_SILL;
-    decor.push({ floor: wall.floor, bounds: b, height: foot });
+    // The wall goes hidden and these take over drawing it, so they inherit
+    // its place on the envelope with it — otherwise the one elevation the
+    // player walks out to look at is the one left out of the elevation.
+    const skin = wall.exterior;
+    decor.push({ floor: wall.floor, bounds: b, height: foot, exterior: skin });
 
     decor.push({
       floor: wall.floor,
@@ -2674,6 +2987,7 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
       base: foot,
       height: wall.height,
       material: 'glazing',
+      exterior: skin,
     });
 
     // One mullion at each end and the bays between them as near the pitch as
@@ -2688,11 +3002,641 @@ function glazeFacade(walls: Obstacle[]): { walls: Obstacle[]; decor: Decor[] } {
           : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
         base: foot,
         height: wall.height,
+        exterior: skin,
+      });
+    }
+
+    /*
+     * And the transoms, which the first pass simply did not have.
+     *
+     * A curtain wall is a GRID. Drawn with uprights alone, every bay is one
+     * tall sheet of glass and the elevation reads from the forecourt as a
+     * row of dark slots rather than as a wall of windows — the photograph
+     * has four or five horizontals for every upright. One more loop over
+     * the same run.
+     */
+    /*
+     * The spandrel: the solid band at the floor line above a glazed storey.
+     *
+     * The ground floor's glass tops out at the wall head and the first
+     * floor's starts at its own datum, which left nearly two metres of
+     * nothing between them — from the forecourt, a stripe of sky across the
+     * middle of the building. Every curtain wall has a panel there hiding
+     * the floor slab.
+     *
+     * Only the ground storey needs one: above the first floor is the roof.
+     * The height is measured to the next floor from the concourse this run
+     * stands on, which is the one plate a glazed elevation sits on here.
+     */
+    if (skin && wall.floor === 0) {
+      decor.push({
+        floor: wall.floor,
+        // In the plane of the curtain wall and on the inner face of it, for
+        // the same reason the transoms are: a panel centred on the wall
+        // line belongs to the rooms on both sides of it, and dressing has
+        // to belong to one.
+        bounds: along
+          ? rect(b.x, cy + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.w, PANE_THICKNESS * 2)
+          : rect(cx + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.y, PANE_THICKNESS * 2, b.h),
+        base: wall.height,
+        height: FLOOR_HEIGHT - CONCOURSE_LEVEL,
+        material: 'structure',
+        exterior: true,
+      });
+    }
+
+    const lifts = Math.max(1, Math.round((wall.height - foot) / TRANSOM_PITCH));
+    for (let i = 1; i < lifts; i += 1) {
+      const z = foot + ((wall.height - foot) * i) / lifts;
+      decor.push({
+        floor: wall.floor,
+        /*
+         * Thin, in the plane of the glass, and on the INSIDE face.
+         *
+         * Given the wall's own 0.3 m depth a transom reads as a slab of
+         * building hanging in mid-air, which is what `npm run venue` said
+         * of it — and rightly: a glazing bar is held by the mullions
+         * either side, so it is dressing and names a material rather than
+         * being a piece of wall that has lost its support.
+         *
+         * Naming a material then brings the other rule with it — dressing
+         * has to sit wholly within one room — and a bar centred on the
+         * wall line sits in two. So it is pushed to whichever face has a
+         * room behind it, which is asked of the building rather than
+         * assumed: these two elevations both face south, and the day one
+         * does not, guessing would be silently wrong.
+         */
+        bounds: along
+          ? rect(b.x, cy + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
+          : rect(cx + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
+        base: z,
+        height: z + MULLION_WIDTH,
+        material: 'structure',
+        exterior: skin,
       });
     }
   }
 
   return { walls: kept, decor };
+}
+
+// ---------------------------------------------------------------------------
+// Outside
+// ---------------------------------------------------------------------------
+
+/**
+ * The forecourt, fitted out from the photograph.
+ *
+ * `references/venue/photos/54842743975_b835884445_k.jpg`: a strip of asphalt
+ * at the doors, a line of bollards across it, a band of brick setts, and
+ * then the road with its markings. Three banner poles stand in front of the
+ * glass, and a neighbour's shed sits off to the east.
+ *
+ * Everything taller than the cutaway plane is marked `exterior`, which is
+ * what gets it drawn its full height once a player is standing out here
+ * looking back at the building. See `BlockoutRenderer.buildEnvelope`.
+ */
+const BOLLARD_LINE = FORECOURT.y + FORECOURT.h - 7.5;
+const BOLLARD_PITCH = 2.6;
+const BOLLARD = 0.24;
+const BOLLARD_HEIGHT = 1.0;
+
+/**
+ * The elevation above the ground storey, in metres over the forecourt.
+ *
+ * The building has two storeys of curtain wall at the front and this file
+ * only ever had one. The upper one is real over the corridor — that is the
+ * window at the head of the grand stair — and over the other 30 m of
+ * frontage there is no room up there at all, so above the spandrel the
+ * elevation simply stopped at 6.2 m and the name hung in mid-air over it.
+ *
+ * From the forecourt that is the whole of what the photograph shows: a grid
+ * of glass two storeys high between pale precast flanks, under a parapet.
+ * So the upper storey is drawn as what it is — a skin, `exterior` only,
+ * never collided and never seen from inside, in the plane of the ground
+ * floor's own glass. The corridor's real window sits 0.6 m behind it and is
+ * simply hidden by it, which is what a facade in one plane does.
+ */
+const UPPER_SILL = FLOOR_HEIGHT - CONCOURSE_LEVEL;
+const UPPER_HEAD = UPPER_SILL + WALL_HEIGHT;
+/** The parapet, and how far the roof stands above the top of the glass. */
+const PARAPET_FOOT = UPPER_HEAD;
+const PARAPET_HEIGHT = 1.0;
+
+const BANNER_POLE = 0.22;
+const BANNER_HEIGHT = 8.4;
+/** Across the face of a banner, metres. Measured off the photograph's mast. */
+const BANNER_WIDTH = 1.06;
+/** Where the printed sleeve starts, metres above the forecourt. */
+const BANNER_FOOT = 2.95;
+/** The blue panel and its star, at the head of every one of them. */
+const BANNER_HEAD = 1.5;
+
+/**
+ * The upper storey of the front elevation, the parapet over it, and the
+ * panel joints in the precast flank.
+ *
+ * All of it `exterior` dressing on storey 0, which is the one thing that
+ * makes this honest rather than a cheat: every piece starts above the
+ * cutaway plane, so the storey never draws it and only the envelope does —
+ * it exists for a player standing in the forecourt looking back, and for
+ * nobody else. See `BlockoutRenderer.buildEnvelope`.
+ *
+ * The y of every piece is the facade plane, `doorY`, so the whole front is
+ * ONE surface: sign, star, glass and parapet all sit in the same 0.2 m of
+ * depth and the elevation reads flat, the way the photograph's does.
+ */
+function frontElevation(): Decor[] {
+  const decor: Decor[] = [];
+  const west = RECEPTION.x;
+  const east = RECEPTION.x + RECEPTION.w + 1;
+  const run = east - GLAZING_START;
+
+  /*
+   * The plane the whole elevation is built in.
+   *
+   * The south FACE of the reception's own wall, which is where the storey
+   * below draws its glass — not `doorY`, which is where the signage and the
+   * doors stand and is a quarter of a metre further out. Built off doorY the
+   * upper storey overhung the lower one by that quarter metre and the
+   * building came out with a string course across it at 6.2 m that the
+   * photograph has no trace of.
+   *
+   * Everything here also has to finish north of `RECEPTION.y`: `npm run
+   * venue` asks that dressing sit wholly within one room, and this is all
+   * the forecourt's — the side it is seen from.
+   */
+  const face = RECEPTION.y - WALL_THICKNESS / 2;
+  const inner = RECEPTION.y - face; // depth available before the room line
+  /** How far signage and the parapet stand off that plane. */
+  const PROUD = 0.06;
+
+  /*
+   * The precast flank, carried up.
+   *
+   * The wall builder stretches a ground-floor wall to the next floor's
+   * datum and stops, so the west third topped out at 6.2 m — a two-storey
+   * building with one storey of wall on a third of its front. This is the
+   * rest of it, and it is what the star has to be mounted ON.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(west, face, GLAZING_START - west, inner),
+    base: UPPER_SILL,
+    height: PARAPET_FOOT,
+    material: 'structure',
+    exterior: true,
+  });
+
+  /*
+   * The upper glass: one pane the length of the run, the same grid over it
+   * as the storey below.
+   *
+   * One pitch for both storeys — see MULLION_PITCH. The bays have to line
+   * up floor to floor or the elevation reads as two buildings stacked.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(GLAZING_START, face + 0.06, run, PANE_THICKNESS),
+    base: UPPER_SILL,
+    height: UPPER_HEAD,
+    material: 'glazing',
+    exterior: true,
+  });
+
+  const bays = Math.max(1, Math.round(run / MULLION_PITCH));
+  for (let i = 0; i <= bays; i += 1) {
+    decor.push({
+      floor: 0,
+      bounds: rect(
+        GLAZING_START + (i * (run - MULLION_WIDTH)) / bays,
+        face,
+        MULLION_WIDTH,
+        inner,
+      ),
+      base: UPPER_SILL,
+      height: UPPER_HEAD,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  const lifts = Math.max(1, Math.round(WALL_HEIGHT / TRANSOM_PITCH));
+  for (let i = 1; i < lifts; i += 1) {
+    const z = UPPER_SILL + (WALL_HEIGHT * i) / lifts;
+    decor.push({
+      floor: 0,
+      bounds: rect(GLAZING_START, face, run, inner - 0.04),
+      base: z,
+      height: z + MULLION_WIDTH,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The parapet, across the whole front.
+   *
+   * A curtain wall that stops at the head of its own glass leaves the sky
+   * sitting straight on the top transom, and from the forecourt that is the
+   * one thing that says "model" rather than "building". The photograph has
+   * a solid precast band over the lot, standing proud of the glass — which
+   * is why it is a little deeper than everything else here.
+   */
+  decor.push({
+    floor: 0,
+    bounds: rect(west, face - PROUD * 2, east - west, inner + PROUD * 2),
+    base: PARAPET_FOOT,
+    height: PARAPET_FOOT + PARAPET_HEIGHT,
+    material: 'structure',
+    exterior: true,
+  });
+
+  /*
+   * And the joints between the precast panels on that flank.
+   *
+   * The photograph's west third is not a blank wall: it is a grid of big
+   * cast panels with a shadow line between them, and that grid is most of
+   * what gives the elevation its scale. Drawn as strips standing 6 cm proud
+   * rather than as recesses, because the renderer extrudes plan rectangles
+   * and a groove cut into a wall is a box inside a box — invisible. A proud
+   * strip turns its own south face away from the key light and reads as the
+   * line it is standing in for.
+   */
+  const panel = 3.6;
+  for (let x = west + panel; x < GLAZING_START - 0.2; x += panel) {
+    decor.push({
+      floor: 0,
+      bounds: rect(x, face - PROUD, 0.1, PROUD + 0.06),
+      base: 0.2,
+      height: PARAPET_FOOT,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+  for (let z = 3.0; z < PARAPET_FOOT - 0.2; z += 3.0) {
+    decor.push({
+      floor: 0,
+      bounds: rect(west, face - PROUD, GLAZING_START - west, PROUD + 0.06),
+      base: z,
+      height: z + 0.1,
+      material: 'structure',
+      exterior: true,
+    });
+  }
+
+  return decor;
+}
+
+function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+
+  // The band of setts between the footway and the road. Lighter than the
+  // asphalt either side of it, which is the whole of how it reads.
+  decor.push({
+    floor: 0,
+    bounds: rect(FORECOURT.x + 2, FORECOURT.y + 9, FORECOURT.w - 4, 4.2),
+    height: 0.02,
+    material: 'paving',
+  });
+
+  // Road markings: a broken centre line, well out from the building.
+  for (let x = FORECOURT.x + 5; x < FORECOURT.x + FORECOURT.w - 5; x += 6.5) {
+    decor.push({
+      floor: 0,
+      bounds: rect(x, FORECOURT.y + 4, 3.2, 0.16),
+      height: 0.02,
+      material: 'sign',
+    });
+  }
+
+  /*
+   * Bollards, and they are SOLID.
+   *
+   * A row of posts you drive straight through would be worse than none —
+   * and they are on the line the photograph puts them on, between the
+   * footway and the road. The pitch leaves 2.36 m of gap, which Biggy's
+   * 1.44 m clears without having to aim.
+   */
+  for (let x = FORECOURT.x + 8; x < FORECOURT.x + FORECOURT.w - 8; x += BOLLARD_PITCH) {
+    solids.push({
+      floor: 0,
+      bounds: rect(x, BOLLARD_LINE, BOLLARD, BOLLARD),
+      height: BOLLARD_HEIGHT,
+      material: 'paving',
+    });
+  }
+
+  /*
+   * Three banner poles in front of the glass, as in the photograph. Tall
+   * enough to need the envelope, which is what `exterior` buys them.
+   *
+   * Placed by where they LAND on the elevation rather than by their own x,
+   * which is the only way to keep them off the name. The view is fixed at
+   * 45° from the south-west, so `project` puts a point at the same screen
+   * column as one `(doorY - poleY)` metres further east on the facade — a
+   * pole nearly three metres out in the forecourt covers a letter three
+   * metres east of it. Guessing at that is how the last pass parked one
+   * squarely on the E of KINEPOLIS, and a name with a letter missing is
+   * worse than a pole in the wrong place.
+   *
+   * So all three land on the pier between the doors and the glazing: east
+   * of the one opening a player has to find, west of the name and the
+   * star. The masts themselves stand in front of the entrance bay, which
+   * is where a venue puts its flags and where the photograph has them —
+   * the offset is what carries them clear on screen. Standing them where
+   * they LOOK like they stand would put them over the glass, crossing the
+   * sign; that reads as a foreground object through a lens and as a hole
+   * in the lettering in a flat isometric, which is the same call the file
+   * makes for the auditorium signs.
+   */
+  const poleY = FORECOURT.y + FORECOURT.h - 3.2;
+  for (const lands of [-6.9, -5.1, -3.3]) {
+    const x = lands - (RECEPTION.y - 0.34 - poleY);
+    decor.push({
+      floor: 0,
+      bounds: rect(x, poleY, BANNER_POLE, BANNER_POLE),
+      height: BANNER_HEIGHT,
+      material: 'paving',
+      exterior: true,
+    });
+    /*
+     * The banner itself: thin the way the camera looks at it, so what you
+     * see is the face rather than the edge.
+     *
+     * It hangs nearly the whole pole. The photograph's banners are four
+     * times as tall as they are wide and start at head height — a short
+     * pennant near the top reads as a flag, and these are the long printed
+     * sleeves a venue hangs down the length of a mast.
+     */
+    decor.push({
+      floor: 0,
+      bounds: rect(x - 0.42, poleY - 0.06, BANNER_WIDTH, 0.1),
+      base: BANNER_FOOT,
+      height: BANNER_HEIGHT - BANNER_HEAD - 0.1,
+      material: 'sign',
+      exterior: true,
+    });
+    // The panel at its head. Every banner in the photograph has one, and a
+    // blank white flag is the one thing that reads as unfinished rather
+    // than as blockout.
+    const headFoot = BANNER_HEIGHT - BANNER_HEAD;
+    decor.push({
+      floor: 0,
+      bounds: rect(x - 0.42, poleY - 0.1, BANNER_WIDTH, 0.1),
+      base: headFoot,
+      height: BANNER_HEIGHT,
+      material: 'signAccent',
+      exterior: true,
+    });
+    /*
+     * And the star on that panel, which is the thing the photograph's
+     * banners actually say.
+     *
+     * Proud of the panel by four centimetres, because the two are the same
+     * plane otherwise and a star drawn inside its own plate is invisible.
+     * Same shape as the one on the elevation — one star, drawn one way.
+     */
+    const badge = BANNER_WIDTH * 0.52;
+    for (const bar of star()) {
+      decor.push({
+        floor: 0,
+        bounds: rect(
+          x - 0.42 + (BANNER_WIDTH - badge) / 2 + bar.u0 * badge,
+          poleY - 0.14,
+          (bar.u1 - bar.u0) * badge,
+          0.08,
+        ),
+        base: headFoot + 0.14 + bar.v0 * (BANNER_HEAD - 0.28),
+        height: headFoot + 0.14 + bar.v1 * (BANNER_HEAD - 0.28),
+        material: 'sign',
+        exterior: true,
+      });
+    }
+  }
+
+  /*
+   * The entrance, made to read as one.
+   *
+   * WALL_OPENINGS takes the wall away so a robot can drive through, which
+   * leaves a nine-metre hole in a wall of glass and nothing to say it is a
+   * door. The photograph has a bank of leaves under a head, with a canopy
+   * over the lot. All drawn and none of it collided — the way through has
+   * to stay a way through.
+   */
+  const doorHead = 2.6;
+  /*
+   * Just OUTSIDE the line, not across it.
+   *
+   * `npm run venue` asks that every piece of dressing sit wholly inside one
+   * room, which is how it catches furniture straddling a wall. The first
+   * pass put the door leaves on the boundary itself, half in the reception
+   * and half on the forecourt, and got fifty-eight complaints for it. They
+   * belong to the forecourt: it is the side you see them from.
+   */
+  const doorY = RECEPTION.y - 0.34;
+
+  // The two storeys above the door head, which is the rest of the building
+  // the photograph shows. Same plane, so it is put in from the same datum.
+  decor.push(...frontElevation());
+
+  // The head over the doors, and the glazing above it carried across.
+  decor.push({
+    floor: 0,
+    bounds: rect(ENTRANCE_X, doorY, ENTRANCE_WIDTH, 0.16),
+    base: doorHead,
+    height: doorHead + 0.22,
+    material: 'structure',
+    exterior: true,
+  });
+  decor.push({
+    floor: 0,
+    bounds: rect(ENTRANCE_X, doorY + 0.04, ENTRANCE_WIDTH, PANE_THICKNESS),
+    base: doorHead + 0.22,
+    height: WALL_HEIGHT,
+    material: 'glazing',
+    exterior: true,
+  });
+
+  // The leaves. Five stiles across the opening: the frame you walk between.
+  const leaves = 5;
+  for (let i = 0; i <= leaves; i += 1) {
+    decor.push({
+      floor: 0,
+      bounds: rect(
+        ENTRANCE_X + (i * (ENTRANCE_WIDTH - MULLION_WIDTH)) / leaves,
+        doorY,
+        MULLION_WIDTH,
+        0.16,
+      ),
+      height: doorHead,
+      material: 'structure',
+    });
+  }
+
+  /*
+   * The floodlights over the doors. There is NO canopy.
+   *
+   * There was, and it was wrong twice over. The first one projected 3.3 m
+   * and read as a porte-cochère — from the forecourt it hid the doors, the
+   * head and the bottom of the sign under a slab of concrete. Cutting it to
+   * a 1.5 m hood made it a better-proportioned thing that the building still
+   * does not have: the photograph runs glass from the pavement to the head
+   * straight past the entrance, with nothing over it but a pair of lamps on
+   * brackets. An unbroken sheet of glass IS the entrance here, and the
+   * canopy was the model inventing a cue the building does not need.
+   *
+   * The lamps stay. They are the one thing in the photograph that says this
+   * elevation is lit at night, and they sit where it puts them — bracketed
+   * off the mullions just over the door head, looking down at the leaves.
+   */
+  for (const at of [0.3, 0.7]) {
+    decor.push({
+      floor: 0,
+      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.17, doorY - 0.28, 0.34, 0.26),
+      base: doorHead + 0.52,
+      height: doorHead + 0.78,
+      material: 'signPlate',
+      exterior: true,
+    });
+    // The bracket back to the glass, so a lamp is held by something.
+    decor.push({
+      floor: 0,
+      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.04, doorY - 0.04, 0.08, 0.26),
+      base: doorHead + 0.68,
+      height: doorHead + 0.76,
+      material: 'signPlate',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The name on the building.
+   *
+   * High on the precast east of the entrance, where the photograph puts it.
+   * `signAccent` rather than a blue, because a sign is lit by whatever the
+   * era lights it with — the same rule the seats and the screens follow —
+   * and a hard brand blue would be the one colour in the game that ignores
+   * the chapter it is standing in.
+   */
+  /*
+   * The whole name, not a third of it.
+   *
+   * "KINEPOLIS" alone was what would fit at letters a metre and a third
+   * tall, and a metre and a third was chosen before there was an upper
+   * storey for the sign to be mounted on. The photograph's letters are
+   * smaller than that against the elevation and the sign is far longer:
+   * it runs the whole glazed sweep, from the precast edge to the east
+   * corner, which is exactly the proportion that makes the building read
+   * as a hall someone books rather than as a cinema.
+   */
+  const NAME = 'KINEPOLIS EVENT CENTER';
+  const letter = 0.92;
+  const gap = 0.2;
+  // Starting on the precast edge, where the photograph starts it, and ending
+  // at the east corner: 22 characters at 1.12 m is 24.5 m of sign across a
+  // 25.7 m sweep of glass.
+  const nameX = GLAZING_START + 0.4;
+  // Heights are measured from the FORECOURT, because that is the plate this
+  // storey-0 dressing stands over. 5.4 m puts the letters just over the
+  // spandrel — on the upper storey's glass, standing on the first floor
+  // line, which is where the photograph hangs them.
+  const nameFoot = 5.4;
+  const nameHigh = 1.3;
+  [...NAME].forEach((character, index) => {
+    const at = nameX + index * (letter + gap);
+    for (const bar of glyph(character)) {
+      decor.push({
+        floor: 0,
+        bounds: rect(at + bar.u0 * letter, doorY - 0.1, (bar.u1 - bar.u0) * letter, 0.16),
+        base: nameFoot + bar.v0 * nameHigh,
+        height: nameFoot + bar.v1 * nameHigh,
+        material: 'signAccent',
+        exterior: true,
+      });
+    }
+  });
+
+  /*
+   * The star, straddling the top of the elevation where the glazing meets
+   * the precast.
+   *
+   * The photograph is precise about this and it was wrong here in both
+   * axes: the star sat at the far west corner, clear of everything, at half
+   * the size. It belongs directly over the head of the name, half on the
+   * precast flank and half on the glass, running from the sign's own top
+   * up to the parapet — a piece of signage large enough to be the thing you
+   * see from the car park, which is the job it does on the real building.
+   *
+   * `sign` rather than an accent, because it is a pale star on a pale wall
+   * in the photograph and it reads by its shape and its shadow line rather
+   * than by colour.
+   */
+  const starW = 3.6;
+  // Sitting a little more over the glass than over the precast, which is
+  // what leaves the pier beside the entrance clear for the banner poles.
+  const starX = GLAZING_START - 0.6;
+  const starFoot = nameFoot + nameHigh - 0.3;
+  const starH = PARAPET_FOOT + 0.4 - starFoot;
+  for (const bar of star()) {
+    decor.push({
+      floor: 0,
+      bounds: rect(starX + bar.u0 * starW, doorY - 0.14, (bar.u1 - bar.u0) * starW, 0.18),
+      base: starFoot + bar.v0 * starH,
+      height: starFoot + bar.v1 * starH,
+      material: 'sign',
+      exterior: true,
+    });
+  }
+
+  /*
+   * The row of small windows in that precast, at pavement level.
+   *
+   * They used to run the whole flank — eight of them — because the flank
+   * was blank for its whole length. The entrance takes the west end of it
+   * now, so what is left is the pier between the doors and the glazing,
+   * and they fill that. Fewer, and still the thing that stops the precast
+   * being a hoarding.
+   */
+  const pier = GLAZING_START - (ENTRANCE_X + ENTRANCE_WIDTH);
+  const lights = Math.max(1, Math.floor(pier / 1.7));
+  for (let i = 0; i < lights; i += 1) {
+    decor.push({
+      floor: 0,
+      // Proud of the wall face, not inside it. At doorY + 0.2 they sat
+      // within the wall's own 0.3 m thickness and were simply buried.
+      bounds: rect(
+        ENTRANCE_X + ENTRANCE_WIDTH + (pier - lights * 1.7) / 2 + 0.28 + i * 1.7,
+        doorY + 0.04,
+        1.15,
+        PANE_THICKNESS,
+      ),
+      base: 0.9,
+      height: 2.4,
+      material: 'glazing',
+    });
+  }
+
+  /*
+   * The neighbour across the way — the shed in the right of the photograph.
+   *
+   * Not the Kinepolis and not pretending to be: a plain mass with a roof
+   * line, there so that stepping outside puts the building in a PLACE
+   * rather than on an empty plane. It stands outside the forecourt, so
+   * nothing gives it a datum and its height is measured from zero — hence
+   * the concourse level spelled out in it, which everything standing ON the
+   * forecourt gets for free and must not add again.
+   */
+  solids.push({
+    floor: 0,
+    bounds: rect(FORECOURT.x + FORECOURT.w + 4, FORECOURT.y + 6, 30, 19),
+    height: CONCOURSE_LEVEL + 6.4,
+    material: 'booth',
+    exterior: true,
+  });
+
+  return { solids, decor };
 }
 
 /**
@@ -2760,7 +3704,7 @@ function splitBesideWell(wall: Obstacle, well: Link): Obstacle[] {
 }
 
 const WALLS = derivedWalls([...floor0Rooms, ...floor1Rooms], staircases);
-const FACADE = glazeFacade(WALLS.walls);
+const FACADE = glazeFacade(WALLS.walls, [...floor0Rooms, ...floor1Rooms]);
 
 /**
  * Balustrades down both sides of the two flights into the exhibition hall.
@@ -2919,70 +3863,276 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
 }
 
 /**
- * The reception desk, the office behind it, and the toilet cubicles.
+ * The information island, the office inside it, and the free-standing counter.
  *
  * The concourse was a bare plate with a staircase in it: 830 m² of the
- * building's front door with nothing in it to recognise. The plan has a
- * reception counter and its office standing north-west of the grand flight,
- * and toilets off the south-east corner, and all of it is what makes the
- * space read as somewhere you arrive rather than somewhere left over.
+ * building's front door with nothing in it to recognise. `hollywood-area.png`
+ * draws the fit-out that belongs there, immediately north of the head of the
+ * grand flight: a square information island on the west side — the plan puts
+ * the circled "i" inside it — and a single long counter standing free to the
+ * east of it, with a 1.4 m gap between the two.
+ *
+ * MEASURED off that drawing at 0.0408 m/px, the scale the reception band
+ * gives (23.0 m of concourse over 564 px), which is the same scale that
+ * reproduces the "15.7 m wide, 5.6 m deep" grand flight recorded above. The
+ * island comes out 5.6 × 5.5 m and the free counter 6.3 m long.
+ *
+ * The one deliberate move off the drawing is in x: the plan's flight is
+ * 15.9 m wide against this building's 14.3 m well, so the whole fit-out is
+ * anchored to the WELL'S WEST EDGE rather than to its own surveyed x. That
+ * keeps the 6.3 m aisle up the west side of the concourse that the entrance
+ * doors are placed against — see ENTRANCE_X, which reads that aisle as the
+ * route a player takes — and moves everything 1.6 m east of where the
+ * drawing has it, which nothing else in the building can see.
  *
  * Two heights and the difference between them is the point. The office is a
- * room and its south and east sides are 3.2 m walls; the counter along its
- * west and north is 1.1 m, which you see over from anywhere in the concourse.
- * A counter drawn at wall height is a room, and this is not a room — it is a
- * desk you walk up to.
+ * room and its walls are 3.2 m; every counter run is 1.4 m, which you see
+ * over from anywhere in the concourse. A counter drawn at wall height is a
+ * room, and this is not a room — it is a desk you walk up to.
  */
-
-/** Height of anything you are meant to see over. Never above 1.4 m. */
-const COUNTER_HEIGHT = 1.1;
-
-/** How deep the counter top is, metres. A desk, not a wall. */
-const COUNTER_DEPTH = 0.6;
 
 /**
- * The reception enclosure, north-west of the stairwell.
+ * Height of anything you are meant to see over. Never above 1.4 m.
  *
- * Its west side lines up with the well's, which is how the plan draws it: the
- * desk and the flight share an edge and you walk between them.
+ * 1.4 m exactly, which is what the counters on the plan are: chest height on
+ * Droid, over Voxxy's head, and still under the 1.6 m eye line the cutaway
+ * assumes. It was 1.1 m — a guess — until the drawing settled it.
  */
-const DESK = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 3.0, 9.8, 5.0);
+const COUNTER_HEIGHT = 1.4;
 
-/** The way in behind the counter, metres off the enclosure's west corner. */
-const DESK_DOOR = 2.2;
+/** How deep a counter top is, metres. A desk, not a wall. */
+const COUNTER_DEPTH = 0.65;
 
-/** The store against the head of the stairs. Full height; a cupboard. */
-const DESK_STORE = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h, 3.6, 1.6);
+/**
+ * The information island, north-west of the stairhead.
+ *
+ * 1.2 m clear of the well's head, which is what the plan leaves: you come up
+ * the flight and the island is the first thing in front of you, not something
+ * you arrive inside.
+ */
+const ISLAND = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 1.2, 5.6, 5.5);
+
+/**
+ * The west run is the deep one — it is the desk you are served at, and the
+ * plan draws it a metre across where the other two runs are half that.
+ */
+const ISLAND_DESK_DEPTH = 1.1;
+
+/** How much of the island's east face is counter; the rest of it is office. */
+const ISLAND_EAST_RUN = 2.85;
+
+/** The staff way in, off the island's south-west corner, metres. */
+const ISLAND_DOOR = 1.0;
+
+/** How far the office's north wall stands off the island's south face. */
+const OFFICE_DEPTH = 1.85;
+
+/**
+ * The jog in the office's back wall, and where it is.
+ *
+ * The plan does not draw that wall straight: it runs 1.95 m east of the
+ * office's own west side, steps 0.55 m SOUTH, and carries on — finishing
+ * 0.3 m past the island's east face, as a stub standing in the concourse.
+ * This was drawn straight on the first pass and called a detail too small to
+ * see, which was wrong twice over: it is the shape that tells you the office
+ * is a room somebody works in rather than a box, and the stub is the only
+ * thing on the island that reaches out into the floor around it.
+ */
+const OFFICE_STEP = 0.55;
+const OFFICE_STEP_AT = 2.1 + 1.95;
+const OFFICE_STUB = 0.3;
+
+/** The office's own doorway, at the north end of its west wall, metres. */
+const OFFICE_DOOR = 1.0;
+
+/**
+ * The counter standing free in the middle of the concourse, east of the
+ * island. 6.3 × 0.65 m on the plan, 1.4 m clear of the island's east face.
+ *
+ * STANDS FURTHER NORTH THAN DRAWN, and this is the second deliberate move off
+ * the plan. The drawing has it 1.6 m off the head of its flight, which is a
+ * flight 6.0 m deep with a landing halfway up; this building's is 8.4 m deep
+ * and lands in a 14.3 m well that Chapter III drives three robots through, so
+ * 1.6 m of clearance is a counter across the mouth of a staircase. 3.4 m
+ * leaves the 2.2 m approach `npm run traverse` walks in under the soffit —
+ * which it does from this exact centre line — and still reads as the same
+ * counter standing in the same place beside the island.
+ */
+const FREE_COUNTER = rect(
+  ISLAND.x + ISLAND.w + 1.45,
+  GRAND_WELL.y + GRAND_WELL.h + 3.4,
+  6.3,
+  COUNTER_DEPTH,
+);
+
+/**
+ * Where you are served: the aisle in front of the island's west counter.
+ *
+ * Exported because a chapter that wants "the reception desk" must not keep a
+ * pair of numbers for it. This point has drifted twice in two passes — once
+ * when the island replaced the old nine-metre desk enclosure, and again when
+ * the grand flight was given its ceremonial pitch and took the island 3.5 m
+ * north with it. Both times the literal in `objectives.ts` stayed exactly
+ * where it was, and both times `npm run objectives` passed, because it asks
+ * whether a robot FITS there and not whether anybody would queue there.
+ *
+ * Derived from the island, so the next time the island moves this follows.
+ */
+export const RECEPTION_DESK = {
+  floor: 0 as const,
+  x: ISLAND.x - 1.65,
+  y: ISLAND.y + (ISLAND.h - COUNTER_DEPTH) / 2,
+};
 
 function receptionFitOut(): Obstacle[] {
+  const counter = (bounds: Rect): Obstacle => ({
+    floor: 0,
+    bounds,
+    height: COUNTER_HEIGHT,
+    material: 'desk',
+  });
+  const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: WALL_HEIGHT });
+
   return [
-    // The office: walled on the two sides away from the concourse, with the
-    // staff way in at the corner nearest the stairs. Closed on all four sides
-    // it is a box nobody can be inside, which is a strange thing to build.
-    {
-      floor: 0,
-      bounds: rect(DESK.x + DESK_DOOR, DESK.y, DESK.w - DESK_DOOR, WALL_THICKNESS),
-      height: WALL_HEIGHT,
-    },
-    {
-      floor: 0,
-      bounds: rect(DESK.x + DESK.w - WALL_THICKNESS, DESK.y, WALL_THICKNESS, DESK.h),
-      height: WALL_HEIGHT,
-    },
-    { floor: 0, bounds: DESK_STORE, height: WALL_HEIGHT },
-    // The counter: the two sides the public stands at.
-    {
-      floor: 0,
-      bounds: rect(DESK.x, DESK.y, COUNTER_DEPTH, DESK.h),
-      height: COUNTER_HEIGHT,
-      material: 'desk',
-    },
-    {
-      floor: 0,
-      bounds: rect(DESK.x, DESK.y + DESK.h - COUNTER_DEPTH, DESK.w, COUNTER_DEPTH),
-      height: COUNTER_HEIGHT,
-      material: 'desk',
-    },
+    // The three counter runs the public stands at — north, west, and the
+    // northern half of the east face. All marked on the plan as one height.
+    counter(rect(ISLAND.x, ISLAND.y + ISLAND.h - COUNTER_DEPTH, ISLAND.w, COUNTER_DEPTH)),
+    counter(rect(ISLAND.x, ISLAND.y, ISLAND_DESK_DEPTH, ISLAND.h - COUNTER_DEPTH)),
+    counter(
+      rect(
+        ISLAND.x + ISLAND.w - COUNTER_DEPTH + 0.1,
+        ISLAND.y + ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
+        COUNTER_DEPTH - 0.1,
+        ISLAND_EAST_RUN,
+      ),
+    ),
+    counter(FREE_COUNTER),
+
+    // The office inside the island: the south and east sides, which are the
+    // two the public never stands at, plus its own north wall. The way in is
+    // the gap at the south-west corner — closed on all four sides it is a box
+    // nobody can be inside, which is a strange thing to build.
+    wall(
+      rect(
+        ISLAND.x + ISLAND_DESK_DEPTH + ISLAND_DOOR,
+        ISLAND.y,
+        ISLAND.w - ISLAND_DESK_DEPTH - ISLAND_DOOR,
+        WALL_THICKNESS,
+      ),
+    ),
+    wall(
+      rect(
+        ISLAND.x + ISLAND.w - WALL_THICKNESS,
+        ISLAND.y,
+        WALL_THICKNESS,
+        ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
+      ),
+    ),
+    // The office's west side, with the doorway at its north end: the staff
+    // come in through the island's south wall, up the metre of floor behind
+    // the west counter, and into the office from there. The way in used to be
+    // a gap in the north wall, which had to be cut out of the very run the
+    // plan draws stepped.
+    wall(
+      rect(
+        ISLAND.x + 2.1,
+        ISLAND.y,
+        WALL_THICKNESS,
+        OFFICE_DEPTH + WALL_THICKNESS - OFFICE_DOOR,
+      ),
+    ),
+    // The back wall, stepped: west leg, the step itself, then the east leg
+    // running out past the island's face.
+    wall(rect(ISLAND.x + 2.1, ISLAND.y + OFFICE_DEPTH, OFFICE_STEP_AT - 2.1, WALL_THICKNESS)),
+    wall(
+      rect(
+        ISLAND.x + OFFICE_STEP_AT,
+        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
+        WALL_THICKNESS,
+        OFFICE_STEP + WALL_THICKNESS,
+      ),
+    ),
+    wall(
+      rect(
+        ISLAND.x + OFFICE_STEP_AT,
+        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
+        ISLAND.w - OFFICE_STEP_AT + OFFICE_STUB,
+        WALL_THICKNESS,
+      ),
+    ),
+  ];
+}
+
+/**
+ * The walls of the stair hall — the two the plan marks and the building had
+ * none of.
+ *
+ * The grand flight was standing in open concourse with a balustrade down each
+ * side. On `hollywood-area.png` it stands in a SLOT: a wall the full length
+ * of the flight on each side, and the treads hatched right up to both of
+ * them. That is a different room, and it is the one the plan draws — you come
+ * in at the south corner, walk up the aisle with a wall on your right, and
+ * the stair is a thing you turn into rather than a thing standing in the
+ * middle of the floor.
+ *
+ * They sit on the WELL'S OWN SIDES, which is the honest anchor: the well is
+ * this building's stand-in for that slot, so its edges are where the walls
+ * go. Measured, the drawing's slot is 15.7 m wide against this well's 14.3 —
+ * the same 9% the flight itself was reconciled by, and the same direction.
+ *
+ * The two sides are NOT the same length, which is the detail worth keeping:
+ *
+ *   west  — stops 0.5 m past the head of the flight, where the information
+ *           island takes the line over and carries it north.
+ *   east  — runs 5.7 m past the head and then returns 3.6 m west, closing
+ *           the concourse's south-east corner.
+ *
+ * Both stop short of the entrance elevation by the LOBBY the plan leaves —
+ * 80 px, 3.3 m — rather than running down to the foot of the flight. On the
+ * drawing those are the same line, because its flight is 6.0 m deep and ends
+ * 3.3 m inside the doors. This one is 11.9 m, for the reason `GRAND_GOING`
+ * gives, so a wall taken to its foot arrives level with the east jamb of the
+ * entrance and the cast cannot line up inside its own front door —
+ * `npm run venue` says so in as many words. The lobby is the half of that
+ * pair a player uses, so the lobby wins and the bottom three steps splay out
+ * of the slot, which is what the bottom of a broad flight does anyway.
+ */
+const STAIR_HALL_HEIGHT = FLOOR_HEIGHT - CONCOURSE_LEVEL;
+
+/** How far each wall runs past the head of the flight, metres. Measured. */
+const STAIR_HALL_WEST_PAST = 0.5;
+const STAIR_HALL_EAST_PAST = 5.7;
+
+/** The return at the north end of the east wall, metres. Measured. */
+const STAIR_HALL_RETURN = 3.6;
+
+/** Clear depth inside the entrance elevation before the walls start, metres. */
+const STAIR_HALL_LOBBY = 3.3;
+
+function grandStairHall(): Obstacle[] {
+  const foot = RECEPTION.y + STAIR_HALL_LOBBY;
+  const head = GRAND_WELL.y + GRAND_WELL.h;
+  const east = GRAND_WELL.x + GRAND_WELL.w;
+  const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: STAIR_HALL_HEIGHT });
+
+  return [
+    wall(
+      rect(
+        GRAND_WELL.x - WALL_THICKNESS,
+        foot,
+        WALL_THICKNESS,
+        head + STAIR_HALL_WEST_PAST - foot,
+      ),
+    ),
+    wall(rect(east, foot, WALL_THICKNESS, head + STAIR_HALL_EAST_PAST - foot)),
+    wall(
+      rect(
+        east - STAIR_HALL_RETURN,
+        head + STAIR_HALL_EAST_PAST - WALL_THICKNESS,
+        STAIR_HALL_RETURN + WALL_THICKNESS,
+        WALL_THICKNESS,
+      ),
+    ),
   ];
 }
 
@@ -3009,6 +4159,7 @@ function grandWellHeadRails(): Obstacle[] {
 const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
+const FORECOURT_FIT = forecourtFitOut();
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
@@ -3021,7 +4172,9 @@ export const KINEPOLIS: Venue = {
     ...RAILS.solids,
     ...grandWellHeadRails(),
     ...receptionFitOut(),
+    ...grandStairHall(),
     ...railBesideWells(FACADE.walls, staircases),
+    ...FORECOURT_FIT.solids,
   ],
   decor: [
     ...auditoriumDecor,
@@ -3030,6 +4183,7 @@ export const KINEPOLIS: Venue = {
     ...STAIRS.decor,
     ...FACADE.decor,
     ...BOOTHS.decor,
+    ...FORECOURT_FIT.decor,
   ],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
@@ -3037,9 +4191,25 @@ export const KINEPOLIS: Venue = {
 
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
-  /** Inside the main entrance, looking north up the reception concourse. */
-  /** Inside the main entrance, east of the grand stair. */
-  mainEntrance: { floor: 0 as const, x: 18, y: -57 }, // 1.2 m up, in the concourse
+  /**
+   * Inside the main entrance, at the foot of the west aisle.
+   *
+   * It used to be at x 18, "east of the grand stair", which was true of the
+   * building when the doors were in the middle of the frontage and is not
+   * true of it now: the way in is at the west corner and the aisle it opens
+   * onto runs north between the west wall and the grand flight. A spawn
+   * called `mainEntrance` thirty metres from the entrance is worse than no
+   * spawn at all.
+   */
+  mainEntrance: { floor: 0 as const, x: -12.4, y: -58.4 }, // 1.2 m up, in the concourse
+  /**
+   * On the forecourt, far enough out to have the whole elevation in frame.
+   *
+   * The building is ten metres tall and the camera frames a robot, so where
+   * you stand decides whether you are looking at a building or at a
+   * pavement. This is the spot the front of the Kinepolis reads from.
+   */
+  forecourt: { floor: 0 as const, x: -4, y: -72 },
   /** Where the concourse opens into the hall. */
   // Between the two southernmost column rows, which sit at y -27.05 and
   // -33.58, and now on the centre line of the main aisle: the cast lines up
@@ -3072,11 +4242,14 @@ export const SPAWNS = {
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *
-   * North of the grand stairwell, which now reaches y -51.1: this used to be
-   * 1.5 m inside it, and a chapter that starts here would have dropped its
-   * whole cast down the stairs before the player touched a key.
+   * North of the grand stairwell, and it has had to move north twice now for
+   * the same reason: the well reached y -51.1, then -46.8 when the flight was
+   * given its ceremonial pitch and grew 3.5 m. Both times this point was left
+   * inside it, and a chapter that starts here would drop its whole cast down
+   * the stairs before the player touched a key. `npm run venue` catches it,
+   * which is the only reason it is not still there.
    */
-  corridorSouth: { floor: 1 as const, x: 0, y: -48 },
+  corridorSouth: { floor: 1 as const, x: 0, y: -44 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
   // In the corridor outside Room 8, not inside its seating — the cast lines

@@ -432,6 +432,12 @@ model sheets.
   direction this camera can read, and why that is so is three separate facts
   about the renderer. See `docs/MECHANICS.md` §5.3
 - Registration: slatted warm wood, grey carpet, curved cast concrete
+- Outside: the forecourt, from photo 54842743975 — asphalt at the doors, a
+  line of bollards, a band of brick setts, the road. The elevation is read
+  off that frame: solid precast across the west third with a row of small
+  windows and the Kinepolis star high on it, the two-storey curtain wall in
+  its grid to the east, KINEPOLIS over the glass, a canopy on the doors and
+  three banner poles in front. You can drive out and look back at it
 
 The red step lighting in a dark auditorium is the single strongest image
 available for Chapter I, and it costs nothing to draw.

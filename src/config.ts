@@ -21,6 +21,22 @@ export const CAMERA_LERP = 6;
 export const CAMERA_LEAD_CAP = 5.0;
 
 /**
+ * Metres the camera looks UP the elevation while the cast is outside.
+ *
+ * Inside, a robot is the tallest thing that matters and the view is framed
+ * on it. Outside, the thing worth looking at is ten metres of building, and
+ * a camera centred on a 1.15 m machine puts all of it off the top of the
+ * frame — you walk out of the doors and can see the pavement and nothing
+ * else. Raising the look-at point drops the scene down the screen and the
+ * elevation into it.
+ *
+ * Eased in by the usual camera lerp, so stepping out is a pan rather than a
+ * cut. 7.5 m frames the whole elevation — roof line included — from about
+ * ten metres out, which is where a robot coming through the doors ends up.
+ */
+export const CAMERA_OUTSIDE_LIFT = 7.5;
+
+/**
  * Momentum, kg·m/s, that saturates the impact and footfall feedback.
  *
  * These are PRESENTATION constants, not simulation ones — nothing here is ever

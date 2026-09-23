@@ -109,10 +109,48 @@ export interface Palette {
    * as whatever is lighting it.
    */
   crowd: number;
+  /**
+   * Silt: what a floor nobody sweeps is covered in.
+   *
+   * Drawn only where `crowdDensity` is 0 — see `core/Decay.ts` — so in the
+   * two chapters with people in them this is a colour nothing has. Carried on
+   * the type anyway, for the same reason Chapter I carries a `crowd` colour
+   * it never uses: `?at=` and the movement lab can drive any chapter with any
+   * of it switched on, and a palette with holes in it cannot.
+   */
+  dust: number;
+  /**
+   * Growth coming up through the floor.
+   *
+   * The one hue none of the three eras uses. Chapter I is blue-grey, II is
+   * tungsten and III is peach, so green is unclaimed — which is why a floor
+   * going back to ground reads instantly as a chapter the others are not.
+   */
+  growth: number;
+  /** Water, off a roof nobody has been up to. A mark, not a surface. */
+  damp: number;
   /** Accent — signage, screens, step lighting. */
   accent: number;
   /** HUD text. */
   text: number;
+}
+
+/**
+ * Is this the era nobody has come back to?
+ *
+ * Empty AND dark. Both halves are load-bearing and the second one is only
+ * there because of the movement lab, which is `crowdDensity: 0` — it is one
+ * hall with three robots in it — and `lightLevel: 1`, because mood hides the
+ * geometry you are trying to read while tuning. Keying decay off emptiness
+ * alone silted up the one screen in the game that exists to be legible.
+ *
+ * Stated once, here, so that the inference is a thing with a name rather than
+ * two magic numbers repeated wherever somebody needed it. Same principle as
+ * the lamp `ChapterScreen` switches on below 0.4: NOT a fifth field, a
+ * reading of two of the four.
+ */
+export function abandoned(chapter: Chapter): boolean {
+  return chapter.crowdDensity <= 0 && chapter.lightLevel < 0.4;
 }
 
 export interface Chapter {

@@ -82,8 +82,19 @@ import {
   SEATED_TORSO_TOP,
   type Person,
 } from '@/core/Crowd';
+import type { Decay, DecayPiece } from '@/core/Decay';
 import { renderPos } from '@/core/Sim';
-import { groundAt, rect, type Level, type Link, type Material, type Rect, type Room, type Venue } from '@/core/Venue';
+import {
+  FLOOR_HEIGHT,
+  groundAt,
+  rect,
+  type Level,
+  type Link,
+  type Material,
+  type Rect,
+  type Room,
+  type Venue,
+} from '@/core/Venue';
 import type { Palette } from '@/chapters/Chapter';
 import {
   createCutawayUniforms,
@@ -204,6 +215,9 @@ const LAMBERT_SCALE = Math.PI;
  * bulbs down its middle.
  */
 const REVEAL_SPACING = 15;
+
+/** Peak intensity of one reveal light, before the Lambert scale. */
+const REVEAL_POWER = 5;
 
 /**
  * The two inks that are not a robot's own livery.
@@ -481,6 +495,14 @@ export class BlockoutRenderer {
    */
   private lamp: PointLight | undefined;
   private readonly revealed: PointLight[] = [];
+  /**
+   * The reveal rigs, by the id of whatever owns them.
+   *
+   * Keyed rather than accumulated because Chapter II drives one of these
+   * EVERY FRAME off a draining meter, and the unkeyed version hung a fresh
+   * grid of point lights on the storey each time it was asked.
+   */
+  private readonly zoneLights = new Map<string, PointLight[]>();
 
   /**
    * The people on their feet, rewritten every frame.
@@ -489,7 +511,23 @@ export class BlockoutRenderer {
    * visible storey is ever written into it — a mover on the floor you are not
    * looking at costs nothing at all.
    */
+  /**
+   * The building as seen from OUTSIDE it, above the cutaway plane.
+   *
+   * Everything is drawn to 2.7 m so a player can see into rooms, which is
+   * right from inside and leaves a ten-metre building as a knee-high stump
+   * the moment you walk out of the front door. This holds the rest of the
+   * elevation — the part above the cut on this storey, and the whole of the
+   * storey above, which is otherwise not drawn at all because only one
+   * storey is ever visible.
+   *
+   * Shown only while the player is outside, so it never stands between the
+   * camera and a room.
+   */
+  private readonly envelope = new Group();
+
   private readonly crowd: Crowd;
+  private readonly decay: Decay;
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
 
@@ -499,13 +537,17 @@ export class BlockoutRenderer {
     palette: Palette,
     lightLevel: number,
     crowd: Crowd,
+    decay: Decay,
   ) {
     this.camera = camera;
     this.venue = venue;
     this.palette = palette;
     // Before the storeys are built: each one bakes its own seated population
-    // in as it goes, which is what makes five thousand people free.
+    // in as it goes, which is what makes five thousand people free. The decay
+    // rides in the same way and for the same reason — it is a few thousand
+    // more static boxes that never change once the chapter has loaded.
     this.crowd = crowd;
+    this.decay = decay;
 
     // The same curve the 2D renderer multiplied every colour by, applied to
     // the lights instead. Chapter I's darkness is its light level, not a
@@ -550,6 +592,10 @@ export class BlockoutRenderer {
     this.scene.add(this.markMesh);
     this.scene.add(this.markerGroup);
 
+    this.buildEnvelope();
+    this.envelope.visible = false;
+    this.scene.add(this.envelope);
+
     this.moverMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
       // White, because the instance colour MULTIPLIES the material's. Tint
@@ -579,7 +625,21 @@ export class BlockoutRenderer {
 
   /** Trousers, clothing and head for one person, in this era's colours. */
   private personColours(person: Person): [number, number, number] {
-    const crowd = this.palette.crowd;
+    /*
+     * The one exception to "a crowd is a mass and takes one colour".
+     *
+     * Somebody you can talk to has to be findable in a full house, and at
+     * capacity there are five hundred people standing up. In the crowd's own
+     * colour an attendant is a figure among figures — a marker post can say
+     * an activity is HERE, but not which of the four people under it you are
+     * meant to be speaking to.
+     *
+     * A third of the way to the accent is enough. Fully accented they read
+     * as a prop rather than a person, and the rule the crowd colour exists
+     * for — that a full room photographs as one mass — still holds with three
+     * of them in the building.
+     */
+    const crowd = person.posted ? mix(this.palette.crowd, this.palette.accent, 0.34) : this.palette.crowd;
     const [low, high] = CLOTHING_RANGE;
     return [
       shade(crowd, TROUSER_SHADE),
@@ -838,14 +898,30 @@ export class BlockoutRenderer {
   }
 
   /**
-   * Switch the lights back on over part of the building.
+   * How much light a zone adds to the storey it is on, 0..1.
+   *
+   * Idempotent and keyed, so it is both "switch the hall on" and "this room
+   * is dying". Chapter I calls it once per distribution board and never
+   * again; Chapter II calls it once per room per frame with the room's own
+   * meter, and the rig is built on the first call and only re-aimed after
+   * that. Building it fresh each time is what the first version did, and at
+   * sixty frames a second it hung nine point lights on the storey per room
+   * per frame until the renderer gave up.
    *
    * Up to three point lights along the zone's long axis, because one light in
    * the middle of a 30 m room lights the middle of a 30 m room. Hung at 4.5 m,
    * which is where a cinema hangs them.
    */
-  revealZone(bounds: Rect, floor: Level, level: number): void {
+  lightZone(id: string, bounds: Rect, floor: Level, level: number): void {
+    const existing = this.zoneLights.get(id);
+    if (existing) {
+      const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
+      for (const light of existing) light.intensity = intensity;
+      return;
+    }
+
     const storey = this.storeys.get(floor);
+    const made: PointLight[] = [];
 
     /*
      * A GRID of them, not a line.
@@ -862,7 +938,7 @@ export class BlockoutRenderer {
      */
     const across = Math.max(1, Math.round(bounds.w / REVEAL_SPACING));
     const along = Math.max(1, Math.round(bounds.h / REVEAL_SPACING));
-    const intensity = level * 5 * LAMBERT_SCALE;
+    const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
     const range = REVEAL_SPACING * 1.8;
 
     for (let i = 0; i < across * along; i += 1) {
@@ -876,13 +952,16 @@ export class BlockoutRenderer {
       if (storey) storey.add(light);
       else this.scene.add(light);
       this.revealed.push(light);
+      made.push(light);
     }
+    this.zoneLights.set(id, made);
   }
 
   /** Put the building back in the dark. Called when a round is restarted. */
   clearReveals(): void {
     for (const light of this.revealed) light.removeFromParent();
     this.revealed.length = 0;
+    this.zoneLights.clear();
   }
 
   /**
@@ -908,6 +987,126 @@ export class BlockoutRenderer {
 
     this.placeMovers(floor);
     this.aimCutaway(floor, actors, alpha);
+  }
+
+  /**
+   * Draw the building its own height, for a viewer standing in front of it.
+   *
+   * Storey 0's envelope runs from the cut up to the next floor's datum, so
+   * the spandrel between the two levels is not a gap; storey 1's is drawn
+   * whole, because the storey it belongs to is hidden while the player is
+   * down here. Together with what the visible storey already draws below
+   * the cut, that is one continuous elevation.
+   */
+  private buildEnvelope(): void {
+    const solid: Box[] = [];
+    const glass: Box[] = [];
+
+    /*
+     * Walls AND the dressing that replaces them.
+     *
+     * The curtain wall hides its own wall and draws itself as a sill, a
+     * pane, mullions and transoms, so an envelope built from obstacles alone
+     * would leave out the one elevation a player ever walks out to look at.
+     *
+     * The two are not treated alike, though. A wall on the ground storey is
+     * carried up to the next floor's datum so the spandrel between the two
+     * levels is not a gap; a piece of dressing is drawn exactly where it
+     * says it is. Stretching everything was the first version, and it pulled
+     * the banners down their poles and would have smeared the sign into a
+     * bar: a thing that starts above the cut does not start AT it.
+     */
+    const pieces = [
+      ...this.venue.obstacles.filter((o) => !o.hidden).map((o) => ({ piece: o, wall: true })),
+      ...this.venue.decor.map((d) => ({ piece: d, wall: false })),
+    ];
+
+    for (const { piece, wall } of pieces) {
+      if (!piece.exterior) continue;
+      /*
+       * Every storey is modelled from its own datum and only one is ever
+       * visible, so a piece on floor 1 states its height as though the
+       * first floor were the ground. The envelope is the one place in the
+       * renderer that draws two storeys at once, so it is the one place
+       * that has to put them back on top of each other — without this the
+       * upper floor was drawn buried inside the ground floor, and the
+       * building had no second storey at all from outside.
+       */
+      /*
+       * Worked out in the storey's OWN space, then lifted into the world.
+       *
+       * The cutaway plane is 2.7 m above the storey datum, and every storey
+       * is modelled from its own. Adding the lift first put the plane at
+       * 8.9 m for the upper floor and left half a metre of it — the first
+       * floor's glazing came back as a sliver you could not see.
+       */
+      const local = this.datumFor(piece.floor, piece);
+      const base = local + (piece.base ?? 0);
+      const top = local + piece.height;
+
+      /*
+       * The storey the player is standing on is already drawn up to the
+       * cut, so the envelope only owes it what is above. Every OTHER storey
+       * is not drawn at all — only one is ever visible — so the envelope
+       * owes those their whole height.
+       */
+      const from = piece.floor === 0 ? Math.max(cutAt(local), base) : base;
+      const to = wall && piece.floor === 0 ? Math.max(top, FLOOR_HEIGHT) : top;
+      if (to <= from) continue;
+
+      const lift = piece.floor * FLOOR_HEIGHT;
+      const box = {
+        bounds: piece.bounds,
+        bottom: lift + from,
+        top: lift + to,
+        colour: this.varied(this.material(piece.material), piece.bounds, piece.material),
+      };
+
+      if (piece.material !== 'glazing') {
+        solid.push(box);
+        continue;
+      }
+
+      /*
+       * A window seen from outside is dark, because the room behind it is
+       * not being drawn.
+       *
+       * Glass is translucent and writes no depth, so over the void beyond
+       * the building it came out as nothing at all: the first floor's
+       * glazing was there the whole time and invisible. An opaque panel
+       * behind each pane gives it something to be glass IN FRONT OF, which
+       * is all a window needs to read as one from the street.
+       */
+      // Near the glass's own tone rather than far under it: a window from
+      // the street is darker than the wall around it and nothing like a
+      // hole, and the translucent pane in front of this darkens it again.
+      solid.push({ ...box, colour: shade(this.palette.glazing, 0.92) });
+      glass.push(box);
+    }
+
+    if (solid.length) this.envelope.add(instanceBoxes(solid, new MeshLambertMaterial()));
+    if (glass.length) {
+      const panes = instanceBoxes(
+        glass,
+        new MeshLambertMaterial({
+          transparent: true,
+          opacity: GLAZING_OPACITY,
+          depthWrite: false,
+        }),
+      );
+      panes.renderOrder = 5;
+      this.envelope.add(panes);
+    }
+  }
+
+  /**
+   * Whether the player is standing outside the building.
+   *
+   * The one thing that decides whether the elevation is drawn or the rooms
+   * behind it are. Set by the screen, which is what knows where the cast is.
+   */
+  setOutside(outside: boolean): void {
+    this.envelope.visible = outside;
   }
 
   /** Forget every mark. Call on reset so a tuning run starts on clean floor. */
@@ -1022,6 +1221,11 @@ export class BlockoutRenderer {
       if (piece.floor !== floor) continue;
       const { bounds } = piece;
       const datum = this.datumFor(floor, piece);
+      // Signage high on an elevation starts above the cutaway plane, and
+      // clamping its top to the cut while its bottom stayed put drew a
+      // sliver of it upside down at the wrong height. Above the cut is the
+      // envelope's business, not the storey's.
+      if (datum + (piece.base ?? 0) >= cutAt(datum)) continue;
       (piece.material === 'glazing' ? glass : boxes).push({
         bounds,
         bottom: datum + (piece.base ?? 0),
@@ -1042,6 +1246,33 @@ export class BlockoutRenderer {
      * thousand people and costs one draw call and nothing per frame. It is
      * also why the crowd had to be split into seated and standing at all.
      */
+    /*
+     * What has settled on this storey, baked in beside the audience.
+     *
+     * Pushed into `boxes` rather than given a mesh of its own: it is the same
+     * unlit-nothing, same Lambert material and same cutaway as every other
+     * solid in the building, and a drift that did not fade when a robot drove
+     * behind it would be the one thing in the scene that does not.
+     *
+     * A stain is the exception and gets no height worth speaking of — it is a
+     * mark ON the floor, so it is drawn just clear of the plate the way skid
+     * marks are, and the plate's own seam grid still reads through it.
+     */
+    for (const piece of this.decay.pieces) {
+      if (piece.floor !== floor) continue;
+      const datum = groundAt(this.venue, floor, piece.bounds.x, piece.bounds.y);
+      // Every piece stands ON the floor, stain included: a stain carries its
+      // own height now and lifting it as well put it back among the sheets.
+      // See SHEET_HIGH_MIN in `core/Decay.ts` for why none of these heights
+      // is a constant.
+      boxes.push({
+        bounds: piece.bounds,
+        bottom: datum,
+        top: datum + piece.height,
+        colour: this.decayColour(piece),
+      });
+    }
+
     const audience = this.crowd.seated.filter((person) => person.floor === floor);
     if (audience.length) {
       group.add(
@@ -1146,6 +1377,31 @@ export class BlockoutRenderer {
   }
 
   /**
+   * What a piece of decay looks like in this era.
+   *
+   * Its own spread rather than `varied`'s, and much wider: `TONE_SPREAD` is
+   * tuned to stop a flat wall reading as one slab, where this is dust and
+   * scrub, and dust and scrub that all match is a decal. Keyed off the
+   * piece's own seeded `tint` rather than off its position, because two
+   * tufts 40 cm apart want to differ and `tone()` would give them the same
+   * answer.
+   */
+  private decayColour(piece: DecayPiece): number {
+    const base =
+      piece.kind === 'growth'
+        ? this.palette.growth
+        : piece.kind === 'stain'
+          ? this.palette.damp
+          : this.palette.dust;
+    // Sheets get twice the spread of anything else here. They are the one
+    // kind that overlaps itself, and at a narrow spread the overlaps vanish:
+    // forty pale rectangles of the same value read as one pale rectangle with
+    // a strange outline. The variation is what makes a covering look deep.
+    const spread = piece.kind === 'sheet' ? 0.46 : 0.26;
+    return shade(base, 1 - spread + piece.tint * spread * 2);
+  }
+
+  /**
    * A material's colour, nudged by where the thing is standing.
    *
    * Left alone for the surfaces where variation would read as a mistake
@@ -1192,6 +1448,10 @@ export class BlockoutRenderer {
         return this.palette.glazing;
       case 'booth':
         return this.palette.booth;
+      // Lighter than the ground it is laid on, which is the only thing that
+      // tells a band of setts from the asphalt either side of it.
+      case 'paving':
+        return shade(this.palette.floor, 1.5);
       default:
         return this.palette.wall;
     }

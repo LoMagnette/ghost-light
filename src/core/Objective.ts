@@ -97,7 +97,15 @@ export class ObjectiveRun {
   /** Consumed and cleared by the screen each frame. */
   readonly events: ObjectiveEvent[] = [];
   /** Zones to light, pushed as they are earned. Consumed by the renderer. */
-  readonly reveals: Reveal[] = [];
+  /**
+   * Zones to light, drained by the screen each frame.
+   *
+   * Carries the id of the activity that asked, because the renderer keys its
+   * light rigs by it — see `lightZone`. Without it two boards lighting the
+   * same room would build two rigs, and a room whose light is DRIVEN rather
+   * than switched would build one a frame.
+   */
+  readonly reveals: (Reveal & { id: string })[] = [];
 
   constructor(objective: Objective) {
     this.objective = objective;
@@ -179,12 +187,17 @@ export class ObjectiveRun {
    * `drop` is an edge, not a state: true only on the frame the player asked
    * to put something down.
    */
-  update(dt: number, actors: Actor[], drop: boolean): void {
+  /**
+   * @param drop the SPACE key, this frame only. See `dropRequested`.
+   * @param talk the talk key, this frame only, for the same reason: a held
+   *   key would page through a whole conversation in a fifth of a second.
+   */
+  update(dt: number, actors: Actor[], drop: boolean, talk = false): void {
     if (this.phase === 'ended') return;
     this.elapsed += dt;
 
     this.states.forEach((state, index) => {
-      this.advance(state, this.inside[index], dt, actors, drop);
+      this.advance(state, this.inside[index], dt, actors, drop, talk);
     });
 
     this.evaluate();
@@ -196,6 +209,7 @@ export class ObjectiveRun {
     dt: number,
     actors: Actor[],
     drop: boolean,
+    talk: boolean,
   ): void {
     const a = state.activity;
     if (state.status === 'done' || state.status === 'missed' || state.status === 'failed') return;
@@ -263,6 +277,35 @@ export class ObjectiveRun {
 
       case 'tend': {
         this.advanceTend(state, a, inside, dt, actors);
+        return;
+      }
+
+      /*
+       * A conversation, paged.
+       *
+       * `progress` is the fraction of the lines that have been SHOWN, so the
+       * screen can ask which box to draw without keeping a cursor of its own
+       * and drifting out of step with the thing that decides when this is
+       * finished. One press shows the next line; the press after the last one
+       * closes it and completes.
+       *
+       * Walking away resets it to the top rather than leaving it half read.
+       * That is not a punishment — it is what makes the second robot able to
+       * hear the whole thing, and it means a conversation is never left in a
+       * state that depends on where somebody was four minutes ago.
+       */
+      case 'talk': {
+        if (here.length === 0) {
+          state.progress = 0;
+          return;
+        }
+        if (!talk) return;
+        const shown = Math.round(state.progress * a.lines.length);
+        if (shown >= a.lines.length) {
+          this.complete(state);
+          return;
+        }
+        state.progress = (shown + 1) / a.lines.length;
         return;
       }
     }
@@ -375,7 +418,7 @@ export class ObjectiveRun {
     state.status = 'done';
     state.progress = 1;
     this.say(state.activity.label);
-    if (state.activity.reveal) this.reveals.push(state.activity.reveal);
+    if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
   }
 
   private say(text: string): void {
