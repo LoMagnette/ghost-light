@@ -3705,6 +3705,62 @@ answer a question and core could.
 
 ---
 
+### Claude Opus — the speakers
+
+**Prompt:**
+> In chapter two can you add Stephan Janssen, James Golsing, Rob Johnson,
+> Brian Goetz, Gavin King as npc with who you can chat. The goal would be
+> that you go chat with Stephan and recommend you to go chat with those
+> awesome speakers as an extra quest.
+
+**Iterations:** 1, plus a latent HUD bug the change exposed
+
+Two names corrected before writing anything, and flagged rather than done
+quietly, because a real person's name spelled wrong in a shipped game is
+worse than a question: **James Gosling** and **Rod Johnson**.
+
+**Real people, so: cameo rules.** All five genuinely spoke at JavaPolis, and
+Chapter II *is* JavaPolis, which is the only reason they are in here. Every
+line is about the room and the moment rather than about them, and nothing is
+put in anybody's mouth that is not plainly true of their public work. Warm,
+short, and nothing anyone would mind being quoted saying.
+
+**The chain is one conversation that opens four**, which the vocabulary
+already did: `after` for the gate, `group` so four rows do not land on a card
+that already carries five. The placement is the design. The corridor is 126 m
+and the four of them are spread up its west side outside the rooms they are
+on in, so the side quest is a round trip of a hundred and twenty metres while
+five session meters drain without you. The chapter's own sentence is "keep
+every room running" and this is the first thing in it that asks you not to.
+
+**`optional` is the one new thing.** `ObjectiveRun` ends a round when
+everything finishable is settled — which is how Chapter I knows it is over —
+so without it, saying hello to five people would have ended Chapter II on the
+spot, with all five rooms still running and three minutes on the clock.
+
+**And that flag exposed a latent bug, which is the part worth keeping.** The
+HUD chose between "5/5 running" and a done/total score by asking whether the
+chapter had anything FINISHABLE. That was true of Chapter II only for as long
+as Chapter II contained nothing but rooms — one optional conversation flipped
+the header to "0/2" and took away the count the entire chapter is read from.
+The denominator was wrong in the same way: it counted every state, so this
+change would have made it "11/11 running". Both now ask whether there are
+tend rooms, which is the question that was always meant, and the end card had
+the same fault and now says "2 of 5 still running" instead of "0 of 2".
+
+That is the third time in two days that adding something has been most
+valuable for what it revealed about code that was already there, and all
+three were the same shape: a condition that was a correct *description* of
+the data at the time it was written, standing in for the *question* it meant
+to ask.
+
+**Tested in node again.** Gosling stood on and pressed before meeting
+Stephan: locked, progress 0. After Stephan: open. All four completable, and
+the round still running with 5 of 5 rooms alive once every conversation is
+done.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
