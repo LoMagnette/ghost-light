@@ -3629,6 +3629,82 @@ the matrix arithmetic being inline in two places that can drift.
 
 ---
 
+### Claude Opus — a cat, a dog, and forty-five seconds
+
+**Prompt:**
+> I would like to add two npc in the first chapter one cat and one dog. The
+> dog should look like a bouvier des flandres. When you interact with the cat
+> it threat the robot to explode and reference the game exploding kitten. One
+> it's done you've 45second to find the dog to disarm the threat.
+
+**Iterations:** 2 commits, and three things the first attempt got wrong
+
+**Almost none of this was new machinery, and that is the point.** The `talk`
+kind built two passes ago already carried a post, a marker, a box of dialogue
+and a gate. An animal uses every bit of it and differs in exactly one field:
+`shape`, which is what the renderer draws when you get there. The only thing
+`placePart` needed was an `along` offset — a person is one column of boxes
+and needs `across` for two arms beside a torso, where an animal is that
+column laid on its side with a head at one end and a tail at the other.
+
+**Drawing a Bouvier out of boxes.** It is a lucky breed to be asked for: at
+twenty pixels tall no coat texture survives, so all of it has to live in the
+outline — square, as long as it is tall, short thick legs, and a pale muzzle
+stuck out in front of a dark head, which is the one thing about a Bouvier
+that reads at any size. Its coat is drawn well off the black it really is,
+because Chapter I renders at 23% of Chapter III's light and a true Bouvier in
+there is a dog-shaped hole.
+
+**On the reference.** Asked for a nod to a specific commercial card game. The
+repo is public and MIT and `CLAUDE.md` is strict about borrowed marks, so
+what is in here is the MECHANIC — the one card in the deck that ends the
+game, and the thing that defuses it — with no art, no text and no wordmark,
+and the joke it lands on is ours: the counter to a cat is a dog. Flagged to
+the user rather than decided silently; the explicit name can go in if they
+want it.
+
+**Three things wrong on the first attempt, all found by looking:**
+
+1. **The cat was invisible, buried by its own marker.** A marker post is
+   0.8 m even at its short setting and a cat is half a metre, so a creature
+   standing on its own zone centre cannot be seen. Posted creatures now stand
+   0.62 m south-west — towards the camera — so they are in FRONT of their
+   post.
+2. **A cat drawn to life is four pixels across.** Indistinguishable from a
+   scrap of the decay it was sitting in, and this one has lines to say. It is
+   half again bigger than a cat now, and its tail is up and is the tallest
+   thing on it, because at this size the tail IS the cat. The dog needed no
+   such help — a Bouvier is already big.
+3. **I tested from outside the zone.** The first screenshots showed no
+   dialogue box and I briefly thought the whole thing was broken; the camera
+   was at y -46.6 and the cat's zone ends at -46.0.
+
+**The vocabulary needed one genuinely new thing.** `window` is absolute — in
+chapter seconds — which is right for a conference day and cannot express this
+at all, because forty-five seconds *from what* depends on when the player
+found the cat. Hence `within`: a deadline counted from the last of `after` to
+finish. `npm run objectives` now refuses a `within` with no `after`, because
+a deadline counted from nothing silently never fires, which is the worst way
+for a rule to be wrong.
+
+**Deliberately not a clock on the chapter.** `SPEC.md` §4 has Chapter I with
+no clock and no failure. The three boards are still untimed and still cannot
+be lost; running the forty-five seconds out costs you the dog and nothing
+else. A cat that says forty-five seconds and then does not mean it is a worse
+joke than a cat that does.
+
+**Tested in node, not by screenshot, and it had to be.** `peek` holds its
+keys from the first frame, and `keyboard.on` fires on keydown — so a
+four-line conversation needing five separate presses cannot be driven by the
+harness at all. `ObjectiveRun` is pure core, so the whole chain runs there:
+dog locked before the cat, cat done after five presses with `doneAt`
+recorded, deadline at doneAt + 45, dog reached at 30 s completes, at 47 s it
+is missed, stays missed when you turn up anyway, and the chapter is still
+running. That is the second time this week the screenshot harness could not
+answer a question and core could.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
