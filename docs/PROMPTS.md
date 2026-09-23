@@ -3818,6 +3818,104 @@ fires once on keydown.
 
 ---
 
+### Claude Opus — the same five people, off photographs
+
+**Prompt:**
+> Can you actually google those person and make the personna look like them.
+> I would like that the side quest tell more a story about the conference and
+> the oppotunity and the unique conversation you can have with those speakers
+> more then the current objective
+
+**Iterations:** 5 — four of them on beard geometry.
+
+**The research is the cheap half and it still needed a correction.** Web
+search returns prose about people, not their faces, so the useful move was to
+go and fetch photographs and actually look at them: Wikimedia Commons for
+Gosling, and the Devoxx CFP's own public speaker API — `dvbe24.cfp.dev`,
+`?size=1000`, the 20-row default is not documented anywhere — for the
+official headshots of Goetz, King, Janssen and Johnson. Commons also has a
+"Gavin King.jpg" which is a different Gavin King entirely, and I nearly built
+a dark-haired man with a goatee out of it. Photographs of the right person
+are the only defensible source for this; a confident memory of a public
+figure's face is exactly the thing that is wrong in a way nobody catches.
+
+**The twenty pixels were wrong, and three features were cut because of it.**
+The previous pass asserted a figure was twenty pixels tall and refused
+glasses, hairlines and beard shapes on that basis. Nobody measured it. The
+camera fits 32 m across 1280 px, so a person is 60 px and a head is 9 by 8,
+and a spectacle frame is 1.2 px — which is a thin dark line across a head,
+and thin dark lines across heads read as glasses because there is nothing
+else they can be. Janssen's amber frames are now the single most recognisable
+thing in the corridor. **The lesson is not "be bolder"; it is that a number
+in a comment justifying a cut is worth the thirty seconds it takes to check,
+because it goes on being true long after it stopped being right.**
+
+**Four passes on where a beard goes.** The first was twice too big and read
+as a scarf. Halved, it read as a shadow under the jaw — because `chin` in
+that code is the NECK joint and the head is a BLOB, so a beard hung off the
+bottom of it hangs off the narrowest part of a sphere and lands on the
+shirt. The fix was to stop measuring from the box and start measuring from a
+face: mouth a fifth of the way up, eyes at just under half, beard the bottom
+third. Every one of those passes was one build and one crop, and none of them
+would have been visible in the code.
+
+**Two colours that were right and read wrong.** Gavin King's hair is fair,
+and fair hair rendered at its own value under Chapter II's tungsten light
+came out the exact tone of a lit forehead — the one man in the corridor with
+a full head of hair read as bald. It is two shades darker than the
+photograph now, deliberately. And Brian Goetz's beard is greyer than his
+hair, which is not a detail: rendered in hair colour he is a different man.
+
+**The dialogue box broke in a way the honest colours caused.** It tints the
+speaker's name with their shirt, which worked while the shirts were invented
+and fell over the moment they came off photographs — three of these five wear
+black, so three names came up the same washed grey. It now takes whichever of
+their colours is furthest from grey: amber glasses, ochre hair, blue-grey
+shirt. Five people, five inks. Where everything about somebody IS grey, grey
+is the right answer and it stays.
+
+**Attendants had to stop turning their backs on the camera.** A face is on
+the front of a head and this game has exactly one viewpoint, so an attendant
+tracking the player exactly presented the back of their skull half the time.
+That cost nothing when a named person was a shirt and a haircut and costs
+everything now the likeness is on one side of the head. They face the viewer
+and turn up to 75 degrees off it — still turning towards whoever comes over,
+but the way an actor does, without playing the scene upstage.
+
+**On the writing, which is the half the prompt cared about.** The previous
+version had five of the most interesting people in the Java world each take a
+turn telling the player to get back to work. That is a waste of the only five
+people in the game worth stopping for, and it is also a strange thing for the
+chapter to argue: the player is in a building full of talks and the game kept
+insisting the talks were the point.
+
+They are a story now, and the story is what a conference actually is: the
+talks are recorded and the corridor is not. Stephan opens by saying so — all
+of it goes online, so if the talk were the reason to fly to Antwerp in
+December nobody would fly to Antwerp in December. The four of them are each
+one thing a recording cannot give you: an author saying "I have no idea" out
+loud, an argument that ends in a bar instead of a thread, a book's worth of
+conversation had in one morning, a question answered by the person the answer
+belongs to. And it has an ENDING — Stephan is still standing there, and once
+you have met all four he has something to say about what you just chose.
+
+**Everything is era-locked, which the first draft got wrong.** Chapter II is
+JavaPolis, so the corridor is about 2006 and the talk is Spring against EJB,
+Hibernate two years into being the thing everyone uses and complains about,
+Java 5's memory model still new. Where these four went NEXT is public and
+interesting and belongs to a chapter this is not. The one hard number in
+there — 2,800 people, the biggest independent Java conference in the world —
+is real and is 2006.
+
+**Two pieces of harness fell out of it.** A second conversation with somebody
+you have already met needs `alreadyHere`, or the rule that every `talk` puts
+a person at its zone puts a second, identical host inside the first. And an
+optional activity that is still locked is now hidden from the card: listing
+"Back to Stephan" before the player has met Stephan hands them the end of a
+thread they have not been given the start of.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
