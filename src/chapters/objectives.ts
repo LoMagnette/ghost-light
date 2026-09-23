@@ -12,6 +12,7 @@
  */
 
 import type { Activity, Zone } from '@/core/Activity';
+import type { Look } from '@/core/Crowd';
 import type { Objective } from '@/core/Objective';
 import { CROSS_AISLE, KINEPOLIS, RECEPTION_DESK } from '@/venue/kinepolis';
 import { rect, type Level, type Rect } from '@/core/Venue';
@@ -245,12 +246,19 @@ function tendRoom(id: string, label: string, drain: number): Activity {
  * the rooms they are speaking in, and every second spent being sociable is a
  * second five session meters are draining without you.
  */
-function speaker(id: string, who: string, lines: string[], y: number): Activity {
+function speaker(
+  id: string,
+  who: string,
+  look: Look,
+  lines: string[],
+  y: number,
+): Activity {
   return {
     kind: 'talk',
     id: `met-${id}`,
     label: `Say hello to ${who}`,
     who,
+    look,
     // The corridor's west side, outside the room they are on in. Not the
     // south end: floor 1 has no floor there, it has the grand stairwell.
     at: spot(1, -4.0, y, 3.2),
@@ -277,50 +285,71 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       id: 'met-stephan',
       label: 'Say hello to Stephan',
       who: 'Stephan Janssen',
+      look: { shirt: 0x2f6f8c, hair: 0x322c27, scale: 1.0 },
       optional: true,
       // Four metres up the corridor from where the chapter starts, so the
       // host is the first thing in the building that talks to you.
       at: spot(1, 0.0, -40.0, 3.2),
       lines: [
-        'You found the AV cupboard. That is most of what running a conference is.',
-        'Five rooms today. The first year it was one, and we thought that was ambitious.',
-        'There are four people down the corridor who came a long way. Go and say hello — the rooms will hold for a minute.',
+        'Ah — maintenance. Good. Room 4 has been making a noise since nine.',
+        'Five rooms today. The first year it was one room and eighty people, and we thought we had overreached.',
+        'Before you go: there are four people down that corridor who flew in for this. Say hello. The rooms will survive a minute without you.',
       ],
     },
+    /*
+     * Five people, five silhouettes.
+     *
+     * `Look` carries what survives at twenty pixels and nothing else: a
+     * shirt, a hair colour, a beard, a height. That is enough to tell five
+     * figures apart down a 126 m corridor and deliberately not enough to be
+     * a portrait of anybody — a face, glasses or a logo would all be under a
+     * pixel, so attempting them would be a claim the renderer cannot make.
+     *
+     * The heights are the quiet one. People differ by a head, which is 8%
+     * and about four pixels, and without it five distinct shirts still read
+     * as one figure repainted.
+     */
     speaker(
       'gosling',
       'James Gosling',
+      { shirt: 0x4a5058, hair: 0xd2d4cf, beard: true, scale: 0.98 },
       [
-        'They have put me in the big room again.',
-        'Somebody asked me this morning whether any of this lasts. I have never known how to answer that.',
-        'Keep the projector running and we will find out.',
+        'They have put me in the big room again. I keep telling them I do not need the big room.',
+        'Somebody asked me this morning where all this ends up in twenty years. I have never been able to answer that one.',
+        'Keep the projector alive and we will find out together.',
       ],
       -31.0,
     ),
     speaker(
       'goetz',
       'Brian Goetz',
+      { shirt: 0x7d4a3a, hair: 0x5c554e, scale: 1.03 },
       [
-        'Two robots, five rooms, one of you. You are doing concurrency.',
-        'The hard part was never the doing. It is agreeing on what happened, and in what order.',
+        'Two machines, five rooms, one of you. You have written this program before.',
+        'And you already know where it goes wrong. It is never the doing — it is agreeing on what happened, and in what order.',
+        'Go on. Something is draining while we talk.',
       ],
       -11.0,
     ),
     speaker(
       'king',
       'Gavin King',
+      { shirt: 0x3f5c48, hair: 0x2f2b27, scale: 1.01 },
       [
-        'Everything in this building is in a database somewhere — the seats, the badges, the running order.',
-        'Somebody has to get all of that onto objects. It is less glamorous than it sounds.',
+        'Everything in this building is a row somewhere. The seats, the badges, the running order, you.',
+        "Getting all of that onto objects is nobody's idea of a good afternoon. Somebody has to.",
+        'Mind the door on the way out. It sticks.',
       ],
       5.3,
     ),
     speaker(
       'johnson',
       'Rod Johnson',
+      { shirt: 0x6b6078, hair: 0x8e8272, scale: 0.99 },
       [
-        'Half this room is here because something was heavy and somebody made a lighter one.',
-        'That is most of what we do. It is not a small thing.',
+        'Half the people in that room came because something was too heavy and somebody built a lighter one.',
+        'That is most of the job, and it is not a small one.',
+        'You are doing it now, incidentally. Nobody thanks whoever keeps the lights on either.',
       ],
       18.9,
     ),
@@ -421,6 +450,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // nothing but the press that discovers the key exists.
       label: 'Say hello at the desk',
       who: 'Registration',
+      // Conference staff blue. Kept cool against a warm chapter so the desk
+      // reads from the aisle, which is the whole job of the person at it.
+      look: { shirt: 0x2c4f7c, hair: 0x3a332c, scale: 0.98 },
       at: spot(RECEPTION_DESK.floor, RECEPTION_DESK.x, RECEPTION_DESK.y, 3.0),
       after: ['badge'],
       lines: [
@@ -435,6 +467,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'talk-stand',
       label: 'Talk to the stand crew',
       who: 'Stand 11',
+      // An exhibitor in whatever their company decided their colour was.
+      look: { shirt: 0xa63b4e, hair: 0x2e2a26, scale: 1.02 },
       // On the hall floor among the stands, where a robot is already driving
       // past on the sticker sweep.
       at: spot(0, 14.0, -24.0, 3.2),
@@ -450,6 +484,10 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'talk-keynote',
       label: 'Ask the steward about the keynote',
       who: 'Steward',
+      // High-vis, which is the one piece of clothing in this game that is
+      // doing a job rather than being a colour: a steward outside a full
+      // Room 8 is meant to be the thing you can see from down the corridor.
+      look: { shirt: 0xd8c33a, hair: 0x584a3c, scale: 1.0 },
       // Outside Room 8, upstairs, on the way to the thing everyone is going
       // to. Reach-gated: a steward leaning over a barrier talks to whoever is
       // tall enough to be at eye level, which is Voxxy and Droid, not Biggy —

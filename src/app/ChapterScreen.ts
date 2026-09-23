@@ -209,6 +209,7 @@ export class ChapterScreen implements Screen {
           y: at.y - POST_OFFSET,
           floor: a.at.floor,
           shape: a.shape,
+          look: a.look,
         };
       });
 
@@ -828,6 +829,21 @@ export class ChapterScreen implements Screen {
     }
 
     this.talkPrompt.textContent = '';
+    /*
+     * The box takes the speaker's own colour.
+     *
+     * A name in the chapter accent is a label; a name in the shirt of the
+     * person standing in front of you is the same person twice, and at this
+     * zoom the figure is twenty pixels tall and the box is the only place
+     * their colour is legible. Lifted well up first — half these shirts are
+     * dark, and dark text on a near-black box is a name nobody reads.
+     */
+    const ink = activity.look?.shirt;
+    const tint = css(ink === undefined ? this.chapter.palette.accent : lift(ink));
+    this.talkWho.style.color = tint;
+    this.talkMore.style.color = tint;
+    this.talkBox.style.borderColor = tint;
+
     const line = activity.lines[shown - 1];
     if (line !== this.typingLine) {
       this.typingLine = line;
@@ -1090,6 +1106,23 @@ function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
     return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
   }
   return { x, y, floor: Number.isFinite(floor) ? floor : chapter.startFloor };
+}
+
+/**
+ * A shirt colour, pulled up until it can be read as text on a dark box.
+ *
+ * Not `shade`, which multiplies: a very dark navy multiplied by three is a
+ * slightly less dark navy. This mixes toward white instead, so every shirt
+ * arrives at about the same legibility whatever it started at, and keeps its
+ * hue on the way.
+ */
+function lift(colour: number): number {
+  const mixTo = (channel: number): number => Math.round(channel + (255 - channel) * 0.52);
+  return (
+    (mixTo((colour >> 16) & 0xff) << 16) |
+    (mixTo((colour >> 8) & 0xff) << 8) |
+    mixTo(colour & 0xff)
+  );
 }
 
 /** One card row: a glyph for the state, the label, and any live number. */

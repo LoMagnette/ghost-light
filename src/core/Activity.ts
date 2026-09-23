@@ -14,6 +14,7 @@
  */
 
 import type { Level, Rect } from './Venue';
+import type { Look } from './Crowd';
 import type { RobotSpec } from './RobotSpec';
 
 /** A patch of one storey. An activity happens where it happens. */
@@ -232,6 +233,8 @@ export interface TalkActivity extends Common {
    * that matters, which is what you see when you get there.
    */
   shape?: 'cat' | 'dog';
+  /** What they look like, for the ones who are a person. See `Look`. */
+  look?: Look;
   /** What they say, one boxful at a time. */
   lines: string[];
 }

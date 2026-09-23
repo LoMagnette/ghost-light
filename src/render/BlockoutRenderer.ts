@@ -842,7 +842,13 @@ export class BlockoutRenderer {
         i = this.placeAnimal(i, person);
         continue;
       }
-      const [trousers, clothing, head] = this.personColours(person);
+      const [trousers, plain, head] = this.personColours(person);
+      const look = person.look;
+      const clothing = look?.shirt ?? plain;
+      // Every height in the figure goes through this, so a taller person is
+      // taller everywhere rather than a normal person with a floating head.
+      const k = look?.scale ?? 1;
+      const up = (z: number): number => z * k;
 
       /*
        * Legs, torso, two arms — all on the same centre line, so the heading
@@ -853,8 +859,16 @@ export class BlockoutRenderer {
        * ninety degrees: perfectly symmetrical at rest and unmistakable the
        * moment anyone walked anywhere.
        */
-      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_THICK * 0.8, PERSON_HIP, trousers);
-      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_THICK, PERSON_TORSO_WIDE, clothing);
+      i = this.placePart(i, person, 0, up(PERSON_LEG_TOP), PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      i = this.placePart(
+        i,
+        person,
+        up(PERSON_LEG_TOP),
+        up(PERSON_NECK),
+        PERSON_THICK,
+        PERSON_TORSO_WIDE,
+        clothing,
+      );
 
       /*
        * Arms: two darker strips either side of the torso, in the SAME
@@ -869,13 +883,62 @@ export class BlockoutRenderer {
        */
       const sleeve = shade(clothing, 0.74);
       const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
-      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, reach);
-      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, -reach);
+      for (const side of [reach, -reach]) {
+        i = this.placePart(
+          i,
+          person,
+          up(PERSON_ARM_BOTTOM),
+          up(PERSON_ARM_TOP),
+          PERSON_THICK,
+          PERSON_ARM_WIDE,
+          sleeve,
+          side,
+        );
+      }
+
+      /*
+       * Hair and a beard, for the people who are somebody.
+       *
+       * Boxes rather than blobs, which is not laziness: the blob budget is
+       * two a head and every one of the three thousand people in Chapter III
+       * pays for it, where the box budget already has room for an animal's
+       * thirteen. A cap of hair on a rounded head reads as hair at this size
+       * either way.
+       *
+       * The beard is the one piece of this that is nearly a likeness, and it
+       * is one box. Anything finer — a face, glasses, a logo on a shirt — is
+       * under a pixel, so attempting it would be a claim this renderer cannot
+       * make.
+       */
+      if (look?.hair !== undefined) {
+        i = this.placePart(
+          i,
+          person,
+          up(PERSON_HEIGHT) - 0.07 * k,
+          up(PERSON_HEIGHT) + 0.01 * k,
+          PERSON_HEAD_WIDE * 0.94,
+          PERSON_HEAD_WIDE * 0.94,
+          look.hair,
+        );
+        if (look.beard) {
+          i = this.placePart(
+            i,
+            person,
+            up(PERSON_NECK) + 0.02 * k,
+            up(PERSON_NECK) + 0.15 * k,
+            0.07,
+            PERSON_HEAD_WIDE * 0.72,
+            look.hair,
+            0,
+            PERSON_HEAD_WIDE * 0.42,
+          );
+        }
+      }
 
       // The shoulders as a rounded mass over the top of all three, and the
       // head over that. A flat cap read as epaulettes.
-      h = this.placeBlob(h, person, PERSON_SHOULDER_BOTTOM, PERSON_NECK, PERSON_SHOULDER, PERSON_THICK, clothing);
-      h = this.placeBlob(h, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
+      h = this.placeBlob(h, person, up(PERSON_SHOULDER_BOTTOM), up(PERSON_NECK), PERSON_SHOULDER, PERSON_THICK, clothing);
+      h = this.placeBlob(h, person, up(PERSON_NECK), up(PERSON_HEIGHT), PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
     }
 
     this.moverMesh.count = i;

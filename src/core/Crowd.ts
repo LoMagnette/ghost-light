@@ -172,6 +172,35 @@ const AVOID_URGENCY = 3.2;
  */
 const PERSONAL_SPACE = 0.55;
 
+/**
+ * What one named individual looks like, as against the crowd.
+ *
+ * The crowd is a MASS and takes one colour — that decision is defended at
+ * length on `Palette.crowd` and it still holds. This is the exception it
+ * always implied: somebody you can walk up to and have a conversation with
+ * is not part of a mass, and five of them standing in one corridor all in
+ * the same shirt is five of nobody.
+ *
+ * Four levers, and they are the only four that survive at twenty pixels
+ * tall: what colour their shirt is, what colour their hair is, whether they
+ * have a beard, and how tall they are. Everything finer than that — a face,
+ * glasses, a logo — is under a pixel and would be a lie about how much this
+ * renderer can say.
+ */
+export interface Look {
+  /** Torso and sleeves. Overrides the era's crowd colour entirely. */
+  shirt?: number;
+  /** A cap of it on the crown, and the beard if there is one. */
+  hair?: number;
+  beard?: boolean;
+  /**
+   * Multiplier on the whole figure. People differ by a head, which is 8% and
+   * about four pixels — small, and the difference between five figures and
+   * five of the same figure.
+   */
+  scale?: number;
+}
+
 export interface Person {
   x: number;
   y: number;
@@ -210,6 +239,8 @@ export interface Person {
    * the only thing that differs is the shape the renderer draws.
    */
   shape?: 'cat' | 'dog';
+  /** Who they are, for the ones who are somebody. See `Look`. */
+  look?: Look;
   /**
    * The room this person is in, for the ones who are in a room.
    *
@@ -237,6 +268,7 @@ export interface Post {
   y: number;
   floor: Level;
   shape?: 'cat' | 'dog';
+  look?: Look;
 }
 
 interface Mover extends Person {
@@ -716,6 +748,7 @@ export class Crowd {
         dy: 0,
         posted: true,
         shape: post.shape,
+        look: post.look,
       };
       this.walkers.push(mover);
       this.movers.push(mover);
