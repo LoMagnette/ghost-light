@@ -102,6 +102,55 @@ const SILENCE: Activity[] = [
     at: spot(0, -11.0, -50.0, 2.6),
     reveal: { ...roomBounds('reception'), to: 0.5 },
   },
+  /*
+   * The two things still living here.
+   *
+   * `SPEC.md` §4 has Chapter I as an EMPTY building and the tagline is
+   * "something is still walking the building" — which until now was a
+   * promise nothing in the build kept. Two animals keep it, and they keep it
+   * better than a light on a path would: an empty building with a cat in it
+   * is stranger than an empty building, and a dog that has been asleep in a
+   * dark exhibition hall for years is the whole chapter in one object.
+   *
+   * They are `talk` activities and nothing else. Everything a registration
+   * desk uses — a post, a marker, a box of dialogue, a reach gate if it
+   * wanted one — works unchanged on an animal; all that differs is `shape`,
+   * which is what the renderer draws when it gets there.
+   */
+  {
+    kind: 'talk',
+    id: 'cat',
+    label: 'The cat',
+    who: 'The cat',
+    shape: 'cat',
+    // In the concourse, out in the open east of the reception island. Early
+    // enough on the route that a player meets it before they know the
+    // building, which is when a talking cat is at its most unsettling.
+    at: spot(0, 2.5, -44.5, 3.0),
+    lines: [
+      'Do not run. I have been sitting on this a very long time and the mechanism is old.',
+      'Every deck has one card in it that ends the game. In this building, that card is me.',
+      'You have forty-five seconds. There is exactly one thing in here that defuses me.',
+      'It has four legs and a beard, and it is not fond of me. Go.',
+    ],
+  },
+  {
+    kind: 'talk',
+    id: 'dog',
+    label: 'Find the dog',
+    who: 'The dog',
+    shape: 'dog',
+    // Deep enough into the hall that the timer pulls the player NORTH, which
+    // is the direction the chapter wants them going anyway — and across the
+    // threshold terrace, so the level change is learned under pressure.
+    at: spot(0, -16.0, -18.0, 3.2),
+    after: ['cat'],
+    lines: [
+      'It is enormous, and it has been asleep. It opens one eye.',
+      'Somewhere back in the concourse, something stops ticking.',
+      'It goes back to sleep.',
+    ],
+  },
   {
     kind: 'tap',
     id: 'board-stage',

@@ -233,6 +233,20 @@ const VISOR = 0x14171a;
 const EYES = 0xffc061;
 
 /**
+ * The two animals. Not palette entries: see `placeAnimal`.
+ *
+ * The dog's coat is lifted well off the black it really is, because Chapter I
+ * renders at a quarter of Chapter III's light and a true Bouvier in there is
+ * a dog-shaped hole. The beard carries the breed and has to stay legible.
+ */
+const DOG_COAT = 0x55565e;
+const DOG_BEARD = 0xa8a294;
+const CAT_FUR = 0xc2bcae;
+
+/** Boxes an animal costs. A dog is thirteen; the cat is ten. */
+const ANIMAL_PARTS = 14;
+
+/**
  * How much two boxes of the same material may differ in tone, either way.
  *
  * Everything in this building is one of about a dozen flat colours, and a
@@ -743,12 +757,91 @@ export class BlockoutRenderer {
     ];
   }
 
+  /**
+   * The two animals, drawn as themselves.
+   *
+   * Colours are hard-coded here beside `VISOR` and `EYES`, and for the same
+   * reason those are: a dog is not dressed by the era. The building is read
+   * three ways and the dog living in it is the same dog.
+   *
+   * The DOG is a Bouvier des Flandres, which is a very specific silhouette
+   * and a lucky one to have to draw out of boxes: square, low, heavy-boned,
+   * with a head that is mostly a beard. At twenty pixels tall none of the
+   * coat texture survives, so all of the breed has to live in the outline —
+   * a body as long as it is tall, short thick legs, and that pale muzzle
+   * stuck out in front of a dark head, which is the one thing about a
+   * Bouvier that reads at any size.
+   *
+   * The CAT is mostly tail. Everything else at this scale is a smudge the
+   * size of a robot's foot; the tail up is what says cat from across a hall.
+   */
+  private placeAnimal(index: number, animal: Person): number {
+    let i = index;
+    const part = (
+      from: number,
+      to: number,
+      thick: number,
+      wide: number,
+      colour: number,
+      across = 0,
+      along = 0,
+    ): void => {
+      i = this.placePart(i, animal, from, to, thick, wide, colour, across, along);
+    };
+
+    if (animal.shape === 'dog') {
+      part(0.30, 0.62, 0.62, 0.30, DOG_COAT);
+      // Chest deeper than the barrel and shoulders wider than the hips: the
+      // breed is front-heavy and it is most of why it reads as a working dog
+      // rather than as a large spaniel.
+      part(0.26, 0.64, 0.28, 0.34, DOG_COAT, 0, 0.2);
+      part(0.30, 0.60, 0.22, 0.31, DOG_COAT, 0, -0.26);
+      for (const along of [0.22, -0.22]) {
+        for (const across of [0.11, -0.11]) part(0, 0.32, 0.11, 0.1, DOG_COAT, across, along);
+      }
+      part(0.48, 0.68, 0.16, 0.22, DOG_COAT, 0, 0.36);
+      part(0.52, 0.74, 0.24, 0.24, DOG_COAT, 0, 0.48);
+      part(0.48, 0.66, 0.18, 0.22, DOG_BEARD, 0, 0.62);
+      for (const across of [0.1, -0.1]) part(0.72, 0.8, 0.1, 0.07, DOG_COAT, across, 0.46);
+      // Docked to a stub, which is how the breed is nearly always seen.
+      part(0.52, 0.64, 0.12, 0.1, DOG_COAT, 0, -0.42);
+      return i;
+    }
+
+    /*
+     * Half again bigger than a cat.
+     *
+     * Drawn to life it came out four pixels across — a speck you could not
+     * tell from a scrap of the decay it was sitting in, and this one has
+     * lines to say. The dog is near enough life-size because a Bouvier is
+     * already big; the cat is the one animal this camera cannot take
+     * literally.
+     */
+    part(0.21, 0.42, 0.45, 0.2, CAT_FUR);
+    part(0.18, 0.45, 0.21, 0.22, CAT_FUR, 0, -0.21);
+    for (const along of [0.165, -0.165]) {
+      for (const across of [0.075, -0.075]) part(0, 0.22, 0.075, 0.075, CAT_FUR, across, along);
+    }
+    part(0.3, 0.5, 0.2, 0.2, CAT_FUR, 0, 0.315);
+    for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, CAT_FUR, across, 0.285);
+    // Up, and the tallest thing on it. At this size the tail IS the cat.
+    part(0.33, 0.75, 0.09, 0.09, CAT_FUR, 0, -0.33);
+    return i;
+  }
+
   /** Put the standing crowd where it is this frame. Visible storey only. */
   private placeMovers(floor: Level): void {
     let i = 0;
     let h = 0;
     for (const person of this.crowd.movers) {
       if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
+      // An animal is thirteen boxes against a person's four, so the box
+      // budget has to be checked rather than assumed from the blob one.
+      if (i + ANIMAL_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
+      if (person.shape) {
+        i = this.placeAnimal(i, person);
+        continue;
+      }
       const [trousers, clothing, head] = this.personColours(person);
 
       /*
@@ -808,10 +901,15 @@ export class BlockoutRenderer {
     wide: number,
     colour: number,
     across = 0,
+    along = 0,
   ): number {
+    // `across` is to the figure's left and `along` is in front of it, both in
+    // its own frame. A person needs only `across` — two arms beside a torso —
+    // and an animal is the whole reason `along` exists: a dog is a column of
+    // boxes laid on its side, with a head at one end and a tail at the other.
     SCRATCH.position.set(
-      person.x - Math.sin(person.heading) * across,
-      person.y + Math.cos(person.heading) * across,
+      person.x + Math.cos(person.heading) * along - Math.sin(person.heading) * across,
+      person.y + Math.sin(person.heading) * along + Math.cos(person.heading) * across,
       person.z + (from + to) / 2,
     );
     SCRATCH.scale.set(thick, wide, to - from);

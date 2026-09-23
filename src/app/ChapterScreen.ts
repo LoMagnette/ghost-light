@@ -63,6 +63,9 @@ const CARD_TOP = 70;
  */
 const LEAVING_FROM = 0.75;
 
+/** How far a posted creature stands from its marker, metres, south and west. */
+const POST_OFFSET = 0.62;
+
 /**
  * How many of a room's audience are drawn walking out, at the point where all
  * of them have gone. See `Crowd.evacuate` for why it is not all of them.
@@ -194,7 +197,20 @@ export class ChapterScreen implements Screen {
     // whole of this was built to stop: twelve errands run past nobody.
     const posts = chapter.objective.activities
       .filter((a): a is TalkActivity => a.kind === 'talk')
-      .map((a) => ({ ...zoneCentre(a.at), floor: a.at.floor }));
+      .map((a) => {
+        const at = zoneCentre(a.at);
+        // Beside the marker, not under it. A marker post is 0.8 m even at its
+        // short setting and a cat is half a metre, so a creature standing on
+        // its own zone centre is a creature you cannot see. South-west is
+        // TOWARDS the camera, so whoever it is stands in front of their post
+        // rather than behind it.
+        return {
+          x: at.x - POST_OFFSET,
+          y: at.y - POST_OFFSET,
+          floor: a.at.floor,
+          shape: a.shape,
+        };
+      });
 
     this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter), posts);
 

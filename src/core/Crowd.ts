@@ -202,6 +202,15 @@ export interface Person {
    */
   posted?: boolean;
   /**
+   * What this one IS, when it is not a person.
+   *
+   * The building has two animals living in it and they are posted the same
+   * way an attendant is — stand somewhere, turn to whoever comes over, be
+   * something you can walk up to. Everything about that is already here, and
+   * the only thing that differs is the shape the renderer draws.
+   */
+  shape?: 'cat' | 'dog';
+  /**
    * The room this person is in, for the ones who are in a room.
    *
    * Only the seated audience and the speakers carry it. Roamers belong to a
@@ -227,6 +236,7 @@ export interface Post {
   x: number;
   y: number;
   floor: Level;
+  shape?: 'cat' | 'dog';
 }
 
 interface Mover extends Person {
@@ -705,6 +715,7 @@ export class Crowd {
         dx: 0,
         dy: 0,
         posted: true,
+        shape: post.shape,
       };
       this.walkers.push(mover);
       this.movers.push(mover);

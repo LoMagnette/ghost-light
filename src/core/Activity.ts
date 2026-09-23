@@ -197,6 +197,15 @@ export interface TalkActivity extends Common {
   kind: 'talk';
   /** Who is speaking. Shown above the box, so it is a name and not a title. */
   who: string;
+  /**
+   * What is standing there, if it is not a person.
+   *
+   * Chapter I is an empty building and the only two things left living in it
+   * are an animal apiece. They use every bit of this that a registration desk
+   * does — a post, a marker, a box of dialogue — and differ in the one way
+   * that matters, which is what you see when you get there.
+   */
+  shape?: 'cat' | 'dog';
   /** What they say, one boxful at a time. */
   lines: string[];
 }
