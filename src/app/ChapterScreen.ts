@@ -51,14 +51,23 @@ import {
 const CARD_TOP = 70;
 
 /**
- * How long a dead room takes to empty, seconds.
+ * How dim a room's light gets before anybody walks out of it, 0..1.
  *
- * Long enough to read as people leaving and short enough to be over before
- * the player's attention has moved on. Not observable in the default
- * no-input run, where three rooms die within two seconds of each other and
- * the day ends — that is a degenerate case, not a tuning signal.
+ * Asked for directly, and it is the right number for a reason worth writing
+ * down: a room at full light is a session going fine and a room at three
+ * quarters is one that has been left alone for a bit. Anything higher and the
+ * audience starts draining out of rooms the player is keeping up with, which
+ * turns the signal into noise. Below it, everybody who is still there leaves
+ * by the time it is dark — `departed` is 1 at zero light — so a failed room
+ * empties without the failure needing a rule of its own.
  */
-const EMPTY_SECONDS = 5;
+const LEAVING_FROM = 0.75;
+
+/**
+ * How many of a room's audience are drawn walking out, at the point where all
+ * of them have gone. See `Crowd.evacuate` for why it is not all of them.
+ */
+const EVACUEES = 36;
 
 export class ChapterScreen implements Screen {
   private readonly chapter: Chapter;
@@ -87,8 +96,6 @@ export class ChapterScreen implements Screen {
   private talkPrompt!: HTMLElement;
   /** Edge-triggered, exactly like `dropRequested`. */
   private talkRequested = false;
-  /** Seconds since each dead room started emptying. See `EMPTY_SECONDS`. */
-  private readonly emptying = new Map<string, number>();
   /**
    * How much of the current line has been typed out, in characters.
    *
@@ -291,7 +298,7 @@ export class ChapterScreen implements Screen {
     }
     this.dropRequested = false;
     this.talkRequested = false;
-    this.showSessions(dt);
+    this.showSessions();
     this.updateTalk(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
@@ -364,7 +371,6 @@ export class ChapterScreen implements Screen {
     // in the renderer, the people who left in the crowd.
     this.blockout.refillSeats();
     this.crowd.reseat();
-    this.emptying.clear();
     this.run = new ObjectiveRun(this.chapter.objective);
     this.endCard?.remove();
     this.endCard = undefined;
@@ -401,7 +407,7 @@ export class ChapterScreen implements Screen {
    * up rather than as a room emptying. The day is over; the building is still
    * there, and what is happening in it finishes.
    */
-  private showSessions(dt: number): void {
+  private showSessions(): void {
     /*
      * A room is as lit as its session has left in it.
      *
@@ -421,30 +427,32 @@ export class ChapterScreen implements Screen {
       const a = state.activity;
       if (a.kind !== 'tend' || !a.reveal) continue;
       const left = state.status === 'failed' ? 0 : Math.max(0, state.progress) / a.capacity;
-      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * Math.sqrt(left));
+      const lit = Math.sqrt(left);
+      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * lit);
 
       /*
-       * And when it goes dark, the room empties.
+       * And the audience goes with the light.
        *
        * `MECHANICS.md` §5.2: "a room at zero goes dark, its attendees leave,
-       * and it never comes back." The light going out was only ever half of
-       * that — a dark room with five hundred people still sitting in it is a
-       * power cut, not a session that ended, and the difference is the whole
-       * reason losing a room is supposed to feel like losing something.
+       * and it never comes back." This used to fire on failure, which read as
+       * a room being switched off with everybody in it — and a room only
+       * fails once, so the fact that it had been in trouble for twenty
+       * seconds beforehand was information the player never got.
        *
-       * Over EMPTY_SECONDS rather than at once, because two hundred people
-       * vanishing on one frame is a rendering artefact and two hundred people
-       * leaving over eight seconds is an audience.
+       * People leave while a session is DYING, not when it is dead, and that
+       * turns the audience into a second reading of the same meter: a room
+       * you can see thinning from the far end of the corridor while there is
+       * still time to drive to it.
+       *
+       * Nobody moves until the light is down to LEAVING_FROM — a session
+       * running a little behind is not one anybody walks out of — and the
+       * rate climbs from there, both because the curve steepens and because
+       * the drain itself ramps with the day.
        */
-      if (state.status !== 'failed') continue;
-      const before = this.emptying.get(a.room);
-      // The first frame it is dark: put its audience in the corridor. Once,
-      // which is what the absent key is for — `evacuate` spawns people and
-      // calling it every frame would spawn a building full of them.
-      if (before === undefined) this.crowd.evacuate(a.room);
-      const since = (before ?? 0) + dt;
-      this.emptying.set(a.room, since);
-      this.blockout.emptySeats(a.room, since / EMPTY_SECONDS);
+      const departed = Math.min(1, Math.max(0, (LEAVING_FROM - lit) / LEAVING_FROM));
+      if (departed <= 0) continue;
+      this.blockout.emptySeats(a.room, departed);
+      this.crowd.evacuate(a.room, departed * EVACUEES);
     }
   }
 

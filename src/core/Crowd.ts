@@ -272,6 +272,8 @@ export class Crowd {
   private readonly plans = new Map<Level, Floorplan>();
   private readonly random: () => number;
   private accumulator = 0;
+  /** How many have already walked out of each room. See `evacuate`. */
+  private readonly gone = new Map<string, number>();
 
   constructor(
     venue: Venue,
@@ -580,7 +582,12 @@ export class Crowd {
   }
 
   /**
-   * A session has ended. Put its audience in the corridor.
+   * A session is losing its audience. Put `wanted` of them in the corridor.
+   *
+   * Topped up rather than fired once, because people do not all leave when
+   * the room finally dies — they leave while it is dying, which is the whole
+   * point of it being a signal. Ask for a total and it spawns the difference.
+   *
    *
    * The seats emptying is the renderer's half of this — see `emptySeats` —
    * and on its own it is people DISAPPEARING, which is not what
@@ -599,7 +606,12 @@ export class Crowd {
    * Capped, because two hundred and fifty new movers is most of the
    * renderer's budget for one room and there are five of them.
    */
-  evacuate(roomId: string): void {
+  evacuate(roomId: string, wanted: number): void {
+    const already = this.gone.get(roomId) ?? 0;
+    const leaving = Math.min(EVACUEES, Math.round(wanted)) - already;
+    if (leaving <= 0) return;
+    this.gone.set(roomId, already + leaving);
+
     const room = this.venue.rooms.find((r) => r.id === roomId);
     if (!room) return;
 
@@ -612,10 +624,6 @@ export class Crowd {
       mover.wasStage = mover.stage;
       mover.stage = undefined;
     }
-
-    const audience = this.seated.filter((person) => person.room === roomId).length;
-    if (audience === 0) return;
-    const leaving = Math.min(EVACUEES, audience);
 
     // The corridor side of the room, which is the end nearer the building's
     // centre line — same reading `backOfHouse` makes in `objectives.ts`.
@@ -662,6 +670,7 @@ export class Crowd {
    * conference.
    */
   reseat(): void {
+    this.gone.clear();
     for (let i = this.walkers.length - 1; i >= 0; i -= 1) {
       const mover = this.walkers[i];
       if (mover.left) {
