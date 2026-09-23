@@ -242,9 +242,27 @@ than reconstructing it on day twelve: what tool, what prompt, how many
 iterations, and **what you fixed by hand when the model got it wrong**. That
 last part is what is actually being scored.
 
-## Commits
+## Branches and commits
 
-Conventional-ish, imperative, scoped to one thing:
+**A branch per feature, and push before cutting the next one.**
+
+```bash
+git push                       # whatever is outstanding on the current branch
+git checkout -b <feature>      # then start
+```
+
+**Commit as the work lands, not at the end.** Each coherent step — a mechanic
+wired up, a bug fixed, a tuning pass — is its own commit once it passes the
+harnesses it touches. This is not bookkeeping: a commit that has been through
+`npm run venue` / `traverse` / `objectives` / `physics` is a state you can get
+back to, and a twelve-day schedule with no way back is a schedule with one
+try in it. It is also the only thing that keeps the history readable, because
+these changes interleave across files — `ChapterScreen`, `registry` and
+`BlockoutRenderer` each end up carrying two or three unrelated features if a
+session is committed in one go, and at that point the history cannot be split
+after the fact without staging hunks.
+
+Commit messages are conventional-ish, imperative, and scoped to one thing:
 
 ```
 feat(sim): grip-limited turning so heavy robots carve
@@ -252,3 +270,21 @@ fix(render): sort seat blocks behind robots on the same row
 tune(robots): drop Biggy brake force to 516 N
 docs(spec): settle chapter order
 ```
+
+The body is prose, not bullets, and it says WHY — what was wrong, what was
+measured, and what was tried and rejected. `docs/PROMPTS.md` gets the same
+story from the other end: the commit explains the code, the prompt log
+explains the collaboration.
+
+### Pushing from the sandbox
+
+`origin` is SSH and SSH does not work in here — the proxy injects credentials
+for HTTPS only. If `git push` fails with `could not read Username`, the GitHub
+token has not been set as a sandbox secret; run this ON THE HOST:
+
+```bash
+sbx secret set github --sandbox devoxx-game -t "$(gh auth token)"
+```
+
+`devoxx-game` is `$SANDBOX_VM_ID`. Do not push from the host terminal instead
+— pushing from in here is the supported path once the secret is set.
