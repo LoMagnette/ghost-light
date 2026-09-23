@@ -360,8 +360,10 @@ export class ChapterScreen implements Screen {
     // Put the building back in the dark and the card back to empty. A restart
     // that kept the lights on would hand the player the answer to Chapter I.
     this.blockout.clearReveals();
-    // And put the audiences back in the rooms they walked out of.
+    // And put the audiences back in the rooms they walked out of — the seats
+    // in the renderer, the people who left in the crowd.
     this.blockout.refillSeats();
+    this.crowd.reseat();
     this.emptying.clear();
     this.run = new ObjectiveRun(this.chapter.objective);
     this.endCard?.remove();
@@ -435,7 +437,12 @@ export class ChapterScreen implements Screen {
        * leaving over eight seconds is an audience.
        */
       if (state.status !== 'failed') continue;
-      const since = (this.emptying.get(a.room) ?? 0) + dt;
+      const before = this.emptying.get(a.room);
+      // The first frame it is dark: put its audience in the corridor. Once,
+      // which is what the absent key is for — `evacuate` spawns people and
+      // calling it every frame would spawn a building full of them.
+      if (before === undefined) this.crowd.evacuate(a.room);
+      const since = (before ?? 0) + dt;
       this.emptying.set(a.room, since);
       this.blockout.emptySeats(a.room, since / EMPTY_SECONDS);
     }

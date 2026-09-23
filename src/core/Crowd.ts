@@ -34,6 +34,17 @@ import type { Actor } from './Sim';
 /** Crowd steps per second. Not the physics rate, deliberately. */
 export const CROWD_HZ = 20;
 
+/**
+ * How many of a dead room's audience are actually drawn walking out.
+ *
+ * Not all of them. Room 5 holds two hundred and fifty at this density and the
+ * renderer's mover budget is four hundred for the whole building, so five
+ * rooms emptying in full would be six hundred people nobody asked for. Three
+ * dozen out of a door reads as a room emptying; the rest of the evidence is
+ * the seats going bare behind them.
+ */
+const EVACUEES = 36;
+
 /** How close a robot has to be before an attendant turns to it, metres. */
 const ATTENDANT_NOTICE = 6;
 
@@ -228,6 +239,10 @@ interface Mover extends Person {
   dy: number;
   /** A speaker paces its stage and never leaves it. */
   stage?: Rect;
+  /** Spawned by `evacuate`, and taken away again by `reseat`. */
+  left?: boolean;
+  /** A speaker's stage while they are not on it. See `evacuate`. */
+  wasStage?: Rect;
 }
 
 /** Walkable cells of one storey, as a set of packed grid coordinates. */
@@ -561,6 +576,107 @@ export class Crowd {
         // corridor — so west-side rooms look west and east-side rooms east.
         heading: room.bounds.x < 0 ? Math.PI : 0,
       });
+    }
+  }
+
+  /**
+   * A session has ended. Put its audience in the corridor.
+   *
+   * The seats emptying is the renderer's half of this — see `emptySeats` —
+   * and on its own it is people DISAPPEARING, which is not what
+   * `docs/MECHANICS.md` §5.2 asks for. This is the half you actually watch:
+   * a stream of people out of the door and away down the corridor, which is
+   * also the only consequence of losing a room that the player has to drive
+   * around afterwards.
+   *
+   * They are spawned at the DOOR rather than at their seats, and that is the
+   * cheap trick that makes this affordable. Standing them up in the seating
+   * would mean matching each mover to the seated instance being hidden, in
+   * the renderer's departure order, across a module boundary `src/core` is
+   * not allowed to see. Coming out of the doorway they have already stood up,
+   * and nobody can count them against a room that is dark by then anyway.
+   *
+   * Capped, because two hundred and fifty new movers is most of the
+   * renderer's budget for one room and there are five of them.
+   */
+  evacuate(roomId: string): void {
+    const room = this.venue.rooms.find((r) => r.id === roomId);
+    if (!room) return;
+
+    // The speaker stops being a speaker. A stage nobody is watching is not a
+    // stage, and one still being paced in a dark room is a ghost.
+    for (const mover of this.walkers) {
+      if (mover.room !== roomId || !mover.stage) continue;
+      // Kept rather than dropped: `R` restarts the round and the session has
+      // to be able to be running again.
+      mover.wasStage = mover.stage;
+      mover.stage = undefined;
+    }
+
+    const audience = this.seated.filter((person) => person.room === roomId).length;
+    if (audience === 0) return;
+    const leaving = Math.min(EVACUEES, audience);
+
+    // The corridor side of the room, which is the end nearer the building's
+    // centre line — same reading `backOfHouse` makes in `objectives.ts`.
+    const b = room.bounds;
+    const inward = b.x < 0 ? -1 : 1;
+    const door = b.x < 0 ? b.x + b.w : b.x;
+
+    const corridor = this.venue.rooms.find(
+      (r) => r.floor === room.floor && r.kind === 'corridor',
+    );
+
+    for (let i = 0; i < leaving; i += 1) {
+      const x = door - inward * (0.6 + this.random() * 1.8);
+      const y = b.y + (0.15 + this.random() * 0.7) * b.h;
+      const mover: Mover = {
+        x,
+        y,
+        z: groundAt(this.venue, room.floor, x, y),
+        floor: room.floor,
+        heading: inward > 0 ? Math.PI : 0,
+        tint: this.random(),
+        speed: WALK_SPEED + (this.random() - 0.5) * SPEED_SPREAD,
+        // Out into the corridor first. After that `retarget` takes over and
+        // they are ordinary roamers, which is what somebody who has just left
+        // a talk is.
+        tx: corridor ? corridor.bounds.x + this.random() * corridor.bounds.w : x - inward * 8,
+        ty: y + (this.random() - 0.5) * 6,
+        dx: 0,
+        dy: 0,
+        left: true,
+      };
+      this.walkers.push(mover);
+      this.movers.push(mover);
+    }
+  }
+
+  /**
+   * Put everybody back where the round started. Called on restart.
+   *
+   * The renderer refills the seats it emptied; this undoes the other half.
+   * Without it `R` is a slow leak — every restart leaves the last round's
+   * leavers wandering the corridor, and five rooms times a few restarts is
+   * the mover budget gone on an audience that is no longer at the
+   * conference.
+   */
+  reseat(): void {
+    for (let i = this.walkers.length - 1; i >= 0; i -= 1) {
+      const mover = this.walkers[i];
+      if (mover.left) {
+        this.walkers.splice(i, 1);
+        const at = this.movers.indexOf(mover);
+        if (at >= 0) this.movers.splice(at, 1);
+        continue;
+      }
+      if (mover.wasStage) {
+        mover.stage = mover.wasStage;
+        mover.wasStage = undefined;
+        mover.x = mover.stage.x + mover.stage.w / 2;
+        mover.y = mover.stage.y + mover.stage.h / 2;
+        this.retarget(mover);
+      }
     }
   }
 
