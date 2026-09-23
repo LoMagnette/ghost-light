@@ -149,8 +149,8 @@ Three `tap` activities, each raising the light in one zone:
 | 2 | Concourse board | behind the registration desk, +1.2 m | concourse, and the grand stair |
 | 3 | Stage amplifier rack | Room 8 stage, storey 1, foot of the 4.5 m rake | the auditorium level |
 
-The building assembles itself around the player as they play. There is no
-score, no clock and no failure. The reveal is the reward and it does not need
+The building assembles itself around the player as they play. There is no score and no
+clock. The only thing in here that can be lost is the cat's threat, below. The reveal is the reward and it does not need
 another one.
 
 **The route is a wordless tutorial, and every beat uses geometry that already
@@ -163,6 +163,24 @@ exists:**
 3. Find *which* staircase goes up, in the dark — the venue's vertical.
 4. Down the Room 8 rake: 4.5 m of terracing, downhill, with a stage at the
    bottom. Braking now has a consequence.
+
+**The two things still living here.** A cat in the concourse and a
+Bouvier des Flandres asleep in the exhibition hall — which is the chapter's
+own tagline, *something is still walking the building*, finally kept by
+something. They are `talk` activities with a `shape`, so they cost a post, a
+marker and a box of dialogue and nothing else.
+
+The cat threatens to go off, in a nod to a certain card game about the one
+kitten in the deck that ends it — the mechanic, not the wordmark, and no art
+or text is borrowed. It gives you **45 seconds to find the dog**, because a
+dog is the only thing that defuses a cat.
+
+That is the one deadline in a chapter that otherwise has no clock, and it is
+deliberately not a clock on the CHAPTER: the three boards are still untimed
+and still cannot be lost, and running the 45 seconds out costs you the dog
+and nothing else. The card shows the count down beside "Find the dog". A cat
+that says forty-five seconds and does not mean it is a worse joke than a cat
+that does.
 
 **The ending.** Board three brings up the ghost light on the keynote stage,
 and the projector starts running a recording — **and the recording is

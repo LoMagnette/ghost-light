@@ -54,6 +54,8 @@ export interface ActivityState {
   progress: number;
   /** Haul only: who has it. */
   carrier?: Actor;
+  /** Chapter seconds at which this was completed. See `Activity.within`. */
+  doneAt?: number;
   /** Where the thing is right now. Haul items move; everything else does not. */
   x: number;
   y: number;
@@ -234,6 +236,18 @@ export class ObjectiveRun {
       }
     }
 
+    // A relative deadline: so many seconds from whatever unlocked this. It is
+    // checked AFTER `after`, because it is counted from when the last of them
+    // finished and before that there is nothing to count from.
+    if (a.within !== undefined && this.deadline(a) !== undefined) {
+      const deadline = this.deadline(a) as number;
+      if (this.elapsed > deadline) {
+        state.status = 'missed';
+        this.say(`Too late: ${a.label}`);
+        return;
+      }
+    }
+
     if (state.status === 'locked') state.status = 'open';
 
     const here = actors.filter(
@@ -410,12 +424,31 @@ export class ObjectiveRun {
     }
   }
 
+  /**
+   * When an activity with a relative deadline runs out, in chapter seconds.
+   *
+   * The LAST of its prerequisites to finish starts the clock, which is the
+   * only reading that makes sense when there is more than one: the deadline
+   * cannot start before the thing it is a consequence of.
+   */
+  deadline(a: Activity): number | undefined {
+    if (a.within === undefined || !a.after?.length) return undefined;
+    let started = -Infinity;
+    for (const id of a.after) {
+      const at = this.states.find((s) => s.activity.id === id)?.doneAt;
+      if (at === undefined) return undefined;
+      started = Math.max(started, at);
+    }
+    return started + a.within;
+  }
+
   private isDone(id: string): boolean {
     return this.states.some((s) => s.activity.id === id && s.status === 'done');
   }
 
   private complete(state: ActivityState): void {
     state.status = 'done';
+    state.doneAt = this.elapsed;
     state.progress = 1;
     this.say(state.activity.label);
     if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });

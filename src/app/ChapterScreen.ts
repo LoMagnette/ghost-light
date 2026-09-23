@@ -853,6 +853,14 @@ export class ChapterScreen implements Screen {
    * room shows the seconds it has left, because that is the only number in
    * Chapter II that matters.
    */
+  /**
+   * The card, with any live countdown on it.
+   *
+   * `cardLine` is a pure function of one activity's state and cannot see the
+   * run's clock, so the one line that needs the clock gets it here. Only one
+   * ever does at a time — a relative deadline is a consequence of something
+   * the player just did, and two of those at once would be a different game.
+   */
   private card(): string {
     const lines: string[] = [];
     const groups = new Map<string, { done: number; total: number }>();
@@ -866,7 +874,13 @@ export class ChapterScreen implements Screen {
         groups.set(group, tally);
         continue;
       }
-      lines.push(cardLine(state));
+      const left = this.run.deadline(state.activity);
+      lines.push(
+        cardLine(state) +
+          (left !== undefined && state.status === 'open'
+            ? `  ${Math.max(0, Math.ceil(left - this.run.elapsed))}s`
+            : ''),
+      );
     }
 
     for (const [name, tally] of groups) {

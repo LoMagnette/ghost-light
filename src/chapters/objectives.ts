@@ -145,6 +145,13 @@ const SILENCE: Activity[] = [
     // threshold terrace, so the level change is learned under pressure.
     at: spot(0, -16.0, -18.0, 3.2),
     after: ['cat'],
+    // The threat, and the only clock in a chapter that SPEC.md §4 says has
+    // none. It is deliberately not a clock on the chapter: nothing else is
+    // timed, the other three activities cannot be lost, and running this one
+    // out costs you the dog and nothing else. A cat that says "forty-five
+    // seconds" and then does not mean it is a worse joke than a cat that
+    // does.
+    within: 45,
     lines: [
       'It is enormous, and it has been asleep. It opens one eye.',
       'Somewhere back in the concourse, something stops ticking.',

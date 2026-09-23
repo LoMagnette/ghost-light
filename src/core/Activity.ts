@@ -73,6 +73,20 @@ interface Common {
   window?: { from: number; to: number };
   /** Ids that must be done first. Freeing the shutter opens the loading bay. */
   after?: string[];
+  /**
+   * Seconds to do this in, counted from when the last of `after` was done.
+   *
+   * `window` is the other deadline in here and it is absolute — chapter
+   * seconds, which is what Chapter III's day is measured in. This one is
+   * RELATIVE, because the thing it exists for is a threat: a cat tells you
+   * you have forty-five seconds, and forty-five seconds from WHAT is the
+   * whole point. An absolute window cannot express it, because when the
+   * clock starts depends on when the player found the cat.
+   *
+   * Runs out and the activity is MISSED, permanently, the same as a window
+   * closing. Meaningless without `after`, and `npm run objectives` says so.
+   */
+  within?: number;
   reveal?: Reveal;
   /**
    * Activities that are one thing to the player, many to the simulation.
