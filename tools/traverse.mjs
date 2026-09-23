@@ -127,7 +127,17 @@ function scenario(label, expectation, run) {
 
 // The hall floor is the datum; the concourse stands 1.2 m above it.
 const HALL = { x: 0, y: -24 };
-const RAMP = { x: 16.5, y: -30 };
+/*
+ * Where to stand to meet the ramp, READ OFF THE RAMP.
+ *
+ * Was x 16.5, which was its centre line until the toilet block was moved to
+ * where the architect's plan draws it and the ramp gave up half its width to
+ * make room. A literal centre survives that by landing beside the ramp
+ * instead of on it, and the scenario then fails for a reason that has nothing
+ * to do with what it is testing.
+ */
+const RAMP_LINK = KINEPOLIS.links.find((l) => l.id === 'wheelchair-ramp');
+const RAMP = { x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w / 2, y: -30 };
 /*
  * Where to stand to meet the west flight, READ OFF THE FLIGHT.
  *
@@ -230,10 +240,13 @@ scenario(
  * of the concourse steps. It has a 4 m opening now and the rest is wall. This
  * stands where the wall is and drives at it.
  */
-const RAMP_LINK = KINEPOLIS.links.find((l) => l.id === 'wheelchair-ramp');
 const HALL_WALL = KINEPOLIS.rooms.find((r) => r.id === 'reception').bounds;
+// 1.5 m EAST of the ramp, not 1.5 m inside its east edge. Inside only worked
+// while the ramp was 10 m wide and its opening 4 m, so that there were three
+// metres of wall standing within the ramp's own span; at 5.5 m wide there are
+// not, and this stood in the doorway and drove through it.
 const BESIDE_RAMP = {
-  x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w - 1.5,
+  x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w + 1.5,
   y: HALL_WALL.y + HALL_WALL.h + 6,
 };
 

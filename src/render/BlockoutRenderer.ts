@@ -82,6 +82,7 @@ import {
   SEATED_TORSO_TOP,
   type Person,
 } from '@/core/Crowd';
+import type { Decay, DecayPiece } from '@/core/Decay';
 import { renderPos } from '@/core/Sim';
 import {
   FLOOR_HEIGHT,
@@ -515,6 +516,7 @@ export class BlockoutRenderer {
   private readonly envelope = new Group();
 
   private readonly crowd: Crowd;
+  private readonly decay: Decay;
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
 
@@ -524,13 +526,17 @@ export class BlockoutRenderer {
     palette: Palette,
     lightLevel: number,
     crowd: Crowd,
+    decay: Decay,
   ) {
     this.camera = camera;
     this.venue = venue;
     this.palette = palette;
     // Before the storeys are built: each one bakes its own seated population
-    // in as it goes, which is what makes five thousand people free.
+    // in as it goes, which is what makes five thousand people free. The decay
+    // rides in the same way and for the same reason — it is a few thousand
+    // more static boxes that never change once the chapter has loaded.
     this.crowd = crowd;
+    this.decay = decay;
 
     // The same curve the 2D renderer multiplied every colour by, applied to
     // the lights instead. Chapter I's darkness is its light level, not a
@@ -608,7 +614,21 @@ export class BlockoutRenderer {
 
   /** Trousers, clothing and head for one person, in this era's colours. */
   private personColours(person: Person): [number, number, number] {
-    const crowd = this.palette.crowd;
+    /*
+     * The one exception to "a crowd is a mass and takes one colour".
+     *
+     * Somebody you can talk to has to be findable in a full house, and at
+     * capacity there are five hundred people standing up. In the crowd's own
+     * colour an attendant is a figure among figures — a marker post can say
+     * an activity is HERE, but not which of the four people under it you are
+     * meant to be speaking to.
+     *
+     * A third of the way to the accent is enough. Fully accented they read
+     * as a prop rather than a person, and the rule the crowd colour exists
+     * for — that a full room photographs as one mass — still holds with three
+     * of them in the building.
+     */
+    const crowd = person.posted ? mix(this.palette.crowd, this.palette.accent, 0.34) : this.palette.crowd;
     const [low, high] = CLOTHING_RANGE;
     return [
       shade(crowd, TROUSER_SHADE),
@@ -1196,6 +1216,33 @@ export class BlockoutRenderer {
      * thousand people and costs one draw call and nothing per frame. It is
      * also why the crowd had to be split into seated and standing at all.
      */
+    /*
+     * What has settled on this storey, baked in beside the audience.
+     *
+     * Pushed into `boxes` rather than given a mesh of its own: it is the same
+     * unlit-nothing, same Lambert material and same cutaway as every other
+     * solid in the building, and a drift that did not fade when a robot drove
+     * behind it would be the one thing in the scene that does not.
+     *
+     * A stain is the exception and gets no height worth speaking of — it is a
+     * mark ON the floor, so it is drawn just clear of the plate the way skid
+     * marks are, and the plate's own seam grid still reads through it.
+     */
+    for (const piece of this.decay.pieces) {
+      if (piece.floor !== floor) continue;
+      const datum = groundAt(this.venue, floor, piece.bounds.x, piece.bounds.y);
+      // Every piece stands ON the floor, stain included: a stain carries its
+      // own height now and lifting it as well put it back among the sheets.
+      // See SHEET_HIGH_MIN in `core/Decay.ts` for why none of these heights
+      // is a constant.
+      boxes.push({
+        bounds: piece.bounds,
+        bottom: datum,
+        top: datum + piece.height,
+        colour: this.decayColour(piece),
+      });
+    }
+
     const audience = this.crowd.seated.filter((person) => person.floor === floor);
     if (audience.length) {
       group.add(
@@ -1297,6 +1344,31 @@ export class BlockoutRenderer {
     if (piece.linkId) return 0;
     const { bounds } = piece;
     return groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+  }
+
+  /**
+   * What a piece of decay looks like in this era.
+   *
+   * Its own spread rather than `varied`'s, and much wider: `TONE_SPREAD` is
+   * tuned to stop a flat wall reading as one slab, where this is dust and
+   * scrub, and dust and scrub that all match is a decal. Keyed off the
+   * piece's own seeded `tint` rather than off its position, because two
+   * tufts 40 cm apart want to differ and `tone()` would give them the same
+   * answer.
+   */
+  private decayColour(piece: DecayPiece): number {
+    const base =
+      piece.kind === 'growth'
+        ? this.palette.growth
+        : piece.kind === 'stain'
+          ? this.palette.damp
+          : this.palette.dust;
+    // Sheets get twice the spread of anything else here. They are the one
+    // kind that overlaps itself, and at a narrow spread the overlaps vanish:
+    // forty pale rectangles of the same value read as one pale rectangle with
+    // a strange outline. The variation is what makes a covering look deep.
+    const spread = piece.kind === 'sheet' ? 0.46 : 0.26;
+    return shade(base, 1 - spread + piece.tint * spread * 2);
   }
 
   /**

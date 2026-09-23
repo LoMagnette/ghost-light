@@ -24,15 +24,16 @@ import { ROBOTS } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
-import { BlockoutRenderer, type ObjectiveMarker } from '@/render/BlockoutRenderer';
+import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
 import { Crowd } from '@/core/Crowd';
-import { zoneCentre } from '@/core/Activity';
+import { Decay } from '@/core/Decay';
+import { admits, inZone, zoneCentre, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
-import type { Chapter } from '@/chapters/Chapter';
+import { abandoned, type Chapter } from '@/chapters/Chapter';
 import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS } from './dom';
@@ -67,6 +68,26 @@ export class ChapterScreen implements Screen {
   private hud!: HTMLElement;
   private clockText!: HTMLElement;
   private cardText!: HTMLElement;
+  /** The dialogue box, and the two things inside it. */
+  private talkBox!: HTMLElement;
+  private talkWho!: HTMLElement;
+  private talkText!: HTMLElement;
+  private talkMore!: HTMLElement;
+  /** "E  Talk to …", shown when you are in range and the box is shut. */
+  private talkPrompt!: HTMLElement;
+  /** Edge-triggered, exactly like `dropRequested`. */
+  private talkRequested = false;
+  /**
+   * How much of the current line has been typed out, in characters.
+   *
+   * A box that appears fully written is a label; one that types itself is
+   * somebody speaking, and it costs a counter. The first press of the talk
+   * key while a line is still arriving finishes it rather than skipping to
+   * the next one, which is what every game that has ever done this does and
+   * what a player's hands already expect.
+   */
+  private typed = 0;
+  private typingLine = '';
   private toast!: HTMLElement;
   private endCard: HTMLElement | undefined;
   private debugText!: HTMLElement;
@@ -148,7 +169,21 @@ export class ChapterScreen implements Screen {
 
     // Before the renderer, which bakes the seated crowd into each storey as
     // it builds it.
-    this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter));
+    // Somebody standing at every conversation the chapter has. Taken from the
+    // objective rather than listed separately, so a `talk` activity cannot be
+    // written without the person it is with turning up — which is the bug the
+    // whole of this was built to stop: twelve errands run past nobody.
+    const posts = chapter.objective.activities
+      .filter((a): a is TalkActivity => a.kind === 'talk')
+      .map((a) => ({ ...zoneCentre(a.at), floor: a.at.floor }));
+
+    this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter), posts);
+
+    // And the other thing a storey is baked with: what has settled on it in
+    // the years since anybody swept. Full density or none — there is no era
+    // between "in use" and "left", and a half-abandoned building is a look
+    // nothing in `SPEC.md` asks for.
+    const decay = new Decay(KINEPOLIS, abandoned(chapter) ? 1 : 0);
 
     this.blockout = new BlockoutRenderer(
       this.isoCamera,
@@ -156,6 +191,7 @@ export class ChapterScreen implements Screen {
       chapter.palette,
       chapter.lightLevel,
       this.crowd,
+      decay,
     );
     this.blockout.telemetry = this.debug;
 
@@ -188,6 +224,11 @@ export class ChapterScreen implements Screen {
     game.keyboard.on('KeyR', () => this.resetCast());
     game.keyboard.on('Space', () => {
       this.dropRequested = true;
+    });
+    // E rather than SPACE or ENTER: SPACE is already the drop, and ENTER is
+    // the one key a browser is liable to hand to something else on the page.
+    game.keyboard.on('KeyE', () => {
+      this.talkRequested = true;
     });
 
     // TAB is the whole of `switch` mode, and Chapters II and III are both in
@@ -225,11 +266,20 @@ export class ChapterScreen implements Screen {
     this.crowd.advance(dt, this.actors);
 
     if (!over) {
-      this.run.update(dt, this.actors, this.dropRequested);
+      // A press while a line is still typing itself finishes THAT line rather
+      // than paging past it. Every game with a text box does this, and a
+      // player who has ever held one expects it without being told.
+      if (this.talkRequested && this.typed < this.typingLine.length) {
+        this.typed = this.typingLine.length;
+        this.talkRequested = false;
+      }
+      this.run.update(dt, this.actors, this.dropRequested, this.talkRequested);
       this.consumeObjective();
       if (this.run.phase === 'ended') this.showEndCard();
     }
     this.dropRequested = false;
+    this.talkRequested = false;
+    this.updateTalk(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
     // is modelled from its own datum, so the world it is standing in moves 6.2
@@ -360,7 +410,12 @@ export class ChapterScreen implements Screen {
         // they turned the exhibition hall into a pole farm — more marker than
         // building. One thing you are doing gets one post; a sweep of many
         // gets studs, which say "here too" without competing with the room.
-        low: activity.group !== undefined,
+        //
+        // A conversation gets a stud too, and for a different reason: there
+        // is a PERSON standing on that exact spot, and a two-metre post
+        // through the middle of them was the first thing this feature drew.
+        // The person is the marker. The stud is the floor lit under them.
+        low: activity.group !== undefined || activity.kind === 'talk',
       });
     }
 
@@ -516,14 +571,87 @@ export class ChapterScreen implements Screen {
     });
     game.ui.append(this.toast);
 
-    const keys =
-      chapter.cast.length > 1
-        ? 'WASD move   SHIFT brake   TAB robot   SPACE drop   R reset   F1 debug   ESC menu'
-        : 'WASD move     SHIFT brake     R reset     F1 debug     ESC menu';
+    // Only advertise the keys this chapter has anything to use. Chapter I is
+    // one robot in an empty building: TAB, SPACE and E are all true of the
+    // engine and none of them is true of the chapter, and a control list with
+    // three dead keys on it is how a player decides the game is broken.
+    const talks = chapter.objective.activities.some((a) => a.kind === 'talk');
+    const keys = [
+      'WASD move',
+      'SHIFT brake',
+      ...(chapter.cast.length > 1 ? ['TAB robot', 'SPACE drop'] : []),
+      ...(talks ? ['E talk'] : []),
+      'R reset',
+      'ESC menu',
+    ].join('   ');
 
     game.ui.append(
       label(28, VIEW_HEIGHT - 40, { font: `12px ${MONO}`, color: '#4c5357' }, keys),
     );
+
+    /*
+     * The dialogue box.
+     *
+     * Bottom of the screen, full width, opaque, two lines — which is the
+     * shape every handheld RPG settled on thirty years ago and none of them
+     * has moved from since, because it works: the text is where the eye
+     * already is after reading the world, it never covers the thing you are
+     * standing in front of, and a fixed height means a long conversation
+     * never makes the screen jump.
+     *
+     * Built from the chapter's own palette, so a conversation in the dark
+     * first chapter is not a white rectangle detonating in the middle of it.
+     */
+    this.talkBox = el('div', {
+      position: 'absolute',
+      left: '64px',
+      right: '64px',
+      bottom: '58px',
+      padding: '16px 20px 18px',
+      background: css(shade(chapter.palette.void, 3.2)),
+      border: `2px solid ${css(chapter.palette.text)}`,
+      borderRadius: '3px',
+      display: 'none',
+      // Above the canvas and above the card, but it is the only thing that
+      // ever overlaps either, so nothing else needs a z-index of its own.
+      zIndex: '5',
+    });
+    this.talkWho = el('div', {
+      font: `12px ${MONO}`,
+      color: css(chapter.palette.accent),
+      letterSpacing: '0.10em',
+      marginBottom: '8px',
+      textTransform: 'uppercase',
+    });
+    this.talkText = el('div', {
+      font: `16px ${SANS}`,
+      color: css(chapter.palette.text),
+      lineHeight: '1.5',
+      // Two lines, always. Reserving the height stops the box growing and
+      // shrinking under the text as a conversation goes on.
+      minHeight: '48px',
+      whiteSpace: 'pre-wrap',
+    });
+    this.talkMore = el(
+      'div',
+      {
+        font: `12px ${MONO}`,
+        color: css(chapter.palette.accent),
+        textAlign: 'right',
+        marginTop: '4px',
+        height: '14px',
+      },
+      '',
+    );
+    this.talkBox.append(this.talkWho, this.talkText, this.talkMore);
+    game.ui.append(this.talkBox);
+
+    this.talkPrompt = label(28, VIEW_HEIGHT - 80, {
+      font: `13px ${MONO}`,
+      color: css(chapter.palette.accent),
+      letterSpacing: '0.06em',
+    });
+    game.ui.append(this.talkPrompt);
 
     this.debugText = label(0, 24, {
       font: `12px ${MONO}`,
@@ -535,6 +663,85 @@ export class ChapterScreen implements Screen {
       display: this.debug ? 'block' : 'none',
     });
     game.ui.append(this.debugText);
+  }
+
+  /**
+   * Characters per second the box types at.
+   *
+   * Fast enough that a patient player never waits, slow enough that the text
+   * arrives as speech. Tuned by reading it, which is the only way.
+   */
+  private static readonly TYPE_RATE = 58;
+
+  /**
+   * The conversation the controlled robot could be having, if any.
+   *
+   * Controlled robot only, and that is the rule the whole feature rests on:
+   * with three machines in the building, "somebody is standing in the zone"
+   * would open a box about a conversation the player is not watching.
+   */
+  private talkHere(): { state: ActivityState; activity: TalkActivity } | undefined {
+    const body = this.controlled.body;
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if (a.kind !== 'talk') continue;
+      if (state.status !== 'open') continue;
+      if (!admits(a, body.spec)) continue;
+      if (!inZone(a.at, this.controlled.floor, body.x, body.y)) continue;
+      return { state, activity: a };
+    }
+    return undefined;
+  }
+
+  /**
+   * Draw the box, or offer it.
+   *
+   * Everything about WHICH line is showing comes out of `state.progress`,
+   * which `ObjectiveRun` owns — this holds no cursor of its own. That is
+   * deliberate: a screen that counted its own lines would disagree with the
+   * thing that decides when the conversation is finished the first time a
+   * robot was driven out of the zone mid-sentence.
+   */
+  private updateTalk(dt: number): void {
+    const found = this.talkHere();
+
+    if (!found) {
+      this.talkBox.style.display = 'none';
+      this.talkPrompt.textContent = '';
+      this.typingLine = '';
+      this.typed = 0;
+      return;
+    }
+
+    const { state, activity } = found;
+    const shown = Math.round(state.progress * activity.lines.length);
+
+    // In range, nothing said yet: offer it rather than opening unasked. A box
+    // that opens because you drove past is a box that interrupts you.
+    if (shown === 0) {
+      this.talkBox.style.display = 'none';
+      this.talkPrompt.textContent = `E    Talk to ${activity.who}`;
+      this.typingLine = '';
+      this.typed = 0;
+      return;
+    }
+
+    this.talkPrompt.textContent = '';
+    const line = activity.lines[shown - 1];
+    if (line !== this.typingLine) {
+      this.typingLine = line;
+      this.typed = 0;
+    }
+    this.typed = Math.min(line.length, this.typed + ChapterScreen.TYPE_RATE * dt);
+
+    this.talkBox.style.display = 'block';
+    this.talkWho.textContent = activity.who;
+    this.talkText.textContent = line.slice(0, Math.floor(this.typed));
+    // The marker every text box in the world uses for "there is more", and
+    // only once the line has finished arriving — a prompt to continue that
+    // appears while the text is still coming is a prompt to skip.
+    this.talkMore.textContent =
+      this.typed >= line.length ? (shown < activity.lines.length ? '▼' : '■') : '';
   }
 
   /**
@@ -770,6 +977,13 @@ function cardLine(state: ActivityState): string {
     status === 'done' ? '·' : status === 'missed' ? '×' : status === 'carried' ? '»' : status === 'locked' ? ' ' : '›';
   if ((activity.kind === 'dwell' || activity.kind === 'attend') && status === 'open' && state.progress > 0.02) {
     return `${glyph} ${activity.label} ${Math.round(state.progress * 100)}%`;
+  }
+  // A conversation counts in LINES, not percent: "2/4" is a place in a
+  // conversation and "50%" is a progress bar on one, which is a strange
+  // thing to show somebody who is being spoken to.
+  if (activity.kind === 'talk' && status === 'open' && state.progress > 0) {
+    const shown = Math.round(state.progress * activity.lines.length);
+    return `${glyph} ${activity.label} ${shown}/${activity.lines.length}`;
   }
   return `${glyph} ${activity.label}`;
 }

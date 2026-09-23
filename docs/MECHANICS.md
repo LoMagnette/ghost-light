@@ -212,7 +212,7 @@ README opens with.
 Control is `switch`, and **the clock never stops**. Wherever you are, the
 other two are idling somewhere expensive.
 
-#### The card — twelve things, and no day is long enough for twelve
+#### The card — fifteen things, and no day is long enough for fifteen
 
 Open activities can be done whenever. Windowed ones are gone forever when
 their window closes. That is a conference, and it is the mix of a checklist
@@ -461,7 +461,7 @@ Unchanged from `ROADMAP.md`, and now cheaper than the plan it replaces:
 1. Payload + Activity + Objective in `core/`, with `npm run physics` extended
    to the loaded cases. Everything below is configuration.
 2. **Chapter I** (Tue 22) — three activities and the zone lighting.
-3. **Chapter III** (Thu 24) — twelve activities, the clock, the card. No crowd
+3. **Chapter III** (Thu 24) — fifteen activities, the clock, the card. No crowd
    simulation to write, so the differentiator lands days earlier than feared.
 4. **Chapter II** (Sat 26) — meters and the drain. Still the shrinkable one.
 

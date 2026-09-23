@@ -3101,6 +3101,389 @@ is what the two scenarios above it are for.
 
 ---
 
+### Claude Opus — the reception, measured off the marked plan
+
+**Prompt:**
+> Can you adapt the reception area to look more like this image
+> references/venue/maps/hollywood-area-marked.png the part marked in blue are
+> 1,40m high counter
+
+**Iterations:** 1 (plus two problems the checks found, below)
+
+An annotated `hollywood-area.png`: four blue strokes over the concourse
+fit-out. The previous pass at this room was done from a *diagram* of the
+plan; this is the plan itself, so the geometry could be measured rather than
+sketched.
+
+**Establishing the scale was most of the work, and it is the part worth
+keeping.** The drawing says "no scale". I found the transform by detecting
+ink: the hall's own walls as long runs of near-solid pixels, the reception
+band between the line of doors at py 1569 and the entrance elevation at
+py 2133, and the grand flight as 22 evenly spaced tread lines. 23.0 m of
+concourse over 564 px gives **0.0408 m/px**, and that scale reproduces the
+"15.7 m wide, 5.6 m deep" flight recorded in `kinepolis.ts` from an earlier
+pass — the same drawing, the same number, arrived at independently. Held
+against three venue anchors it lands the hall's south wall at -36.9 against
+-37.4, the entrance at -59.9 against -60.4, and the concourse's west wall at
+-14.7 against -13.6.
+
+What the drawing actually has, which no description of it would have given:
+the reception is **two objects, not one**. A square 5.6 × 5.5 m information
+island — the circled "i" is inside it — counter-fronted on north, west and
+the northern half of east, with a walled office in its south-east and a metre
+of staff space behind the counter. And a separate **6.3 m counter standing
+free** beside it. All four blue strokes are those counter runs, so
+`COUNTER_HEIGHT` went from a guessed 1.1 m to a measured **1.4 m**.
+
+Two deliberate moves off the drawing, both commented in the source:
+
+- **In x**, the whole fit-out is anchored to the grand well's west edge
+  rather than to its own surveyed position, which moves it 1.6 m east. The
+  drawing's flight is 15.9 m wide against this building's 14.3 m well, and
+  the 6.3 m aisle up the west side is what `ENTRANCE_X` reads as the route a
+  player walks. Losing the aisle to gain 1.6 m of fidelity is a bad trade.
+- **In y**, the free counter stands 3.4 m off the head of the flight instead
+  of the 1.6 m drawn. The drawing's stair is 6.0 m deep with a landing
+  halfway; this one is 8.4 m and lands in a well Chapter III drives three
+  robots through.
+
+**`npm run traverse` caught the second one, and I had not seen it.** "Voxxy
+walks in under the grand stair" spawns at the well head + 2.2 m on the centre
+line — which is exactly where the plan puts that counter. The robot spawned
+inside it and the solver threw it 5 × 10¹¹ m. A counter dead across the mouth
+of a 14 m stairwell is a real building fault and not a test artefact, which is
+why the counter moved rather than the test.
+
+**What I fixed by hand, and the lesson in it: `npm run peek` serves `dist/`.**
+I screenshotted the concourse six times, concluded the free-standing counter
+was not rendering, and went looking through `BlockoutRenderer` and `groundAt`
+for the cull that was eating it. There was none. Every one of those shots was
+a build from before the edit. The tell was there and I walked past it — the
+island in the shots was the OLD desk, an L of counters that looks much like
+the new U. What finally settled it was removing the counter and diffing the
+two frames pixel for pixel: identical, which no rendering bug produces. Run
+`npm run build` before `npm run peek`, every time.
+
+**One thing the reshaping stranded.** Chapter III's badge marker sat at
+-5.0, -45.0 — the middle of the old 9.8 m enclosure. The island is 5.6 m
+across with a metre of staff space, so that point is now wedged between the
+counter and the office: the marker read as standing on the wrong side of the
+desk, and at 1.44 m across Biggy could not have reached it. Moved into the
+west aisle in front of the counter, where a badge queue actually forms and
+where all three robots can stand. `npm run objectives` passes either way —
+it tests that a robot fits, not that the spot makes sense — so this was
+caught by looking at the screenshot.
+
+---
+
+### Claude Opus — the walls in red, and a flight that was too short
+
+**Prompt:**
+> the wall marked in red are not well represented. By the way the stair case
+> is too short
+
+**Iterations:** 1, plus two questions put back to the user
+
+Same drawing, re-marked: four blue strokes unchanged and seven new red ones.
+Diffing the marked file against `hollywood-area.png` and splitting the result
+by hue separates the annotation from the plan's own pink door swings, which a
+plain colour threshold does not.
+
+The red traces three things, and the first of them was simply missing:
+
+**The stair hall.** The grand flight had been standing in open concourse with
+a balustrade down each side. The plan puts it in a SLOT — a wall the full
+length of the flight on each side, treads hatched up to both — and the two
+sides are not the same length: west stops 0.5 m past the head where the
+information island takes the line over, east runs 5.7 m past it and returns
+3.6 m west. They sit on the well's own long sides, which is the honest anchor:
+the well is this building's stand-in for that slot.
+
+**The island's back wall**, which the previous pass drew straight and called a
+detail too small to see. It is stepped, and the user marking it is the answer
+to that. Drawn stepped now, stub and all.
+
+**The concourse's east end**, which turned out to be a conflict rather than an
+omission — see below.
+
+**"Too short" was ambiguous and I asked rather than guessed.** The flight is
+11.3 m wide, 8.4 m deep, 5.0 m rise; the plan's is 15.7 × 6.0. So "short"
+could mean the width (the plan hatches wall to wall and this leaves 1.5 m of
+dead well each side), the run, or the number of drawn steps. Those are three
+different jobs. The answer was the run, and the fix is that the grand flight
+stops using the building's stair: `RISER`/`GOING` is 0.18 over 0.30, a 31°
+fire stair that appears fourteen times in here, and at that pitch 5.0 m takes
+8.4 m of run — a wide fire stair, not a grand flight. It now has a ceremonial
+0.15 over 0.36, 23°, 33 risers, 11.9 m of run. Shallower is safe both ways:
+Droid's `maxStepRise` is 0.18 and this is under it, Biggy's is 0 and still is.
+
+**The east end was the interesting one, because two drawings disagree.**
+`exhibition-floor.jpg` — the annotated Devoxx plan — writes "Toilets >" out in
+the eastern service strip with the BOF rooms, on a 19.8 m frontage, which is
+where they were. `hollywood-area.png` draws them INSIDE the concourse's
+north-east corner on 9.3 m. An annotation says a room is *somewhere*; a drawn
+wall says *where*. I put that to the user rather than picking, and the drawn
+wall won. The strip the toilets vacated became BOF 3 — 7.6, 7.7 and 7.8 m on
+one frontage, which is what that side of the building always was — and that is
+also the right answer to the conflict, because a BOF room is a partition
+Devoxx puts up for a week and a toilet block is building.
+
+Anchored WEST to its measured x rather than east, for two reasons: the west
+side is the wall the mark actually points at, and it leaves the wheelchair
+ramp its ground. The ramp is a 12 m straight run standing in for a switchback
+— invented — and an invented object does not get to sit on a drawn one, so
+the ramp gave up half its width instead.
+
+**Three literals went stale in one change, and the harness caught all three.**
+This is the pattern worth naming: every time the venue moves, something that
+typed a coordinate instead of deriving one is left behind, and it never fails
+loudly.
+
+- `SPAWNS.corridorSouth` was 3.5 m inside the enlarged stairwell. `npm run
+  venue` caught it. It had been moved north once before for exactly this.
+- `tools/traverse.mjs` held the ramp's centre as `x: 16.5`. When the ramp
+  narrowed, the scenario drove beside it rather than up it — and `BESIDE_RAMP`,
+  which stood "1.5 m inside the ramp's east edge" to find wall, stood in the
+  doorway instead, because that derivation only worked while the ramp was 10 m
+  wide and its opening 4. Both read off the link now.
+- Chapter III's badge marker, which I had moved by hand in the previous pass,
+  drifted again when the island went 3.5 m north. `npm run objectives` passed
+  both times, because it asks whether a robot FITS somewhere and not whether
+  anybody would queue there. Fixed properly this time: `kinepolis.ts` exports
+  `RECEPTION_DESK`, derived from the island, and the objective reads it.
+
+**Still open, and NOT fixed here.** The drawn tread count is capped —
+`MAX_TREADS` 18, `MIN_TREAD` 0.62 — so the deeper flight is drawn as 19 steps
+of 0.63 m going and 0.26 m riser rather than its real 33 of 0.36/0.15. It was
+already like this (18 against 28) and deepening the run makes each drawn step
+bigger, not smaller. Worse, `climbOf` in the renderer places a robot's feet on
+`rise / link.riser` treads — 33 — while the flight has 19 of them drawn, so a
+climbing robot bobs over steps that are not there. That is a building-wide
+renderer question, not a reception one, and it wants its own pass.
+
+---
+
+### Claude Opus — Chapter I, which was the same map in a colder palette
+
+**Prompt:**
+> I don't see anything in the first chapter that really shows it has been
+> abandonned for decades it looks like the other map just with different color
+
+*(after two rounds of brainstorming, and a reference: the abandoned-city
+episode of the anthology series — three robots touring an empty city)*
+
+**Iterations:** 1 build, then 2 tuning passes against screenshots
+
+**The prompt was correct and the diagnosis was cheap to make.** Chapter I was
+`lightLevel: 0.18` and a bluer palette, and that is all it was. The exposure
+curve is `0.35 + lightLevel * 0.65`, so Chapter I renders at 23% of Chapter
+III's light — genuinely darker, and still the same rooms. **Darkness is not
+abandonment.** Dust is, and grass through the floor is, and neither of those
+can be a palette entry.
+
+**The useful thing about that reference is what it is NOT.** Nothing in that
+episode is smashed: the buildings are intact, the cars are parked, the shelves
+are stocked. What happened is dust, plants and sun — time, not violence. Which
+means it does not fight `SPEC.md` §9 (*"the building is empty, not wrecked"*)
+at all. Settled IS the tone rule, and I would have got this wrong if I had
+taken "post-apocalyptic" at face value two messages earlier.
+
+**`src/core/Decay.ts` — built as `Crowd`'s mirror image, deliberately.** Same
+shape: one density number, one seeded generator, everything static and
+instanced so a few thousand pieces cost one draw call. Crowd fills the venue
+with the people in it; this fills it with the length of their absence.
+
+That shape is what keeps the two architectural rules intact:
+
+- **Rule 2** (the venue is defined once): grass in `kinepolis.ts` is grass in
+  Chapter III. So the decay is GENERATED from the venue's geometry rather than
+  drawn into it — the same move the crowd makes, for the same reason.
+- **Rule 3** (four fields): not a fifth one. `abandoned(chapter)` is
+  `crowdDensity <= 0 && lightLevel < 0.4`, stated once in `Chapter.ts`, on
+  exactly the principle `ChapterScreen` already used to hang the robot's lamp
+  off `lightLevel < 0.4`.
+
+**The second half of that predicate is there because of the movement lab.**
+The lab is `crowdDensity: 0` — one hall, three robots — and keying decay off
+emptiness alone silted up the one screen in the game that exists to be legible
+while tuning. Caught by reading `lab.ts` while adding the palette entries it
+now needs, which is the kind of thing a typechecker finds for you if you put
+the colours on the shared `Palette` rather than bolting them on the side.
+
+**Three things wrong with the first version, all found by looking at it:**
+
+1. **A real bug.** The daylight falloff that thins growth as it goes north
+   read `south` off EVERY room — including the forecourt, whose far kerb is
+   thirty metres beyond the front door. Every gradient in the file was
+   therefore measured from outside the building, the whole venue sat at the
+   floor value, and the exhibition hall grew nothing at all.
+2. **Growth on a grid reads as litter.** One tuft every 2.3 m is not how a
+   floor goes back to ground; the eye sorted them as small boxes somebody had
+   left about. Ground comes back in PATCHES — a seam lets water in and what
+   grows spreads from there — so a clump is now 6-20 tufts inside a couple of
+   metres, thickest and tallest in the middle, and the clumps are what get
+   scattered.
+3. **The biggest miss: there was no dust on the open floor.** The first pass
+   put silt only where the floor meets something else, so the middle of every
+   room was as swept as Chapter III — and the middle of the room is what you
+   are looking at. A floor nobody has walked on is COVERED, not edged.
+
+**What made the covering finally read was overlap and spread.** Sheets at one
+per 22 m² were pale rectangles lying about on a dark floor; at one per 11 m²
+they overlap into an irregular continuous surface with dark floor showing
+through the gaps. And they need roughly twice the tone spread of anything else
+in the building, because forty overlapping rectangles of the SAME value read
+as one rectangle with a strange outline.
+
+Columns turned out to matter more than walls. A skirting of silt 25 m away at
+the hall wall is not what the player is looking at; the ninety columns on a
+9 m grid are, because they drive between them all chapter. Two faces each,
+south and west — the two the camera can see — on the same argument
+`SHAFT_SKIN` already makes in the venue.
+
+**The free win.** `tint` lives in `RobotSpec.ts` and is a fact about the
+machine, not the era, so Voxxy's orange survives any palette change. Against a
+near-monochrome dust-and-scrub floor it is the only saturated thing in frame —
+which is that episode's shot composition, arrived at without drawing anything.
+
+**Noted, not fixed:** `?at=x,y` explodes if the coordinate lands inside solid
+furniture — the cast spawns in a wall and the solver throws it out of the
+building, giving a black frame. It did it on the reception island in every
+chapter, so it is the query parameter and not this change. Debug-only, but it
+cost a few minutes of suspecting the new code.
+
+---
+
+### Claude Opus — the floor was boiling
+
+**Prompt:**
+> it's flickering a lot
+
+**Iterations:** 1
+
+Z-fighting, and I had built it in on purpose one message earlier.
+
+The dust sheets are deliberately dense enough to OVERLAP — that is the whole
+difference between pale rectangles lying about on a dark floor and a covering
+— and `SHEET_HIGH` was a single constant, 0.035. So every overlapping pair had
+its top face at exactly the same height. Two coplanar surfaces are a
+depth-buffer coin toss, resolved per pixel and re-tossed the moment the camera
+moves a centimetre. There were 582 of them.
+
+A second one underneath it: a stain was 12 mm tall, lifted off the plate by
+`DECAL_LIFT`'s 25 mm, which put its top at 37 mm — two millimetres from every
+sheet in the building.
+
+**The fix is a range, not a nudge.** Offsetting the constant would have moved
+the fight rather than ended it, because the sheets fight EACH OTHER. Once the
+height is a continuous draw, the chance that two independent values land
+within the depth buffer's resolution of each other is nil in any practical
+sense, and it stays nil however many sheets there are. The floor of the range
+clears `DECAL_LIFT` so the floor's own seam grid stays buried under the dust
+instead of poking through it.
+
+The stain moved on top of the sheets rather than under them while I was there,
+and it should have been there all along: a damp patch drawn under the dust
+that settled on it afterwards is the wrong way round. The roof is still
+leaking. The water is the newest thing in the room.
+
+**Measured rather than eyeballed, because "does it still flicker" is exactly
+the question a screenshot cannot answer.** Two frames 6 cm apart, differenced:
+
+| | pixels changed >30 | >90 |
+|---|---|---|
+| before | 8.3% | 3.0% |
+| after | 6.5% | 2.0% |
+| Chapter III, no decay at all | 4.8% | 2.7% |
+
+Chapter I now moves LESS at high magnitude than a chapter with no decay in it,
+so what is left is parallax rather than instability. The residual gap at the
+low threshold is the dust's own edges, which is a thing that is really there.
+
+**Worth stating as a rule, because this will happen again:** anything
+generated in quantity that lies flat on a floor needs its height drawn from a
+range, not set from a constant. `Decay` now has four such kinds and the three
+that were already jittered — drifts, skirts, growth — never flickered once.
+The only one that did was the only one with a fixed number in it.
+
+---
+
+### Claude Opus — a text box, like the old handheld RPGs
+
+**Prompt:**
+> Ok that's a good start but I was thinking a to have a short chat like
+> interaction bit like in the old pokemon games
+
+*(after I had scoped four tiers of NPC work and recommended the cheapest two)*
+
+**Iterations:** 1 build, then three fixes found by looking at it
+
+Walk up, press a key, a box at the bottom, page through it. Built as the
+**seventh activity kind** rather than as a dialogue system off to one side,
+which `core/Activity.ts` asks for in as many words at the top of the file: *"if
+a chapter needs a seventh kind, it belongs here where all three can reach it,
+not in a screen."* Putting it there means a conversation inherits gates,
+windows, prerequisites, the card, the world marker and `npm run objectives`
+for nothing — the steward outside Room 8 is `gates: { reach: 1.0 }`, so Biggy
+cannot be spoken to at eye level, and the fact that Biggy also cannot get
+upstairs at all is the joke in the line he is refused with.
+
+**`ObjectiveRun` owns which line is showing, not the screen.** `progress` is
+the fraction of lines SHOWN, so `ChapterScreen` asks
+`round(progress * lines.length)` and holds no cursor of its own. A screen that
+counted its own lines would disagree with the thing that decides when the
+conversation is over the first time a robot was driven out of the zone
+mid-sentence — and driving out resets it to the top, which is what lets the
+second robot hear the whole thing.
+
+**The details that make a text box feel like one**, all of which are the same
+ones those games settled on and none of which are free:
+
+- Two lines, fixed height, so a long conversation never makes the screen jump.
+- Typed out at 58 characters a second, because a box that appears fully
+  written is a label and one that types itself is somebody speaking.
+- A press while the line is still arriving **finishes that line** rather than
+  paging past it. Every game that has ever done this does it, and a player's
+  hands expect it without being told.
+- `▼` only once the line has finished arriving. A prompt to continue shown
+  while text is still coming is a prompt to skip.
+- Offered, never opened. In range you get `E    Talk to Stand 11`; the box
+  opens on the press. A box that opens because you drove past interrupts you.
+
+**Three things wrong, all found by looking at a screenshot:**
+
+1. **A robot parked INSIDE the attendant.** Nothing in this game collides with
+   people — "people get out of the way of robots" — so a person who cannot be
+   displaced is a person you stand in. Posted people now take the same `avoid`
+   push as anybody else and walk back to their mark at 0.55 m/s afterwards,
+   which also stops the first machine to arrive shoving them out of their own
+   conversation.
+2. **A two-metre marker post through the middle of them.** The marker is drawn
+   at the zone centre and so is the person. A `talk` activity gets a STUD now,
+   the form a sticker sweep already used: the person is the marker and the
+   stud is the floor lit under them.
+3. **Invisible in a full house.** An attendant in the crowd's own colour is a
+   figure among five hundred figures; a marker can say an activity is HERE but
+   not which of the four people under it you are meant to speak to. Posted
+   people are mixed a third of the way to the accent — enough to find, not so
+   far that they read as a prop. It is the one place the crowd's "everybody is
+   one colour" rule is deliberately broken, and `Person.posted` exists on the
+   core type rather than on `Mover` only because the renderer is handed
+   `Person`.
+
+**Two small things the change dragged in**, both worth noting because neither
+is the feature and both would have shipped wrong:
+
+- Chapter III's brief said "twelve things worth doing" and there are fifteen
+  now. Fixed in `registry.ts`, `objectives.ts` and `MECHANICS.md`.
+- The control line advertised `TAB robot`, `SPACE drop` and `E talk` in every
+  chapter. All three are true of the engine and none of them is true of
+  Chapter I, which is one robot in an empty building — and a control list with
+  three dead keys on it is how a player decides the game is broken. It is
+  built from what the chapter actually has now.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

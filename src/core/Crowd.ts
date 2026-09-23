@@ -34,6 +34,12 @@ import type { Actor } from './Sim';
 /** Crowd steps per second. Not the physics rate, deliberately. */
 export const CROWD_HZ = 20;
 
+/** How close a robot has to be before an attendant turns to it, metres. */
+const ATTENDANT_NOTICE = 6;
+
+/** How fast an attendant walks back to its mark after being shoved, m/s. */
+const POST_RETURN = 0.55;
+
 /**
  * Roamers at full capacity, split across the storeys.
  *
@@ -173,6 +179,35 @@ export interface Person {
    * still the era's own colour and still reads as people.
    */
   tint: number;
+  /**
+   * Somebody the OBJECTIVE put here, as opposed to somebody the ticket
+   * allocation put here. An attendant holds its post and turns to whoever
+   * comes over.
+   *
+   * On `Person` rather than on `Mover` because the renderer needs it and the
+   * renderer is only ever handed `Person`. It is the one place the crowd's
+   * "everybody is one colour" rule is broken, and it is broken on purpose —
+   * see `personColours`.
+   */
+  posted?: boolean;
+}
+
+/**
+ * Somebody standing where an objective says a person should be.
+ *
+ * The conference already asks you to get a badge scanned, pick up a polo and
+ * queue for the toilets, and until this existed it asked you to do all of it
+ * in an empty building — twelve errands run past nobody. A post is one named
+ * individual who stays put, so that walking up to a `talk` activity means
+ * walking up to a PERSON.
+ *
+ * Placed from the chapter's own objective rather than from the venue, because
+ * who is standing where is a fact about the era and not about the building.
+ */
+export interface Post {
+  x: number;
+  y: number;
+  floor: Level;
 }
 
 interface Mover extends Person {
@@ -215,9 +250,22 @@ export class Crowd {
   private readonly random: () => number;
   private accumulator = 0;
 
-  constructor(venue: Venue, density: number, activeRooms: readonly string[], seed = 0x5eed) {
+  constructor(
+    venue: Venue,
+    density: number,
+    activeRooms: readonly string[],
+    posts: readonly Post[] = [],
+    seed = 0x5eed,
+  ) {
     this.venue = venue;
     this.random = mulberry32(seed);
+
+    // Before the density gate, on purpose. An attendant is not part of the
+    // crowd — they are there because the objective puts them there, and an
+    // objective that says "talk to somebody" in a chapter with nobody in it
+    // would otherwise be a conversation with an empty floor.
+    this.placeAttendants(posts);
+
     if (density <= 0) return;
 
     for (const floor of [0, 1]) this.plans.set(floor, this.planFor(floor));
@@ -254,6 +302,31 @@ export class Crowd {
     this.separate();
 
     for (const mover of this.walkers) {
+      // An attendant does not walk and is not pushed about by `avoid`: being
+      // in the way is the job. All it does is turn, which is the one piece of
+      // body language this renderer can express and the whole difference
+      // between somebody waiting for you and a figure that happens to be
+      // standing there.
+      if (mover.posted) {
+        this.face(mover, actors);
+        // Pushed aside like anybody else, then back to the mark. Without the
+        // push a robot parks INSIDE them — nothing in this game collides with
+        // people, so a person who cannot be displaced is a person you stand
+        // in — and without the return they are shoved out of their own
+        // conversation by the first machine that arrives for it.
+        this.avoid(mover, actors, dt);
+        const backX = mover.tx - mover.x;
+        const backY = mover.ty - mover.y;
+        const away = Math.hypot(backX, backY);
+        if (away > 0.04) {
+          const step = Math.min(away, POST_RETURN * dt);
+          mover.x += (backX / away) * step;
+          mover.y += (backY / away) * step;
+        }
+        mover.z = groundAt(this.venue, mover.floor, mover.x, mover.y);
+        continue;
+      }
+
       const toX = mover.tx - mover.x;
       const toY = mover.ty - mover.y;
       const distance = Math.hypot(toX, toY);
@@ -273,11 +346,30 @@ export class Crowd {
     }
   }
 
+  /** Turn to the nearest robot on this storey, if one is close enough to be
+   * talking to. Beyond that they keep whatever way they were already facing,
+   * rather than snapping round to track somebody across the hall. */
+  private face(mover: Mover, actors: readonly Actor[]): void {
+    let best = ATTENDANT_NOTICE;
+    let at: Actor | undefined;
+    for (const actor of actors) {
+      if (actor.floor !== mover.floor) continue;
+      const d = Math.hypot(actor.body.x - mover.x, actor.body.y - mover.y);
+      if (d < best) {
+        best = d;
+        at = actor;
+      }
+    }
+    if (!at) return;
+    mover.heading = Math.atan2(at.body.y - mover.y, at.body.x - mover.x);
+  }
+
   /** Stop people standing inside each other. See PERSONAL_SPACE. */
   private separate(): void {
     const buckets = new Map<number, Mover[]>();
     for (const mover of this.walkers) {
-      if (mover.stage) continue; // a speaker has a stage to itself
+      // A speaker has a stage to itself, and an attendant holds its post.
+      if (mover.stage || mover.posted) continue;
       const key = pack(Math.floor(mover.x / CELL), Math.floor(mover.y / CELL));
       const bucket = buckets.get(key);
       if (bucket) bucket.push(mover);
@@ -460,6 +552,28 @@ export class Crowd {
         // corridor — so west-side rooms look west and east-side rooms east.
         heading: room.bounds.x < 0 ? Math.PI : 0,
       });
+    }
+  }
+
+  /** One person at each post, facing nowhere in particular until asked. */
+  private placeAttendants(posts: readonly Post[]): void {
+    for (const post of posts) {
+      const mover: Mover = {
+        x: post.x,
+        y: post.y,
+        z: groundAt(this.venue, post.floor, post.x, post.y),
+        floor: post.floor,
+        heading: 0,
+        tint: this.random(),
+        speed: 0,
+        tx: post.x,
+        ty: post.y,
+        dx: 0,
+        dy: 0,
+        posted: true,
+      };
+      this.walkers.push(mover);
+      this.movers.push(mover);
     }
   }
 

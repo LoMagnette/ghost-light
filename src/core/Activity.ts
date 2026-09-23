@@ -162,13 +162,43 @@ export interface TendActivity extends Common {
   repairReach: number;
 }
 
+/**
+ * Somebody with something to say, and the only activity the player ADVANCES
+ * rather than performs.
+ *
+ * Everything else in here is a consequence of where a robot is and how fast:
+ * you drive into a zone and the building notices. This one waits. It costs a
+ * keypress per line, which is a different verb from anything else in the game
+ * and is exactly why it is worth having — a conference is people talking, and
+ * a conference game whose twelve objectives are all errands run past silent
+ * figures is missing the thing it is about.
+ *
+ * Deliberately a SEVENTH KIND here rather than a dialogue system off to one
+ * side. Put it here and it inherits gates, windows, prerequisites, the card,
+ * the world marker and `npm run objectives` — which is the whole argument
+ * this file makes at the top for keeping the vocabulary in one place. A
+ * conversation gated behind `reach: 2.0` is Droid being the only one tall
+ * enough to be spoken to across a counter, and that falls out for free.
+ *
+ * `lines` is paged, one box at a time. Keep each one short enough to read
+ * without stopping — the robot is standing in a corridor while you do.
+ */
+export interface TalkActivity extends Common {
+  kind: 'talk';
+  /** Who is speaking. Shown above the box, so it is a name and not a title. */
+  who: string;
+  /** What they say, one boxful at a time. */
+  lines: string[];
+}
+
 export type Activity =
   | TapActivity
   | DwellActivity
   | HaulActivity
   | AttendActivity
   | ShoveActivity
-  | TendActivity;
+  | TendActivity
+  | TalkActivity;
 
 /** Is this point inside this zone? Storey first — rooms stack. */
 export function inZone(zone: Zone, floor: Level, x: number, y: number): boolean {

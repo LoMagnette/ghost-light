@@ -465,24 +465,66 @@ const HALL_OPENING = rect(
 );
 
 /**
- * The toilets off the south-east of the concourse, and the corridor to them.
+ * The toilets in the NORTH-EAST of the concourse, and the corridor to them.
  *
- * Same 19.8 m frontage as the BOF rooms below, because on the plan all three
- * are one block of building served by one wall — and served, on the plan, off
- * a corridor along their south side, which is what gets a robot in there.
- * The rooms themselves are left empty on purpose for now.
+ * These had been sitting in the eastern service strip with the BOF rooms, on
+ * the same 19.8 m frontage, because that is where `exhibition-floor.jpg` —
+ * the annotated Devoxx plan — writes "Toilets >". The architect's drawing
+ * disagrees, and it is the drawing that has walls on it: `hollywood-area.png`
+ * puts the block INSIDE the concourse, in the corner between the hall's south
+ * wall and the east elevation, 9.27 m of frontage and not 19.8.
+ *
+ * The two are not equally good evidence about a wall. An annotation says a
+ * room is somewhere; a drawn wall says where it is. So the block moves 9 m
+ * west into the concourse, and the strip it leaves becomes a third BOF room —
+ * which is the right answer to that conflict as well, because a BOF room is a
+ * partition Devoxx puts up for a week and the toilets are building.
+ *
+ * MEASURED, and the depths come out almost exactly where the old guess had
+ * them — 4.10 m of cubicles against 3.6, 1.78 m of corridor against 2.2. It
+ * was only ever the frontage and the x that were wrong.
+ *
+ *   corridor along the hall wall   1.77 m   (red on the marked-up plan)
+ *   the cubicles                   4.10 m
+ *   the lobby you queue in         1.78 m
+ *
+ * Anchored NORTH to the hall's south wall and WEST to x 16.93, both measured.
+ * Its EAST side is the concourse's east wall, and that is the one line where
+ * the drawing and this building disagree: 26.2 m against 22.7. So the block
+ * ends where this concourse ends and comes out 5.8 m across instead of 9.3.
+ *
+ * West is the anchor rather than east because the west side is the wall the
+ * marked-up plan actually points at — an interior wall, drawn, measurable —
+ * where the east side is just wherever the building stops. It is also what
+ * leaves the wheelchair ramp its ground: the ramp is a 12 m straight run
+ * standing in for a switchback (see `RAMP`), it was invented, and an invented
+ * object does not get to sit on a drawn one.
  */
-const TOILET_CORRIDOR = rect(22.3, -45.2, 19.8, 2.2);
-const TOILETS = rect(22.3, -43.0, 19.8, 3.6);
+const TOILET_BLOCK_X = 16.93;
+const TOILET_STRIP = 1.77;
+
+const TOILETS = rect(
+  TOILET_BLOCK_X,
+  HALL.y - TOILET_STRIP - 4.1,
+  RECEPTION.x + RECEPTION.w - TOILET_BLOCK_X,
+  4.1,
+);
+const TOILET_CORRIDOR = rect(TOILETS.x, TOILETS.y - 1.78, TOILETS.w, 1.78);
 
 /**
  * The wheelchair ramp from the concourse down into the hall.
  *
- * Ten metres wide because it stands for a ramp nobody draws — see the note on
- * the reception's plate — and the width is what makes it comfortably drivable
+ * Wide because it stands for a ramp nobody draws — see the note on the
+ * reception's plate — and the width is what makes it comfortably drivable
  * rather than what the building has.
+ *
+ * It was 10 m across at x 11.5, and that put it under the toilets: this run
+ * is invented and the toilet block is measured, so the ramp is the one that
+ * moves. What is left for it is the 6.1 m between the east end of the
+ * threshold terrace and the block's west wall, so it takes 5.5 m of that —
+ * still four times Biggy's 1.44 m, which is all the width was ever for.
  */
-const RAMP = rect(11.5, -49.4, 10.0, 12.0);
+const RAMP = rect(11.0, -49.4, 5.5, 12.0);
 
 /** The gap it needs in the wall at the bottom. A ramp, not a ten-metre hole. */
 const RAMP_DOOR = 4.0;
@@ -582,13 +624,16 @@ const floor0Rooms: Room[] = [
   // way up to the cinema rooms". See `receptionStairs`.
   { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6), elevation: CONCOURSE_LEVEL },
   { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7), elevation: CONCOURSE_LEVEL },
+  // The strip the toilets used to hold. Three rooms of 7.6, 7.7 and 7.8 m on
+  // one 19.8 m frontage is what that side of the building always was; the
+  // toilets were only ever standing in the third of them. See `TOILETS`.
+  { id: 'bof-3', label: 'BOF 3', kind: 'service', floor: 0, bounds: rect(22.3, -45.2, 19.8, 7.8), elevation: CONCOURSE_LEVEL },
   /*
-   * The toilets, north of the BOF rooms and labelled on the plan.
+   * The toilets, in the concourse's north-east corner — see `TOILETS` for why
+   * they are there and not out in the service strip with the BOF rooms.
    *
-   * Modelled because the south-east corner of the concourse was 400 m² of
-   * nothing, and because a building people believe in has the dull rooms in
-   * it. The cubicle partitions are what makes it read as a toilet block
-   * rather than a store — see `receptionFitOut`.
+   * Modelled because that corner of the concourse was 400 m² of nothing, and
+   * because a building people believe in has the dull rooms in it.
    */
   { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
   { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
@@ -726,27 +771,6 @@ const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, S
 const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
- * Tread depth, metres — how much floor each step of a flight takes up.
- *
- * With the building's 0.18 m riser this is a 31 degree stair, which is what
- * every flight in here except one already was. The grand flight was typed in
- * at 5.6 m deep for a 5.0 m rise, which is 28 steps of 20 cm: an 89% gradient
- * and a tread you cannot get a foot on. It read as a cliff standing in the
- * middle of the reception concourse, because that is what it was.
- *
- * So the run is DERIVED from the rise rather than measured off a drawing. A
- * flight's depth is not a free choice — it is the rise divided by the riser,
- * times this — and the plans do not carry a scale bar accurate enough to argue
- * with arithmetic.
- */
-const GOING = 0.3;
-
-/** How deep a flight has to be to climb `rise` metres at the building's riser. */
-function runFor(rise: number): number {
-  return Math.round(rise / RISER) * GOING;
-}
-
-/**
  * How much corridor is left at each side of the grand flight, metres.
  *
  * It used to be none: the flight was the full 14.3 m width of the corridor it
@@ -763,12 +787,42 @@ function runFor(rise: number): number {
 const GRAND_SIDE = 1.5;
 
 /**
- * The grand flight out of the reception concourse — see the Link below.
+ * The grand flight is not an ordinary staircase, and does not use the
+ * building's stair.
  *
- * Its long axis is the one you walk ACROSS: 11.3 m wide, centred in the 14.3 m
- * corridor it delivers you to, and 8.4 m deep for the 5.0 m it has to climb.
+ * `RISER`/`GOING` is the fire stair that appears fourteen times in here: 0.18
+ * over 0.30, a 31 degree flight you climb because you have to. At that pitch
+ * the 5.0 m out of the concourse takes 8.4 m of run, and 8.4 m under a
+ * fourteen-metre width is not a grand flight — it is a wide fire stair, and it
+ * read as one: short, steep and stubby with the whole concourse in front of
+ * it.
+ *
+ * So this one gets a ceremonial pitch of its own: a 0.15 m riser on a 0.36 m
+ * going, 23 degrees, which is what a flight built to be walked DOWN in a crowd
+ * measures. 5.0 m then takes 33 risers and 11.9 m of run — half again as deep,
+ * and the difference between a stair in a room and a stair that is the room.
+ *
+ * Shallower is safe for the cast in both directions: Droid's `maxStepRise` is
+ * the building's 0.18 and this is under it, so everything that could climb the
+ * flight still can, and Biggy's is 0, so the one machine that could not still
+ * cannot. `npm run traverse` asserts both.
  */
-const GRAND_RUN = runFor(FLOOR_HEIGHT - CONCOURSE_LEVEL);
+/**
+ * Tread depth on the grand flight, metres — how much floor each step takes.
+ *
+ * A flight's depth is not a free choice: it is the rise divided by the riser,
+ * times the going. The grand flight had been TYPED IN at 5.6 m deep for a
+ * 5.0 m rise, which is 28 steps of 20 cm — an 89% gradient and a tread you
+ * cannot get a foot on — because the plans carry no scale bar accurate enough
+ * to argue with arithmetic. So it is derived, and it has been derived twice:
+ * once at the building's 0.18/0.30, and now here.
+ */
+const GRAND_RISER = 0.15;
+const GRAND_GOING = 0.36;
+
+/** Risers in the grand flight, and the run they need. */
+const GRAND_STEPS = Math.round((FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_RISER);
+const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
 
 /**
  * The WELL — the hole the grand flight comes up through — which is the full
@@ -2379,7 +2433,11 @@ const receptionStairs: Link[] = [
    * cannot be wider than the corridor it lands in, so it takes the corridor's
    * full width and loses the surveyed 1.4 m.
    */
-  { id: 'grand-stair', from: 0, to: 1, bounds: GRAND_STAIR, base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: RISER },
+  // The one flight in the building with a riser of its own — see GRAND_RISER.
+  // Stated as the rise over its own step count rather than as GRAND_RISER, so
+  // the tread a robot is drawn on and the height it is drawn at cannot drift
+  // apart when the rounding lands anywhere but exactly.
+  { id: 'grand-stair', from: 0, to: 1, bounds: GRAND_STAIR, base: CONCOURSE_LEVEL, rise: FLOOR_HEIGHT - CONCOURSE_LEVEL, axis: 'y', ascending: true, riser: (FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_STEPS },
 ];
 
 /**
@@ -3805,70 +3863,276 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
 }
 
 /**
- * The reception desk, the office behind it, and the toilet cubicles.
+ * The information island, the office inside it, and the free-standing counter.
  *
  * The concourse was a bare plate with a staircase in it: 830 m² of the
- * building's front door with nothing in it to recognise. The plan has a
- * reception counter and its office standing north-west of the grand flight,
- * and toilets off the south-east corner, and all of it is what makes the
- * space read as somewhere you arrive rather than somewhere left over.
+ * building's front door with nothing in it to recognise. `hollywood-area.png`
+ * draws the fit-out that belongs there, immediately north of the head of the
+ * grand flight: a square information island on the west side — the plan puts
+ * the circled "i" inside it — and a single long counter standing free to the
+ * east of it, with a 1.4 m gap between the two.
+ *
+ * MEASURED off that drawing at 0.0408 m/px, the scale the reception band
+ * gives (23.0 m of concourse over 564 px), which is the same scale that
+ * reproduces the "15.7 m wide, 5.6 m deep" grand flight recorded above. The
+ * island comes out 5.6 × 5.5 m and the free counter 6.3 m long.
+ *
+ * The one deliberate move off the drawing is in x: the plan's flight is
+ * 15.9 m wide against this building's 14.3 m well, so the whole fit-out is
+ * anchored to the WELL'S WEST EDGE rather than to its own surveyed x. That
+ * keeps the 6.3 m aisle up the west side of the concourse that the entrance
+ * doors are placed against — see ENTRANCE_X, which reads that aisle as the
+ * route a player takes — and moves everything 1.6 m east of where the
+ * drawing has it, which nothing else in the building can see.
  *
  * Two heights and the difference between them is the point. The office is a
- * room and its south and east sides are 3.2 m walls; the counter along its
- * west and north is 1.1 m, which you see over from anywhere in the concourse.
- * A counter drawn at wall height is a room, and this is not a room — it is a
- * desk you walk up to.
+ * room and its walls are 3.2 m; every counter run is 1.4 m, which you see
+ * over from anywhere in the concourse. A counter drawn at wall height is a
+ * room, and this is not a room — it is a desk you walk up to.
  */
-
-/** Height of anything you are meant to see over. Never above 1.4 m. */
-const COUNTER_HEIGHT = 1.1;
-
-/** How deep the counter top is, metres. A desk, not a wall. */
-const COUNTER_DEPTH = 0.6;
 
 /**
- * The reception enclosure, north-west of the stairwell.
+ * Height of anything you are meant to see over. Never above 1.4 m.
  *
- * Its west side lines up with the well's, which is how the plan draws it: the
- * desk and the flight share an edge and you walk between them.
+ * 1.4 m exactly, which is what the counters on the plan are: chest height on
+ * Droid, over Voxxy's head, and still under the 1.6 m eye line the cutaway
+ * assumes. It was 1.1 m — a guess — until the drawing settled it.
  */
-const DESK = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 3.0, 9.8, 5.0);
+const COUNTER_HEIGHT = 1.4;
 
-/** The way in behind the counter, metres off the enclosure's west corner. */
-const DESK_DOOR = 2.2;
+/** How deep a counter top is, metres. A desk, not a wall. */
+const COUNTER_DEPTH = 0.65;
 
-/** The store against the head of the stairs. Full height; a cupboard. */
-const DESK_STORE = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h, 3.6, 1.6);
+/**
+ * The information island, north-west of the stairhead.
+ *
+ * 1.2 m clear of the well's head, which is what the plan leaves: you come up
+ * the flight and the island is the first thing in front of you, not something
+ * you arrive inside.
+ */
+const ISLAND = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 1.2, 5.6, 5.5);
+
+/**
+ * The west run is the deep one — it is the desk you are served at, and the
+ * plan draws it a metre across where the other two runs are half that.
+ */
+const ISLAND_DESK_DEPTH = 1.1;
+
+/** How much of the island's east face is counter; the rest of it is office. */
+const ISLAND_EAST_RUN = 2.85;
+
+/** The staff way in, off the island's south-west corner, metres. */
+const ISLAND_DOOR = 1.0;
+
+/** How far the office's north wall stands off the island's south face. */
+const OFFICE_DEPTH = 1.85;
+
+/**
+ * The jog in the office's back wall, and where it is.
+ *
+ * The plan does not draw that wall straight: it runs 1.95 m east of the
+ * office's own west side, steps 0.55 m SOUTH, and carries on — finishing
+ * 0.3 m past the island's east face, as a stub standing in the concourse.
+ * This was drawn straight on the first pass and called a detail too small to
+ * see, which was wrong twice over: it is the shape that tells you the office
+ * is a room somebody works in rather than a box, and the stub is the only
+ * thing on the island that reaches out into the floor around it.
+ */
+const OFFICE_STEP = 0.55;
+const OFFICE_STEP_AT = 2.1 + 1.95;
+const OFFICE_STUB = 0.3;
+
+/** The office's own doorway, at the north end of its west wall, metres. */
+const OFFICE_DOOR = 1.0;
+
+/**
+ * The counter standing free in the middle of the concourse, east of the
+ * island. 6.3 × 0.65 m on the plan, 1.4 m clear of the island's east face.
+ *
+ * STANDS FURTHER NORTH THAN DRAWN, and this is the second deliberate move off
+ * the plan. The drawing has it 1.6 m off the head of its flight, which is a
+ * flight 6.0 m deep with a landing halfway up; this building's is 8.4 m deep
+ * and lands in a 14.3 m well that Chapter III drives three robots through, so
+ * 1.6 m of clearance is a counter across the mouth of a staircase. 3.4 m
+ * leaves the 2.2 m approach `npm run traverse` walks in under the soffit —
+ * which it does from this exact centre line — and still reads as the same
+ * counter standing in the same place beside the island.
+ */
+const FREE_COUNTER = rect(
+  ISLAND.x + ISLAND.w + 1.45,
+  GRAND_WELL.y + GRAND_WELL.h + 3.4,
+  6.3,
+  COUNTER_DEPTH,
+);
+
+/**
+ * Where you are served: the aisle in front of the island's west counter.
+ *
+ * Exported because a chapter that wants "the reception desk" must not keep a
+ * pair of numbers for it. This point has drifted twice in two passes — once
+ * when the island replaced the old nine-metre desk enclosure, and again when
+ * the grand flight was given its ceremonial pitch and took the island 3.5 m
+ * north with it. Both times the literal in `objectives.ts` stayed exactly
+ * where it was, and both times `npm run objectives` passed, because it asks
+ * whether a robot FITS there and not whether anybody would queue there.
+ *
+ * Derived from the island, so the next time the island moves this follows.
+ */
+export const RECEPTION_DESK = {
+  floor: 0 as const,
+  x: ISLAND.x - 1.65,
+  y: ISLAND.y + (ISLAND.h - COUNTER_DEPTH) / 2,
+};
 
 function receptionFitOut(): Obstacle[] {
+  const counter = (bounds: Rect): Obstacle => ({
+    floor: 0,
+    bounds,
+    height: COUNTER_HEIGHT,
+    material: 'desk',
+  });
+  const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: WALL_HEIGHT });
+
   return [
-    // The office: walled on the two sides away from the concourse, with the
-    // staff way in at the corner nearest the stairs. Closed on all four sides
-    // it is a box nobody can be inside, which is a strange thing to build.
-    {
-      floor: 0,
-      bounds: rect(DESK.x + DESK_DOOR, DESK.y, DESK.w - DESK_DOOR, WALL_THICKNESS),
-      height: WALL_HEIGHT,
-    },
-    {
-      floor: 0,
-      bounds: rect(DESK.x + DESK.w - WALL_THICKNESS, DESK.y, WALL_THICKNESS, DESK.h),
-      height: WALL_HEIGHT,
-    },
-    { floor: 0, bounds: DESK_STORE, height: WALL_HEIGHT },
-    // The counter: the two sides the public stands at.
-    {
-      floor: 0,
-      bounds: rect(DESK.x, DESK.y, COUNTER_DEPTH, DESK.h),
-      height: COUNTER_HEIGHT,
-      material: 'desk',
-    },
-    {
-      floor: 0,
-      bounds: rect(DESK.x, DESK.y + DESK.h - COUNTER_DEPTH, DESK.w, COUNTER_DEPTH),
-      height: COUNTER_HEIGHT,
-      material: 'desk',
-    },
+    // The three counter runs the public stands at — north, west, and the
+    // northern half of the east face. All marked on the plan as one height.
+    counter(rect(ISLAND.x, ISLAND.y + ISLAND.h - COUNTER_DEPTH, ISLAND.w, COUNTER_DEPTH)),
+    counter(rect(ISLAND.x, ISLAND.y, ISLAND_DESK_DEPTH, ISLAND.h - COUNTER_DEPTH)),
+    counter(
+      rect(
+        ISLAND.x + ISLAND.w - COUNTER_DEPTH + 0.1,
+        ISLAND.y + ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
+        COUNTER_DEPTH - 0.1,
+        ISLAND_EAST_RUN,
+      ),
+    ),
+    counter(FREE_COUNTER),
+
+    // The office inside the island: the south and east sides, which are the
+    // two the public never stands at, plus its own north wall. The way in is
+    // the gap at the south-west corner — closed on all four sides it is a box
+    // nobody can be inside, which is a strange thing to build.
+    wall(
+      rect(
+        ISLAND.x + ISLAND_DESK_DEPTH + ISLAND_DOOR,
+        ISLAND.y,
+        ISLAND.w - ISLAND_DESK_DEPTH - ISLAND_DOOR,
+        WALL_THICKNESS,
+      ),
+    ),
+    wall(
+      rect(
+        ISLAND.x + ISLAND.w - WALL_THICKNESS,
+        ISLAND.y,
+        WALL_THICKNESS,
+        ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
+      ),
+    ),
+    // The office's west side, with the doorway at its north end: the staff
+    // come in through the island's south wall, up the metre of floor behind
+    // the west counter, and into the office from there. The way in used to be
+    // a gap in the north wall, which had to be cut out of the very run the
+    // plan draws stepped.
+    wall(
+      rect(
+        ISLAND.x + 2.1,
+        ISLAND.y,
+        WALL_THICKNESS,
+        OFFICE_DEPTH + WALL_THICKNESS - OFFICE_DOOR,
+      ),
+    ),
+    // The back wall, stepped: west leg, the step itself, then the east leg
+    // running out past the island's face.
+    wall(rect(ISLAND.x + 2.1, ISLAND.y + OFFICE_DEPTH, OFFICE_STEP_AT - 2.1, WALL_THICKNESS)),
+    wall(
+      rect(
+        ISLAND.x + OFFICE_STEP_AT,
+        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
+        WALL_THICKNESS,
+        OFFICE_STEP + WALL_THICKNESS,
+      ),
+    ),
+    wall(
+      rect(
+        ISLAND.x + OFFICE_STEP_AT,
+        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
+        ISLAND.w - OFFICE_STEP_AT + OFFICE_STUB,
+        WALL_THICKNESS,
+      ),
+    ),
+  ];
+}
+
+/**
+ * The walls of the stair hall — the two the plan marks and the building had
+ * none of.
+ *
+ * The grand flight was standing in open concourse with a balustrade down each
+ * side. On `hollywood-area.png` it stands in a SLOT: a wall the full length
+ * of the flight on each side, and the treads hatched right up to both of
+ * them. That is a different room, and it is the one the plan draws — you come
+ * in at the south corner, walk up the aisle with a wall on your right, and
+ * the stair is a thing you turn into rather than a thing standing in the
+ * middle of the floor.
+ *
+ * They sit on the WELL'S OWN SIDES, which is the honest anchor: the well is
+ * this building's stand-in for that slot, so its edges are where the walls
+ * go. Measured, the drawing's slot is 15.7 m wide against this well's 14.3 —
+ * the same 9% the flight itself was reconciled by, and the same direction.
+ *
+ * The two sides are NOT the same length, which is the detail worth keeping:
+ *
+ *   west  — stops 0.5 m past the head of the flight, where the information
+ *           island takes the line over and carries it north.
+ *   east  — runs 5.7 m past the head and then returns 3.6 m west, closing
+ *           the concourse's south-east corner.
+ *
+ * Both stop short of the entrance elevation by the LOBBY the plan leaves —
+ * 80 px, 3.3 m — rather than running down to the foot of the flight. On the
+ * drawing those are the same line, because its flight is 6.0 m deep and ends
+ * 3.3 m inside the doors. This one is 11.9 m, for the reason `GRAND_GOING`
+ * gives, so a wall taken to its foot arrives level with the east jamb of the
+ * entrance and the cast cannot line up inside its own front door —
+ * `npm run venue` says so in as many words. The lobby is the half of that
+ * pair a player uses, so the lobby wins and the bottom three steps splay out
+ * of the slot, which is what the bottom of a broad flight does anyway.
+ */
+const STAIR_HALL_HEIGHT = FLOOR_HEIGHT - CONCOURSE_LEVEL;
+
+/** How far each wall runs past the head of the flight, metres. Measured. */
+const STAIR_HALL_WEST_PAST = 0.5;
+const STAIR_HALL_EAST_PAST = 5.7;
+
+/** The return at the north end of the east wall, metres. Measured. */
+const STAIR_HALL_RETURN = 3.6;
+
+/** Clear depth inside the entrance elevation before the walls start, metres. */
+const STAIR_HALL_LOBBY = 3.3;
+
+function grandStairHall(): Obstacle[] {
+  const foot = RECEPTION.y + STAIR_HALL_LOBBY;
+  const head = GRAND_WELL.y + GRAND_WELL.h;
+  const east = GRAND_WELL.x + GRAND_WELL.w;
+  const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: STAIR_HALL_HEIGHT });
+
+  return [
+    wall(
+      rect(
+        GRAND_WELL.x - WALL_THICKNESS,
+        foot,
+        WALL_THICKNESS,
+        head + STAIR_HALL_WEST_PAST - foot,
+      ),
+    ),
+    wall(rect(east, foot, WALL_THICKNESS, head + STAIR_HALL_EAST_PAST - foot)),
+    wall(
+      rect(
+        east - STAIR_HALL_RETURN,
+        head + STAIR_HALL_EAST_PAST - WALL_THICKNESS,
+        STAIR_HALL_RETURN + WALL_THICKNESS,
+        WALL_THICKNESS,
+      ),
+    ),
   ];
 }
 
@@ -3908,6 +4172,7 @@ export const KINEPOLIS: Venue = {
     ...RAILS.solids,
     ...grandWellHeadRails(),
     ...receptionFitOut(),
+    ...grandStairHall(),
     ...railBesideWells(FACADE.walls, staircases),
     ...FORECOURT_FIT.solids,
   ],
@@ -3977,11 +4242,14 @@ export const SPAWNS = {
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *
-   * North of the grand stairwell, which now reaches y -51.1: this used to be
-   * 1.5 m inside it, and a chapter that starts here would have dropped its
-   * whole cast down the stairs before the player touched a key.
+   * North of the grand stairwell, and it has had to move north twice now for
+   * the same reason: the well reached y -51.1, then -46.8 when the flight was
+   * given its ceremonial pitch and grew 3.5 m. Both times this point was left
+   * inside it, and a chapter that starts here would drop its whole cast down
+   * the stairs before the player touched a key. `npm run venue` catches it,
+   * which is the only reason it is not still there.
    */
-  corridorSouth: { floor: 1 as const, x: 0, y: -48 },
+  corridorSouth: { floor: 1 as const, x: 0, y: -44 },
   corridorNorth: { floor: 1 as const, x: 0, y: 58 },
   /** Outside the keynote room. Chapter III's destination. */
   // In the corridor outside Room 8, not inside its seating — the cast lines
