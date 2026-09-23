@@ -3761,6 +3761,63 @@ done.
 
 ---
 
+### Claude Opus — telling five people apart at twenty pixels
+
+**Prompt:**
+> so it's good but i would like for the npc to be visually unique each of
+> them and maybe that the dialog look more like them
+
+**Iterations:** 1
+
+"The dialog look more like them" reads two ways — the writing sounding like
+the person, or the box itself looking like them. Both are cheap, so both got
+done rather than asking.
+
+**The constraint is the whole design.** A figure is twenty pixels tall. A
+face is under a pixel, glasses are under a pixel, a logo on a shirt is under
+a pixel. So `Look` carries four things and refuses the rest: a shirt colour,
+a hair colour, a beard, and a height. Attempting more would be a claim the
+renderer cannot make — and with real people in the frame, a bad likeness is
+worse than an honest abstraction.
+
+**The heights are the lever I nearly left out and shouldn't have.** People
+differ by a head, which is 8% and about four pixels. Without it, five
+distinct shirts still read as one figure repainted five times; with it they
+read as five people. It costs one multiplier threaded through every z in the
+figure — and it has to be *every* z, or you get a normal person with a
+floating head.
+
+**Hair and beard are boxes, not blobs, and that is a budget decision rather
+than a shortcut.** The blob budget is two a head and every one of the three
+thousand people in Chapter III pays for it; the box budget already had room
+for an animal's thirteen. A cap on a rounded head reads as hair either way at
+this size.
+
+**The box takes the speaker's colour**, which is the other reading of the
+prompt. A name in the chapter accent is a label; a name in the shirt of the
+person in front of you is the same person twice. Lifting the colour for text
+needed its own function: `shade` multiplies, and a very dark navy multiplied
+by three is a slightly less dark navy. Mixing toward white instead lands
+every shirt at the same legibility and keeps its hue.
+
+**On writing real people.** The lines now have five distinct registers rather
+than one voice split five ways, but the cameo rules did not move: about the
+room and the moment, nothing in anybody's mouth that is not plainly true of
+their public work, and each one ends by sending the player back to the rooms
+they are supposed to be keeping alive — so the side quest argues for itself
+and then argues against itself, which is what a good aside does.
+
+**Two harness mistakes, the same one twice.** I put the test camera outside
+the activity zone and got no dialogue box — exactly the error I made with the
+cat two features ago, and did not recognise until I had shot it twice more.
+Worth a note for next time: `spot(floor, x, y, size)` is a square of side
+`size` centred on the point, so a camera 2 m south of a 3.2 m zone is outside
+it. And a conversation gated behind another one cannot be screenshotted at
+all, because `peek` holds its keys from the first frame and `keyboard.on`
+fires once on keydown.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
