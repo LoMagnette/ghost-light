@@ -3557,6 +3557,78 @@ and not one reading the code can answer.
 
 ---
 
+### Claude Opus — the audience of a dead room
+
+**Prompt:**
+> make the attendee leave the room
+
+**Iterations:** 2 commits, and one wrong assumption found by measuring
+
+`docs/MECHANICS.md` §5.2: a room at zero *"goes dark, its attendees leave,
+and it never comes back."* The light going out shipped last pass; this is the
+rest. A dark room with two hundred and fifty people still sitting in it is a
+power cut, not a session that ended.
+
+**The obstacle was the thing that makes the crowd cheap.** The audience is
+baked into each storey as instanced meshes — one draw call for five thousand
+people — and it was baked as one `flatMap` over everybody on the floor, so
+Room 5's people were interleaved with everyone else's in whatever order
+`fillSeats` happened to walk the seats. There is no way to take a hole out of
+the middle of an `InstancedMesh`. Baking room by room, each a contiguous run
+with its range recorded, costs nothing at build time and is the whole of what
+makes emptying possible.
+
+**They get up in a scattered order**, from a fixed-seed shuffle. In seat
+order it is a wipe travelling across the seating, which reads as the room
+being deleted; scattered, it reads as a room thinning out. A prefix of that
+shuffle is "who has gone", so emptying costs only the people who have just
+stood up rather than a pass over the room.
+
+**The leavers are spawned at the DOOR, not in their seats**, and that is the
+cheap trick that made the second half affordable. Standing them up in the
+seating would mean matching each mover to the seated instance being hidden,
+in the renderer's own departure order, across a boundary `src/core` is not
+allowed to see. Out of the doorway they have already stood up — and nobody
+can count them against a room that is dark by then. Three dozen of them, not
+all two hundred and fifty: the mover budget is 400 for the whole building and
+five rooms emptying in full would be six hundred people nobody asked for.
+
+**The wrong assumption, caught by measuring rather than by looking.** The
+first version put the emptying inside `consumeObjective`, which is gated on
+the round still being live. The last thing that happens in this chapter is
+three rooms going dark within two seconds of each other and ending the day,
+so the losing room got two seconds of an eight-second walk-out and then froze
+half gone behind the end card. Two screenshots either side of it read 12.36
+and 12.22 — no change — and I nearly concluded the whole mechanism was
+broken. It was not: the room was simply dimmed to nothing by the end card and
+the emptying had stopped. Proving it needed the window shortened to 1.2 s
+temporarily, which showed the seats going bare cleanly, and then putting it
+back.
+
+**Two harness limits worth writing down**, because both cost time here:
+
+- `npm run peek` holds its keys from the first frame, so it cannot press `R`
+  after a room has died. The restart path is therefore asserted in node
+  instead — `Crowd` is pure core, so 159 movers, evacuate five rooms to 339
+  with no speaker left on a stage, `reseat` back to 159 with all five
+  returned, and no creep over four round trips. That test found nothing, but
+  only because `reseat` had already been written to answer the question the
+  test asks.
+- The default no-input run is a bad rig for anything that happens after the
+  first room dies, because with nobody playing all five die within seconds of
+  each other. Chapter II's real timings will not look like that.
+
+**The leak this closed.** `R` restarts the round and rebuilds `ObjectiveRun`,
+but not the crowd — so without `reseat` every restart left the last round's
+leavers wandering a corridor they are no longer at a conference in, and five
+rooms times a few restarts is the mover budget gone. The renderer had the
+same shape of problem in reverse: emptying overwrites instance matrices in
+place, so `refillSeats` rewrites them from the same people in the same order
+through the same builders. That is why `writeInstances` exists rather than
+the matrix arithmetic being inline in two places that can drift.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
