@@ -239,7 +239,7 @@ README opens with.
 Control is `switch`, and **the clock never stops**. Wherever you are, the
 other two are idling somewhere expensive.
 
-#### The card — fifteen things, and no day is long enough for fifteen
+#### The card — seventeen things, and no day is long enough for seventeen
 
 Open activities can be done whenever. Windowed ones are gone forever when
 their window closes. That is a conference, and it is the mix of a checklist
@@ -259,11 +259,23 @@ and a timetable.
 | 10 | Free the jammed shutter | Hall, loading bay | `shove` ≥ 900 kg·m/s | **Biggy** | open, and it gates #6 |
 | 11 | The queue for the toilets | Concourse | `dwell` 20 s | any | open |
 | 12 | The keynote | Room 8, storey 1 | `attend`, seated before T+5:20 | not Biggy | T+5:20 → end |
+| 13 | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** | open |
+| 14 | Find the photographer | Hall, central aisle | `talk` | any | open |
+| 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | the letters are on storey 1, so **not Biggy** | open, chained |
 
-Six minutes. Twelve activities. Three robots, each locked out of several.
+Six minutes. Seventeen rows. Three robots, each locked out of several.
 
 **#10 gates #6**, so Biggy's day is a run-up, a shutter and a keg, which is
 exactly what a 430 kg hauler should spend a conference doing.
+
+**#15 is the one that is not about time.** Four photographs, and the last of
+them wants every robot in the same five metres of floor — but `switch` only
+ever drives one, so the other two have to have been left there earlier by a
+player who knew they would be wanted. It is the only thing in the game that
+asks where all three machines are at once, and it is the only errand that
+ends with something to keep rather than something ticked: each photograph
+puts a print on the screen. A chapter whose whole sentence is *you cannot do
+all of it* should have one thing in it worth losing the rest for.
 
 #### The building has to name the rooms
 

@@ -3916,6 +3916,90 @@ thread they have not been given the start of.
 
 ---
 
+### Claude Opus — a photographer, four landmarks, and a print on the screen
+
+**Prompt:**
+> A idea for the chapter 3, One quest to would be to find Dimitris
+> Doutsiopoulos the well known devoxx photograph to ask him to take picture of
+> each robot in front of a devoxx landmark (the devoxx logo in room 8, a
+> picture in the small room in the reception area in front of the beJUG
+> banner, and another one with josh long in the exibition hall and finally a
+> group picture in the exibition hall with Venkat Subramaniam. For each of the
+> picture we should plan to have the picture display on screen one it has been
+> taken. For thos picture I'll provide you so assets.
+
+**Iterations:** 1, plus three fixes found by photographing it.
+
+**I asked first, and it was the right call.** The previous prompt had been
+"park this idea for later" and this one opens the same way — "an idea for
+chapter 3" — but it then specifies four landmarks, two named people and a
+display mechanic, and promises assets. Parking it is fifteen minutes of
+Markdown; building it is a new field on `Common`, a chain of five activities
+and a UI surface. Those are different enough that guessing wrong wastes an
+hour either way, so I asked, with a recommendation attached. Build, with
+placeholder prints.
+
+**Every landmark the prompt named already existed**, which is what a venue
+defined once in metres buys you: `#DEVOXX` stands on the stage of the two
+biggest rooms, the concourse has three BOF rooms off it — a Birds-of-a-
+Feather room being exactly where a user group meets, so exactly where a BeJUG
+banner hangs — and the hall's booth ranks stop at x -6.0 and restart at 4.7,
+leaving ten metres of central aisle nobody can drive past without seeing a
+photographer standing in it.
+
+**The design decision worth recording is that no new activity KIND was
+added.** The instinct was a `photo` activity. But the DOING is a `dwell` —
+hold still while somebody takes your picture — and the picture is a
+consequence of finishing, which is precisely what `reveal` already is. So
+`photo?: Photo` went on `Common` beside `reveal`, and the dwell needed no
+changes at all to be photographed. `who`, `look` and `shape` moved from
+`TalkActivity` to `Common` in the same pass, because the rule they encode —
+an activity written with a person in it cannot be written without the person
+turning up — was never about talking. Josh Long has to be in the photograph
+of Josh Long and says nothing whatsoever.
+
+**The group photograph is the only thing in the game that asks where all
+three robots are.** `everybody` on a dwell wants the whole cast in the zone
+and still, and `switch` mode only ever drives one — so the other two must
+have been parked there earlier by a player who knew. It is not a place you
+go; it is a place you have been assembling all day without noticing. Biggy,
+meanwhile, cannot be in the Room 8 photograph at all, because there is no
+goods lift and the rake is a real staircase. That was the building's decision
+years ago and the shot list simply inherits it.
+
+**Three things only a screenshot could have told me.**
+
+1. The camera prop was black, on the black jacket every event photographer
+   wears, and I had written a comment claiming it would still read because it
+   catches the key light at a different angle. It does, by about one value
+   step, which is invisible. It is the grey of a lens barrel now.
+2. The card said **"the shot list 1/1"**. The rule added two features ago —
+   hide an optional activity that is still locked — was being applied member
+   by member to a GROUP, so the denominator grew as the player worked. A
+   count that goes up when you score is worse than no count. A group now
+   counts all of itself as soon as any of it is visible.
+3. `npm run objectives` confirmed in one line that the Room 8 stage admits
+   Voxxy and Droid and not Biggy, which is the kind of thing that is obvious
+   in the design, invisible in the code, and a bug report from a judge.
+
+**On the prints, and building a feature whose art is somebody else's job.**
+The photographs do not exist yet. The screen therefore draws its own frame —
+a real print, tilted, with the caption under it and PHOTO TO COME in the
+middle — and the game is complete and playable with an empty `public/photos/`.
+That is not a stub to tidy up later: it is the only way to judge the size,
+the timing and how badly a full-screen print interrupts a six-minute day
+BEFORE anybody spends an afternoon taking pictures. `public/photos/README.md`
+says what each frame wants and which line to add.
+
+**One self-inflicted scare.** I backed a source file up with `cp` to the
+scratchpad before a throwaway test edit, and the copy came back as 36 KB of
+NUL bytes — then I restored from it, destroying the file. Nothing was lost:
+`git checkout` had everything to the last commit and the one uncommitted edit
+was re-applied from the same script. The lesson is that the version control
+is the backup, and a `cp` to a temp directory is a second thing that can fail.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience
