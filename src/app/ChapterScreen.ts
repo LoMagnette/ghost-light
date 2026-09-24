@@ -103,6 +103,11 @@ const ARRIVE_SPLIT = 1.3;
 /** How far above the floor the arrival opens, metres. Under any ceiling. */
 const ARRIVE_HEIGHT = 3.2;
 /**
+ * Between one robot coming through and the next, seconds. Two machines
+ * landing on the same frame are one event; a beat apart they are a crew.
+ */
+const ARRIVE_STAGGER = 0.35;
+/**
  * The wormhole's colour, in both chapters: Chapter I's accent, the ghost light
  * itself. It is the same hole seen from either end, so it cannot take the
  * colour of whichever chapter it is being drawn in.
@@ -111,8 +116,16 @@ const WORMHOLE_COLOUR = CHAPTER_ONE.palette.accent;
 
 /** A story beat in progress. While there is one, nobody is driving. */
 type Story =
-  | { kind: 'departure'; t: number; exit: Exit; x: number; y: number; z: number; left: boolean }
-  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: boolean };
+  | { kind: 'departure'; t: number; exit: Exit; holes: Hole[]; left: boolean }
+  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: Set<Actor> };
+
+/** Where a robot went through, which is where it stood when the floor opened. */
+interface Hole {
+  actor: Actor;
+  x: number;
+  y: number;
+  z: number;
+}
 
 /**
  * How many of a room's audience are drawn walking out, at the point where all
@@ -185,9 +198,12 @@ export class ChapterScreen implements Screen {
   private selfie: Photo | undefined;
   /** The game's renderer, which a selfie has to be taken with. */
   private renderer!: WebGLRenderer;
-  /** The wormhole and the white it goes out on. See `Story`. */
+  /**
+   * The wormholes — one per robot going through or coming out — and the
+   * white it all goes out on. See `Story`.
+   */
   private story: Story | undefined;
-  private wormhole: Wormhole | undefined;
+  private wormholes: Wormhole[] = [];
   private whiteout!: HTMLDivElement;
   /** True while the cast is on the forecourt. Changes what the camera frames. */
   private outside = false;
@@ -463,7 +479,7 @@ export class ChapterScreen implements Screen {
   }
 
   dispose(): void {
-    this.wormhole?.dispose();
+    for (const hole of this.wormholes) hole.dispose();
     this.blockout.dispose();
   }
 
@@ -514,27 +530,42 @@ export class ChapterScreen implements Screen {
 
   // -- story ----------------------------------------------------------------
 
-  /** Open the wormhole under whoever finished the chapter. */
+  /**
+   * Open the floor under every robot in the cast.
+   *
+   * Every one, not just the one being driven. In `switch` mode the others
+   * are wherever the player left them — Chapter II ends with Droid in some
+   * control booth across the corridor — and the next chapter needs them
+   * all. The building folds wherever you happen to be standing; the camera
+   * only ever sees the robot you are.
+   */
   private depart(exit: Exit): void {
-    const { body } = this.controlled;
-    this.story = { kind: 'departure', t: 0, exit, x: body.x, y: body.y, z: body.z, left: false };
-    this.openWormhole();
+    const holes = this.actors.map((actor) => ({
+      actor,
+      x: actor.body.x,
+      y: actor.body.y,
+      z: actor.body.z,
+    }));
+    this.story = { kind: 'departure', t: 0, exit, holes, left: false };
+    this.openWormholes(holes.length);
   }
 
-  /** Start a chapter out of the white, with a robot about to fall into it. */
+  /** Start a chapter out of the white, with robots about to fall into it. */
   private arrive(arrival: Arrival): void {
-    this.story = { kind: 'arrival', t: 0, arrival, line: -1, landed: false };
+    this.story = { kind: 'arrival', t: 0, arrival, line: -1, landed: new Set() };
     this.whiteout.style.opacity = '1';
-    this.openWormhole();
-    // Posed before the first frame is drawn, or it opens on both robots
+    this.openWormholes(this.actors.length);
+    // Posed before the first frame is drawn, or it opens on the whole cast
     // already standing there and the split has nothing to reveal.
     this.playArrival(this.story, 0);
   }
 
-  private openWormhole(): void {
-    if (this.wormhole) return;
-    this.wormhole = new Wormhole(WORMHOLE_COLOUR);
-    this.blockout.scene.add(this.wormhole.object);
+  private openWormholes(count: number): void {
+    while (this.wormholes.length < count) {
+      const hole = new Wormhole(WORMHOLE_COLOUR);
+      this.blockout.scene.add(hole.object);
+      this.wormholes.push(hole);
+    }
   }
 
   private updateStory(dt: number, pressed: boolean): void {
@@ -547,29 +578,29 @@ export class ChapterScreen implements Screen {
   }
 
   /**
-   * The robot goes down the hole.
+   * The robots go down the holes.
    *
-   * Pulled to the middle first, then spun and shrunk and sunk, all as a pose
-   * on the renderer: the body in the simulation is braking to a stop exactly
-   * where it was, and nothing about Chapter I's physics knows a wormhole
+   * Each pulled to the middle of its own, then spun and shrunk and sunk, all
+   * as a pose on the renderer: the bodies in the simulation brake to a stop
+   * exactly where they were, and nothing about the physics knows a wormhole
    * happened. The chapter changes on white, so the cut is never seen.
    */
   private playDeparture(story: Extract<Story, { kind: 'departure' }>, dt: number): void {
-    const { t, x, y, z } = story;
-    const robot = this.controlled;
+    const { t } = story;
     const open = smooth(t / DEPART_OPEN);
-    this.wormhole?.place(x, y, z, open, dt);
-
     const k = clamp01((t - DEPART_OPEN) / DEPART_PULL);
     const e = k * k;
-    const drawn = smooth(t / DEPART_OPEN);
-    this.blockout.setPose(robot, {
-      dx: (x - robot.body.x) * drawn,
-      dy: (y - robot.body.y) * drawn,
-      dz: -0.9 * e,
-      scale: 1 - 0.97 * e,
-      spin: e * 18 + Math.sin(t * 31) * 0.06 * open,
-      hidden: k >= 1,
+
+    story.holes.forEach(({ actor, x, y, z }, i) => {
+      this.wormholes[i]?.place(x, y, z, open, dt);
+      this.blockout.setPose(actor, {
+        dx: (x - actor.body.x) * open,
+        dy: (y - actor.body.y) * open,
+        dz: -0.9 * e,
+        scale: 1 - 0.97 * e,
+        spin: e * 18 + Math.sin(t * 31 + i) * 0.06 * open,
+        hidden: k >= 1,
+      });
     });
     // A rumble that builds; not forced, so it never cuts across an impact.
     if (t < DEPART_OPEN + DEPART_PULL) this.shake(0.12, 0.0012 + 0.0035 * open, false);
@@ -586,11 +617,12 @@ export class ChapterScreen implements Screen {
   }
 
   /**
-   * The robot comes out of the air, lands, and comes apart into two.
+   * The robots come out of the air, land, and one of them comes apart.
    *
-   * The second machine is posed ON the first — same place, a fifth of its
-   * size — and grows out of it to where the simulation has had it standing
-   * all along, two and a half metres away. Then they talk, one box at a time,
+   * Everybody who went in comes back down, a beat apart, each out of a hole
+   * of its own over the place the simulation has had it standing all along.
+   * The new machine is posed ON `from` — same place, a fifth of its size —
+   * and grows out of it to its own spawn. Then they talk, one box at a time,
    * and only when the last line is paged past does the objective start.
    */
   private playArrival(
@@ -601,11 +633,15 @@ export class ChapterScreen implements Screen {
     const { arrival } = story;
     const from = this.actors[this.chapter.cast.indexOf(arrival.from)];
     const into = this.actors[this.chapter.cast.indexOf(arrival.into)];
-    const end = ARRIVE_SPLIT_AT + ARRIVE_SPLIT;
     if (!from || !into) {
       this.endStory();
       return;
     }
+    // Everyone but the one about to exist, in cast order.
+    const fallers = this.actors.filter((a) => a !== into);
+    const lag = (fallers.length - 1) * ARRIVE_STAGGER;
+    const splitAt = ARRIVE_SPLIT_AT + lag;
+    const end = splitAt + ARRIVE_SPLIT;
 
     // Impatience is allowed. A press during the animation skips to the talk.
     if (pressed && story.t < end) {
@@ -613,33 +649,44 @@ export class ChapterScreen implements Screen {
       pressed = false;
     }
     const { t } = story;
-    const fb = from.body;
-    const ib = into.body;
 
     this.whiteout.style.opacity = String(1 - smooth(t / ARRIVE_FADE));
-    const open = 1 - smooth((t - ARRIVE_LAND) / 0.9);
-    this.wormhole?.place(fb.x, fb.y, fb.z + ARRIVE_HEIGHT, open, dt);
 
-    const dropFrom = ARRIVE_FADE * 0.55;
-    const fall = clamp01((t - dropFrom) / (ARRIVE_LAND - dropFrom));
-    if (fall >= 1 && !story.landed) {
-      story.landed = true;
-      this.shake(0.38, 0.016, true);
-    }
-
-    const split = clamp01((t - ARRIVE_SPLIT_AT) / ARRIVE_SPLIT);
+    const split = clamp01((t - splitAt) / ARRIVE_SPLIT);
     const grown = smooth(split);
-    if (t < end) {
+    const dropFrom = ARRIVE_FADE * 0.55;
+
+    fallers.forEach((actor, i) => {
+      const b = actor.body;
+      const start = dropFrom + i * ARRIVE_STAGGER;
+      const land = ARRIVE_LAND + i * ARRIVE_STAGGER;
+      this.wormholes[i]?.place(b.x, b.y, b.z + ARRIVE_HEIGHT, 1 - smooth((t - land) / 0.9), dt);
+
+      const fall = clamp01((t - start) / (land - start));
+      if (fall >= 1 && !story.landed.has(actor)) {
+        story.landed.add(actor);
+        // Heavier machines land harder. Droid is four Voxxys.
+        const weight = Math.min(1, b.spec.mass / 200);
+        this.shake(0.3 + 0.15 * weight, 0.008 + 0.012 * weight, true);
+      }
+      if (t >= end) return;
+
+      // Landed, and the one that is about to come apart shivers until it
+      // has — the others just stand there, which is its own kind of joke.
+      const shiver = actor === from && t > land + 0.3 ? Math.sin(t * 41) * 0.07 * (1 - grown) : 0;
       this.blockout.setPose(
-        from,
-        t < dropFrom
+        actor,
+        t < start
           ? { hidden: true }
           : fall < 1
             ? { dz: ARRIVE_HEIGHT * (1 - fall * fall), spin: (1 - fall) * 9 }
-            : // Landed, and something is wrong with it: it shivers, and
-              // stops shivering as the other one comes out.
-              { scale: 1 + Math.sin(t * 41) * 0.07 * (t > ARRIVE_LAND + 0.3 ? 1 - grown : 0) },
+            : { scale: 1 + shiver },
       );
+    });
+
+    if (t < end) {
+      const fb = from.body;
+      const ib = into.body;
       this.blockout.setPose(
         into,
         split <= 0
@@ -654,25 +701,17 @@ export class ChapterScreen implements Screen {
       return;
     }
 
-    this.blockout.setPose(from, undefined);
-    this.blockout.setPose(into, undefined);
+    for (const actor of this.actors) this.blockout.setPose(actor, undefined);
     if (story.line < 0) story.line = 0;
 
-    const said = arrival.lines[story.line];
-    if (!said) {
-      this.endStory();
-      return;
-    }
     if (pressed) {
       // Same rule as a conversation: finish the line, then page.
       if (this.typed < this.typingLine.length) this.typed = this.typingLine.length;
-      else {
-        story.line += 1;
-        if (story.line >= arrival.lines.length) {
-          this.endStory();
-          return;
-        }
-      }
+      else story.line += 1;
+    }
+    if (story.line >= arrival.lines.length) {
+      this.endStory();
+      return;
     }
     this.sayStory(arrival.lines[story.line], story.line < arrival.lines.length - 1, dt);
   }
@@ -697,7 +736,7 @@ export class ChapterScreen implements Screen {
 
   private endStory(): void {
     for (const actor of this.actors) this.blockout.setPose(actor, undefined);
-    this.wormhole?.place(0, 0, 0, 0, 0);
+    for (const hole of this.wormholes) hole.place(0, 0, 0, 0, 0);
     this.whiteout.style.opacity = '0';
     this.talkBox.style.display = 'none';
     this.typingLine = '';
