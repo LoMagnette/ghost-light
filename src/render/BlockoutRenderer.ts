@@ -1325,6 +1325,34 @@ export class BlockoutRenderer {
   }
 
   /**
+   * Draw one robot moved by `dx`, `dy` metres for whatever `draw` renders,
+   * and put it straight back.
+   *
+   * For the selfie, which is STAGED: the photographer puts Voxxy beside him
+   * before he takes it, and the isometric camera makes that a real need —
+   * a robot half a metre behind him is drawn higher up the screen and fills
+   * the frame. Only the drawing moves. The simulation never hears of it, and
+   * `render` is not called, because that would lay a skid mark for a robot
+   * that has just teleported.
+   */
+  withRobotMoved(actor: Actor, dx: number, dy: number, draw: () => void): void {
+    const view = this.robots.get(actor);
+    if (!view) {
+      draw();
+      return;
+    }
+    for (const part of [view.body, view.shadow]) {
+      part.position.x += dx;
+      part.position.y += dy;
+    }
+    draw();
+    for (const part of [view.body, view.shadow]) {
+      part.position.x -= dx;
+      part.position.y -= dy;
+    }
+  }
+
+  /**
    * Draw the building its own height, for a viewer standing in front of it.
    *
    * Storey 0's envelope runs from the cut up to the next floor's datum, so

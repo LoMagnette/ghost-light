@@ -26,7 +26,7 @@ import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
-import { Crowd, type Look } from '@/core/Crowd';
+import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
@@ -69,10 +69,19 @@ const POST_OFFSET = 0.62;
 /** A print on screen, design pixels. 3:2 — see `public/photos/README.md`. */
 const PRINT_WIDTH = 340;
 const PRINT_HEIGHT = 226;
-/** How much of the hall a selfie takes in, metres across. */
-const SELFIE_WIDTH_METRES = 7;
-/** Where a selfie is aimed above the floor, metres. A standing person's chest. */
-const SELFIE_CHEST = 0.9;
+/*
+ * How a selfie is framed, metres. See `takeSelfie`.
+ *
+ * Above his head, the lowest the frame may stop on him, how much of the top
+ * of the robot gets in, the margin either side of the pair, and where the
+ * robot is posed.
+ */
+const SELFIE_HEADROOM = 0.18;
+const SELFIE_CHEST = 1.0;
+const SELFIE_PEEK = 0.28;
+const SELFIE_SIDE = 0.32;
+/** How far beside him Voxxy is posed, centre to centre. */
+const SELFIE_BESIDE = 0.72;
 
 /**
  * How many of a room's audience are drawn walking out, at the point where all
@@ -539,46 +548,103 @@ export class ChapterScreen implements Screen {
   /**
    * Develop a selfie from the game's own canvas.
    *
-   * The scene is drawn once more, here, and read back in the same task.
-   * That is not waste: WebGL throws the drawing buffer away as soon as it has
-   * been shown, so by the time anything else could read the frame `Game`
-   * draws, there is no frame to read — and keeping it with
-   * `preserveDrawingBuffer` would cost every other frame of the game to buy
-   * this one.
+   * Framed the way a photographer frames himself: Dimitris from the chest
+   * up with a little headroom, and the bottom edge wherever it cuts the top
+   * of Voxxy — which at 1.15 m beside a 1.72 m man is the top of its head
+   * and nothing else. That is the joke.
    *
-   * Framed on the point halfway between the robot and the man it is with,
-   * at chest height, and a fixed seven metres across: wide enough that both
-   * are in it from anywhere in his zone, tight enough that it is a picture of
-   * the two of them rather than of the hall.
+   * And it is staged, because he is a photographer. Voxxy can be anywhere
+   * in a zone three metres across, and under this camera half a metre
+   * BEHIND him is higher up the screen: the first version framed from
+   * where Voxxy really stood and got a print that was all orange robot. So
+   * for the one render Voxxy is drawn beside him, at his depth, on the side
+   * the screen calls right. See `BlockoutRenderer.withRobotMoved`.
+   *
+   * RENDERED for the print rather than cropped out of the frame. At 28 px a
+   * metre the two of them are about fifty pixels tall on screen, and a crop
+   * blown up to a print is a smear. So the camera's frustum is narrowed onto
+   * the framing, the scene drawn once into the canvas and read back in the
+   * same task, and the frustum put back. `Game` draws the real frame over it
+   * straight after, before anything is shown — and reading it in the same
+   * task is also what makes it readable at all: WebGL discards the buffer
+   * once it has been composited, and `preserveDrawingBuffer` would cost every
+   * other frame of the game to buy this one.
    */
   private takeSelfie(photo: Photo): HTMLCanvasElement {
-    this.renderer.render(this.scene, this.camera);
-    const source = this.renderer.domElement;
-
-    const robot = this.controlled.body;
-    const zone = this.run.states.find((s) => s.activity.photo === photo)?.activity.at;
-    const centre = zone ? zoneCentre(zone) : { x: robot.x, y: robot.y };
-    // Where the post stands, not the zone centre. See `POST_OFFSET`.
-    const them = zone ? { x: centre.x - POST_OFFSET, y: centre.y - POST_OFFSET } : centre;
-    const aim = new Vector3((robot.x + them.x) / 2, (robot.y + them.y) / 2, robot.z + SELFIE_CHEST);
-    aim.project(this.camera);
-
     const cam = this.camera;
-    const pxPerMetre = source.width / ((cam.right - cam.left) / cam.zoom);
-    const w = Math.min(source.width, SELFIE_WIDTH_METRES * pxPerMetre);
-    const h = Math.min(source.height, (w * PRINT_HEIGHT) / PRINT_WIDTH);
-    const cx = ((aim.x + 1) / 2) * source.width;
-    const cy = ((1 - aim.y) / 2) * source.height;
-    // Kept inside the canvas: a crop hanging off the edge is a print with a
-    // black bar down one side, which reads as a bug and not as a photograph.
-    const sx = Math.max(0, Math.min(source.width - w, cx - w / 2));
-    const sy = Math.max(0, Math.min(source.height - h, cy - h / 2));
+    const source = this.renderer.domElement;
+    const activity = this.run.states.find((s) => s.activity.photo === photo)?.activity;
+
+    // Whoever earned it, which is not necessarily who the player is driving:
+    // in `switch` mode Voxxy may have been parked here while TAB was on Droid.
+    const robot =
+      (activity &&
+        this.actors.find(
+          (a) => inZone(activity.at, a.floor, a.body.x, a.body.y) && admits(activity, a.body.spec),
+        )) ??
+      this.controlled;
+    const body = robot.body;
+    const centre = activity ? zoneCentre(activity.at) : { x: body.x, y: body.y };
+    // Where the post stands, not the zone centre. See `POST_OFFSET`.
+    const them = activity ? { x: centre.x - POST_OFFSET, y: centre.y - POST_OFFSET } : centre;
+    const ground = groundAt(KINEPOLIS, robot.floor, them.x, them.y);
+
+    cam.updateMatrixWorld();
+    // Screen-right, laid flat on the floor: beside him and at his depth.
+    const right = new Vector3().setFromMatrixColumn(cam.matrixWorld, 0).setZ(0).normalize();
+    const posed = { x: them.x + right.x * SELFIE_BESIDE, y: them.y + right.y * SELFIE_BESIDE };
+
+    // Everything below is in the frustum's own units, where the view plane
+    // runs left..right and bottom..top — so a framing is a new frustum.
+    const onView = (x: number, y: number, z: number): { x: number; y: number } => {
+      const p = new Vector3(x, y, z).project(cam);
+      return {
+        x: cam.left + ((cam.right - cam.left) * (p.x + 1)) / 2,
+        y: cam.bottom + ((cam.top - cam.bottom) * (p.y + 1)) / 2,
+      };
+    };
+    const head = onView(them.x, them.y, ground + PERSON_HEIGHT + SELFIE_HEADROOM);
+    const chest = onView(them.x, them.y, ground + SELFIE_CHEST);
+    const peek = onView(posed.x, posed.y, ground + body.spec.height - SELFIE_PEEK);
+
+    // Never higher than his chest, or he is a head in a frame. Posed at his
+    // depth, Voxxy's cut is always below it; the guard is for a robot tall
+    // enough that it would not be, which the gate does not admit today.
+    const bottom = Math.min(peek.y, chest.y);
+    // 3:2, and wide enough for both of them whichever side Voxxy is on. If
+    // it has to widen, it grows upwards so the cut through Voxxy stays put.
+    const wide = Math.max(
+      ((head.y - bottom) * PRINT_WIDTH) / PRINT_HEIGHT,
+      Math.abs(head.x - peek.x) + 2 * SELFIE_SIDE,
+    );
+    const tall = (wide * PRINT_HEIGHT) / PRINT_WIDTH;
+    const middle = (head.x + peek.x) / 2;
+
+    // Drawn at the canvas's own aspect, so nothing is stretched, and the
+    // print taken out of the middle of it.
+    const aspect = source.width / source.height;
+    const saved = { left: cam.left, right: cam.right, top: cam.top, bottom: cam.bottom };
+    cam.left = middle - (tall * aspect) / 2;
+    cam.right = middle + (tall * aspect) / 2;
+    cam.bottom = bottom;
+    cam.top = bottom + tall;
+    cam.updateProjectionMatrix();
+    this.blockout.withRobotMoved(robot, posed.x - body.x, posed.y - body.y, () =>
+      this.renderer.render(this.scene, cam),
+    );
 
     const print = document.createElement('canvas');
     // Twice the print, so it is sharp at the 2x pixel ratio `Game` caps at.
     print.width = PRINT_WIDTH * 2;
     print.height = PRINT_HEIGHT * 2;
-    print.getContext('2d')?.drawImage(source, sx, sy, w, h, 0, 0, print.width, print.height);
+    const cropW = (source.height * PRINT_WIDTH) / PRINT_HEIGHT;
+    print
+      .getContext('2d')
+      ?.drawImage(source, (source.width - cropW) / 2, 0, cropW, source.height, 0, 0, print.width, print.height);
+
+    Object.assign(cam, saved);
+    cam.updateProjectionMatrix();
+
     print.setAttribute('role', 'img');
     print.setAttribute('aria-label', photo.caption);
     return print;

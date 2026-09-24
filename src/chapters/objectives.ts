@@ -799,7 +799,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
         'Voxxy under the old BeJUG banner, in the BOF room off reception.',
         'Josh in the hall, sitting on Biggy. Then all three of you together, and I want Venkat in that one.',
         'Stand still when you get there. That is the entire job, and you would be amazed.',
-        'But first, one of us. A photographer is in none of his own pictures. Hold still.',
+        'But first, one of us. Voxxy, come here — a photographer is in none of his own pictures.',
+        'Hold still. I will frame it. I always frame it.',
       ],
     },
     {
@@ -822,8 +823,16 @@ export const CAPACITY_OBJECTIVE: Objective = {
        * like one more errand he sent you on.
        */
       at: spot(0, -0.6, -26.0, 3.2),
+      /*
+       * Voxxy's, BECAUSE it is small. He frames the selfie the way he frames
+       * everything — himself, properly, chest up — and at 1.15 m beside a
+       * 1.72 m man that leaves the top of Voxxy's head along the bottom edge
+       * and nothing more. Droid would be a second person in the picture and
+       * Biggy would be a wall; only the smallest robot is the joke.
+       */
+      gates: { maxRadius: 0.4 },
       seconds: 2.0,
-      photo: { caption: 'Central aisle — a selfie with Dimitris', selfie: true },
+      photo: { caption: 'Central aisle — Dimitris, and the top of Voxxy', selfie: true },
     },
     {
       kind: 'dwell',

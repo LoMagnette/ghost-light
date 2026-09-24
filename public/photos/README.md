@@ -31,8 +31,8 @@ player did not bring. Shoot them that way.
 
 The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
 no file: it is `selfie: true`, and the screen takes it off the game's own
-canvas the moment it is finished, so the print is whatever the player's robot
-and Dimitris actually look like at that moment.
+canvas the moment it is finished. It is always Voxxy, framed on Dimitris,
+with only the top of Voxxy's head along the bottom edge.
 
 ## What the frame wants
 

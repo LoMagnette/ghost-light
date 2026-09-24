@@ -4057,6 +4057,37 @@ TALLER than them, which is the opposite of the line; both now say that.
 "the shot list 0/4", so which robot goes where is only in Dimitris's lines —
 the second of them, which was already long, split in two.
 
+### Claude Opus — the top of Voxxy
+
+**Prompt:**
+> I was thinking that it would be fun if it was voxxy with dimitris because of
+> it small size we could have a picture with just the top of it and dimitris
+> correctly framed
+
+**Iterations:** 3, each one a headless frame of the print itself.
+
+**The gate was one line; the framing was the work.** `maxRadius` 0.40 makes
+the selfie Voxxy's. The joke needs the frame to be HIS, chest up with
+headroom, with the bottom edge wherever it cuts Voxxy, so it is computed
+from where the two of them are rather than being a fixed crop.
+
+**What the screenshots corrected.**
+1. The first version cropped the frame the game had already drawn. At
+   28 px a metre the pair are about fifty pixels tall, so the print was an
+   8× enlargement. It is now RENDERED: the orthographic frustum is narrowed
+   onto the framing, the scene drawn once, read back in the same task, and
+   the frustum restored before `Game` draws the real frame over it.
+2. That print was sharp and entirely orange. Voxxy was standing half a
+   metre behind Dimitris, and under this camera "behind" is "higher up the
+   screen", so its dome filled the frame. The fix is in character: he is a
+   photographer and he stages it. For that one render Voxxy's drawn group is
+   moved beside him, at his depth, on screen-right
+   (`BlockoutRenderer.withRobotMoved`). The simulation never hears of it,
+   and `render` is deliberately not re-run, because it records skid marks
+   and a robot that has just jumped a metre would leave one.
+3. Too much headroom once the frame widened to hold both of them; the side
+   margin went from 0.45 m to 0.32 m.
+
 ---
 
 ## Audio
