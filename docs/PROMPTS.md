@@ -3557,6 +3557,539 @@ and not one reading the code can answer.
 
 ---
 
+### Claude Opus — the audience of a dead room
+
+**Prompt:**
+> make the attendee leave the room
+
+**Iterations:** 2 commits, and one wrong assumption found by measuring
+
+`docs/MECHANICS.md` §5.2: a room at zero *"goes dark, its attendees leave,
+and it never comes back."* The light going out shipped last pass; this is the
+rest. A dark room with two hundred and fifty people still sitting in it is a
+power cut, not a session that ended.
+
+**The obstacle was the thing that makes the crowd cheap.** The audience is
+baked into each storey as instanced meshes — one draw call for five thousand
+people — and it was baked as one `flatMap` over everybody on the floor, so
+Room 5's people were interleaved with everyone else's in whatever order
+`fillSeats` happened to walk the seats. There is no way to take a hole out of
+the middle of an `InstancedMesh`. Baking room by room, each a contiguous run
+with its range recorded, costs nothing at build time and is the whole of what
+makes emptying possible.
+
+**They get up in a scattered order**, from a fixed-seed shuffle. In seat
+order it is a wipe travelling across the seating, which reads as the room
+being deleted; scattered, it reads as a room thinning out. A prefix of that
+shuffle is "who has gone", so emptying costs only the people who have just
+stood up rather than a pass over the room.
+
+**The leavers are spawned at the DOOR, not in their seats**, and that is the
+cheap trick that made the second half affordable. Standing them up in the
+seating would mean matching each mover to the seated instance being hidden,
+in the renderer's own departure order, across a boundary `src/core` is not
+allowed to see. Out of the doorway they have already stood up — and nobody
+can count them against a room that is dark by then. Three dozen of them, not
+all two hundred and fifty: the mover budget is 400 for the whole building and
+five rooms emptying in full would be six hundred people nobody asked for.
+
+**The wrong assumption, caught by measuring rather than by looking.** The
+first version put the emptying inside `consumeObjective`, which is gated on
+the round still being live. The last thing that happens in this chapter is
+three rooms going dark within two seconds of each other and ending the day,
+so the losing room got two seconds of an eight-second walk-out and then froze
+half gone behind the end card. Two screenshots either side of it read 12.36
+and 12.22 — no change — and I nearly concluded the whole mechanism was
+broken. It was not: the room was simply dimmed to nothing by the end card and
+the emptying had stopped. Proving it needed the window shortened to 1.2 s
+temporarily, which showed the seats going bare cleanly, and then putting it
+back.
+
+**Two harness limits worth writing down**, because both cost time here:
+
+- `npm run peek` holds its keys from the first frame, so it cannot press `R`
+  after a room has died. The restart path is therefore asserted in node
+  instead — `Crowd` is pure core, so 159 movers, evacuate five rooms to 339
+  with no speaker left on a stage, `reseat` back to 159 with all five
+  returned, and no creep over four round trips. That test found nothing, but
+  only because `reseat` had already been written to answer the question the
+  test asks.
+- The default no-input run is a bad rig for anything that happens after the
+  first room dies, because with nobody playing all five die within seconds of
+  each other. Chapter II's real timings will not look like that.
+
+**The leak this closed.** `R` restarts the round and rebuilds `ObjectiveRun`,
+but not the crowd — so without `reseat` every restart left the last round's
+leavers wandering a corridor they are no longer at a conference in, and five
+rooms times a few restarts is the mover budget gone. The renderer had the
+same shape of problem in reverse: emptying overwrites instance matrices in
+place, so `refillSeats` rewrites them from the same people in the same order
+through the same builders. That is why `writeInstances` exists rather than
+the matrix arithmetic being inline in two places that can drift.
+
+---
+
+### Claude Opus — a cat, a dog, and forty-five seconds
+
+**Prompt:**
+> I would like to add two npc in the first chapter one cat and one dog. The
+> dog should look like a bouvier des flandres. When you interact with the cat
+> it threat the robot to explode and reference the game exploding kitten. One
+> it's done you've 45second to find the dog to disarm the threat.
+
+**Iterations:** 2 commits, and three things the first attempt got wrong
+
+**Almost none of this was new machinery, and that is the point.** The `talk`
+kind built two passes ago already carried a post, a marker, a box of dialogue
+and a gate. An animal uses every bit of it and differs in exactly one field:
+`shape`, which is what the renderer draws when you get there. The only thing
+`placePart` needed was an `along` offset — a person is one column of boxes
+and needs `across` for two arms beside a torso, where an animal is that
+column laid on its side with a head at one end and a tail at the other.
+
+**Drawing a Bouvier out of boxes.** It is a lucky breed to be asked for: at
+twenty pixels tall no coat texture survives, so all of it has to live in the
+outline — square, as long as it is tall, short thick legs, and a pale muzzle
+stuck out in front of a dark head, which is the one thing about a Bouvier
+that reads at any size. Its coat is drawn well off the black it really is,
+because Chapter I renders at 23% of Chapter III's light and a true Bouvier in
+there is a dog-shaped hole.
+
+**On the reference.** Asked for a nod to a specific commercial card game. The
+repo is public and MIT and `CLAUDE.md` is strict about borrowed marks, so
+what is in here is the MECHANIC — the one card in the deck that ends the
+game, and the thing that defuses it — with no art, no text and no wordmark,
+and the joke it lands on is ours: the counter to a cat is a dog. Flagged to
+the user rather than decided silently; the explicit name can go in if they
+want it.
+
+**Three things wrong on the first attempt, all found by looking:**
+
+1. **The cat was invisible, buried by its own marker.** A marker post is
+   0.8 m even at its short setting and a cat is half a metre, so a creature
+   standing on its own zone centre cannot be seen. Posted creatures now stand
+   0.62 m south-west — towards the camera — so they are in FRONT of their
+   post.
+2. **A cat drawn to life is four pixels across.** Indistinguishable from a
+   scrap of the decay it was sitting in, and this one has lines to say. It is
+   half again bigger than a cat now, and its tail is up and is the tallest
+   thing on it, because at this size the tail IS the cat. The dog needed no
+   such help — a Bouvier is already big.
+3. **I tested from outside the zone.** The first screenshots showed no
+   dialogue box and I briefly thought the whole thing was broken; the camera
+   was at y -46.6 and the cat's zone ends at -46.0.
+
+**The vocabulary needed one genuinely new thing.** `window` is absolute — in
+chapter seconds — which is right for a conference day and cannot express this
+at all, because forty-five seconds *from what* depends on when the player
+found the cat. Hence `within`: a deadline counted from the last of `after` to
+finish. `npm run objectives` now refuses a `within` with no `after`, because
+a deadline counted from nothing silently never fires, which is the worst way
+for a rule to be wrong.
+
+**Deliberately not a clock on the chapter.** `SPEC.md` §4 has Chapter I with
+no clock and no failure. The three boards are still untimed and still cannot
+be lost; running the forty-five seconds out costs you the dog and nothing
+else. A cat that says forty-five seconds and then does not mean it is a worse
+joke than a cat that does.
+
+**Tested in node, not by screenshot, and it had to be.** `peek` holds its
+keys from the first frame, and `keyboard.on` fires on keydown — so a
+four-line conversation needing five separate presses cannot be driven by the
+harness at all. `ObjectiveRun` is pure core, so the whole chain runs there:
+dog locked before the cat, cat done after five presses with `doneAt`
+recorded, deadline at doneAt + 45, dog reached at 30 s completes, at 47 s it
+is missed, stays missed when you turn up anyway, and the chapter is still
+running. That is the second time this week the screenshot harness could not
+answer a question and core could.
+
+---
+
+### Claude Opus — the speakers
+
+**Prompt:**
+> In chapter two can you add Stephan Janssen, James Golsing, Rob Johnson,
+> Brian Goetz, Gavin King as npc with who you can chat. The goal would be
+> that you go chat with Stephan and recommend you to go chat with those
+> awesome speakers as an extra quest.
+
+**Iterations:** 1, plus a latent HUD bug the change exposed
+
+Two names corrected before writing anything, and flagged rather than done
+quietly, because a real person's name spelled wrong in a shipped game is
+worse than a question: **James Gosling** and **Rod Johnson**.
+
+**Real people, so: cameo rules.** All five genuinely spoke at JavaPolis, and
+Chapter II *is* JavaPolis, which is the only reason they are in here. Every
+line is about the room and the moment rather than about them, and nothing is
+put in anybody's mouth that is not plainly true of their public work. Warm,
+short, and nothing anyone would mind being quoted saying.
+
+**The chain is one conversation that opens four**, which the vocabulary
+already did: `after` for the gate, `group` so four rows do not land on a card
+that already carries five. The placement is the design. The corridor is 126 m
+and the four of them are spread up its west side outside the rooms they are
+on in, so the side quest is a round trip of a hundred and twenty metres while
+five session meters drain without you. The chapter's own sentence is "keep
+every room running" and this is the first thing in it that asks you not to.
+
+**`optional` is the one new thing.** `ObjectiveRun` ends a round when
+everything finishable is settled — which is how Chapter I knows it is over —
+so without it, saying hello to five people would have ended Chapter II on the
+spot, with all five rooms still running and three minutes on the clock.
+
+**And that flag exposed a latent bug, which is the part worth keeping.** The
+HUD chose between "5/5 running" and a done/total score by asking whether the
+chapter had anything FINISHABLE. That was true of Chapter II only for as long
+as Chapter II contained nothing but rooms — one optional conversation flipped
+the header to "0/2" and took away the count the entire chapter is read from.
+The denominator was wrong in the same way: it counted every state, so this
+change would have made it "11/11 running". Both now ask whether there are
+tend rooms, which is the question that was always meant, and the end card had
+the same fault and now says "2 of 5 still running" instead of "0 of 2".
+
+That is the third time in two days that adding something has been most
+valuable for what it revealed about code that was already there, and all
+three were the same shape: a condition that was a correct *description* of
+the data at the time it was written, standing in for the *question* it meant
+to ask.
+
+**Tested in node again.** Gosling stood on and pressed before meeting
+Stephan: locked, progress 0. After Stephan: open. All four completable, and
+the round still running with 5 of 5 rooms alive once every conversation is
+done.
+
+---
+
+### Claude Opus — telling five people apart at twenty pixels
+
+**Prompt:**
+> so it's good but i would like for the npc to be visually unique each of
+> them and maybe that the dialog look more like them
+
+**Iterations:** 1
+
+"The dialog look more like them" reads two ways — the writing sounding like
+the person, or the box itself looking like them. Both are cheap, so both got
+done rather than asking.
+
+**The constraint is the whole design.** A figure is twenty pixels tall. A
+face is under a pixel, glasses are under a pixel, a logo on a shirt is under
+a pixel. So `Look` carries four things and refuses the rest: a shirt colour,
+a hair colour, a beard, and a height. Attempting more would be a claim the
+renderer cannot make — and with real people in the frame, a bad likeness is
+worse than an honest abstraction.
+
+**The heights are the lever I nearly left out and shouldn't have.** People
+differ by a head, which is 8% and about four pixels. Without it, five
+distinct shirts still read as one figure repainted five times; with it they
+read as five people. It costs one multiplier threaded through every z in the
+figure — and it has to be *every* z, or you get a normal person with a
+floating head.
+
+**Hair and beard are boxes, not blobs, and that is a budget decision rather
+than a shortcut.** The blob budget is two a head and every one of the three
+thousand people in Chapter III pays for it; the box budget already had room
+for an animal's thirteen. A cap on a rounded head reads as hair either way at
+this size.
+
+**The box takes the speaker's colour**, which is the other reading of the
+prompt. A name in the chapter accent is a label; a name in the shirt of the
+person in front of you is the same person twice. Lifting the colour for text
+needed its own function: `shade` multiplies, and a very dark navy multiplied
+by three is a slightly less dark navy. Mixing toward white instead lands
+every shirt at the same legibility and keeps its hue.
+
+**On writing real people.** The lines now have five distinct registers rather
+than one voice split five ways, but the cameo rules did not move: about the
+room and the moment, nothing in anybody's mouth that is not plainly true of
+their public work, and each one ends by sending the player back to the rooms
+they are supposed to be keeping alive — so the side quest argues for itself
+and then argues against itself, which is what a good aside does.
+
+**Two harness mistakes, the same one twice.** I put the test camera outside
+the activity zone and got no dialogue box — exactly the error I made with the
+cat two features ago, and did not recognise until I had shot it twice more.
+Worth a note for next time: `spot(floor, x, y, size)` is a square of side
+`size` centred on the point, so a camera 2 m south of a 3.2 m zone is outside
+it. And a conversation gated behind another one cannot be screenshotted at
+all, because `peek` holds its keys from the first frame and `keyboard.on`
+fires once on keydown.
+
+---
+
+### Claude Opus — the same five people, off photographs
+
+**Prompt:**
+> Can you actually google those person and make the personna look like them.
+> I would like that the side quest tell more a story about the conference and
+> the oppotunity and the unique conversation you can have with those speakers
+> more then the current objective
+
+**Iterations:** 5 — four of them on beard geometry.
+
+**The research is the cheap half and it still needed a correction.** Web
+search returns prose about people, not their faces, so the useful move was to
+go and fetch photographs and actually look at them: Wikimedia Commons for
+Gosling, and the Devoxx CFP's own public speaker API — `dvbe24.cfp.dev`,
+`?size=1000`, the 20-row default is not documented anywhere — for the
+official headshots of Goetz, King, Janssen and Johnson. Commons also has a
+"Gavin King.jpg" which is a different Gavin King entirely, and I nearly built
+a dark-haired man with a goatee out of it. Photographs of the right person
+are the only defensible source for this; a confident memory of a public
+figure's face is exactly the thing that is wrong in a way nobody catches.
+
+**The twenty pixels were wrong, and three features were cut because of it.**
+The previous pass asserted a figure was twenty pixels tall and refused
+glasses, hairlines and beard shapes on that basis. Nobody measured it. The
+camera fits 32 m across 1280 px, so a person is 60 px and a head is 9 by 8,
+and a spectacle frame is 1.2 px — which is a thin dark line across a head,
+and thin dark lines across heads read as glasses because there is nothing
+else they can be. Janssen's amber frames are now the single most recognisable
+thing in the corridor. **The lesson is not "be bolder"; it is that a number
+in a comment justifying a cut is worth the thirty seconds it takes to check,
+because it goes on being true long after it stopped being right.**
+
+**Four passes on where a beard goes.** The first was twice too big and read
+as a scarf. Halved, it read as a shadow under the jaw — because `chin` in
+that code is the NECK joint and the head is a BLOB, so a beard hung off the
+bottom of it hangs off the narrowest part of a sphere and lands on the
+shirt. The fix was to stop measuring from the box and start measuring from a
+face: mouth a fifth of the way up, eyes at just under half, beard the bottom
+third. Every one of those passes was one build and one crop, and none of them
+would have been visible in the code.
+
+**Two colours that were right and read wrong.** Gavin King's hair is fair,
+and fair hair rendered at its own value under Chapter II's tungsten light
+came out the exact tone of a lit forehead — the one man in the corridor with
+a full head of hair read as bald. It is two shades darker than the
+photograph now, deliberately. And Brian Goetz's beard is greyer than his
+hair, which is not a detail: rendered in hair colour he is a different man.
+
+**The dialogue box broke in a way the honest colours caused.** It tints the
+speaker's name with their shirt, which worked while the shirts were invented
+and fell over the moment they came off photographs — three of these five wear
+black, so three names came up the same washed grey. It now takes whichever of
+their colours is furthest from grey: amber glasses, ochre hair, blue-grey
+shirt. Five people, five inks. Where everything about somebody IS grey, grey
+is the right answer and it stays.
+
+**Attendants had to stop turning their backs on the camera.** A face is on
+the front of a head and this game has exactly one viewpoint, so an attendant
+tracking the player exactly presented the back of their skull half the time.
+That cost nothing when a named person was a shirt and a haircut and costs
+everything now the likeness is on one side of the head. They face the viewer
+and turn up to 75 degrees off it — still turning towards whoever comes over,
+but the way an actor does, without playing the scene upstage.
+
+**On the writing, which is the half the prompt cared about.** The previous
+version had five of the most interesting people in the Java world each take a
+turn telling the player to get back to work. That is a waste of the only five
+people in the game worth stopping for, and it is also a strange thing for the
+chapter to argue: the player is in a building full of talks and the game kept
+insisting the talks were the point.
+
+They are a story now, and the story is what a conference actually is: the
+talks are recorded and the corridor is not. Stephan opens by saying so — all
+of it goes online, so if the talk were the reason to fly to Antwerp in
+December nobody would fly to Antwerp in December. The four of them are each
+one thing a recording cannot give you: an author saying "I have no idea" out
+loud, an argument that ends in a bar instead of a thread, a book's worth of
+conversation had in one morning, a question answered by the person the answer
+belongs to. And it has an ENDING — Stephan is still standing there, and once
+you have met all four he has something to say about what you just chose.
+
+**Everything is era-locked, which the first draft got wrong.** Chapter II is
+JavaPolis, so the corridor is about 2006 and the talk is Spring against EJB,
+Hibernate two years into being the thing everyone uses and complains about,
+Java 5's memory model still new. Where these four went NEXT is public and
+interesting and belongs to a chapter this is not. The one hard number in
+there — 2,800 people, the biggest independent Java conference in the world —
+is real and is 2006.
+
+**Two pieces of harness fell out of it.** A second conversation with somebody
+you have already met needs `alreadyHere`, or the rule that every `talk` puts
+a person at its zone puts a second, identical host inside the first. And an
+optional activity that is still locked is now hidden from the card: listing
+"Back to Stephan" before the player has met Stephan hands them the end of a
+thread they have not been given the start of.
+
+---
+
+### Claude Opus — a photographer, four landmarks, and a print on the screen
+
+**Prompt:**
+> A idea for the chapter 3, One quest to would be to find Dimitris
+> Doutsiopoulos the well known devoxx photograph to ask him to take picture of
+> each robot in front of a devoxx landmark (the devoxx logo in room 8, a
+> picture in the small room in the reception area in front of the beJUG
+> banner, and another one with josh long in the exibition hall and finally a
+> group picture in the exibition hall with Venkat Subramaniam. For each of the
+> picture we should plan to have the picture display on screen one it has been
+> taken. For thos picture I'll provide you so assets.
+
+**Iterations:** 1, plus three fixes found by photographing it.
+
+**I asked first, and it was the right call.** The previous prompt had been
+"park this idea for later" and this one opens the same way — "an idea for
+chapter 3" — but it then specifies four landmarks, two named people and a
+display mechanic, and promises assets. Parking it is fifteen minutes of
+Markdown; building it is a new field on `Common`, a chain of five activities
+and a UI surface. Those are different enough that guessing wrong wastes an
+hour either way, so I asked, with a recommendation attached. Build, with
+placeholder prints.
+
+**Every landmark the prompt named already existed**, which is what a venue
+defined once in metres buys you: `#DEVOXX` stands on the stage of the two
+biggest rooms, the concourse has three BOF rooms off it — a Birds-of-a-
+Feather room being exactly where a user group meets, so exactly where a BeJUG
+banner hangs — and the hall's booth ranks stop at x -6.0 and restart at 4.7,
+leaving ten metres of central aisle nobody can drive past without seeing a
+photographer standing in it.
+
+**The design decision worth recording is that no new activity KIND was
+added.** The instinct was a `photo` activity. But the DOING is a `dwell` —
+hold still while somebody takes your picture — and the picture is a
+consequence of finishing, which is precisely what `reveal` already is. So
+`photo?: Photo` went on `Common` beside `reveal`, and the dwell needed no
+changes at all to be photographed. `who`, `look` and `shape` moved from
+`TalkActivity` to `Common` in the same pass, because the rule they encode —
+an activity written with a person in it cannot be written without the person
+turning up — was never about talking. Josh Long has to be in the photograph
+of Josh Long and says nothing whatsoever.
+
+**The group photograph is the only thing in the game that asks where all
+three robots are.** `everybody` on a dwell wants the whole cast in the zone
+and still, and `switch` mode only ever drives one — so the other two must
+have been parked there earlier by a player who knew. It is not a place you
+go; it is a place you have been assembling all day without noticing. Biggy,
+meanwhile, cannot be in the Room 8 photograph at all, because there is no
+goods lift and the rake is a real staircase. That was the building's decision
+years ago and the shot list simply inherits it.
+
+**Three things only a screenshot could have told me.**
+
+1. The camera prop was black, on the black jacket every event photographer
+   wears, and I had written a comment claiming it would still read because it
+   catches the key light at a different angle. It does, by about one value
+   step, which is invisible. It is the grey of a lens barrel now.
+2. The card said **"the shot list 1/1"**. The rule added two features ago —
+   hide an optional activity that is still locked — was being applied member
+   by member to a GROUP, so the denominator grew as the player worked. A
+   count that goes up when you score is worse than no count. A group now
+   counts all of itself as soon as any of it is visible.
+3. `npm run objectives` confirmed in one line that the Room 8 stage admits
+   Voxxy and Droid and not Biggy, which is the kind of thing that is obvious
+   in the design, invisible in the code, and a bug report from a judge.
+
+**On the prints, and building a feature whose art is somebody else's job.**
+The photographs do not exist yet. The screen therefore draws its own frame —
+a real print, tilted, with the caption under it and PHOTO TO COME in the
+middle — and the game is complete and playable with an empty `public/photos/`.
+That is not a stub to tidy up later: it is the only way to judge the size,
+the timing and how badly a full-screen print interrupts a six-minute day
+BEFORE anybody spends an afternoon taking pictures. `public/photos/README.md`
+says what each frame wants and which line to add.
+
+**One self-inflicted scare.** I backed a source file up with `cp` to the
+scratchpad before a throwaway test edit, and the copy came back as 36 KB of
+NUL bytes — then I restored from it, destroying the file. Nothing was lost:
+`git checkout` had everything to the last commit and the one uncommitted edit
+was re-applied from the same script. The lesson is that the version control
+is the backup, and a `cp` to a temp directory is a second thing that can fail.
+
+### Claude Opus — a selfie with the photographer
+
+**Prompt:**
+> Can you adapt the current interaction with the photograph in chapter 3 you
+> should also take a selfie with him that will be displayed
+
+**Iterations:** 1, checked with one headless frame.
+
+**Not a fifth frame on the shot list.** The obvious move was one more `dwell`
+in the `the shot list` group. It is the wrong one: those four are his
+pictures, taken for the conference, and a selfie is the player's picture OF
+him. Counting it as 5/5 would make the one photograph the photographer is in
+look like one more errand he sent you on. So it is its own optional row,
+gated on the talk, at his own spot with `alreadyHere` so a second Dimitris
+does not appear inside the first. His last line now asks for it — "a
+photographer is in none of his own pictures. Hold still." — and holding still
+is the whole of the answer, because the player is already standing there.
+
+**Taken off the canvas, not waiting for a file.** Every other print is a
+placeholder until somebody supplies a JPEG. A selfie cannot be supplied: it is
+a picture of this robot, this man, wherever the player parked. So `Photo`
+gets `selfie`, and the screen develops it from the game's own frame. That
+has one trap worth writing down. WebGL throws the drawing buffer away once it
+has been shown, so reading the frame `Game` draws gets you a blank —
+unless `preserveDrawingBuffer` is on, which would cost every frame of the game
+to buy this one. The screen instead draws the scene once more at the moment
+of the selfie and reads it back in the same task, cropped to seven metres
+around the midpoint of the robot and Dimitris.
+
+**What I corrected in my own draft.** The first version of his line gave him
+"nine years of Devoxx". He is a real person and I had no source for that, so
+it is gone. The line says only what is true of any photographer.
+
+### Claude Opus — one robot per photograph
+
+**Prompt:**
+> I would like that like to fix a droid per picture expect for the one with
+> venkat
+
+**Iterations:** 1, plus a claim of my own that the venue contradicted.
+
+**Gates, not robot ids.** `Gates` in `Activity.ts` says in so many words that
+the day an activity names a robot is the day the cast stops being three
+machines. So each frame is pinned with the requirement that happens to select
+one robot: the letters `reach` 2.0 (Droid, 2.05 m), the banner `maxRadius`
+0.40 (Voxxy, 0.34 m), Josh `carry` 100 (Biggy — Droid's payload is 90 kg).
+Room 8 already shut Biggy out, so the assignment is forced in one place and
+chosen in the other two to give every robot a frame of its own. Josh riding
+Biggy is the reason `carry` is honest rather than arbitrary.
+
+**What the venue corrected.** I first justified Droid at the letters as
+"the letters are taller than a person", and had Dimitris say "nobody else
+stands as tall as they do". `GLYPH_HEIGHT` is 1.5 m. Droid is the one robot
+TALLER than them, which is the opposite of the line; both now say that.
+
+**The card cannot say it, so he does.** The shot list shows as one row,
+"the shot list 0/4", so which robot goes where is only in Dimitris's lines —
+the second of them, which was already long, split in two.
+
+### Claude Opus — the top of Voxxy
+
+**Prompt:**
+> I was thinking that it would be fun if it was voxxy with dimitris because of
+> it small size we could have a picture with just the top of it and dimitris
+> correctly framed
+
+**Iterations:** 3, each one a headless frame of the print itself.
+
+**The gate was one line; the framing was the work.** `maxRadius` 0.40 makes
+the selfie Voxxy's. The joke needs the frame to be HIS, chest up with
+headroom, with the bottom edge wherever it cuts Voxxy, so it is computed
+from where the two of them are rather than being a fixed crop.
+
+**What the screenshots corrected.**
+1. The first version cropped the frame the game had already drawn. At
+   28 px a metre the pair are about fifty pixels tall, so the print was an
+   8× enlargement. It is now RENDERED: the orthographic frustum is narrowed
+   onto the framing, the scene drawn once, read back in the same task, and
+   the frustum restored before `Game` draws the real frame over it.
+2. That print was sharp and entirely orange. Voxxy was standing half a
+   metre behind Dimitris, and under this camera "behind" is "higher up the
+   screen", so its dome filled the frame. The fix is in character: he is a
+   photographer and he stages it. For that one render Voxxy's drawn group is
+   moved beside him, at his depth, on screen-right
+   (`BlockoutRenderer.withRobotMoved`). The simulation never hears of it,
+   and `render` is deliberately not re-run, because it records skid marks
+   and a robot that has just jumped a metre would leave one.
+3. Too much headroom once the frame widened to hold both of them; the side
+   margin went from 0.45 m to 0.32 m.
+
+---
+
 ## Audio
 
 ### _(pending)_ Footfall and ambience

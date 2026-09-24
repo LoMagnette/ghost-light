@@ -17,7 +17,7 @@
  * and a player only ever perceives mass through the response to it.
  */
 
-import type { OrthographicCamera, Scene } from 'three';
+import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from 'three';
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
@@ -26,9 +26,9 @@ import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
-import { Crowd } from '@/core/Crowd';
+import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
-import { admits, inZone, zoneCentre, type TalkActivity } from '@/core/Activity';
+import { admits, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
@@ -49,6 +49,45 @@ import {
 
 /** Where the card sits, design pixels from the top of the design frame. */
 const CARD_TOP = 70;
+
+/**
+ * How dim a room's light gets before anybody walks out of it, 0..1.
+ *
+ * Asked for directly, and it is the right number for a reason worth writing
+ * down: a room at full light is a session going fine and a room at three
+ * quarters is one that has been left alone for a bit. Anything higher and the
+ * audience starts draining out of rooms the player is keeping up with, which
+ * turns the signal into noise. Below it, everybody who is still there leaves
+ * by the time it is dark — `departed` is 1 at zero light — so a failed room
+ * empties without the failure needing a rule of its own.
+ */
+const LEAVING_FROM = 0.75;
+
+/** How far a posted creature stands from its marker, metres, south and west. */
+const POST_OFFSET = 0.62;
+
+/** A print on screen, design pixels. 3:2 — see `public/photos/README.md`. */
+const PRINT_WIDTH = 340;
+const PRINT_HEIGHT = 226;
+/*
+ * How a selfie is framed, metres. See `takeSelfie`.
+ *
+ * Above his head, the lowest the frame may stop on him, how much of the top
+ * of the robot gets in, the margin either side of the pair, and where the
+ * robot is posed.
+ */
+const SELFIE_HEADROOM = 0.18;
+const SELFIE_CHEST = 1.0;
+const SELFIE_PEEK = 0.28;
+const SELFIE_SIDE = 0.32;
+/** How far beside him Voxxy is posed, centre to centre. */
+const SELFIE_BESIDE = 0.72;
+
+/**
+ * How many of a room's audience are drawn walking out, at the point where all
+ * of them have gone. See `Crowd.evacuate` for why it is not all of them.
+ */
+const EVACUEES = 36;
 
 export class ChapterScreen implements Screen {
   private readonly chapter: Chapter;
@@ -106,6 +145,15 @@ export class ChapterScreen implements Screen {
   private dropRequested = false;
   /** Seconds left on the current notification. */
   private toastFor = 0;
+  /** The photograph on screen, and how long it has left. */
+  private print!: HTMLDivElement;
+  private printFor = 0;
+  /**
+   * A selfie waiting for the frame it is to be taken from. See `takeSelfie`.
+   */
+  private selfie: Photo | undefined;
+  /** The game's renderer, which a selfie has to be taken with. */
+  private renderer!: WebGLRenderer;
   /** True while the cast is on the forecourt. Changes what the camera frames. */
   private outside = false;
 
@@ -139,6 +187,7 @@ export class ChapterScreen implements Screen {
     const { chapter } = this;
 
     game.setBackground(chapter.palette.void);
+    this.renderer = game.renderer;
 
     this.sim = new Sim(KINEPOLIS);
 
@@ -174,8 +223,28 @@ export class ChapterScreen implements Screen {
     // written without the person it is with turning up — which is the bug the
     // whole of this was built to stop: twelve errands run past nobody.
     const posts = chapter.objective.activities
-      .filter((a): a is TalkActivity => a.kind === 'talk')
-      .map((a) => ({ ...zoneCentre(a.at), floor: a.at.floor }));
+      // Anybody the objective named, not just anybody it gave lines to. A
+      // photograph of Josh Long needs Josh Long in it and needs him to say
+      // nothing whatsoever. See `Activity.who`.
+      .filter((a) => a.who !== undefined || a.shape !== undefined)
+      // Somebody a SECOND activity happens with is already standing there.
+      // See `Activity.alreadyHere`.
+      .filter((a) => !a.alreadyHere)
+      .map((a) => {
+        const at = zoneCentre(a.at);
+        // Beside the marker, not under it. A marker post is 0.8 m even at its
+        // short setting and a cat is half a metre, so a creature standing on
+        // its own zone centre is a creature you cannot see. South-west is
+        // TOWARDS the camera, so whoever it is stands in front of their post
+        // rather than behind it.
+        return {
+          x: at.x - POST_OFFSET,
+          y: at.y - POST_OFFSET,
+          floor: a.at.floor,
+          shape: a.shape,
+          look: a.look,
+        };
+      });
 
     this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter), posts);
 
@@ -279,6 +348,7 @@ export class ChapterScreen implements Screen {
     }
     this.dropRequested = false;
     this.talkRequested = false;
+    this.showSessions();
     this.updateTalk(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
@@ -303,6 +373,19 @@ export class ChapterScreen implements Screen {
     this.blockout.setMarkers(this.markers(), this.floor);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
+    // After the scene is dressed for this frame and not before, or the
+    // selfie is of the frame BEFORE the one in which it was taken.
+    if (this.selfie) {
+      this.showPrint(this.selfie, this.takeSelfie(this.selfie));
+      this.selfie = undefined;
+    }
+
+    if (this.printFor > 0) {
+      this.printFor -= dt;
+      // Fade on the way out and clear only once the transition has run, or
+      // the print vanishes mid-fade and reads as a glitch.
+      if (this.printFor <= 0) this.print.style.opacity = '0';
+    }
 
     if (this.toastFor > 0) {
       this.toastFor -= dt;
@@ -347,10 +430,15 @@ export class ChapterScreen implements Screen {
     // Put the building back in the dark and the card back to empty. A restart
     // that kept the lights on would hand the player the answer to Chapter I.
     this.blockout.clearReveals();
+    // And put the audiences back in the rooms they walked out of — the seats
+    // in the renderer, the people who left in the crowd.
+    this.blockout.refillSeats();
+    this.crowd.reseat();
     this.run = new ObjectiveRun(this.chapter.objective);
     this.endCard?.remove();
     this.endCard = undefined;
     this.toast.textContent = '';
+    this.selfie = undefined;
     this.snapCamera();
   }
 
@@ -363,6 +451,218 @@ export class ChapterScreen implements Screen {
     }
     this.run.reveals.length = 0;
 
+    // One print at a time. Two photographs finishing in the same frame is not
+    // reachable — they are metres apart and gated on each other — but the
+    // queue is a queue, and showing the last is the same rule the toast uses.
+    const photos = this.run.photos;
+    if (photos.length > 0) {
+      const photo = photos[photos.length - 1];
+      // A selfie is taken from the frame about to be drawn, which does not
+      // exist yet. `update` develops it once the scene is dressed.
+      if (photo.selfie) this.selfie = photo;
+      else this.showPrint(photo);
+      photos.length = 0;
+    }
+
+    const events = this.run.events;
+    if (events.length > 0) {
+      this.toast.textContent = events[events.length - 1].text;
+      this.toastFor = 2.6;
+      events.length = 0;
+    }
+  }
+
+  /**
+   * Put a photograph up, the way a print lands on a table.
+   *
+   * It covers the middle of the screen for three and a half seconds, which
+   * is a long time in a six-minute day and is meant to be: the whole point of
+   * the errand is the picture, and a picture that flickers past in the corner
+   * is a notification. It is not interactive and it does not pause anything —
+   * the day carries on behind it, which is the joke and also the cost.
+   */
+  private showPrint(photo: Photo, taken?: HTMLCanvasElement): void {
+    const { palette } = this.chapter;
+    this.print.replaceChildren();
+
+    const frame = el('div', {
+      background: '#efece4',
+      padding: '10px 10px 0',
+      boxShadow: '0 18px 44px rgba(0, 0, 0, 0.55)',
+      // A print is never quite square to the table it lands on — and a
+      // selfie leans the other way, because it was held at arm's length.
+      transform: photo.selfie ? 'rotate(1.8deg)' : 'rotate(-1.4deg)',
+    });
+
+    if (taken) {
+      Object.assign(taken.style, { display: 'block', width: `${PRINT_WIDTH}px`, height: `${PRINT_HEIGHT}px` });
+      frame.append(taken);
+    } else if (photo.file) {
+      // `BASE_URL` rather than a leading slash: Pages serves this from a
+      // subdirectory, and a root-absolute src is the classic way to have a
+      // build that works locally and 404s in front of a judge.
+      const img = el('img', { display: 'block', width: `${PRINT_WIDTH}px`, height: 'auto' });
+      (img as HTMLImageElement).src = `${import.meta.env.BASE_URL}photos/${photo.file}`;
+      (img as HTMLImageElement).alt = photo.caption;
+      frame.append(img);
+    } else {
+      /*
+       * The print that has not been taken yet.
+       *
+       * Deliberately not an apology — no "missing image" glyph, no broken
+       * frame. It is a developed photograph of a dark room, which is what a
+       * print looks like before anybody has put a real one in its place, and
+       * it lets the timing and the size be judged now rather than after the
+       * art lands.
+       */
+      frame.append(
+        el('div', {
+          width: `${PRINT_WIDTH}px`,
+          height: `${PRINT_HEIGHT}px`,
+          background: css(shade(palette.void, 2.1)),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          font: `11px ${MONO}`,
+          color: css(palette.accent),
+          letterSpacing: '0.22em',
+        }, 'PHOTO TO COME'),
+      );
+    }
+
+    frame.append(
+      el('div', {
+        font: `13px ${MONO}`,
+        color: '#2c2a26',
+        padding: '12px 2px 14px',
+        textAlign: 'center',
+        letterSpacing: '0.04em',
+      }, photo.caption),
+    );
+
+    this.print.append(frame);
+    this.print.style.opacity = '1';
+    this.printFor = 3.5;
+  }
+
+  /**
+   * Develop a selfie from the game's own canvas.
+   *
+   * Framed the way a photographer frames himself: Dimitris from the chest
+   * up with a little headroom, and the bottom edge wherever it cuts the top
+   * of Voxxy — which at 1.15 m beside a 1.72 m man is the top of its head
+   * and nothing else. That is the joke.
+   *
+   * And it is staged, because he is a photographer. Voxxy can be anywhere
+   * in a zone three metres across, and under this camera half a metre
+   * BEHIND him is higher up the screen: the first version framed from
+   * where Voxxy really stood and got a print that was all orange robot. So
+   * for the one render Voxxy is drawn beside him, at his depth, on the side
+   * the screen calls right. See `BlockoutRenderer.withRobotMoved`.
+   *
+   * RENDERED for the print rather than cropped out of the frame. At 28 px a
+   * metre the two of them are about fifty pixels tall on screen, and a crop
+   * blown up to a print is a smear. So the camera's frustum is narrowed onto
+   * the framing, the scene drawn once into the canvas and read back in the
+   * same task, and the frustum put back. `Game` draws the real frame over it
+   * straight after, before anything is shown — and reading it in the same
+   * task is also what makes it readable at all: WebGL discards the buffer
+   * once it has been composited, and `preserveDrawingBuffer` would cost every
+   * other frame of the game to buy this one.
+   */
+  private takeSelfie(photo: Photo): HTMLCanvasElement {
+    const cam = this.camera;
+    const source = this.renderer.domElement;
+    const activity = this.run.states.find((s) => s.activity.photo === photo)?.activity;
+
+    // Whoever earned it, which is not necessarily who the player is driving:
+    // in `switch` mode Voxxy may have been parked here while TAB was on Droid.
+    const robot =
+      (activity &&
+        this.actors.find(
+          (a) => inZone(activity.at, a.floor, a.body.x, a.body.y) && admits(activity, a.body.spec),
+        )) ??
+      this.controlled;
+    const body = robot.body;
+    const centre = activity ? zoneCentre(activity.at) : { x: body.x, y: body.y };
+    // Where the post stands, not the zone centre. See `POST_OFFSET`.
+    const them = activity ? { x: centre.x - POST_OFFSET, y: centre.y - POST_OFFSET } : centre;
+    const ground = groundAt(KINEPOLIS, robot.floor, them.x, them.y);
+
+    cam.updateMatrixWorld();
+    // Screen-right, laid flat on the floor: beside him and at his depth.
+    const right = new Vector3().setFromMatrixColumn(cam.matrixWorld, 0).setZ(0).normalize();
+    const posed = { x: them.x + right.x * SELFIE_BESIDE, y: them.y + right.y * SELFIE_BESIDE };
+
+    // Everything below is in the frustum's own units, where the view plane
+    // runs left..right and bottom..top — so a framing is a new frustum.
+    const onView = (x: number, y: number, z: number): { x: number; y: number } => {
+      const p = new Vector3(x, y, z).project(cam);
+      return {
+        x: cam.left + ((cam.right - cam.left) * (p.x + 1)) / 2,
+        y: cam.bottom + ((cam.top - cam.bottom) * (p.y + 1)) / 2,
+      };
+    };
+    const head = onView(them.x, them.y, ground + PERSON_HEIGHT + SELFIE_HEADROOM);
+    const chest = onView(them.x, them.y, ground + SELFIE_CHEST);
+    const peek = onView(posed.x, posed.y, ground + body.spec.height - SELFIE_PEEK);
+
+    // Never higher than his chest, or he is a head in a frame. Posed at his
+    // depth, Voxxy's cut is always below it; the guard is for a robot tall
+    // enough that it would not be, which the gate does not admit today.
+    const bottom = Math.min(peek.y, chest.y);
+    // 3:2, and wide enough for both of them whichever side Voxxy is on. If
+    // it has to widen, it grows upwards so the cut through Voxxy stays put.
+    const wide = Math.max(
+      ((head.y - bottom) * PRINT_WIDTH) / PRINT_HEIGHT,
+      Math.abs(head.x - peek.x) + 2 * SELFIE_SIDE,
+    );
+    const tall = (wide * PRINT_HEIGHT) / PRINT_WIDTH;
+    const middle = (head.x + peek.x) / 2;
+
+    // Drawn at the canvas's own aspect, so nothing is stretched, and the
+    // print taken out of the middle of it.
+    const aspect = source.width / source.height;
+    const saved = { left: cam.left, right: cam.right, top: cam.top, bottom: cam.bottom };
+    cam.left = middle - (tall * aspect) / 2;
+    cam.right = middle + (tall * aspect) / 2;
+    cam.bottom = bottom;
+    cam.top = bottom + tall;
+    cam.updateProjectionMatrix();
+    this.blockout.withRobotMoved(robot, posed.x - body.x, posed.y - body.y, () =>
+      this.renderer.render(this.scene, cam),
+    );
+
+    const print = document.createElement('canvas');
+    // Twice the print, so it is sharp at the 2x pixel ratio `Game` caps at.
+    print.width = PRINT_WIDTH * 2;
+    print.height = PRINT_HEIGHT * 2;
+    const cropW = (source.height * PRINT_WIDTH) / PRINT_HEIGHT;
+    print
+      .getContext('2d')
+      ?.drawImage(source, (source.width - cropW) / 2, 0, cropW, source.height, 0, 0, print.width, print.height);
+
+    Object.assign(cam, saved);
+    cam.updateProjectionMatrix();
+
+    print.setAttribute('role', 'img');
+    print.setAttribute('aria-label', photo.caption);
+    return print;
+  }
+
+  /**
+   * How each session's room looks, every frame, whether the round is running
+   * or not.
+   *
+   * Outside `consumeObjective` on purpose: that is gated on the round still
+   * being live, and the last thing that happens in Chapter II is three rooms
+   * going dark at once and ending the day. Driven from in there, the losing
+   * room's audience got two seconds of an eight second walk-out and then
+   * froze half gone behind the end card, which reads as the renderer giving
+   * up rather than as a room emptying. The day is over; the building is still
+   * there, and what is happening in it finishes.
+   */
+  private showSessions(): void {
     /*
      * A room is as lit as its session has left in it.
      *
@@ -382,14 +682,32 @@ export class ChapterScreen implements Screen {
       const a = state.activity;
       if (a.kind !== 'tend' || !a.reveal) continue;
       const left = state.status === 'failed' ? 0 : Math.max(0, state.progress) / a.capacity;
-      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * Math.sqrt(left));
-    }
+      const lit = Math.sqrt(left);
+      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * lit);
 
-    const events = this.run.events;
-    if (events.length > 0) {
-      this.toast.textContent = events[events.length - 1].text;
-      this.toastFor = 2.6;
-      events.length = 0;
+      /*
+       * And the audience goes with the light.
+       *
+       * `MECHANICS.md` §5.2: "a room at zero goes dark, its attendees leave,
+       * and it never comes back." This used to fire on failure, which read as
+       * a room being switched off with everybody in it — and a room only
+       * fails once, so the fact that it had been in trouble for twenty
+       * seconds beforehand was information the player never got.
+       *
+       * People leave while a session is DYING, not when it is dead, and that
+       * turns the audience into a second reading of the same meter: a room
+       * you can see thinning from the far end of the corridor while there is
+       * still time to drive to it.
+       *
+       * Nobody moves until the light is down to LEAVING_FROM — a session
+       * running a little behind is not one anybody walks out of — and the
+       * rate climbs from there, both because the curve steepens and because
+       * the drain itself ramps with the day.
+       */
+      const departed = Math.min(1, Math.max(0, (LEAVING_FROM - lit) / LEAVING_FROM));
+      if (departed <= 0) continue;
+      this.blockout.emptySeats(a.room, departed);
+      this.crowd.evacuate(a.room, departed * EVACUEES);
     }
   }
 
@@ -593,6 +911,31 @@ export class ChapterScreen implements Screen {
     });
     game.ui.append(this.toast);
 
+    /*
+     * The photograph.
+     *
+     * Middle of the screen and above everything, because it is the only
+     * thing in the game that is a REWARD rather than a readout — every other
+     * overlay here is telling the player how they are doing. Pointer events
+     * off: it is a picture, not a dialog, and a six-minute day must not stop
+     * for it.
+     */
+    this.print = el('div', {
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      top: '0',
+      bottom: '0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: '0',
+      transition: 'opacity 420ms ease-out',
+      pointerEvents: 'none',
+      zIndex: '6',
+    });
+    game.ui.append(this.print);
+
     // Only advertise the keys this chapter has anything to use. Chapter I is
     // one robot in an empty building: TAB, SPACE and E are all true of the
     // engine and none of them is true of the chapter, and a control list with
@@ -749,6 +1092,21 @@ export class ChapterScreen implements Screen {
     }
 
     this.talkPrompt.textContent = '';
+    /*
+     * The box takes the speaker's own colour.
+     *
+     * A name in the chapter accent is a label; a name in the colour of the
+     * person standing in front of you is the same person twice. Which of
+     * their colours, and why it is not simply the shirt, is `ink`. Lifted
+     * well up first — half of these people are in black, and dark text on a
+     * near-black box is a name nobody reads.
+     */
+    const look = activity.look;
+    const tint = css(look === undefined ? this.chapter.palette.accent : lift(ink(look)));
+    this.talkWho.style.color = tint;
+    this.talkMore.style.color = tint;
+    this.talkBox.style.borderColor = tint;
+
     const line = activity.lines[shown - 1];
     if (line !== this.typingLine) {
       this.typingLine = line;
@@ -774,23 +1132,64 @@ export class ChapterScreen implements Screen {
    * room shows the seconds it has left, because that is the only number in
    * Chapter II that matters.
    */
+  /**
+   * The card, with any live countdown on it.
+   *
+   * `cardLine` is a pure function of one activity's state and cannot see the
+   * run's clock, so the one line that needs the clock gets it here. Only one
+   * ever does at a time — a relative deadline is a consequence of something
+   * the player just did, and two of those at once would be a different game.
+   */
   private card(): string {
     const lines: string[] = [];
-    const groups = new Map<string, { done: number; total: number }>();
+    const groups = new Map<string, { done: number; total: number; shown: boolean }>();
 
     for (const state of this.run.states) {
+      /*
+       * A side quest you have not been told about yet is not on the card.
+       *
+       * Required work is listed the moment the chapter starts, locked or
+       * not, because a player who cannot see the last board does not know
+       * the chapter has one. An OPTIONAL thing behind a gate is the
+       * opposite: listing "Back to Stephan" before the player has met
+       * Stephan hands them the end of a thread they have not been given the
+       * start of. The corridor appears on the card when the host tells them
+       * about the corridor, and the way back appears when there is one.
+       */
+      const hidden = state.activity.optional === true && state.status === 'locked';
+
       const group = state.activity.group;
       if (group) {
-        const tally = groups.get(group) ?? { done: 0, total: 0 };
+        /*
+         * A GROUP counts all of itself as soon as any of it is visible.
+         *
+         * Applying the rule above member by member made the shot list read
+         * "1/1" — four photographs, three of them still locked, so the
+         * denominator grew as the player worked and every photograph taken
+         * moved the target. A count that goes up when you score is worse
+         * than no count. So the row appears when the quest does, and it
+         * appears complete, which is what a shot list is.
+         */
+        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false };
         tally.total += 1;
         if (state.status === 'done') tally.done += 1;
+        if (!hidden) tally.shown = true;
         groups.set(group, tally);
         continue;
       }
-      lines.push(cardLine(state));
+
+      if (hidden) continue;
+      const left = this.run.deadline(state.activity);
+      lines.push(
+        cardLine(state) +
+          (left !== undefined && state.status === 'open'
+            ? `  ${Math.max(0, Math.ceil(left - this.run.elapsed))}s`
+            : ''),
+      );
     }
 
     for (const [name, tally] of groups) {
+      if (!tally.shown) continue;
       lines.push(`${tally.done === tally.total ? '·' : '›'} ${name} ${tally.done}/${tally.total}`);
     }
 
@@ -838,7 +1237,11 @@ export class ChapterScreen implements Screen {
       el(
         'div',
         { font: `15px ${SANS}`, color: css(chapter.palette.accent) },
-        this.run.total > 0 ? `${this.run.done} of ${this.run.total}` : 'Nothing left running',
+        // Same rule as the header, and it has to be: a chapter about keeping
+        // five rooms alive does not end on a score out of the side quest.
+        this.run.states.some((s) => s.activity.kind === 'tend')
+          ? `${this.run.states.filter((s) => s.activity.kind === 'tend' && s.status !== 'failed').length} of ${this.run.states.filter((s) => s.activity.kind === 'tend').length} still running`
+          : `${this.run.done} of ${this.run.total}`,
       ),
     );
 
@@ -866,12 +1269,23 @@ export class ChapterScreen implements Screen {
     this.hud.textContent = this.run.objective.line;
 
     const remaining = this.run.remaining;
-    // Chapter II has nothing to finish, only things to keep — so it counts
-    // what is still running rather than what is done.
+    /*
+     * A chapter with rooms to KEEP counts what is still running; one with
+     * things to FINISH counts what is done.
+     *
+     * Keyed off whether there are any tend rooms, not off whether there is
+     * anything finishable. The old test was the second one, which was true of
+     * Chapter II only for as long as Chapter II had nothing in it but rooms:
+     * adding one optional conversation flipped the header to "0/2" and took
+     * away the five-rooms-running count the whole chapter is read from. The
+     * denominator was wrong in the same way — it counted every state, so a
+     * side quest would have made it "11/11 running".
+     */
+    const rooms = this.run.states.filter((s) => s.activity.kind === 'tend');
     const tally =
-      this.run.total > 0
-        ? `${this.run.done}/${this.run.total}`
-        : `${this.run.states.length - this.run.lost}/${this.run.states.length} running`;
+      rooms.length > 0
+        ? `${rooms.filter((s) => s.status !== 'failed').length}/${rooms.length} running`
+        : `${this.run.done}/${this.run.total}`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
     this.cardText.textContent = this.card();
@@ -982,6 +1396,56 @@ function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
     return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
   }
   return { x, y, floor: Number.isFinite(floor) ? floor : chapter.startFloor };
+}
+
+/**
+ * Which of somebody's colours the dialogue box borrows.
+ *
+ * The rule used to be "the shirt", and the rule used to work, because the
+ * shirts were invented. They are off photographs now, and three of the five
+ * people in Chapter II's corridor turn out to wear black — so three names
+ * came up the same washed grey, and a box that is meant to say WHO is
+ * speaking said nothing three times out of five.
+ *
+ * So it takes whichever of their colours is furthest from grey: the amber
+ * glasses, the ochre hair, the blue-grey shirt. That is the same thing a
+ * person does when they point somebody out across a room, and it lands on a
+ * different answer for each of the five.
+ *
+ * When everything about somebody IS grey, grey is the honest answer and it
+ * survives the lift: a white-haired man in a black t-shirt has a silver
+ * name, and that is a description of him rather than a failure to find one.
+ */
+function ink(look: Look): number {
+  const saturation = (colour: number): number => {
+    const r = (colour >> 16) & 0xff;
+    const g = (colour >> 8) & 0xff;
+    const b = colour & 0xff;
+    const high = Math.max(r, g, b);
+    return high === 0 ? 0 : (high - Math.min(r, g, b)) / high;
+  };
+  let best = look.shirt ?? 0x9aa0a6;
+  for (const colour of [look.hair, look.glasses]) {
+    if (colour !== undefined && saturation(colour) > saturation(best)) best = colour;
+  }
+  return best;
+}
+
+/**
+ * A colour, pulled up until it can be read as text on a dark box.
+ *
+ * Not `shade`, which multiplies: a very dark navy multiplied by three is a
+ * slightly less dark navy. This mixes toward white instead, so every shirt
+ * arrives at about the same legibility whatever it started at, and keeps its
+ * hue on the way.
+ */
+function lift(colour: number): number {
+  const mixTo = (channel: number): number => Math.round(channel + (255 - channel) * 0.52);
+  return (
+    (mixTo((colour >> 16) & 0xff) << 16) |
+    (mixTo((colour >> 8) & 0xff) << 8) |
+    mixTo(colour & 0xff)
+  );
 }
 
 /** One card row: a glyph for the state, the label, and any live number. */

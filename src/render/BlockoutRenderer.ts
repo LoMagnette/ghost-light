@@ -80,6 +80,7 @@ import {
   SEATED_THIGH_LONG,
   SEATED_TORSO_THICK,
   SEATED_TORSO_TOP,
+  type Look,
   type Person,
 } from '@/core/Crowd';
 import type { Decay, DecayPiece } from '@/core/Decay';
@@ -219,6 +220,9 @@ const REVEAL_SPACING = 15;
 /** Peak intensity of one reveal light, before the Lambert scale. */
 const REVEAL_POWER = 5;
 
+/** Scale of an instance that is not there any more. Not zero: see instanceBoxes. */
+const GONE = 1e-4;
+
 /**
  * The two inks that are not a robot's own livery.
  *
@@ -228,6 +232,20 @@ const REVEAL_POWER = 5;
  */
 const VISOR = 0x14171a;
 const EYES = 0xffc061;
+
+/**
+ * The two animals. Not palette entries: see `placeAnimal`.
+ *
+ * The dog's coat is lifted well off the black it really is, because Chapter I
+ * renders at a quarter of Chapter III's light and a true Bouvier in there is
+ * a dog-shaped hole. The beard carries the breed and has to stay legible.
+ */
+const DOG_COAT = 0x55565e;
+const DOG_BEARD = 0xa8a294;
+const CAT_FUR = 0xc2bcae;
+
+/** Boxes an animal costs. A dog is thirteen; the cat is ten. */
+const ANIMAL_PARTS = 14;
 
 /**
  * How much two boxes of the same material may differ in tone, either way.
@@ -528,6 +546,8 @@ export class BlockoutRenderer {
 
   private readonly crowd: Crowd;
   private readonly decay: Decay;
+  /** The baked audience of each storey, by room, so a room can be emptied. */
+  private readonly seated = new Map<Level, SeatedStorey>();
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
 
@@ -738,13 +758,98 @@ export class BlockoutRenderer {
     ];
   }
 
+  /**
+   * The two animals, drawn as themselves.
+   *
+   * Colours are hard-coded here beside `VISOR` and `EYES`, and for the same
+   * reason those are: a dog is not dressed by the era. The building is read
+   * three ways and the dog living in it is the same dog.
+   *
+   * The DOG is a Bouvier des Flandres, which is a very specific silhouette
+   * and a lucky one to have to draw out of boxes: square, low, heavy-boned,
+   * with a head that is mostly a beard. At twenty pixels tall none of the
+   * coat texture survives, so all of the breed has to live in the outline —
+   * a body as long as it is tall, short thick legs, and that pale muzzle
+   * stuck out in front of a dark head, which is the one thing about a
+   * Bouvier that reads at any size.
+   *
+   * The CAT is mostly tail. Everything else at this scale is a smudge the
+   * size of a robot's foot; the tail up is what says cat from across a hall.
+   */
+  private placeAnimal(index: number, animal: Person): number {
+    let i = index;
+    const part = (
+      from: number,
+      to: number,
+      thick: number,
+      wide: number,
+      colour: number,
+      across = 0,
+      along = 0,
+    ): void => {
+      i = this.placePart(i, animal, from, to, thick, wide, colour, across, along);
+    };
+
+    if (animal.shape === 'dog') {
+      part(0.30, 0.62, 0.62, 0.30, DOG_COAT);
+      // Chest deeper than the barrel and shoulders wider than the hips: the
+      // breed is front-heavy and it is most of why it reads as a working dog
+      // rather than as a large spaniel.
+      part(0.26, 0.64, 0.28, 0.34, DOG_COAT, 0, 0.2);
+      part(0.30, 0.60, 0.22, 0.31, DOG_COAT, 0, -0.26);
+      for (const along of [0.22, -0.22]) {
+        for (const across of [0.11, -0.11]) part(0, 0.32, 0.11, 0.1, DOG_COAT, across, along);
+      }
+      part(0.48, 0.68, 0.16, 0.22, DOG_COAT, 0, 0.36);
+      part(0.52, 0.74, 0.24, 0.24, DOG_COAT, 0, 0.48);
+      part(0.48, 0.66, 0.18, 0.22, DOG_BEARD, 0, 0.62);
+      for (const across of [0.1, -0.1]) part(0.72, 0.8, 0.1, 0.07, DOG_COAT, across, 0.46);
+      // Docked to a stub, which is how the breed is nearly always seen.
+      part(0.52, 0.64, 0.12, 0.1, DOG_COAT, 0, -0.42);
+      return i;
+    }
+
+    /*
+     * Half again bigger than a cat.
+     *
+     * Drawn to life it came out four pixels across — a speck you could not
+     * tell from a scrap of the decay it was sitting in, and this one has
+     * lines to say. The dog is near enough life-size because a Bouvier is
+     * already big; the cat is the one animal this camera cannot take
+     * literally.
+     */
+    part(0.21, 0.42, 0.45, 0.2, CAT_FUR);
+    part(0.18, 0.45, 0.21, 0.22, CAT_FUR, 0, -0.21);
+    for (const along of [0.165, -0.165]) {
+      for (const across of [0.075, -0.075]) part(0, 0.22, 0.075, 0.075, CAT_FUR, across, along);
+    }
+    part(0.3, 0.5, 0.2, 0.2, CAT_FUR, 0, 0.315);
+    for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, CAT_FUR, across, 0.285);
+    // Up, and the tallest thing on it. At this size the tail IS the cat.
+    part(0.33, 0.75, 0.09, 0.09, CAT_FUR, 0, -0.33);
+    return i;
+  }
+
   /** Put the standing crowd where it is this frame. Visible storey only. */
   private placeMovers(floor: Level): void {
     let i = 0;
     let h = 0;
     for (const person of this.crowd.movers) {
       if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
-      const [trousers, clothing, head] = this.personColours(person);
+      // An animal is thirteen boxes against a person's four, so the box
+      // budget has to be checked rather than assumed from the blob one.
+      if (i + ANIMAL_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
+      if (person.shape) {
+        i = this.placeAnimal(i, person);
+        continue;
+      }
+      const [trousers, plain, head] = this.personColours(person);
+      const look = person.look;
+      const clothing = look?.shirt ?? plain;
+      // Every height in the figure goes through this, so a taller person is
+      // taller everywhere rather than a normal person with a floating head.
+      const k = look?.scale ?? 1;
+      const up = (z: number): number => z * k;
 
       /*
        * Legs, torso, two arms — all on the same centre line, so the heading
@@ -755,8 +860,16 @@ export class BlockoutRenderer {
        * ninety degrees: perfectly symmetrical at rest and unmistakable the
        * moment anyone walked anywhere.
        */
-      i = this.placePart(i, person, 0, PERSON_LEG_TOP, PERSON_THICK * 0.8, PERSON_HIP, trousers);
-      i = this.placePart(i, person, PERSON_LEG_TOP, PERSON_NECK, PERSON_THICK, PERSON_TORSO_WIDE, clothing);
+      i = this.placePart(i, person, 0, up(PERSON_LEG_TOP), PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      i = this.placePart(
+        i,
+        person,
+        up(PERSON_LEG_TOP),
+        up(PERSON_NECK),
+        PERSON_THICK,
+        PERSON_TORSO_WIDE,
+        clothing,
+      );
 
       /*
        * Arms: two darker strips either side of the torso, in the SAME
@@ -771,13 +884,28 @@ export class BlockoutRenderer {
        */
       const sleeve = shade(clothing, 0.74);
       const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
-      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, reach);
-      i = this.placePart(i, person, PERSON_ARM_BOTTOM, PERSON_ARM_TOP, PERSON_THICK, PERSON_ARM_WIDE, sleeve, -reach);
+      for (const side of [reach, -reach]) {
+        i = this.placePart(
+          i,
+          person,
+          up(PERSON_ARM_BOTTOM),
+          up(PERSON_ARM_TOP),
+          PERSON_THICK,
+          PERSON_ARM_WIDE,
+          sleeve,
+          side,
+        );
+      }
+
+      // Hair, beard and glasses, for the people who are somebody. Up to
+      // five more boxes on one head — well inside the headroom the loop
+      // already checks for, which is an animal's thirteen.
+      if (look !== undefined) i = this.placeFace(i, person, look, k, head);
 
       // The shoulders as a rounded mass over the top of all three, and the
       // head over that. A flat cap read as epaulettes.
-      h = this.placeBlob(h, person, PERSON_SHOULDER_BOTTOM, PERSON_NECK, PERSON_SHOULDER, PERSON_THICK, clothing);
-      h = this.placeBlob(h, person, PERSON_NECK, PERSON_HEIGHT, PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
+      h = this.placeBlob(h, person, up(PERSON_SHOULDER_BOTTOM), up(PERSON_NECK), PERSON_SHOULDER, PERSON_THICK, clothing);
+      h = this.placeBlob(h, person, up(PERSON_NECK), up(PERSON_HEIGHT), PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
     }
 
     this.moverMesh.count = i;
@@ -803,10 +931,15 @@ export class BlockoutRenderer {
     wide: number,
     colour: number,
     across = 0,
+    along = 0,
   ): number {
+    // `across` is to the figure's left and `along` is in front of it, both in
+    // its own frame. A person needs only `across` — two arms beside a torso —
+    // and an animal is the whole reason `along` exists: a dog is a column of
+    // boxes laid on its side, with a head at one end and a tail at the other.
     SCRATCH.position.set(
-      person.x - Math.sin(person.heading) * across,
-      person.y + Math.cos(person.heading) * across,
+      person.x + Math.cos(person.heading) * along - Math.sin(person.heading) * across,
+      person.y + Math.sin(person.heading) * along + Math.cos(person.heading) * across,
       person.z + (from + to) / 2,
     );
     SCRATCH.scale.set(thick, wide, to - from);
@@ -834,6 +967,139 @@ export class BlockoutRenderer {
     this.moverHeads.setMatrixAt(index, SCRATCH.matrix);
     this.moverHeads.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
+  }
+
+  /**
+   * One named person's head, above the neck: hair, beard, glasses.
+   *
+   * Boxes rather than blobs, and that is a budget decision rather than a
+   * shortcut. The blob budget is two a head and every one of the three
+   * thousand people in Chapter III pays for it; the box budget already has
+   * room for an animal's thirteen and these cost at most five.
+   *
+   * Everything here is measured off `PERSON_HEAD_WIDE`, so a person who is
+   * 3% taller has a 3% bigger beard rather than a normal beard floating at
+   * the wrong height.
+   */
+  private placeFace(index: number, person: Person, look: Look, k: number, skin: number): number {
+    if (look.hair === undefined) return index;
+    let i = index;
+    const w = PERSON_HEAD_WIDE;
+    const crown = PERSON_HEIGHT * k;
+    const chin = PERSON_NECK * k;
+    const hair = look.hair;
+
+    /*
+     * The crown.
+     *
+     * `receding` walks the cap BACKWARD off the forehead rather than
+     * shrinking it, which is the whole difference: a smaller cap centred on
+     * the crown reads as a smaller head, and the same cap moved three
+     * centimetres back reads as a forehead. Three centimetres is one pixel,
+     * and one pixel of forehead is a hairline.
+     */
+    if (look.hairline !== 'bald') {
+      const back = look.hairline === 'receding' ? -w * 0.2 : 0;
+      const deep = look.hairline === 'receding' ? w * 0.7 : w * 0.94;
+      i = this.placePart(i, person, crown - 0.07 * k, crown + 0.01 * k, deep, w * 0.94, hair, 0, back);
+    }
+
+    /*
+     * What grows at the sides when the crown does not, and what falls past
+     * the ears when it is long. One band either side of the head.
+     *
+     * Everybody has hair here; it is only a SILHOUETTE when the top is gone
+     * or the length is there, so it is drawn only then. The two together —
+     * nothing on top, and what is left worn to the shoulder — is the most
+     * recognisable head in this building, and it costs two boxes.
+     */
+    if (look.hairline === 'bald' || look.long) {
+      const foot = look.long ? chin + 0.03 * k : crown - 0.17 * k;
+      // Stopped below the crown rather than level with it. The head is a
+      // rounded blob and these are square: run them to the top and the
+      // corners stand proud of the skull as two pale tabs, which from the
+      // fixed camera read as horns and not as hair.
+      for (const side of [w * 0.46, -w * 0.46]) {
+        i = this.placePart(i, person, foot, crown - 0.055 * k, w * 0.78, w * 0.13, hair, side, -w * 0.04);
+      }
+    }
+
+    /*
+     * The beard, as a shape rather than a flag.
+     *
+     * Stubble is not hair at this size, it is a jaw a shade darker than the
+     * face — so it is mixed most of the way back to the skin rather than
+     * drawn in beard colour, which at three days' growth is what it
+     * actually looks like from four metres away.
+     */
+    if (look.beard !== undefined) {
+      const whiskers = look.beardHair ?? hair;
+      /*
+       * Placed against a real head rather than against the box that holds
+       * it, which is the mistake the first two passes made.
+       *
+       * `chin` here is the NECK joint, and the head is a blob sitting on it:
+       * a beard hung off the bottom of that blob is hung off the narrowest
+       * part of a sphere, so it lands on the neck and the shirt, and at four
+       * metres it reads as a shadow under the jaw rather than as hair. The
+       * face is the 0.22 m above 1.48, and the features go where they go on
+       * a face — mouth a fifth of the way up it, eyes at just under half.
+       *
+       * Sizes are measured too, and the first guess was double: a beard is
+       * the bottom third of a face, about 0.10 m, which is three and a half
+       * pixels. Twice that is a scarf.
+       */
+      const [foot, top, wide, colour] =
+        look.beard === 'full'
+          ? [0.005, 0.105, 0.76, whiskers]
+          : look.beard === 'goatee'
+            ? [0.04, 0.105, 0.5, whiskers]
+            : look.beard === 'moustache'
+              ? // Above the mouth and stopping there, which is the whole
+                // point of it: the same box lower down is a goatee and a
+                // different man. Wider than a goatee and half its height.
+                [0.075, 0.115, 0.62, whiskers]
+              : [0.025, 0.1, 0.68, mix(skin, whiskers, 0.55)];
+      i = this.placePart(i, person, chin + foot * k, chin + top * k, 0.07, w * wide, colour, 0, w * 0.42);
+    }
+
+    /*
+     * Glasses: one bar across the face at eye height.
+     *
+     * 0.035 m is 1.2 px, which sounds like nothing and is in fact the same
+     * budget every feature on this figure works to — the arms are two pixels
+     * of tone and they are the reason a person does not read as a slab. A
+     * dark line across a nine-pixel head reads as glasses because there is
+     * nothing else a dark line across a head can be.
+     */
+    if (look.glasses !== undefined) {
+      // Just under half way up the face, which is where eyes are, and which
+      // lands one pixel clear of the top of even a full beard.
+      const eyes = chin + 0.115 * k;
+      // Narrower than the head is WIDE, because the head is a blob: at eye
+      // height the skull has already started to curve away, and a bar cut to
+      // the full width hangs off both temples in mid-air.
+      i = this.placePart(i, person, eyes, eyes + 0.035 * k, 0.05, w * 0.86, look.glasses, 0, w * 0.44);
+    }
+
+    /*
+     * A camera, held at the chest on a strap.
+     *
+     * Graphite rather than black, which was the first try and was wrong for
+     * a reason worth writing down: a real camera IS black, and a black
+     * rectangle on the black jacket every event photographer wears is not a
+     * camera, it is nothing. The argument that it would catch the key light
+     * at a different angle turned out to be true and to be worth about one
+     * value step, which is invisible. So it is the grey of a lens barrel —
+     * the one part of a camera that is not black — and now it reads as
+     * somebody holding something, which is all it ever had to say.
+     */
+    if (look.camera) {
+      const held = PERSON_NECK * k - 0.26 * k;
+      i = this.placePart(i, person, held, held + 0.1 * k, 0.09, 0.17, 0x7b7f84, 0, PERSON_THICK * 0.6);
+    }
+
+    return i;
   }
 
   // -- the objective, drawn -------------------------------------------------
@@ -957,6 +1223,75 @@ export class BlockoutRenderer {
     this.zoneLights.set(id, made);
   }
 
+  /**
+   * Take a room's audience out of its seats, a fraction at a time.
+   *
+   * `gone` is how far through `order` we are, so calling this every frame
+   * with a rising fraction costs only the people who have stood up since the
+   * last one. It is one-way: `docs/MECHANICS.md` §5.2 is that a dark room
+   * "never comes back", and a room that could refill would make losing one a
+   * setback rather than a loss.
+   *
+   * The instances are scaled down to nothing rather than removed, because an
+   * `InstancedMesh` has one buffer and you cannot take a hole out of the
+   * middle of it. A hair over zero, not zero — see `instanceBoxes`.
+   */
+  emptySeats(room: string, fraction: number): void {
+    for (const storey of this.seated.values()) {
+      const run = storey.seats.get(room);
+      if (!run) continue;
+
+      const target = Math.min(run.people.length, Math.floor(fraction * run.people.length));
+      if (target <= run.gone) continue;
+
+      SCRATCH.position.set(0, 0, 0);
+      SCRATCH.scale.set(GONE, GONE, GONE);
+      SCRATCH.rotation.set(0, 0, 0);
+      SCRATCH.updateMatrix();
+
+      while (run.gone < target) {
+        const who = run.order[run.gone];
+        run.gone += 1;
+        for (let i = 0; i < run.perBox; i += 1) {
+          storey.boxMesh.setMatrixAt(run.box0 + who * run.perBox + i, SCRATCH.matrix);
+        }
+        for (let i = 0; i < run.perBlob; i += 1) {
+          storey.blobMesh.setMatrixAt(run.blob0 + who * run.perBlob + i, SCRATCH.matrix);
+        }
+      }
+
+      storey.boxMesh.instanceMatrix.needsUpdate = true;
+      storey.blobMesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Put every emptied room back in its seats. Called when a round restarts.
+   *
+   * Rewrites the instances from the people rather than from a saved copy of
+   * the matrices — same people, same order, same builders, so the same
+   * numbers come out.
+   */
+  refillSeats(): void {
+    for (const storey of this.seated.values()) {
+      let touched = false;
+      for (const run of storey.seats.values()) {
+        if (run.gone === 0) continue;
+        for (let i = 0; i < run.people.length; i += 1) {
+          const person = run.people[i];
+          writeInstances(storey.boxMesh, run.box0 + i * run.perBox, this.seatedBoxes(person));
+          writeInstances(storey.blobMesh, run.blob0 + i * run.perBlob, this.seatedBlobs(person));
+        }
+        run.gone = 0;
+        touched = true;
+      }
+      if (touched) {
+        storey.boxMesh.instanceMatrix.needsUpdate = true;
+        storey.blobMesh.instanceMatrix.needsUpdate = true;
+      }
+    }
+  }
+
   /** Put the building back in the dark. Called when a round is restarted. */
   clearReveals(): void {
     for (const light of this.revealed) light.removeFromParent();
@@ -987,6 +1322,34 @@ export class BlockoutRenderer {
 
     this.placeMovers(floor);
     this.aimCutaway(floor, actors, alpha);
+  }
+
+  /**
+   * Draw one robot moved by `dx`, `dy` metres for whatever `draw` renders,
+   * and put it straight back.
+   *
+   * For the selfie, which is STAGED: the photographer puts Voxxy beside him
+   * before he takes it, and the isometric camera makes that a real need —
+   * a robot half a metre behind him is drawn higher up the screen and fills
+   * the frame. Only the drawing moves. The simulation never hears of it, and
+   * `render` is not called, because that would lay a skid mark for a robot
+   * that has just teleported.
+   */
+  withRobotMoved(actor: Actor, dx: number, dy: number, draw: () => void): void {
+    const view = this.robots.get(actor);
+    if (!view) {
+      draw();
+      return;
+    }
+    for (const part of [view.body, view.shadow]) {
+      part.position.x += dx;
+      part.position.y += dy;
+    }
+    draw();
+    for (const part of [view.body, view.shadow]) {
+      part.position.x -= dx;
+      part.position.y -= dy;
+    }
   }
 
   /**
@@ -1275,18 +1638,54 @@ export class BlockoutRenderer {
 
     const audience = this.crowd.seated.filter((person) => person.floor === floor);
     if (audience.length) {
-      group.add(
-        instanceBoxes(
-          audience.flatMap((person) => this.seatedBoxes(person)),
-          new MeshLambertMaterial(),
-        ),
-      );
-      group.add(
-        instanceBlobs(
-          audience.flatMap((person) => this.seatedBlobs(person)),
-          new MeshLambertMaterial(),
-        ),
-      );
+      /*
+       * Baked ROOM BY ROOM, so each room's audience is one contiguous run of
+       * instances and can be taken back out again.
+       *
+       * It used to be one `flatMap` over everybody on the storey, which is
+       * the same picture and gives no way to empty a room: the instances of
+       * the five hundred people in Room 5 were interleaved with everyone
+       * else's by whatever order `fillSeats` happened to walk the seats in.
+       * Grouping costs nothing at build time and is the whole of what makes
+       * `emptySeats` possible.
+       */
+      const boxes: Box[] = [];
+      const blobs: Box[] = [];
+      const rooms = new Map<string, Person[]>();
+      for (const person of audience) {
+        const key = person.room ?? '';
+        const list = rooms.get(key);
+        if (list) list.push(person);
+        else rooms.set(key, [person]);
+      }
+
+      const seats = new Map<string, SeatedRun>();
+      for (const [room, people] of rooms) {
+        const box0 = boxes.length;
+        const blob0 = blobs.length;
+        for (const person of people) {
+          boxes.push(...this.seatedBoxes(person));
+          blobs.push(...this.seatedBlobs(person));
+        }
+        seats.set(room, {
+          box0,
+          blob0,
+          people,
+          // Read off the run rather than hard-coded: a seated person is
+          // however many boxes `seatedBoxes` decides, and the day somebody
+          // gives them a bag it must not be two places that know.
+          perBox: (boxes.length - box0) / people.length,
+          perBlob: (blobs.length - blob0) / people.length,
+          order: departureOrder(people.length),
+          gone: 0,
+        });
+      }
+
+      const boxMesh = instanceBoxes(boxes, new MeshLambertMaterial());
+      const blobMesh = instanceBlobs(blobs, new MeshLambertMaterial());
+      group.add(boxMesh);
+      group.add(blobMesh);
+      this.seated.set(floor, { boxMesh, blobMesh, seats });
     }
 
     /*
@@ -1907,6 +2306,62 @@ function instanceBlobs(blobs: Box[], material: MeshLambertMaterial): InstancedMe
 }
 
 /** Where to draw one activity, and in what state. The screen decides both. */
+/** One room's audience inside a storey's baked instance buffers. */
+interface SeatedRun {
+  box0: number;
+  blob0: number;
+  /**
+   * The people themselves, in the order they were baked.
+   *
+   * Kept rather than counted because `R` restarts the round and the seats
+   * have to come back: emptying overwrites instance matrices in place, and an
+   * `InstancedMesh` has no memory of what was in them. Re-deriving from the
+   * same people in the same order is cheaper than keeping 2800 matrices
+   * against a key the player presses once a session.
+   */
+  people: Person[];
+  perBox: number;
+  perBlob: number;
+  /** The order they get up in. See `departureOrder`. */
+  order: Uint16Array;
+  /** How many of them have already gone. Only ever goes up. */
+  gone: number;
+}
+
+interface SeatedStorey {
+  boxMesh: InstancedMesh;
+  blobMesh: InstancedMesh;
+  seats: Map<string, SeatedRun>;
+}
+
+/**
+ * The order an audience gets up in — scattered, and the same every time.
+ *
+ * Emptying a room in seat order is a wipe: a visible line moving across the
+ * seating, which reads as the room being deleted rather than as people
+ * leaving. Scattered, it reads as a room thinning out. Deterministic, because
+ * everything else about this crowd is, and a screenshot harness is worth more
+ * when the same room empties the same way twice.
+ *
+ * A prefix of this array is "who has gone", which is what makes emptying cost
+ * only the people who have just left rather than a pass over the whole room.
+ */
+function departureOrder(count: number): Uint16Array {
+  const order = new Uint16Array(count);
+  for (let i = 0; i < count; i += 1) order[i] = i;
+  // Fisher-Yates off a fixed-seed integer hash, so no RNG has to be threaded
+  // in here and no other stream's sequence is disturbed by it.
+  let a = 0x9e3779b9 ^ count;
+  for (let i = count - 1; i > 0; i -= 1) {
+    a = Math.imul(a ^ (a >>> 16), 0x45d9f3b) >>> 0;
+    const j = a % (i + 1);
+    const t = order[i];
+    order[i] = order[j];
+    order[j] = t;
+  }
+  return order;
+}
+
 export interface ObjectiveMarker {
   id: string;
   x: number;
@@ -1916,6 +2371,26 @@ export interface ObjectiveMarker {
   colour: number;
   /** One of many. Drawn as a stud rather than a post. See `markers()`. */
   low?: boolean;
+}
+
+/**
+ * Write a run of boxes into an instanced mesh at `from`.
+ *
+ * The same arithmetic `instanceBoxes` does when it builds one, factored out
+ * because refilling a room's seats has to reproduce it exactly — the day
+ * those two disagree is the day a restarted round puts an audience back six
+ * inches to the left.
+ */
+function writeInstances(mesh: InstancedMesh, from: number, boxes: Box[]): void {
+  for (let i = 0; i < boxes.length; i += 1) {
+    const { bounds, bottom, top } = boxes[i];
+    const height = Math.max(top - bottom, 0.01);
+    SCRATCH.position.set(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bottom + height / 2);
+    SCRATCH.scale.set(Math.max(bounds.w, 0.01), Math.max(bounds.h, 0.01), height);
+    SCRATCH.rotation.set(0, 0, 0);
+    SCRATCH.updateMatrix();
+    mesh.setMatrixAt(from + i, SCRATCH.matrix);
+  }
 }
 
 function instanceBoxes(boxes: Box[], material: MeshLambertMaterial): InstancedMesh {

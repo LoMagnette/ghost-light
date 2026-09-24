@@ -149,8 +149,8 @@ Three `tap` activities, each raising the light in one zone:
 | 2 | Concourse board | behind the registration desk, +1.2 m | concourse, and the grand stair |
 | 3 | Stage amplifier rack | Room 8 stage, storey 1, foot of the 4.5 m rake | the auditorium level |
 
-The building assembles itself around the player as they play. There is no
-score, no clock and no failure. The reveal is the reward and it does not need
+The building assembles itself around the player as they play. There is no score and no
+clock. The only thing in here that can be lost is the cat's threat, below. The reveal is the reward and it does not need
 another one.
 
 **The route is a wordless tutorial, and every beat uses geometry that already
@@ -163,6 +163,24 @@ exists:**
 3. Find *which* staircase goes up, in the dark — the venue's vertical.
 4. Down the Room 8 rake: 4.5 m of terracing, downhill, with a stage at the
    bottom. Braking now has a consequence.
+
+**The two things still living here.** A cat in the concourse and a
+Bouvier des Flandres asleep in the exhibition hall — which is the chapter's
+own tagline, *something is still walking the building*, finally kept by
+something. They are `talk` activities with a `shape`, so they cost a post, a
+marker and a box of dialogue and nothing else.
+
+The cat threatens to go off, in a nod to a certain card game about the one
+kitten in the deck that ends it — the mechanic, not the wordmark, and no art
+or text is borrowed. It gives you **45 seconds to find the dog**, because a
+dog is the only thing that defuses a cat.
+
+That is the one deadline in a chapter that otherwise has no clock, and it is
+deliberately not a clock on the CHAPTER: the three boards are still untimed
+and still cannot be lost, and running the 45 seconds out costs you the dog
+and nothing else. The card shows the count down beside "Find the dog". A cat
+that says forty-five seconds and does not mean it is a worse joke than a cat
+that does.
 
 **The ending.** Board three brings up the ghost light on the keynote stage,
 and the projector starts running a recording — **and the recording is
@@ -185,7 +203,7 @@ activities keep a room alive, and the split is the entire chapter:
 
 | | Voxxy | Droid |
 |---|---|---|
-| The AV rack, 0.9 m | `tap` → buys ~8 seconds | can do it, too slowly to matter |
+| The AV rack, 0.9 m | `tap` → buys ~12 seconds | can do it, too slowly to matter |
 | The projector, 2.0 m | **cannot reach it** | `dwell` 3 s → full reset |
 
 So Voxxy is triage and Droid is repair. Voxxy buys time it cannot spend;
@@ -195,6 +213,15 @@ and running three.
 
 A room at zero goes dark, its attendees leave, and it never comes back. Three
 dark rooms ends the day early. The day is four minutes.
+
+The meter holds 70 seconds, which is a number set by the SIDE QUEST rather
+than by the rooms. Chapter II's four speakers are about 3,050 characters of
+dialogue, and dialogue is time spent standing still: sixty-five seconds of a
+two-hundred-and-forty second day, minimum. At the 45 it held before, Room 5
+emptied from full in thirty-three seconds and one conversation cost more than
+a room's entire life — the chapter asked the player to choose and then made
+one of the choices impossible. At 70 the longest conversation plus the drive
+back always fits, and two in a row late in the day do not.
 
 Read the building, not the HUD: a draining room visibly dims from the
 corridor. The meter is a fallback, not the primary signal.
@@ -212,7 +239,7 @@ README opens with.
 Control is `switch`, and **the clock never stops**. Wherever you are, the
 other two are idling somewhere expensive.
 
-#### The card — fifteen things, and no day is long enough for fifteen
+#### The card — seventeen things, and no day is long enough for seventeen
 
 Open activities can be done whenever. Windowed ones are gone forever when
 their window closes. That is a conference, and it is the mix of a checklist
@@ -232,11 +259,24 @@ and a timetable.
 | 10 | Free the jammed shutter | Hall, loading bay | `shove` ≥ 900 kg·m/s | **Biggy** | open, and it gates #6 |
 | 11 | The queue for the toilets | Concourse | `dwell` 20 s | any | open |
 | 12 | The keynote | Room 8, storey 1 | `attend`, seated before T+5:20 | not Biggy | T+5:20 → end |
+| 13 | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** | open |
+| 14 | Find the photographer | Hall, central aisle | `talk` | any | open |
+| 14b | A selfie with him | Hall, central aisle | `dwell` 2 s, the print rendered live: Dimitris chest-up, the top of Voxxy's head | **Voxxy** (`maxRadius` 0.40) — the joke is its size | open, after #14 |
+| 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | one robot per frame: the letters **Droid** (`reach` 2.0), the banner **Voxxy** (`maxRadius` 0.40), Josh **Biggy** (`carry` 100, he sits on it); then everybody | open, chained |
 
-Six minutes. Twelve activities. Three robots, each locked out of several.
+Six minutes. Seventeen rows. Three robots, each locked out of several.
 
 **#10 gates #6**, so Biggy's day is a run-up, a shutter and a keg, which is
 exactly what a 430 kg hauler should spend a conference doing.
+
+**#15 is the one that is not about time.** Four photographs, and the last of
+them wants every robot in the same five metres of floor — but `switch` only
+ever drives one, so the other two have to have been left there earlier by a
+player who knew they would be wanted. It is the only thing in the game that
+asks where all three machines are at once, and it is the only errand that
+ends with something to keep rather than something ticked: each photograph
+puts a print on the screen. A chapter whose whole sentence is *you cannot do
+all of it* should have one thing in it worth losing the rest for.
 
 #### The building has to name the rooms
 

@@ -17,6 +17,7 @@ import {
   inZone,
   zoneCentre,
   type Activity,
+  type Photo,
   type Reveal,
 } from './Activity';
 import type { Actor } from './Sim';
@@ -54,6 +55,8 @@ export interface ActivityState {
   progress: number;
   /** Haul only: who has it. */
   carrier?: Actor;
+  /** Chapter seconds at which this was completed. See `Activity.within`. */
+  doneAt?: number;
   /** Where the thing is right now. Haul items move; everything else does not. */
   x: number;
   y: number;
@@ -106,6 +109,15 @@ export class ObjectiveRun {
    * than switched would build one a frame.
    */
   readonly reveals: (Reveal & { id: string })[] = [];
+  /**
+   * Photographs taken, drained by the screen each frame.
+   *
+   * A queue rather than a flag, because the screen shows one print at a time
+   * and the core has no business knowing that. If a player ever manages to
+   * finish two photographs in one frame the screen can decide what to do
+   * with the second; dropping it here would be the core deciding.
+   */
+  readonly photos: Photo[] = [];
 
   constructor(objective: Objective) {
     this.objective = objective;
@@ -234,6 +246,18 @@ export class ObjectiveRun {
       }
     }
 
+    // A relative deadline: so many seconds from whatever unlocked this. It is
+    // checked AFTER `after`, because it is counted from when the last of them
+    // finished and before that there is nothing to count from.
+    if (a.within !== undefined && this.deadline(a) !== undefined) {
+      const deadline = this.deadline(a) as number;
+      if (this.elapsed > deadline) {
+        state.status = 'missed';
+        this.say(`Too late: ${a.label}`);
+        return;
+      }
+    }
+
     if (state.status === 'locked') state.status = 'open';
 
     const here = actors.filter(
@@ -253,7 +277,20 @@ export class ObjectiveRun {
       }
 
       case 'dwell': {
-        const working = here.some((actor) => actor.body.speed < STILL);
+        /*
+         * `everybody` wants the WHOLE cast, which is a different question
+         * from the usual one and has to be asked against `actors` rather
+         * than against `here`: `here` is already filtered to whoever the
+         * gates admit, so asking it whether everyone is present is asking
+         * whether everyone who turned up turned up.
+         */
+        const working = a.everybody
+          ? actors.length > 0 &&
+            actors.every(
+              (actor) =>
+                inZone(a.at, actor.floor, actor.body.x, actor.body.y) && actor.body.speed < STILL,
+            )
+          : here.some((actor) => actor.body.speed < STILL);
         // Decays when abandoned rather than resetting: leaving costs you the
         // time you spent, which is a cost, not a punishment.
         state.progress += (working ? dt : -dt) / a.seconds;
@@ -410,15 +447,35 @@ export class ObjectiveRun {
     }
   }
 
+  /**
+   * When an activity with a relative deadline runs out, in chapter seconds.
+   *
+   * The LAST of its prerequisites to finish starts the clock, which is the
+   * only reading that makes sense when there is more than one: the deadline
+   * cannot start before the thing it is a consequence of.
+   */
+  deadline(a: Activity): number | undefined {
+    if (a.within === undefined || !a.after?.length) return undefined;
+    let started = -Infinity;
+    for (const id of a.after) {
+      const at = this.states.find((s) => s.activity.id === id)?.doneAt;
+      if (at === undefined) return undefined;
+      started = Math.max(started, at);
+    }
+    return started + a.within;
+  }
+
   private isDone(id: string): boolean {
     return this.states.some((s) => s.activity.id === id && s.status === 'done');
   }
 
   private complete(state: ActivityState): void {
     state.status = 'done';
+    state.doneAt = this.elapsed;
     state.progress = 1;
     this.say(state.activity.label);
     if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
+    if (state.activity.photo) this.photos.push(state.activity.photo);
   }
 
   private say(text: string): void {
@@ -443,7 +500,11 @@ export class ObjectiveRun {
       return;
     }
 
-    const finishable = this.states.filter((s) => s.activity.kind !== 'tend');
+    // A tend room never finishes and a side quest does not have to, so
+    // neither is evidence that the round is over.
+    const finishable = this.states.filter(
+      (s) => s.activity.kind !== 'tend' && !s.activity.optional,
+    );
     const settled = finishable.filter((s) => s.status === 'done' || s.status === 'missed');
     if (finishable.length > 0 && settled.length === finishable.length) {
       this.phase = 'ended';

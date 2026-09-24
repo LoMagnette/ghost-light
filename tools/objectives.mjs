@@ -202,6 +202,14 @@ for (const chapter of CHAPTERS) {
     // A window you cannot be present for the whole of is a window nobody can
     // make, and it will read to a player as a bug in the game rather than a
     // choice in the design.
+    // A relative deadline counts from the last of `after`, so without one it
+    // counts from nothing and silently never fires.
+    if (activity.within !== undefined && (activity.after?.length ?? 0) === 0) {
+      failures.push(
+        `${chapter.id}/${activity.id}: a \`within\` deadline with no \`after\` to count it from`,
+      );
+    }
+
     if (activity.window && activity.kind === 'attend') {
       const span = activity.window.to - activity.window.from;
       if (activity.seconds > span) {

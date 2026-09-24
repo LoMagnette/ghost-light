@@ -30,12 +30,46 @@
 import { rectContains, type Level, type Rect, type Venue } from './Venue';
 import { groundAt } from './Venue';
 import type { Actor } from './Sim';
+import { ISO_AZIMUTH } from './Iso';
 
 /** Crowd steps per second. Not the physics rate, deliberately. */
 export const CROWD_HZ = 20;
 
+/**
+ * How many of a dead room's audience are actually drawn walking out.
+ *
+ * Not all of them. Room 5 holds two hundred and fifty at this density and the
+ * renderer's mover budget is four hundred for the whole building, so five
+ * rooms emptying in full would be six hundred people nobody asked for. Three
+ * dozen out of a door reads as a room emptying; the rest of the evidence is
+ * the seats going bare behind them.
+ */
+const EVACUEES = 36;
+
 /** How close a robot has to be before an attendant turns to it, metres. */
 const ATTENDANT_NOTICE = 6;
+
+/**
+ * Which way somebody stands when they are waiting for you, and how far off it
+ * they will turn once you arrive.
+ *
+ * The camera is fixed to the south-west and a face is on the FRONT of a head,
+ * so an attendant who turns to track the player exactly will, half the time,
+ * present the back of their skull to the only viewpoint this game has. That
+ * cost nothing while a named person was a shirt and a haircut. It costs
+ * everything now that the beard, the hairline and the glasses — the whole of
+ * a likeness — are on the side of the head the player is not guaranteed to
+ * see.
+ *
+ * So they face the viewer by default and turn no more than this off it. They
+ * still turn towards whoever comes over, which is the one piece of body
+ * language this renderer has and worth keeping; they just do it the way an
+ * actor does, without ever playing the scene upstage. 75 degrees is the
+ * widest angle that keeps both the beard and one lens of the glasses on
+ * screen, found by photographing it rather than by reasoning about it.
+ */
+const TOWARDS_VIEWER = ISO_AZIMUTH + Math.PI;
+const FACE_ARC = 1.31;
 
 /** How fast an attendant walks back to its mark after being shoved, m/s. */
 const POST_RETURN = 0.55;
@@ -161,6 +195,79 @@ const AVOID_URGENCY = 3.2;
  */
 const PERSONAL_SPACE = 0.55;
 
+/**
+ * What one named individual looks like, as against the crowd.
+ *
+ * The crowd is a MASS and takes one colour — that decision is defended at
+ * length on `Palette.crowd` and it still holds. This is the exception it
+ * always implied: somebody you can walk up to and have a conversation with
+ * is not part of a mass, and five of them standing in one corridor all in
+ * the same shirt is five of nobody.
+ *
+ * **The pixel budget, measured rather than assumed.** The first version of
+ * this said a figure was twenty pixels tall and refused everything finer
+ * than a shirt on that basis. It is not twenty. The camera fits 32 m across
+ * 1280 px, which is 40 px/m across and — at 30 degrees of elevation — 34.6
+ * px/m up, so a 1.72 m person stands 60 px tall and their head is 9 px by 8.
+ * A spectacle frame is 0.035 m, which is 1.2 px: a thin dark line across a
+ * nine-pixel head, and thin dark lines across heads are exactly what reads
+ * at this size. Three of the levers below were cut by that bad number and
+ * are back because the number was bad.
+ *
+ * What is still refused: anything that needs more than about a pixel to say
+ * — an expression, an eye, a nose, a logo on a shirt. These are real people,
+ * and a bad likeness is worse than an honest abstraction. Everything here is
+ * a silhouette fact, the kind you would use to point somebody out across a
+ * room: the one with the long grey hair, the one with the amber glasses.
+ */
+export interface Look {
+  /** Torso and sleeves. Overrides the era's crowd colour entirely. */
+  shirt?: number;
+  /** Hair, and the beard too unless `beardHair` says otherwise. */
+  hair?: number;
+  /**
+   * Where the hair starts. `receding` walks the cap back off the forehead;
+   * `bald` takes the crown away entirely and leaves what grows at the sides,
+   * which with `long` is the whole of one famous silhouette.
+   */
+  hairline?: 'full' | 'receding' | 'bald';
+  /** Hair down past the ears to the shoulder, either side of the face. */
+  long?: boolean;
+  /**
+   * How much beard, as a shape rather than a flag. All four are genuinely
+   * different silhouettes at 9 px: stubble is a shading of the jaw, a goatee
+   * is a narrow tab under the mouth, a full beard is wider than the mouth
+   * and reaches the cheekbone, and a moustache is a bar ABOVE the mouth and
+   * nothing below it — which is a face you can name across a hall.
+   */
+  beard?: 'stubble' | 'goatee' | 'moustache' | 'full';
+  /**
+   * Beard colour, when it is not hair colour — which is not a detail. A man
+   * with dark hair and a grey beard is a specific person, and rendering him
+   * dark-bearded makes him a different one.
+   */
+  beardHair?: number;
+  /** Frame colour. Glasses are 1.2 px and 1.2 px of frame is a face. */
+  glasses?: number;
+  /**
+   * A camera held at the chest. The only thing in here that is a JOB rather
+   * than a feature.
+   *
+   * It earns its box on findability alone: Chapter III runs at capacity,
+   * which is three thousand people, and the one you are looking for is a
+   * photographer in the black that every event photographer wears. A marker
+   * post says an activity is here; a dark rectangle held at chest height
+   * says which of these people is him.
+   */
+  camera?: boolean;
+  /**
+   * Multiplier on the whole figure. People differ by a head, which is 8% and
+   * about five pixels — small, and the difference between five figures and
+   * five of the same figure.
+   */
+  scale?: number;
+}
+
 export interface Person {
   x: number;
   y: number;
@@ -190,6 +297,25 @@ export interface Person {
    * see `personColours`.
    */
   posted?: boolean;
+  /**
+   * What this one IS, when it is not a person.
+   *
+   * The building has two animals living in it and they are posted the same
+   * way an attendant is — stand somewhere, turn to whoever comes over, be
+   * something you can walk up to. Everything about that is already here, and
+   * the only thing that differs is the shape the renderer draws.
+   */
+  shape?: 'cat' | 'dog';
+  /** Who they are, for the ones who are somebody. See `Look`. */
+  look?: Look;
+  /**
+   * The room this person is in, for the ones who are in a room.
+   *
+   * Only the seated audience and the speakers carry it. Roamers belong to a
+   * corridor and an attendant belongs to a post, and neither is a thing that
+   * can be emptied.
+   */
+  room?: string;
 }
 
 /**
@@ -208,6 +334,8 @@ export interface Post {
   x: number;
   y: number;
   floor: Level;
+  shape?: 'cat' | 'dog';
+  look?: Look;
 }
 
 interface Mover extends Person {
@@ -220,6 +348,10 @@ interface Mover extends Person {
   dy: number;
   /** A speaker paces its stage and never leaves it. */
   stage?: Rect;
+  /** Spawned by `evacuate`, and taken away again by `reseat`. */
+  left?: boolean;
+  /** A speaker's stage while they are not on it. See `evacuate`. */
+  wasStage?: Rect;
 }
 
 /** Walkable cells of one storey, as a set of packed grid coordinates. */
@@ -249,6 +381,8 @@ export class Crowd {
   private readonly plans = new Map<Level, Floorplan>();
   private readonly random: () => number;
   private accumulator = 0;
+  /** How many have already walked out of each room. See `evacuate`. */
+  private readonly gone = new Map<string, number>();
 
   constructor(
     venue: Venue,
@@ -361,7 +495,12 @@ export class Crowd {
       }
     }
     if (!at) return;
-    mover.heading = Math.atan2(at.body.y - mover.y, at.body.x - mover.x);
+    const want = Math.atan2(at.body.y - mover.y, at.body.x - mover.x);
+    // Turn towards them, but not past the point where the camera loses their
+    // face. See FACE_ARC.
+    let off = want - TOWARDS_VIEWER;
+    off = Math.atan2(Math.sin(off), Math.cos(off));
+    mover.heading = TOWARDS_VIEWER + Math.max(-FACE_ARC, Math.min(FACE_ARC, off));
   }
 
   /** Stop people standing inside each other. See PERSONAL_SPACE. */
@@ -540,6 +679,7 @@ export class Crowd {
       if (this.random() > occupancy) continue;
 
       this.seated.push({
+        room: room.id,
         x,
         y,
         // ON the pan: the seat states where its own surface is, so the
@@ -555,7 +695,115 @@ export class Crowd {
     }
   }
 
-  /** One person at each post, facing nowhere in particular until asked. */
+  /**
+   * A session is losing its audience. Put `wanted` of them in the corridor.
+   *
+   * Topped up rather than fired once, because people do not all leave when
+   * the room finally dies — they leave while it is dying, which is the whole
+   * point of it being a signal. Ask for a total and it spawns the difference.
+   *
+   *
+   * The seats emptying is the renderer's half of this — see `emptySeats` —
+   * and on its own it is people DISAPPEARING, which is not what
+   * `docs/MECHANICS.md` §5.2 asks for. This is the half you actually watch:
+   * a stream of people out of the door and away down the corridor, which is
+   * also the only consequence of losing a room that the player has to drive
+   * around afterwards.
+   *
+   * They are spawned at the DOOR rather than at their seats, and that is the
+   * cheap trick that makes this affordable. Standing them up in the seating
+   * would mean matching each mover to the seated instance being hidden, in
+   * the renderer's departure order, across a module boundary `src/core` is
+   * not allowed to see. Coming out of the doorway they have already stood up,
+   * and nobody can count them against a room that is dark by then anyway.
+   *
+   * Capped, because two hundred and fifty new movers is most of the
+   * renderer's budget for one room and there are five of them.
+   */
+  evacuate(roomId: string, wanted: number): void {
+    const already = this.gone.get(roomId) ?? 0;
+    const leaving = Math.min(EVACUEES, Math.round(wanted)) - already;
+    if (leaving <= 0) return;
+    this.gone.set(roomId, already + leaving);
+
+    const room = this.venue.rooms.find((r) => r.id === roomId);
+    if (!room) return;
+
+    // The speaker stops being a speaker. A stage nobody is watching is not a
+    // stage, and one still being paced in a dark room is a ghost.
+    for (const mover of this.walkers) {
+      if (mover.room !== roomId || !mover.stage) continue;
+      // Kept rather than dropped: `R` restarts the round and the session has
+      // to be able to be running again.
+      mover.wasStage = mover.stage;
+      mover.stage = undefined;
+    }
+
+    // The corridor side of the room, which is the end nearer the building's
+    // centre line — same reading `backOfHouse` makes in `objectives.ts`.
+    const b = room.bounds;
+    const inward = b.x < 0 ? -1 : 1;
+    const door = b.x < 0 ? b.x + b.w : b.x;
+
+    const corridor = this.venue.rooms.find(
+      (r) => r.floor === room.floor && r.kind === 'corridor',
+    );
+
+    for (let i = 0; i < leaving; i += 1) {
+      const x = door - inward * (0.6 + this.random() * 1.8);
+      const y = b.y + (0.15 + this.random() * 0.7) * b.h;
+      const mover: Mover = {
+        x,
+        y,
+        z: groundAt(this.venue, room.floor, x, y),
+        floor: room.floor,
+        heading: inward > 0 ? Math.PI : 0,
+        tint: this.random(),
+        speed: WALK_SPEED + (this.random() - 0.5) * SPEED_SPREAD,
+        // Out into the corridor first. After that `retarget` takes over and
+        // they are ordinary roamers, which is what somebody who has just left
+        // a talk is.
+        tx: corridor ? corridor.bounds.x + this.random() * corridor.bounds.w : x - inward * 8,
+        ty: y + (this.random() - 0.5) * 6,
+        dx: 0,
+        dy: 0,
+        left: true,
+      };
+      this.walkers.push(mover);
+      this.movers.push(mover);
+    }
+  }
+
+  /**
+   * Put everybody back where the round started. Called on restart.
+   *
+   * The renderer refills the seats it emptied; this undoes the other half.
+   * Without it `R` is a slow leak — every restart leaves the last round's
+   * leavers wandering the corridor, and five rooms times a few restarts is
+   * the mover budget gone on an audience that is no longer at the
+   * conference.
+   */
+  reseat(): void {
+    this.gone.clear();
+    for (let i = this.walkers.length - 1; i >= 0; i -= 1) {
+      const mover = this.walkers[i];
+      if (mover.left) {
+        this.walkers.splice(i, 1);
+        const at = this.movers.indexOf(mover);
+        if (at >= 0) this.movers.splice(at, 1);
+        continue;
+      }
+      if (mover.wasStage) {
+        mover.stage = mover.wasStage;
+        mover.wasStage = undefined;
+        mover.x = mover.stage.x + mover.stage.w / 2;
+        mover.y = mover.stage.y + mover.stage.h / 2;
+        this.retarget(mover);
+      }
+    }
+  }
+
+  /** One person at each post, facing the viewer until somebody comes over. */
   private placeAttendants(posts: readonly Post[]): void {
     for (const post of posts) {
       const mover: Mover = {
@@ -563,7 +811,7 @@ export class Crowd {
         y: post.y,
         z: groundAt(this.venue, post.floor, post.x, post.y),
         floor: post.floor,
-        heading: 0,
+        heading: TOWARDS_VIEWER,
         tint: this.random(),
         speed: 0,
         tx: post.x,
@@ -571,6 +819,8 @@ export class Crowd {
         dx: 0,
         dy: 0,
         posted: true,
+        shape: post.shape,
+        look: post.look,
       };
       this.walkers.push(mover);
       this.movers.push(mover);
@@ -584,6 +834,9 @@ export class Crowd {
       if (!stage) continue;
       const b = stage.bounds;
       const mover: Mover = {
+        // The stage is `<room>-stage`; the speaker belongs to the room, so
+        // that when the room empties they walk off with everybody else.
+        room: id,
         x: b.x + b.w / 2,
         y: b.y + b.h / 2,
         z: stage.elevation ?? 0,
