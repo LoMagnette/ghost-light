@@ -1054,7 +1054,12 @@ export class BlockoutRenderer {
           ? [0.005, 0.105, 0.76, whiskers]
           : look.beard === 'goatee'
             ? [0.04, 0.105, 0.5, whiskers]
-            : [0.025, 0.1, 0.68, mix(skin, whiskers, 0.55)];
+            : look.beard === 'moustache'
+              ? // Above the mouth and stopping there, which is the whole
+                // point of it: the same box lower down is a goatee and a
+                // different man. Wider than a goatee and half its height.
+                [0.075, 0.115, 0.62, whiskers]
+              : [0.025, 0.1, 0.68, mix(skin, whiskers, 0.55)];
       i = this.placePart(i, person, chin + foot * k, chin + top * k, 0.07, w * wide, colour, 0, w * 0.42);
     }
 
@@ -1075,6 +1080,23 @@ export class BlockoutRenderer {
       // height the skull has already started to curve away, and a bar cut to
       // the full width hangs off both temples in mid-air.
       i = this.placePart(i, person, eyes, eyes + 0.035 * k, 0.05, w * 0.86, look.glasses, 0, w * 0.44);
+    }
+
+    /*
+     * A camera, held at the chest on a strap.
+     *
+     * Graphite rather than black, which was the first try and was wrong for
+     * a reason worth writing down: a real camera IS black, and a black
+     * rectangle on the black jacket every event photographer wears is not a
+     * camera, it is nothing. The argument that it would catch the key light
+     * at a different angle turned out to be true and to be worth about one
+     * value step, which is invisible. So it is the grey of a lens barrel —
+     * the one part of a camera that is not black — and now it reads as
+     * somebody holding something, which is all it ever had to say.
+     */
+    if (look.camera) {
+      const held = PERSON_NECK * k - 0.26 * k;
+      i = this.placePart(i, person, held, held + 0.1 * k, 0.09, 0.17, 0x7b7f84, 0, PERSON_THICK * 0.6);
     }
 
     return i;

@@ -28,7 +28,7 @@ import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/Blockout
 import { ObjectiveRun, type ActivityState } from '@/core/Objective';
 import { Crowd, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
-import { admits, inZone, zoneCentre, type TalkActivity } from '@/core/Activity';
+import { admits, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
@@ -128,6 +128,9 @@ export class ChapterScreen implements Screen {
   private dropRequested = false;
   /** Seconds left on the current notification. */
   private toastFor = 0;
+  /** The photograph on screen, and how long it has left. */
+  private print!: HTMLDivElement;
+  private printFor = 0;
   /** True while the cast is on the forecourt. Changes what the camera frames. */
   private outside = false;
 
@@ -196,9 +199,12 @@ export class ChapterScreen implements Screen {
     // written without the person it is with turning up — which is the bug the
     // whole of this was built to stop: twelve errands run past nobody.
     const posts = chapter.objective.activities
-      .filter((a): a is TalkActivity => a.kind === 'talk')
-      // Somebody you go BACK to is already standing there. See
-      // `TalkActivity.alreadyHere`.
+      // Anybody the objective named, not just anybody it gave lines to. A
+      // photograph of Josh Long needs Josh Long in it and needs him to say
+      // nothing whatsoever. See `Activity.who`.
+      .filter((a) => a.who !== undefined || a.shape !== undefined)
+      // Somebody a SECOND activity happens with is already standing there.
+      // See `Activity.alreadyHere`.
       .filter((a) => !a.alreadyHere)
       .map((a) => {
         const at = zoneCentre(a.at);
@@ -344,6 +350,13 @@ export class ChapterScreen implements Screen {
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
 
+    if (this.printFor > 0) {
+      this.printFor -= dt;
+      // Fade on the way out and clear only once the transition has run, or
+      // the print vanishes mid-fade and reads as a glitch.
+      if (this.printFor <= 0) this.print.style.opacity = '0';
+    }
+
     if (this.toastFor > 0) {
       this.toastFor -= dt;
       if (this.toastFor <= 0) this.toast.textContent = '';
@@ -407,12 +420,90 @@ export class ChapterScreen implements Screen {
     }
     this.run.reveals.length = 0;
 
+    // One print at a time. Two photographs finishing in the same frame is not
+    // reachable — they are metres apart and gated on each other — but the
+    // queue is a queue, and showing the last is the same rule the toast uses.
+    const photos = this.run.photos;
+    if (photos.length > 0) {
+      this.showPrint(photos[photos.length - 1]);
+      photos.length = 0;
+    }
+
     const events = this.run.events;
     if (events.length > 0) {
       this.toast.textContent = events[events.length - 1].text;
       this.toastFor = 2.6;
       events.length = 0;
     }
+  }
+
+  /**
+   * Put a photograph up, the way a print lands on a table.
+   *
+   * It covers the middle of the screen for three and a half seconds, which
+   * is a long time in a six-minute day and is meant to be: the whole point of
+   * the errand is the picture, and a picture that flickers past in the corner
+   * is a notification. It is not interactive and it does not pause anything —
+   * the day carries on behind it, which is the joke and also the cost.
+   */
+  private showPrint(photo: Photo): void {
+    const { palette } = this.chapter;
+    this.print.replaceChildren();
+
+    const frame = el('div', {
+      background: '#efece4',
+      padding: '10px 10px 0',
+      boxShadow: '0 18px 44px rgba(0, 0, 0, 0.55)',
+      // A print is never quite square to the table it lands on.
+      transform: 'rotate(-1.4deg)',
+    });
+
+    if (photo.file) {
+      // `BASE_URL` rather than a leading slash: Pages serves this from a
+      // subdirectory, and a root-absolute src is the classic way to have a
+      // build that works locally and 404s in front of a judge.
+      const img = el('img', { display: 'block', width: '340px', height: 'auto' });
+      (img as HTMLImageElement).src = `${import.meta.env.BASE_URL}photos/${photo.file}`;
+      (img as HTMLImageElement).alt = photo.caption;
+      frame.append(img);
+    } else {
+      /*
+       * The print that has not been taken yet.
+       *
+       * Deliberately not an apology — no "missing image" glyph, no broken
+       * frame. It is a developed photograph of a dark room, which is what a
+       * print looks like before anybody has put a real one in its place, and
+       * it lets the timing and the size be judged now rather than after the
+       * art lands.
+       */
+      frame.append(
+        el('div', {
+          width: '340px',
+          height: '226px',
+          background: css(shade(palette.void, 2.1)),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          font: `11px ${MONO}`,
+          color: css(palette.accent),
+          letterSpacing: '0.22em',
+        }, 'PHOTO TO COME'),
+      );
+    }
+
+    frame.append(
+      el('div', {
+        font: `13px ${MONO}`,
+        color: '#2c2a26',
+        padding: '12px 2px 14px',
+        textAlign: 'center',
+        letterSpacing: '0.04em',
+      }, photo.caption),
+    );
+
+    this.print.append(frame);
+    this.print.style.opacity = '1';
+    this.printFor = 3.5;
   }
 
   /**
@@ -676,6 +767,31 @@ export class ChapterScreen implements Screen {
     });
     game.ui.append(this.toast);
 
+    /*
+     * The photograph.
+     *
+     * Middle of the screen and above everything, because it is the only
+     * thing in the game that is a REWARD rather than a readout — every other
+     * overlay here is telling the player how they are doing. Pointer events
+     * off: it is a picture, not a dialog, and a six-minute day must not stop
+     * for it.
+     */
+    this.print = el('div', {
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      top: '0',
+      bottom: '0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: '0',
+      transition: 'opacity 420ms ease-out',
+      pointerEvents: 'none',
+      zIndex: '6',
+    });
+    game.ui.append(this.print);
+
     // Only advertise the keys this chapter has anything to use. Chapter I is
     // one robot in an empty building: TAB, SPACE and E are all true of the
     // engine and none of them is true of the chapter, and a control list with
@@ -882,7 +998,7 @@ export class ChapterScreen implements Screen {
    */
   private card(): string {
     const lines: string[] = [];
-    const groups = new Map<string, { done: number; total: number }>();
+    const groups = new Map<string, { done: number; total: number; shown: boolean }>();
 
     for (const state of this.run.states) {
       /*
@@ -896,16 +1012,29 @@ export class ChapterScreen implements Screen {
        * start of. The corridor appears on the card when the host tells them
        * about the corridor, and the way back appears when there is one.
        */
-      if (state.activity.optional && state.status === 'locked') continue;
+      const hidden = state.activity.optional === true && state.status === 'locked';
 
       const group = state.activity.group;
       if (group) {
-        const tally = groups.get(group) ?? { done: 0, total: 0 };
+        /*
+         * A GROUP counts all of itself as soon as any of it is visible.
+         *
+         * Applying the rule above member by member made the shot list read
+         * "1/1" — four photographs, three of them still locked, so the
+         * denominator grew as the player worked and every photograph taken
+         * moved the target. A count that goes up when you score is worse
+         * than no count. So the row appears when the quest does, and it
+         * appears complete, which is what a shot list is.
+         */
+        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false };
         tally.total += 1;
         if (state.status === 'done') tally.done += 1;
+        if (!hidden) tally.shown = true;
         groups.set(group, tally);
         continue;
       }
+
+      if (hidden) continue;
       const left = this.run.deadline(state.activity);
       lines.push(
         cardLine(state) +
@@ -916,6 +1045,7 @@ export class ChapterScreen implements Screen {
     }
 
     for (const [name, tally] of groups) {
+      if (!tally.shown) continue;
       lines.push(`${tally.done === tally.total ? '·' : '›'} ${name} ${tally.done}/${tally.total}`);
     }
 

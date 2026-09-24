@@ -234,12 +234,13 @@ export interface Look {
   /** Hair down past the ears to the shoulder, either side of the face. */
   long?: boolean;
   /**
-   * How much beard, as a shape rather than a flag. The three are genuinely
+   * How much beard, as a shape rather than a flag. All four are genuinely
    * different silhouettes at 9 px: stubble is a shading of the jaw, a goatee
    * is a narrow tab under the mouth, a full beard is wider than the mouth
-   * and reaches the cheekbone.
+   * and reaches the cheekbone, and a moustache is a bar ABOVE the mouth and
+   * nothing below it — which is a face you can name across a hall.
    */
-  beard?: 'stubble' | 'goatee' | 'full';
+  beard?: 'stubble' | 'goatee' | 'moustache' | 'full';
   /**
    * Beard colour, when it is not hair colour — which is not a detail. A man
    * with dark hair and a grey beard is a specific person, and rendering him
@@ -248,6 +249,17 @@ export interface Look {
   beardHair?: number;
   /** Frame colour. Glasses are 1.2 px and 1.2 px of frame is a face. */
   glasses?: number;
+  /**
+   * A camera held at the chest. The only thing in here that is a JOB rather
+   * than a feature.
+   *
+   * It earns its box on findability alone: Chapter III runs at capacity,
+   * which is three thousand people, and the one you are looking for is a
+   * photographer in the black that every event photographer wears. A marker
+   * post says an activity is here; a dark rectangle held at chest height
+   * says which of these people is him.
+   */
+  camera?: boolean;
   /**
    * Multiplier on the whole figure. People differ by a head, which is 8% and
    * about five pixels — small, and the difference between five figures and

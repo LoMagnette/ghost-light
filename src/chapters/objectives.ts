@@ -748,5 +748,145 @@ export const CAPACITY_OBJECTIVE: Objective = {
       window: { from: 320, to: 360 },
       seconds: 18,
     },
+
+    /*
+     * The shot list.
+     *
+     * A photographer, four landmarks, and a print on the screen each time —
+     * which makes this the only errand in the game that gives the player
+     * something to KEEP rather than something to tick. Every other activity
+     * in Chapter III ends with a line of toast; these end with a picture, and
+     * that is worth the two rows it costs the card.
+     *
+     * It is a chain and it is `optional`, so the chapter's own sentence
+     * still holds: you cannot do all of it, and a player who spends the day
+     * on photographs has chosen that over the keg, the crate and the
+     * keynote. The three things they will not get to are the price, and the
+     * prints are what they have instead.
+     *
+     * The order is the building's rather than mine: the letters are upstairs
+     * in Room 8, the banner is in a BOF room off the concourse, and the last
+     * two are in the hall — so the shot list walks a player through the whole
+     * venue, which is what a conference photographer's day actually looks
+     * like and, not by accident, what a judge should see of the level.
+     */
+    {
+      kind: 'talk',
+      id: 'photographer',
+      label: 'Find the photographer',
+      who: 'Dimitris',
+      optional: true,
+      /*
+       * His look is what one distant photograph supports and nothing more.
+       *
+       * The only public picture of him is full-length on a beach, so the
+       * honest levers are the ones that survive it: head-to-toe black, short
+       * dark hair, lean. No face is claimed, because none is legible — and a
+       * photographer in black is accurate and typical at once. The camera is
+       * what actually finds him in a hall of three thousand people.
+       */
+      look: { shirt: 0x1c1d20, hair: 0x2b2722, scale: 1.0, camera: true },
+      // The broad central aisle, which every robot in this chapter drives
+      // down: the booth ranks stop at x -6.0 and start again at 4.7, so this
+      // is ten metres of clear floor and the one place in the hall a player
+      // cannot fail to pass.
+      at: spot(0, -0.6, -26.0, 3.2),
+      lines: [
+        'Robots. Finally, somebody who can hold still.',
+        'I shoot these all over — Athens, London, Kraków. Different building, same room.',
+        'Four frames and I have your whole day. The letters in Room 8. The old BeJUG banner, in the BOF room off reception.',
+        'One with Josh in the hall. Then all three of you together, and I want Venkat in that one.',
+        'Stand still when you get there. That is the entire job, and you would be amazed.',
+      ],
+    },
+    {
+      kind: 'dwell',
+      id: 'photo-room8',
+      label: 'Pose at the letters',
+      group: 'the shot list',
+      optional: true,
+      after: ['photographer'],
+      // On the Room 8 stage plate, just in front of `#DEVOXX` — the same
+      // apron Chapter I's last board stands on, so this is floor the harness
+      // has already proved a robot can reach. Biggy cannot: no goods lift,
+      // and the rake is a real staircase. It is not in this photograph, and
+      // that is the building's decision rather than mine.
+      at: spot(1, 34.2, -31.0, 3.0),
+      seconds: 2.5,
+      photo: { caption: 'Room 8 — in front of the letters' },
+    },
+    {
+      kind: 'dwell',
+      id: 'photo-bejug',
+      label: 'Pose at the BeJUG banner',
+      group: 'the shot list',
+      optional: true,
+      after: ['photographer'],
+      // BOF 1, off the reception concourse. A Birds-of-a-Feather room is
+      // where a user group actually meets, so it is where the banner of the
+      // user group that started this conference hangs.
+      at: spot(0, 32.2, -57.0, 3.0),
+      seconds: 2.5,
+      photo: { caption: 'BOF 1 — the BeJUG banner' },
+    },
+    {
+      kind: 'dwell',
+      id: 'photo-josh',
+      label: 'Pose with Josh Long',
+      who: 'Josh Long',
+      // Dark-rimmed glasses, short dark hair, a few days of stubble, dark
+      // t-shirt. Off his Devoxx speaker photograph.
+      look: {
+        shirt: 0x33363a,
+        hair: 0x2e2722,
+        beard: 'stubble',
+        glasses: 0x17181b,
+        scale: 1.0,
+      },
+      group: 'the shot list',
+      optional: true,
+      after: ['photographer'],
+      // North end of the central aisle, where the booth field stops and the
+      // hall opens out.
+      at: spot(0, -0.6, -13.5, 3.4),
+      seconds: 2.5,
+      photo: { caption: 'Exhibition hall — with Josh Long' },
+    },
+    {
+      kind: 'dwell',
+      id: 'photo-group',
+      label: 'The group photo',
+      who: 'Venkat Subramaniam',
+      // Dark hair going grey at the temples, thin frames, and the moustache,
+      // which is the whole face: a bar above the mouth and nothing below it.
+      look: {
+        shirt: 0x24262b,
+        hair: 0x3c3832,
+        beard: 'moustache',
+        beardHair: 0x2a2724,
+        glasses: 0x9a9289,
+        scale: 0.98,
+      },
+      group: 'the shot list',
+      optional: true,
+      // Last, and only last. A group photograph with two of the group
+      // missing is a photograph of one robot.
+      after: ['photo-room8', 'photo-bejug', 'photo-josh'],
+      /*
+       * The open floor north of the booth field, and five metres of it,
+       * because this zone has to hold all three machines at once: Biggy is
+       * 0.72 m of radius on its own and needs 3.8 m to stop.
+       *
+       * `everybody` is what makes this the hardest thing in the chapter, and
+       * the only one that is hard for a reason other than time. `switch`
+       * mode drives one robot; the other two are wherever you last left
+       * them. So the group photograph is not a place you go — it is a place
+       * you have been assembling all day without noticing.
+       */
+      at: spot(0, -2.0, 2.5, 5.0),
+      seconds: 3.5,
+      everybody: true,
+      photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam' },
+    },
   ],
 };

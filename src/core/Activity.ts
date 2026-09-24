@@ -108,6 +108,73 @@ interface Common {
    * card aggregates by this; nothing else reads it.
    */
   group?: string;
+
+  /*
+   * Somebody standing at this activity, and what the screen does when it is
+   * finished. Both were on `talk` until Chapter III wanted a photograph
+   * taken in front of a person who is not there to be talked to.
+   */
+
+  /**
+   * Who is standing here. Their name if they have one, and the reason a
+   * person appears at this zone at all.
+   *
+   * Lived on `TalkActivity` first, and moved because it was never really
+   * about talking: the rule it exists for is that an activity written with a
+   * person in it cannot be written without the person turning up. Josh Long
+   * has to be in the photograph of Josh Long, and nobody has to say a word.
+   */
+  who?: string;
+  /**
+   * What is standing there, if it is not a person.
+   *
+   * Chapter I is an empty building and the only two things left living in it
+   * are an animal apiece. They use every bit of this that a registration desk
+   * does — a post, a marker, a box of dialogue — and differ in the one way
+   * that matters, which is what you see when you get there.
+   */
+  shape?: 'cat' | 'dog';
+  /** What they look like, for the ones who are a person. See `Look`. */
+  look?: Look;
+  /**
+   * Somebody the objective has ALREADY put in the building, in this same
+   * place, for another activity.
+   *
+   * Every activity with a `who` stands a person at its zone, which is the
+   * rule that stops a conversation being written with nobody to have it —
+   * see `ChapterScreen`. Two things happening with one person is the case
+   * that rule gets wrong: without this, going back to Stephan puts a second,
+   * identical host inside the first, and photographing Josh Long stands a
+   * second Josh Long next to him.
+   */
+  alreadyHere?: boolean;
+  /**
+   * A picture the screen puts up when this is finished.
+   *
+   * On `Common` rather than on a photograph-shaped activity of its own,
+   * for the same reason `reveal` is: it is a CONSEQUENCE of finishing
+   * something, not a way of doing something. The doing is a `dwell` — hold
+   * still while somebody takes your picture — and the dwell needed no
+   * changes at all to be photographed.
+   */
+  photo?: Photo;
+}
+
+/**
+ * What the screen puts up when a photograph is taken.
+ *
+ * `file` names an image under `public/photos/`; absent, the screen draws the
+ * frame and the caption on its own. That is not a stub to be tidied away
+ * later: a print that has not arrived yet should still land in the game as a
+ * print, so the timing, the size and the way it interrupts a six-minute day
+ * can all be judged before anybody has taken a photograph. It is the only
+ * honest way to build a feature whose art is somebody else's job.
+ */
+export interface Photo {
+  /** Printed under the frame, the way a caption is. */
+  caption: string;
+  /** File name under `public/photos/`. Absent draws a placeholder. */
+  file?: string;
 }
 
 /** Contact. The cheap one, and Voxxy's: twenty-seven of them is a sweep. */
@@ -122,6 +189,17 @@ export interface TapActivity extends Common {
 export interface DwellActivity extends Common {
   kind: 'dwell';
   seconds: number;
+  /**
+   * Every robot in the cast has to be here, and all of them still.
+   *
+   * One robot holding still is a job. Three robots holding still in the same
+   * place is a LOGISTICS problem, because `switch` mode only ever drives one
+   * of them — so the other two have to have been parked here earlier, by a
+   * player who knew they would be wanted. That is the group photograph, and
+   * it is the only thing in the game that asks where all three machines are
+   * at once.
+   */
+  everybody?: boolean;
 }
 
 /**
@@ -222,30 +300,12 @@ export interface TendActivity extends Common {
  */
 export interface TalkActivity extends Common {
   kind: 'talk';
-  /** Who is speaking. Shown above the box, so it is a name and not a title. */
+  /**
+   * Who is speaking. Required here and optional on `Common`, which is the
+   * whole of the difference: anything in the objective MAY stand somebody at
+   * its zone, and a conversation MUST.
+   */
   who: string;
-  /**
-   * What is standing there, if it is not a person.
-   *
-   * Chapter I is an empty building and the only two things left living in it
-   * are an animal apiece. They use every bit of this that a registration desk
-   * does — a post, a marker, a box of dialogue — and differ in the one way
-   * that matters, which is what you see when you get there.
-   */
-  shape?: 'cat' | 'dog';
-  /** What they look like, for the ones who are a person. See `Look`. */
-  look?: Look;
-  /**
-   * A SECOND conversation with somebody the objective has already put in the
-   * building, in the same place as the first.
-   *
-   * Every `talk` activity stands a person at its zone, which is the rule
-   * that stops a conversation being written with nobody to have it — see
-   * `ChapterScreen`. Going back to somebody you have already met is the one
-   * case that rule gets wrong: without this it puts a second, identical host
-   * inside the first one.
-   */
-  alreadyHere?: boolean;
   /** What they say, one boxful at a time. */
   lines: string[];
 }

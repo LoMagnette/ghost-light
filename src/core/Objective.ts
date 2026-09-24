@@ -17,6 +17,7 @@ import {
   inZone,
   zoneCentre,
   type Activity,
+  type Photo,
   type Reveal,
 } from './Activity';
 import type { Actor } from './Sim';
@@ -108,6 +109,15 @@ export class ObjectiveRun {
    * than switched would build one a frame.
    */
   readonly reveals: (Reveal & { id: string })[] = [];
+  /**
+   * Photographs taken, drained by the screen each frame.
+   *
+   * A queue rather than a flag, because the screen shows one print at a time
+   * and the core has no business knowing that. If a player ever manages to
+   * finish two photographs in one frame the screen can decide what to do
+   * with the second; dropping it here would be the core deciding.
+   */
+  readonly photos: Photo[] = [];
 
   constructor(objective: Objective) {
     this.objective = objective;
@@ -267,7 +277,20 @@ export class ObjectiveRun {
       }
 
       case 'dwell': {
-        const working = here.some((actor) => actor.body.speed < STILL);
+        /*
+         * `everybody` wants the WHOLE cast, which is a different question
+         * from the usual one and has to be asked against `actors` rather
+         * than against `here`: `here` is already filtered to whoever the
+         * gates admit, so asking it whether everyone is present is asking
+         * whether everyone who turned up turned up.
+         */
+        const working = a.everybody
+          ? actors.length > 0 &&
+            actors.every(
+              (actor) =>
+                inZone(a.at, actor.floor, actor.body.x, actor.body.y) && actor.body.speed < STILL,
+            )
+          : here.some((actor) => actor.body.speed < STILL);
         // Decays when abandoned rather than resetting: leaving costs you the
         // time you spent, which is a cost, not a punishment.
         state.progress += (working ? dt : -dt) / a.seconds;
@@ -452,6 +475,7 @@ export class ObjectiveRun {
     state.progress = 1;
     this.say(state.activity.label);
     if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
+    if (state.activity.photo) this.photos.push(state.activity.photo);
   }
 
   private say(text: string): void {
