@@ -101,7 +101,7 @@ order given below rather than compressing every day.
 
 ## Human-only tasks
 
-Nine items. The first three block everything else.
+Eleven items. The first three blocked everything else.
 
 ### Blocking
 
@@ -159,7 +159,24 @@ the palettes stay guesses until the files are on disk.
 9. **Playtest with a stranger.** Someone who has never seen it, while you stay
    completely silent. Write down every hesitation. This is the 15 playability
    points and it is the step people skip.
-10. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
+10. **Provide the four shot-list photographs.** Chapter III is complete
+   without them: each frame shows a PHOTO TO COME placeholder until its file
+   exists. Drop them in `public/photos/` as 3:2 JPEGs, 1020 × 680, quality
+   ~82, then say so and the agent wires the `file` lines and checks each
+   print in a screenshot. One robot per frame, because the game only lets
+   that robot earn it:
+
+   | Frame | Robot | File |
+   |---|---|---|
+   | Room 8, in front of `#DEVOXX` | **Droid** | `room-8.jpg` |
+   | BOF 1, the BeJUG banner | **Voxxy** | `bejug-banner.jpg` |
+   | Exhibition hall, Josh Long riding it | **Biggy** | `josh-long.jpg` |
+   | Exhibition hall, with Venkat Subramaniam | **all three** | `group.jpg` |
+
+   The selfie with Dimitris needs nothing; the game renders it. **Ask Josh,
+   Venkat and Dimitris first** — `public/` ships in an MIT-licensed public
+   repo. See `public/photos/README.md`.
+11. **Submit the form.** Name, email, repo URL, hosted URL, tech + genAI
    description. Submit on the 25th and again at the end — they judge the most
    recent entry, so an early one is free insurance.
 
