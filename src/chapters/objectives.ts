@@ -797,7 +797,31 @@ export const CAPACITY_OBJECTIVE: Objective = {
         'Four frames and I have your whole day. The letters in Room 8. The old BeJUG banner, in the BOF room off reception.',
         'One with Josh in the hall. Then all three of you together, and I want Venkat in that one.',
         'Stand still when you get there. That is the entire job, and you would be amazed.',
+        'But first, one of us. A photographer is in none of his own pictures. Hold still.',
       ],
+    },
+    {
+      kind: 'dwell',
+      id: 'selfie-dimitris',
+      label: 'Selfie with Dimitris',
+      who: 'Dimitris',
+      // The man who asked for it is the man who gave you the list.
+      alreadyHere: true,
+      optional: true,
+      after: ['photographer'],
+      /*
+       * His own spot, and the same size of it, so the player who has just
+       * listened to him is already standing in it — the last line asks them
+       * to hold still, and holding still is the whole of the answer.
+       *
+       * Not on the shot list. Those are his frames, taken for the
+       * conference; this is the player's, of him, and counting it as the
+       * fifth of four would make the one picture the photographer is in look
+       * like one more errand he sent you on.
+       */
+      at: spot(0, -0.6, -26.0, 3.2),
+      seconds: 2.0,
+      photo: { caption: 'Central aisle — a selfie with Dimitris', selfie: true },
     },
     {
       kind: 'dwell',

@@ -25,6 +25,11 @@ photo: { caption: 'Room 8 — in front of the letters', file: 'room-8.jpg' },
 | `photo-josh` | Exhibition hall — with Josh Long | `josh-long.jpg` |
 | `photo-group` | Exhibition hall — all three, with Venkat Subramaniam | `group.jpg` |
 
+The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
+no file: it is `selfie: true`, and the screen takes it off the game's own
+canvas the moment it is finished, so the print is whatever the player's robot
+and Dimitris actually look like at that moment.
+
 ## What the frame wants
 
 - **340 px wide**, shown at 1× on a 1280 × 720 canvas. A 3:2 print at

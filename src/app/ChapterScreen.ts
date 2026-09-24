@@ -17,7 +17,7 @@
  * and a player only ever perceives mass through the response to it.
  */
 
-import type { OrthographicCamera, Scene } from 'three';
+import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from 'three';
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS } from '@/core/RobotSpec';
@@ -65,6 +65,14 @@ const LEAVING_FROM = 0.75;
 
 /** How far a posted creature stands from its marker, metres, south and west. */
 const POST_OFFSET = 0.62;
+
+/** A print on screen, design pixels. 3:2 — see `public/photos/README.md`. */
+const PRINT_WIDTH = 340;
+const PRINT_HEIGHT = 226;
+/** How much of the hall a selfie takes in, metres across. */
+const SELFIE_WIDTH_METRES = 7;
+/** Where a selfie is aimed above the floor, metres. A standing person's chest. */
+const SELFIE_CHEST = 0.9;
 
 /**
  * How many of a room's audience are drawn walking out, at the point where all
@@ -131,6 +139,12 @@ export class ChapterScreen implements Screen {
   /** The photograph on screen, and how long it has left. */
   private print!: HTMLDivElement;
   private printFor = 0;
+  /**
+   * A selfie waiting for the frame it is to be taken from. See `takeSelfie`.
+   */
+  private selfie: Photo | undefined;
+  /** The game's renderer, which a selfie has to be taken with. */
+  private renderer!: WebGLRenderer;
   /** True while the cast is on the forecourt. Changes what the camera frames. */
   private outside = false;
 
@@ -164,6 +178,7 @@ export class ChapterScreen implements Screen {
     const { chapter } = this;
 
     game.setBackground(chapter.palette.void);
+    this.renderer = game.renderer;
 
     this.sim = new Sim(KINEPOLIS);
 
@@ -349,6 +364,12 @@ export class ChapterScreen implements Screen {
     this.blockout.setMarkers(this.markers(), this.floor);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
+    // After the scene is dressed for this frame and not before, or the
+    // selfie is of the frame BEFORE the one in which it was taken.
+    if (this.selfie) {
+      this.showPrint(this.selfie, this.takeSelfie(this.selfie));
+      this.selfie = undefined;
+    }
 
     if (this.printFor > 0) {
       this.printFor -= dt;
@@ -408,6 +429,7 @@ export class ChapterScreen implements Screen {
     this.endCard?.remove();
     this.endCard = undefined;
     this.toast.textContent = '';
+    this.selfie = undefined;
     this.snapCamera();
   }
 
@@ -425,7 +447,11 @@ export class ChapterScreen implements Screen {
     // queue is a queue, and showing the last is the same rule the toast uses.
     const photos = this.run.photos;
     if (photos.length > 0) {
-      this.showPrint(photos[photos.length - 1]);
+      const photo = photos[photos.length - 1];
+      // A selfie is taken from the frame about to be drawn, which does not
+      // exist yet. `update` develops it once the scene is dressed.
+      if (photo.selfie) this.selfie = photo;
+      else this.showPrint(photo);
       photos.length = 0;
     }
 
@@ -446,7 +472,7 @@ export class ChapterScreen implements Screen {
    * is a notification. It is not interactive and it does not pause anything —
    * the day carries on behind it, which is the joke and also the cost.
    */
-  private showPrint(photo: Photo): void {
+  private showPrint(photo: Photo, taken?: HTMLCanvasElement): void {
     const { palette } = this.chapter;
     this.print.replaceChildren();
 
@@ -454,15 +480,19 @@ export class ChapterScreen implements Screen {
       background: '#efece4',
       padding: '10px 10px 0',
       boxShadow: '0 18px 44px rgba(0, 0, 0, 0.55)',
-      // A print is never quite square to the table it lands on.
-      transform: 'rotate(-1.4deg)',
+      // A print is never quite square to the table it lands on — and a
+      // selfie leans the other way, because it was held at arm's length.
+      transform: photo.selfie ? 'rotate(1.8deg)' : 'rotate(-1.4deg)',
     });
 
-    if (photo.file) {
+    if (taken) {
+      Object.assign(taken.style, { display: 'block', width: `${PRINT_WIDTH}px`, height: `${PRINT_HEIGHT}px` });
+      frame.append(taken);
+    } else if (photo.file) {
       // `BASE_URL` rather than a leading slash: Pages serves this from a
       // subdirectory, and a root-absolute src is the classic way to have a
       // build that works locally and 404s in front of a judge.
-      const img = el('img', { display: 'block', width: '340px', height: 'auto' });
+      const img = el('img', { display: 'block', width: `${PRINT_WIDTH}px`, height: 'auto' });
       (img as HTMLImageElement).src = `${import.meta.env.BASE_URL}photos/${photo.file}`;
       (img as HTMLImageElement).alt = photo.caption;
       frame.append(img);
@@ -478,8 +508,8 @@ export class ChapterScreen implements Screen {
        */
       frame.append(
         el('div', {
-          width: '340px',
-          height: '226px',
+          width: `${PRINT_WIDTH}px`,
+          height: `${PRINT_HEIGHT}px`,
           background: css(shade(palette.void, 2.1)),
           display: 'flex',
           alignItems: 'center',
@@ -504,6 +534,54 @@ export class ChapterScreen implements Screen {
     this.print.append(frame);
     this.print.style.opacity = '1';
     this.printFor = 3.5;
+  }
+
+  /**
+   * Develop a selfie from the game's own canvas.
+   *
+   * The scene is drawn once more, here, and read back in the same task.
+   * That is not waste: WebGL throws the drawing buffer away as soon as it has
+   * been shown, so by the time anything else could read the frame `Game`
+   * draws, there is no frame to read — and keeping it with
+   * `preserveDrawingBuffer` would cost every other frame of the game to buy
+   * this one.
+   *
+   * Framed on the point halfway between the robot and the man it is with,
+   * at chest height, and a fixed seven metres across: wide enough that both
+   * are in it from anywhere in his zone, tight enough that it is a picture of
+   * the two of them rather than of the hall.
+   */
+  private takeSelfie(photo: Photo): HTMLCanvasElement {
+    this.renderer.render(this.scene, this.camera);
+    const source = this.renderer.domElement;
+
+    const robot = this.controlled.body;
+    const zone = this.run.states.find((s) => s.activity.photo === photo)?.activity.at;
+    const centre = zone ? zoneCentre(zone) : { x: robot.x, y: robot.y };
+    // Where the post stands, not the zone centre. See `POST_OFFSET`.
+    const them = zone ? { x: centre.x - POST_OFFSET, y: centre.y - POST_OFFSET } : centre;
+    const aim = new Vector3((robot.x + them.x) / 2, (robot.y + them.y) / 2, robot.z + SELFIE_CHEST);
+    aim.project(this.camera);
+
+    const cam = this.camera;
+    const pxPerMetre = source.width / ((cam.right - cam.left) / cam.zoom);
+    const w = Math.min(source.width, SELFIE_WIDTH_METRES * pxPerMetre);
+    const h = Math.min(source.height, (w * PRINT_HEIGHT) / PRINT_WIDTH);
+    const cx = ((aim.x + 1) / 2) * source.width;
+    const cy = ((1 - aim.y) / 2) * source.height;
+    // Kept inside the canvas: a crop hanging off the edge is a print with a
+    // black bar down one side, which reads as a bug and not as a photograph.
+    const sx = Math.max(0, Math.min(source.width - w, cx - w / 2));
+    const sy = Math.max(0, Math.min(source.height - h, cy - h / 2));
+
+    const print = document.createElement('canvas');
+    // Twice the print, so it is sharp at the 2x pixel ratio `Game` caps at.
+    print.width = PRINT_WIDTH * 2;
+    print.height = PRINT_HEIGHT * 2;
+    print.getContext('2d')?.drawImage(source, sx, sy, w, h, 0, 0, print.width, print.height);
+    print.setAttribute('role', 'img');
+    print.setAttribute('aria-label', photo.caption);
+    return print;
   }
 
   /**

@@ -3998,6 +3998,39 @@ NUL bytes — then I restored from it, destroying the file. Nothing was lost:
 was re-applied from the same script. The lesson is that the version control
 is the backup, and a `cp` to a temp directory is a second thing that can fail.
 
+### Claude Opus — a selfie with the photographer
+
+**Prompt:**
+> Can you adapt the current interaction with the photograph in chapter 3 you
+> should also take a selfie with him that will be displayed
+
+**Iterations:** 1, checked with one headless frame.
+
+**Not a fifth frame on the shot list.** The obvious move was one more `dwell`
+in the `the shot list` group. It is the wrong one: those four are his
+pictures, taken for the conference, and a selfie is the player's picture OF
+him. Counting it as 5/5 would make the one photograph the photographer is in
+look like one more errand he sent you on. So it is its own optional row,
+gated on the talk, at his own spot with `alreadyHere` so a second Dimitris
+does not appear inside the first. His last line now asks for it — "a
+photographer is in none of his own pictures. Hold still." — and holding still
+is the whole of the answer, because the player is already standing there.
+
+**Taken off the canvas, not waiting for a file.** Every other print is a
+placeholder until somebody supplies a JPEG. A selfie cannot be supplied: it is
+a picture of this robot, this man, wherever the player parked. So `Photo`
+gets `selfie`, and the screen develops it from the game's own frame. That
+has one trap worth writing down. WebGL throws the drawing buffer away once it
+has been shown, so reading the frame `Game` draws gets you a blank —
+unless `preserveDrawingBuffer` is on, which would cost every frame of the game
+to buy this one. The screen instead draws the scene once more at the moment
+of the selfie and reads it back in the same task, cropped to seven metres
+around the midpoint of the robot and Dimitris.
+
+**What I corrected in my own draft.** The first version of his line gave him
+"nine years of Devoxx". He is a real person and I had no source for that, so
+it is gone. The line says only what is true of any photographer.
+
 ---
 
 ## Audio

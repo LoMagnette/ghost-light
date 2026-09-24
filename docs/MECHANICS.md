@@ -261,6 +261,7 @@ and a timetable.
 | 12 | The keynote | Room 8, storey 1 | `attend`, seated before T+5:20 | not Biggy | T+5:20 → end |
 | 13 | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** | open |
 | 14 | Find the photographer | Hall, central aisle | `talk` | any | open |
+| 14b | A selfie with him | Hall, central aisle | `dwell` 2 s, the print taken off the live frame | any | open, after #14 |
 | 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | the letters are on storey 1, so **not Biggy** | open, chained |
 
 Six minutes. Seventeen rows. Three robots, each locked out of several.

@@ -175,6 +175,16 @@ export interface Photo {
   caption: string;
   /** File name under `public/photos/`. Absent draws a placeholder. */
   file?: string;
+  /**
+   * Taken off the game's own canvas, the frame it is finished in.
+   *
+   * The other prints are pictures OF the conference and wait for somebody to
+   * go and take them. A selfie is a picture of THIS moment — this robot, this
+   * man, wherever the player happened to park — so the only honest source is
+   * the frame the game just drew. It needs no file and never shows the
+   * placeholder, and `file` is ignored beside it.
+   */
+  selfie?: boolean;
 }
 
 /** Contact. The cheap one, and Voxxy's: twenty-seven of them is a sweep. */
