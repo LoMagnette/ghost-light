@@ -15,15 +15,19 @@ could be judged before the art existed.
 To wire one up, add `file` beside the caption that is already there:
 
 ```ts
-photo: { caption: 'Room 8 — in front of the letters', file: 'room-8.jpg' },
+photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpg' },
 ```
 
-| Activity | Caption | Suggested file |
-|---|---|---|
-| `photo-room8` | Room 8 — in front of the letters | `room-8.jpg` |
-| `photo-bejug` | BOF 1 — the BeJUG banner | `bejug-banner.jpg` |
-| `photo-josh` | Exhibition hall — with Josh Long | `josh-long.jpg` |
-| `photo-group` | Exhibition hall — all three, with Venkat Subramaniam | `group.jpg` |
+Each frame has exactly one robot in it, and only that robot can earn it —
+the gate on the activity guarantees the print never shows a machine the
+player did not bring. Shoot them that way.
+
+| Activity | Robot in the frame | Caption | Suggested file |
+|---|---|---|---|
+| `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.jpg` |
+| `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.jpg` |
+| `photo-josh` | **Biggy**, with Josh sitting on it | Exhibition hall — Josh Long, riding Biggy | `josh-long.jpg` |
+| `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.jpg` |
 
 The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
 no file: it is `selfie: true`, and the screen takes it off the game's own

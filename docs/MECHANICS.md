@@ -262,7 +262,7 @@ and a timetable.
 | 13 | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** | open |
 | 14 | Find the photographer | Hall, central aisle | `talk` | any | open |
 | 14b | A selfie with him | Hall, central aisle | `dwell` 2 s, the print taken off the live frame | any | open, after #14 |
-| 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | the letters are on storey 1, so **not Biggy** | open, chained |
+| 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | one robot per frame: the letters **Droid** (`reach` 2.0), the banner **Voxxy** (`maxRadius` 0.40), Josh **Biggy** (`carry` 100, he sits on it); then everybody | open, chained |
 
 Six minutes. Seventeen rows. Three robots, each locked out of several.
 

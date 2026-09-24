@@ -794,8 +794,10 @@ export const CAPACITY_OBJECTIVE: Objective = {
       lines: [
         'Robots. Finally, somebody who can hold still.',
         'I shoot these all over — Athens, London, Kraków. Different building, same room.',
-        'Four frames and I have your whole day. The letters in Room 8. The old BeJUG banner, in the BOF room off reception.',
-        'One with Josh in the hall. Then all three of you together, and I want Venkat in that one.',
+        'Four frames and I have your whole day, and I know who I want in each.',
+        'Droid at the letters in Room 8 — you are the only one taller than they are.',
+        'Voxxy under the old BeJUG banner, in the BOF room off reception.',
+        'Josh in the hall, sitting on Biggy. Then all three of you together, and I want Venkat in that one.',
         'Stand still when you get there. That is the entire job, and you would be amazed.',
         'But first, one of us. A photographer is in none of his own pictures. Hold still.',
       ],
@@ -836,8 +838,17 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // and the rake is a real staircase. It is not in this photograph, and
       // that is the building's decision rather than mine.
       at: spot(1, 34.2, -31.0, 3.0),
+      /*
+       * Droid's, and the gate says why rather than who: the letters are
+       * 1.5 m (`GLYPH_HEIGHT`), and Droid at 2.05 m is the only one of the
+       * cast whose head clears them — Voxxy and Biggy would be standing in
+       * the word. Each print is one fixed file, so each frame has one fixed
+       * robot in it: a photograph of Droid that Voxxy earned would be a lie
+       * on the screen.
+       */
+      gates: { reach: 2.0 },
       seconds: 2.5,
-      photo: { caption: 'Room 8 — in front of the letters' },
+      photo: { caption: 'Room 8 — Droid, in front of the letters' },
     },
     {
       kind: 'dwell',
@@ -850,8 +861,12 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // where a user group actually meets, so it is where the banner of the
       // user group that started this conference hangs.
       at: spot(0, 32.2, -57.0, 3.0),
+      // Voxxy's. A BOF room is the smallest room in the building and full of
+      // chairs, and the banner is the subject: the robot in front of it
+      // should cover as little of it as a robot can.
+      gates: { maxRadius: 0.4 },
       seconds: 2.5,
-      photo: { caption: 'BOF 1 — the BeJUG banner' },
+      photo: { caption: 'BOF 1 — Voxxy under the BeJUG banner' },
     },
     {
       kind: 'dwell',
@@ -873,8 +888,13 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // North end of the central aisle, where the booth field stops and the
       // hall opens out.
       at: spot(0, -0.6, -13.5, 3.4),
+      // Biggy's, because Josh sits on it. A person is freight to exactly one
+      // machine in the cast — Droid's 90 kg is a crate of shirts, not a man
+      // with a margin — and it is the one robot the Room 8 frame shuts out,
+      // so every robot gets a picture of its own.
+      gates: { carry: 100 },
       seconds: 2.5,
-      photo: { caption: 'Exhibition hall — with Josh Long' },
+      photo: { caption: 'Exhibition hall — Josh Long, riding Biggy' },
     },
     {
       kind: 'dwell',

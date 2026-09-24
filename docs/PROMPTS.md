@@ -4031,6 +4031,32 @@ around the midpoint of the robot and Dimitris.
 "nine years of Devoxx". He is a real person and I had no source for that, so
 it is gone. The line says only what is true of any photographer.
 
+### Claude Opus — one robot per photograph
+
+**Prompt:**
+> I would like that like to fix a droid per picture expect for the one with
+> venkat
+
+**Iterations:** 1, plus a claim of my own that the venue contradicted.
+
+**Gates, not robot ids.** `Gates` in `Activity.ts` says in so many words that
+the day an activity names a robot is the day the cast stops being three
+machines. So each frame is pinned with the requirement that happens to select
+one robot: the letters `reach` 2.0 (Droid, 2.05 m), the banner `maxRadius`
+0.40 (Voxxy, 0.34 m), Josh `carry` 100 (Biggy — Droid's payload is 90 kg).
+Room 8 already shut Biggy out, so the assignment is forced in one place and
+chosen in the other two to give every robot a frame of its own. Josh riding
+Biggy is the reason `carry` is honest rather than arbitrary.
+
+**What the venue corrected.** I first justified Droid at the letters as
+"the letters are taller than a person", and had Dimitris say "nobody else
+stands as tall as they do". `GLYPH_HEIGHT` is 1.5 m. Droid is the one robot
+TALLER than them, which is the opposite of the line; both now say that.
+
+**The card cannot say it, so he does.** The shot list shows as one row,
+"the shot list 0/4", so which robot goes where is only in Dimitris's lines —
+the second of them, which was already long, split in two.
+
 ---
 
 ## Audio
