@@ -149,6 +149,25 @@ interface Common {
    */
   alreadyHere?: boolean;
   /**
+   * The auditorium this keeps running, which makes the activity a BREAKDOWN.
+   *
+   * Chapter II. Something in that room has gone wrong — a projector bulb, a
+   * mic cable, a speaker without an adapter, more audience than chairs — and
+   * the `window` is how long the room will wait for it. While it waits the
+   * room's house lights go down; fix it and they come back up. Miss it and
+   * the room is LOST: the lights go out, the audience walks out, and nothing
+   * else that was going to go wrong in that room gets the chance to.
+   *
+   * On `Common`, not a kind of its own, because a breakdown is a DEADLINE on
+   * a room rather than a way of doing something. The doing is whichever verb
+   * the job needs, and each of those is a question the two robots answer
+   * differently: reach (`dwell` at 2 m), fit (a `tap` behind the lectern),
+   * speed (a `haul` from the desk to the stage), strength (a `haul` of 40
+   * kg). It replaced a drain-and-refill meter on each room, which had only
+   * ever asked the first of those four questions.
+   */
+  room?: string;
+  /**
    * A picture the screen puts up when this is finished.
    *
    * On `Common` rather than on a photograph-shaped activity of its own,
@@ -255,39 +274,6 @@ export interface ShoveActivity extends Common {
 }
 
 /**
- * A room that is running, and will stop if left alone. Chapter II.
- *
- * The meter is in SECONDS of session left, which makes every number here
- * legible: it drains at one second per second plus the ramp, a tap buys eight
- * of them back, and a repair fills it. It never completes — it can only be
- * kept alive or lost.
- */
-export interface TendActivity extends Common {
-  kind: 'tend';
-  /**
-   * The room this session is in.
-   *
-   * Stated rather than derived from the id or found by testing the zone
-   * against every room in the venue, because when the session ends the
-   * PEOPLE in that room have to be found — the audience in the seats and the
-   * speaker on the stage — and "the room whose bounds contain the centre of
-   * `at`" is a lookup that happens to work rather than a link that is meant.
-   */
-  room: string;
-  /** Seconds on the clock when full. */
-  capacity: number;
-  /** Seconds of meter lost per second, at the start of the round. */
-  drain: number;
-  /** Extra drain per second, per second. The day gets worse. */
-  drainRamp: number;
-  /** Seconds bought by arriving at the rack. Voxxy's contribution. */
-  tapBonus: number;
-  /** A full reset costs this much standing still at `repairReach` metres. */
-  repairSeconds: number;
-  repairReach: number;
-}
-
-/**
  * Somebody with something to say, and the only activity the player ADVANCES
  * rather than performs.
  *
@@ -326,7 +312,6 @@ export type Activity =
   | HaulActivity
   | AttendActivity
   | ShoveActivity
-  | TendActivity
   | TalkActivity;
 
 /** Is this point inside this zone? Storey first — rooms stack. */

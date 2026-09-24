@@ -96,13 +96,11 @@ requirements. Five kinds cover all three chapters:
 | `haul` | item of mass *m* picked up at A, released inside zone B | Biggy, or Droid for the middleweights |
 | `attend` | inside room R for a whole time window | anything that can get there — which excludes Biggy from storey 1 |
 | `shove` | contact at momentum ≥ *p* kg·m/s | Biggy alone; see below |
-| `tend` | a room that is running, and stops if left alone | Chapter II, and only it |
 
-`tend` was not in the first draft of this document, which claimed five kinds
-and then described Chapter II in terms none of them could express. A room
-with a meter that drains is not a task that completes — it can only be kept
-or lost — so it is its own kind rather than a `dwell` with a lie told about
-it.
+There was a sixth, `tend` — a room with a meter that drains — and it went on
+24 Sep with the meters. Chapter II's rooms are now kept alive by BREAKDOWNS,
+which are not a kind at all: any activity with a `room` and a `window` is
+one, done by whichever of the five verbs the job needs. See §5.2.
 
 Each declares what it needs: `reach` (metres), `maxRadius` (metres), `mass`
 (kilograms), and a location whose storey implies the climb gate.
@@ -190,7 +188,7 @@ phrase and becomes the plot.
 Optional and near-free: a second light moving somewhere far off that the
 player can never reach. *Something is still walking the building.*
 
-### 5.2 Chapter II — JavaPolis · *two hands, five rooms*
+### 5.2 Chapter II — JavaPolis · *the right shape for the job*
 
 **Objective: keep every room running. Lose three and the day ends.**
 
@@ -198,33 +196,48 @@ Five rooms in use — 2, 3, 4, 5 and 6, the west side of the corridor, with
 Room 5 (684 seats) as the main hall. Half the floor, which is what
 `crowdDensity` 0.35 already says.
 
-Each room holds a session meter that drains, faster as the day goes on. Two
-activities keep a room alive, and the split is the entire chapter:
+Things go wrong in them all day, on a schedule: eleven breakdowns in four
+minutes, overlapping. Each is a question about what shape of robot you have,
+and the four questions are the four real differences between the two:
 
-| | Voxxy | Droid |
-|---|---|---|
-| The AV rack, 0.9 m | `tap` → buys ~12 seconds | can do it, too slowly to matter |
-| The projector, 2.0 m | **cannot reach it** | `dwell` 3 s → full reset |
+| Breakdown | Where | Verb | Asks | Robot |
+|---|---|---|---|---|
+| Projector bulb | the booth, back of the room, 2 m up | `dwell` 3 s, `reach` 2.0 | reach | **Droid** (2.05 m) |
+| Mic cable | behind the lectern, a 0.80 m slot | `tap`, `maxRadius` 0.40 | fit | **Voxxy** (0.68 m across) |
+| Speaker's adapter | organisers' desk → the stage, down the rake | `haul` 0.5 kg | speed | either, but **Voxxy** by miles: 6.0 m/s and stops on the spot |
+| Chairs for overflow | the foyer → the room, the length of the corridor | `haul` 40 kg | strength | **Droid** (Voxxy carries 10) |
 
-So Voxxy is triage and Droid is repair. Voxxy buys time it cannot spend;
-Droid spends time it cannot buy. **The robot you are not driving is the one
-that matters** — which is the honest middle step between driving one machine
-and running three.
+A room with a breakdown in it dims over the breakdown's window, linearly,
+down to 12% of its light — never to zero, which is a room that has been lost.
+Fix it and the lights come back up. Miss it and the room is **lost**: the
+lights go out, the audience files out over seven seconds, and nothing else
+that was going to go wrong in that room gets to. Three lost rooms end the
+day; getting through the last breakdown, or to the end of the clock, is a
+win — and a win is the wormhole into Chapter III.
 
-A room at zero goes dark, its attendees leave, and it never comes back. Three
-dark rooms ends the day early. The day is four minutes.
+**The robot you are not driving is still the one that matters**, and more
+honestly than before. A bulb is a dwell, so Droid can be parked in a booth
+and left to it; the chairs are the long job of the day, so you start Droid
+on them early and TAB to Voxxy for the sprint. At most moments one of the
+two is the right robot and the other is somewhere else, busy.
 
-The meter holds 70 seconds, which is a number set by the SIDE QUEST rather
-than by the rooms. Chapter II's four speakers are about 3,050 characters of
-dialogue, and dialogue is time spent standing still: sixty-five seconds of a
-two-hundred-and-forty second day, minimum. At the 45 it held before, Room 5
-emptied from full in thirty-three seconds and one conversation cost more than
-a room's entire life — the chapter asked the player to choose and then made
-one of the choices impossible. At 70 the longest conversation plus the drive
-back always fits, and two in a row late in the day do not.
+The card lists a breakdown only while it is happening, with its seconds
+left and — when only one of the cast can do it at all — whose job it is.
 
-Read the building, not the HUD: a draining room visibly dims from the
-corridor. The meter is a fallback, not the primary signal.
+This replaced, on 24 Sep, a meter on every room that Voxxy topped up by
+tapping and Droid refilled by standing at a 2 m projector. It asked one
+question, reach, through two verbs neither robot is really about, and the
+author's verdict was that it did not show the difference between them.
+
+The mic slot needed the venue to change: the screen wall is 0.3 m thick on
+its line, so the lectern at `DESK_STANDOFF` 1.35 left 0.70 m — Voxxy with a
+centimetre each side. At 1.45 it is 0.80, the same gap the Chapter III stands
+use, and driving both robots at it in the real sim puts Voxxy in the zone and
+stops Droid at the lectern's end.
+
+The day has not been played by a person yet. Its windows are set from
+distances, not from feel, and the schedule is `BREAKDOWNS` in
+`src/chapters/objectives.ts` — a list of eleven lines to tune.
 
 ### 5.3 Chapter III — At Capacity · *the conference*
 

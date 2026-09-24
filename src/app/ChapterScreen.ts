@@ -26,10 +26,10 @@ import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
-import { ObjectiveRun, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
+import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
-import { admits, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
+import { admits, admittedBy, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
@@ -52,17 +52,22 @@ import {
 const CARD_TOP = 70;
 
 /**
- * How dim a room's light gets before anybody walks out of it, 0..1.
+ * How far a room's lights go down while it waits for a breakdown, 0..1.
  *
- * Asked for directly, and it is the right number for a reason worth writing
- * down: a room at full light is a session going fine and a room at three
- * quarters is one that has been left alone for a bit. Anything higher and the
- * audience starts draining out of rooms the player is keeping up with, which
- * turns the signal into noise. Below it, everybody who is still there leaves
- * by the time it is dark — `departed` is 1 at zero light — so a failed room
- * empties without the failure needing a rule of its own.
+ * Not to zero. Zero is a room that has been LOST, and a room still waiting
+ * for you has to look different from one that has given up, or the dimming
+ * reads as the end rather than as the warning.
+ *
+ * Linear over the window, and it was square-rooted first: that kept a room
+ * looking nearly fine until the last few seconds, and measured off a frame
+ * the room was 90 at the start, 77 with four seconds left and 56 dead. A
+ * warning you can only see once it is too late to act on is not one.
  */
-const LEAVING_FROM = 0.75;
+const WAITING_LIGHT = 0.12;
+/** How fast a room's light follows where it should be, per second. */
+const LIGHT_EASE = 3;
+/** Seconds for a lost room's audience to finish walking out. */
+const WALKOUT = 7;
 
 /** How far a posted creature stands from its marker, metres, south and west. */
 const POST_OFFSET = 0.62;
@@ -196,6 +201,12 @@ export class ChapterScreen implements Screen {
    * A selfie waiting for the frame it is to be taken from. See `takeSelfie`.
    */
   private selfie: Photo | undefined;
+  /**
+   * The auditoria a breakdown can happen in, and how lit each one is right
+   * now. Eased, so a fixed room comes back up rather than snapping on.
+   */
+  private sessionRooms: { id: string; floor: Level; bounds: { x: number; y: number; w: number; h: number } }[] = [];
+  private roomLight = new Map<string, number>();
   /** The game's renderer, which a selfie has to be taken with. */
   private renderer!: WebGLRenderer;
   /**
@@ -318,6 +329,10 @@ export class ChapterScreen implements Screen {
     this.controller = new KeyboardController(game.keyboard);
 
     this.run = new ObjectiveRun(chapter.objective);
+    const named = new Set(chapter.objective.activities.flatMap((a) => (a.room ? [a.room] : [])));
+    this.sessionRooms = KINEPOLIS.rooms
+      .filter((r) => named.has(r.id))
+      .map((r) => ({ id: r.id, floor: r.floor, bounds: r.bounds }));
 
     // A building this dark is unplayable without something to see by, and a
     // lamp on the robot is both the cheapest answer and the right one: it
@@ -433,7 +448,7 @@ export class ChapterScreen implements Screen {
     }
     this.dropRequested = false;
     this.talkRequested = false;
-    this.showSessions();
+    this.showSessions(dt);
     if (this.story) this.updateStory(dt, talkPressed);
     else this.updateTalk(dt);
 
@@ -968,52 +983,49 @@ export class ChapterScreen implements Screen {
    * up rather than as a room emptying. The day is over; the building is still
    * there, and what is happening in it finishes.
    */
-  private showSessions(): void {
+  private showSessions(dt: number): void {
     /*
-     * A room is as lit as its session has left in it.
+     * A room is as lit as it has patience left.
      *
      * Driven every frame rather than queued on an event, because this is not
-     * a thing that happens — it is a thing that is true. A room at 40 of its
-     * 45 seconds is a room you would not look at twice; one at 6 is a room
-     * you can see going out from the far end of a 126 m corridor, which is
-     * where the player is when it matters.
-     *
-     * Eased, and the curve is the point. Linear, a room spends most of the
-     * round looking fine and then falls off a cliff in the last few seconds,
-     * which is too late to drive there. Square-rooted, it starts losing
-     * light early and slowly — so "that one is dimmer than the others" is a
-     * thing you notice while you can still do something about it.
+     * a thing that happens — it is a thing that is true. A room with nothing
+     * wrong in it is at full light. A breakdown takes it down towards
+     * `WAITING_LIGHT` over its window, and the soonest deadline in the room
+     * wins. Fixed, it comes straight back up; that is the reward, and it is
+     * visible from the far end of a 126 m corridor, which is where the
+     * player usually is when it happens.
      */
-    for (const state of this.run.states) {
-      const a = state.activity;
-      if (a.kind !== 'tend' || !a.reveal) continue;
-      const left = state.status === 'failed' ? 0 : Math.max(0, state.progress) / a.capacity;
-      const lit = Math.sqrt(left);
-      this.blockout.lightZone(a.id, a.reveal.bounds, a.reveal.floor, a.reveal.to * lit);
+    const now = this.run.elapsed;
+    for (const room of this.sessionRooms) {
+      const lostAt = this.run.lostRooms.get(room.id);
+      let target = 1;
+      if (lostAt !== undefined) {
+        target = 0;
+      } else {
+        for (const state of this.run.states) {
+          const a = state.activity;
+          if (a.room !== room.id || !a.window) continue;
+          if (state.status !== 'open' && state.status !== 'carried') continue;
+          const left = clamp01((a.window.to - now) / (a.window.to - a.window.from));
+          target = Math.min(target, WAITING_LIGHT + (1 - WAITING_LIGHT) * left);
+        }
+      }
+      const was = this.roomLight.get(room.id) ?? 1;
+      const lit = was + (target - was) * Math.min(1, dt * LIGHT_EASE);
+      this.roomLight.set(room.id, lit);
+      this.blockout.lightZone(`room:${room.id}`, room.bounds, room.floor, lit);
 
       /*
-       * And the audience goes with the light.
+       * And a lost room empties.
        *
-       * `MECHANICS.md` §5.2: "a room at zero goes dark, its attendees leave,
-       * and it never comes back." This used to fire on failure, which read as
-       * a room being switched off with everybody in it — and a room only
-       * fails once, so the fact that it had been in trouble for twenty
-       * seconds beforehand was information the player never got.
-       *
-       * People leave while a session is DYING, not when it is dead, and that
-       * turns the audience into a second reading of the same meter: a room
-       * you can see thinning from the far end of the corridor while there is
-       * still time to drive to it.
-       *
-       * Nobody moves until the light is down to LEAVING_FROM — a session
-       * running a little behind is not one anybody walks out of — and the
-       * rate climbs from there, both because the curve steepens and because
-       * the drain itself ramps with the day.
+       * Over seconds, not in a frame: a room switched off with everybody in
+       * it reads as the renderer giving up. An audience that gets up and
+       * files out down the corridor reads as a session that is over.
        */
-      const departed = Math.min(1, Math.max(0, (LEAVING_FROM - lit) / LEAVING_FROM));
-      if (departed <= 0) continue;
-      this.blockout.emptySeats(a.room, departed);
-      this.crowd.evacuate(a.room, departed * EVACUEES);
+      if (lostAt === undefined) continue;
+      const departed = clamp01((now - lostAt) / WALKOUT);
+      this.blockout.emptySeats(room.id, departed);
+      this.crowd.evacuate(room.id, departed * EVACUEES);
     }
   }
 
@@ -1031,6 +1043,9 @@ export class ChapterScreen implements Screen {
     for (const state of this.run.states) {
       const { activity, status } = state;
       if (status === 'done' || status === 'missed' || status === 'failed') continue;
+      // A breakdown that has not happened yet has no post. A grey marker on
+      // a projector that is working is a spoiler for the next two minutes.
+      if (activity.room !== undefined && status === 'locked') continue;
 
       if (status === 'carried' && activity.kind === 'haul') {
         const centre = zoneCentre(activity.to);
@@ -1485,6 +1500,27 @@ export class ChapterScreen implements Screen {
       }
 
       if (hidden) continue;
+
+      /*
+       * A breakdown is on the card while it is happening, and never before
+       * or after. Ten of them over a day listed from the start would be the
+       * whole chapter's script on screen; listed after, a pile of ticks.
+       * What the player needs is what is wrong NOW and how long it has.
+       */
+      const window = state.activity.window;
+      if (state.activity.room !== undefined) {
+        if ((state.status !== 'open' && state.status !== 'carried') || !window) continue;
+        const secs = Math.max(0, Math.ceil(window.to - this.run.elapsed));
+        const glyph = state.status === 'carried' ? '»' : secs <= 10 ? '!' : '›';
+        // Who it is FOR, when only one of the cast can do it at all. The
+        // whole chapter is learning which shape each job wants, and the
+        // card says so until the player stops needing to be told.
+        const able = admittedBy(state.activity, this.chapter.cast.map((id) => ROBOTS[id]));
+        const who = able.length === 1 ? `  · ${able[0].name}` : '';
+        lines.push(`${glyph} ${state.activity.label}  ${secs}s${who}`);
+        continue;
+      }
+
       const left = this.run.deadline(state.activity);
       lines.push(
         cardLine(state) +
@@ -1498,6 +1534,8 @@ export class ChapterScreen implements Screen {
       if (!tally.shown) continue;
       lines.push(`${tally.done === tally.total ? '·' : '›'} ${name} ${tally.done}/${tally.total}`);
     }
+
+    for (const room of this.run.lostRooms.keys()) lines.push(`× ${roomName(room)} — emptied`);
 
     return lines.join('\n');
   }
@@ -1545,15 +1583,15 @@ export class ChapterScreen implements Screen {
         { font: `15px ${SANS}`, color: css(chapter.palette.accent) },
         // Same rule as the header, and it has to be: a chapter about keeping
         // five rooms alive does not end on a score out of the side quest.
-        this.run.states.some((s) => s.activity.kind === 'tend')
-          ? `${this.run.states.filter((s) => s.activity.kind === 'tend' && s.status !== 'failed').length} of ${this.run.states.filter((s) => s.activity.kind === 'tend').length} still running`
+        this.sessionRooms.length > 0
+          ? `${this.sessionRooms.length - this.run.lost} of ${this.sessionRooms.length} rooms still running`
           : `${this.run.done} of ${this.run.total}`,
       ),
     );
 
     if (missed > 0 || lost > 0) {
       const detail = [
-        lost > 0 ? `${lost} room${lost === 1 ? '' : 's'} went dark` : '',
+        lost > 0 ? `${lost} room${lost === 1 ? '' : 's'} emptied` : '',
         missed > 0 ? `${missed} missed` : '',
       ]
         .filter(Boolean)
@@ -1579,7 +1617,7 @@ export class ChapterScreen implements Screen {
      * A chapter with rooms to KEEP counts what is still running; one with
      * things to FINISH counts what is done.
      *
-     * Keyed off whether there are any tend rooms, not off whether there is
+     * Keyed off whether there are any rooms to keep, not off whether there is
      * anything finishable. The old test was the second one, which was true of
      * Chapter II only for as long as Chapter II had nothing in it but rooms:
      * adding one optional conversation flipped the header to "0/2" and took
@@ -1587,11 +1625,9 @@ export class ChapterScreen implements Screen {
      * denominator was wrong in the same way — it counted every state, so a
      * side quest would have made it "11/11 running".
      */
-    const rooms = this.run.states.filter((s) => s.activity.kind === 'tend');
+    const rooms = this.sessionRooms.length;
     const tally =
-      rooms.length > 0
-        ? `${rooms.filter((s) => s.status !== 'failed').length}/${rooms.length} running`
-        : `${this.run.done}/${this.run.total}`;
+      rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done}/${this.run.total}`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
     this.cardText.textContent = this.card();
@@ -1762,13 +1798,6 @@ function lift(colour: number): number {
 /** One card row: a glyph for the state, the label, and any live number. */
 function cardLine(state: ActivityState): string {
   const { activity, status } = state;
-
-  if (activity.kind === 'tend') {
-    const left = Math.ceil(state.progress);
-    return status === 'failed'
-      ? `× ${activity.label} — dark`
-      : `${left < 12 ? '!' : '·'} ${activity.label} ${left}s`;
-  }
 
   const glyph =
     status === 'done' ? '·' : status === 'missed' ? '×' : status === 'carried' ? '»' : status === 'locked' ? ' ' : '›';
