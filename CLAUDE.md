@@ -68,7 +68,7 @@ and none is reachable from inside it:
 | `?lab` | straight into the movement rig |
 | `?chapter=<id>` | straight into a chapter, no menu |
 | `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
-| `?exit` | open the chapter's wormhole at once, if it has one |
+| `?exit` | with `?chapter`, open that chapter's wormhole at once, if it has one |
 
 `?at=` is worth knowing about. Photographing a particular doorway thirty metres
 up a corridor by driving to it is several builds and a lot of guessed key

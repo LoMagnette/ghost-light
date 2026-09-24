@@ -4130,6 +4130,34 @@ box is gone so it cannot start a conversation.
 once. Driving all three boards per screenshot would be several builds of
 guessed key timings, which is exactly what `?at` exists to avoid.
 
+### Claude Opus — the second fold, Chapter II into Chapter III
+
+**Prompt:**
+> I think can apply the same kind of transition for chapter 2 to 3
+
+**Iterations:** 1, plus three film strips.
+
+**"The same" needed two robots where the first had one.** Chapter I has one
+robot and one hole. Chapter II is in `switch` mode, and when its clock runs
+out the robot you are not driving is wherever you left it, often in a room
+across the corridor. So the story code went from one wormhole to one per
+robot: every robot in the cast goes down its own hole, the camera sees
+yours, and Chapter III drops everyone except the new robot back in, a beat
+apart (`ARRIVE_STAGGER`), each out of a hole over its own spawn. The landing
+shake scales with mass, so Droid lands harder than Voxxy. Chapter I's
+transition runs through the same code, now as the one-robot case.
+
+**Biggy comes out of Droid, not Voxxy.** Droid was the part of Voxxy that
+stops and fixes things; Biggy is the part of Droid that would not put
+anything down. Its last line, "You two go upstairs. I will stay down here and
+move the heavy things", is SPEC §4's ending, which already had Biggy waiting in
+the hall because it cannot climb, now said aloud before the chapter starts.
+Voxxy stays silent in both arrivals, which I kept on purpose.
+
+**Only on a win.** Chapter II can be lost (three rooms dark), and a lost day
+still ends on the card. The exit rule was already "not failed", so this
+needed no new code.
+
 ---
 
 ## Audio

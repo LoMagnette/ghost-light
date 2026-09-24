@@ -177,10 +177,25 @@ The robot count and the story are the same sentence: the cast grows by a
 robot a chapter, and now the new robot is a consequence rather than a casting
 decision.
 
+**Chapter II → III, built the same day.** Survive JavaPolis to the end of
+its clock and the floor opens again, under BOTH robots, wherever they are —
+in `switch` mode the one you are not driving is in some room across the
+corridor, and the next chapter needs it too. Chapter III opens with the two
+of them dropping out of the air a beat apart, and **Biggy comes out of
+Droid**: the part of it that would not put anything down. Biggy knows before
+it has moved that it is staying in the hall while the other two go upstairs,
+which is the ending this chapter already had. Voxxy says nothing in either
+arrival. It went through first both times and the other two came out of it.
+
+This time it runs forwards, from the early years to the full house, so the
+arc across the game is later → earlier → now: the silence sends you back to
+find out what the place was, and the second fold brings you home to it. Lose
+three rooms in Chapter II and the day still ends on the card. You do not
+fall through a wormhole for failing.
+
 Declared on the objectives as `exit` and `arrival` (`core/Objective.ts`), so
 it costs no fifth chapter field and no second screen, and everything the
 player sees is a render-only pose: the simulation never hears of it.
-Chapter II → III is the obvious next seam and is not built.
 
 ## 5. The robots
 

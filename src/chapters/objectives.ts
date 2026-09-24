@@ -368,6 +368,14 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
   line: 'Keep every room running',
   clock: 240,
   failLimit: 3,
+  /*
+   * Survive the day and the building folds again, forwards this time.
+   *
+   * Only on a win: lose three rooms and the day ends on the card, dark,
+   * the way it always has. Keeping JavaPolis alive until the clock runs out
+   * is what earns the conference it grew into.
+   */
+  exit: { kind: 'wormhole', to: 'capacity' },
   activities: [
     tendRoom('aud-5', 'Room 5', 1.35),
     tendRoom('aud-4', 'Room 4', 1.15),
@@ -583,6 +591,30 @@ function stickerSweep(): Activity[] {
 export const CAPACITY_OBJECTIVE: Objective = {
   line: 'Do Devoxx. You cannot do all of it',
   clock: 360,
+  /*
+   * Two robots in; three out. Biggy comes out of Droid.
+   *
+   * Droid was the part of Voxxy that stopped and fixed things; Biggy is the
+   * part of Droid that would not put anything down. It is the only machine
+   * that can carry a keg or shove a shutter, and the only one that cannot
+   * climb a staircase — so it arrives knowing it will spend the day in the
+   * hall while the other two go up, which `SPEC.md` §4 has as the ending.
+   *
+   * Voxxy says nothing, in this chapter as in the last. It is the one that
+   * went through first, twice, and it is the one the other two came out of.
+   */
+  arrival: {
+    kind: 'split',
+    from: 'droid',
+    into: 'biggy',
+    lines: [
+      { who: 'droid', text: 'Again. That is twice the building has folded under us.' },
+      { who: 'biggy', text: 'Everything is heavy. Oh. That is me.' },
+      { who: 'biggy', text: 'I am the part of you that would not put things down. Somebody had to carry it this far.' },
+      { who: 'droid', text: 'Listen to it. Every seat taken. This is Devoxx now, and it is more than one day can hold.' },
+      { who: 'biggy', text: 'You two go upstairs. I will stay down here and move the heavy things.' },
+    ],
+  },
   activities: [
     {
       kind: 'dwell',
