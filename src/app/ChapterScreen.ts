@@ -344,9 +344,13 @@ export class ChapterScreen implements Screen {
     game.ui.append(this.whiteout);
     if (chapter.objective.arrival) this.arrive(chapter.objective.arrival);
     // `?exit` opens the way out at once, for looking at the wormhole without
-    // playing Chapter I to the end first. Like `?at`, unreachable in play.
+    // playing a chapter to the end first. Like `?at`, unreachable in play.
+    // Only for the chapter `?chapter` named: the query outlives the screen,
+    // and without this every chapter down the chain folds the moment it
+    // loads, so Chapter I's wormhole could never be watched landing.
     const exit = chapter.objective.exit;
-    if (exit && new URLSearchParams(window.location.search).has('exit')) this.depart(exit);
+    const query = new URLSearchParams(window.location.search);
+    if (exit && query.has('exit') && query.get('chapter') === chapter.id) this.depart(exit);
 
     game.keyboard.on('Escape', () => this.routes.menu());
     game.keyboard.on('F1', () => {
