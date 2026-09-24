@@ -176,6 +176,15 @@ const SILENCE: Activity[] = [
 export const SILENCE_OBJECTIVE: Objective = {
   line: 'Find the power',
   activities: SILENCE,
+  /*
+   * The last board powers Room 8, and the power has somewhere to go.
+   *
+   * Chapter I is the building LATER and Chapter II is the building in its
+   * early years, so the way out of the silence is backwards — and the thing
+   * that finds the power is the thing the power takes. No end card: the
+   * chapter that asked "what was this place?" answers by going there.
+   */
+  exit: { kind: 'wormhole', to: 'javapolis' },
 };
 
 // ---------------------------------------------------------------------------
@@ -335,6 +344,27 @@ const STEPHAN_LOOK: Look = {
 };
 
 export const JAVAPOLIS_OBJECTIVE: Objective = {
+  /*
+   * One robot went in; two come out.
+   *
+   * Chapter II's cast is Voxxy and Droid, and until this Droid was simply
+   * there when the chapter loaded. Now it is what the wormhole did: it
+   * pulled Voxxy through and something in Voxxy did not fit through as one
+   * machine. Droid is the patient part — the one that stops, reaches and
+   * fixes — which is exactly the half of the job Voxxy cannot do in this
+   * chapter, so the story and the mechanic are the same sentence.
+   */
+  arrival: {
+    kind: 'split',
+    from: 'voxxy',
+    into: 'droid',
+    lines: [
+      { who: 'droid', text: 'That was not a power cut. You switched the rack on and the building folded in half.' },
+      { who: 'droid', text: 'It pulled one of us in and put two of us out. I am the part of you that stops and reads the manual.' },
+      { who: 'droid', text: 'Listen. The building is full. This is years ago, when it was still JavaPolis.' },
+      { who: 'droid', text: 'You are quick and I can reach. Between the two of us, we keep these rooms running.' },
+    ],
+  },
   line: 'Keep every room running',
   clock: 240,
   failLimit: 3,

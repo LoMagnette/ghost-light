@@ -413,6 +413,24 @@ interface Box {
 }
 
 /** The parts of a robot that move every frame. */
+/**
+ * A robot drawn somewhere other than where it is, for a story beat.
+ *
+ * Offsets in metres from where the simulation has it, `scale` on the whole
+ * machine, `spin` in radians on top of its heading. Presentation and nothing
+ * else: the wormhole pulls a robot through the floor and splits another out
+ * of it, and none of that may reach `Sim`, which is fixed-step and must stay
+ * deterministic right up to the moment the chapter changes.
+ */
+export interface RobotPose {
+  dx?: number;
+  dy?: number;
+  dz?: number;
+  scale?: number;
+  spin?: number;
+  hidden?: boolean;
+}
+
 interface RobotView {
   group: Group;
   /**
@@ -460,6 +478,8 @@ const SCRATCH_VIEW = new Vector3();
 export class BlockoutRenderer {
   /** The scene this renderer owns. The screen points a camera at it. */
   readonly scene = new Scene();
+  /** Story poses, by robot. Empty for the whole of play. See `RobotPose`. */
+  private readonly poses = new Map<Actor, RobotPose>();
 
   private readonly venue: Venue;
   private readonly palette: Palette;
@@ -2165,7 +2185,37 @@ export class BlockoutRenderer {
     view.shadow.visible = actor.onLink === undefined;
     view.shadow.position.set(pos.x, pos.y, pos.z + DECAL_LIFT);
 
+    const pose = this.poses.get(actor);
+    if (pose) {
+      const scale = pose.scale ?? 1;
+      view.body.position.x += pose.dx ?? 0;
+      view.body.position.y += pose.dy ?? 0;
+      view.body.position.z += pose.dz ?? 0;
+      view.body.rotation.z += pose.spin ?? 0;
+      view.body.scale.setScalar(scale);
+      // The shadow stays on the floor and shrinks with the machine, and it
+      // goes when the machine is in the air: a robot three metres up with a
+      // contact shadow at its feet is standing on nothing.
+      view.shadow.position.x += pose.dx ?? 0;
+      view.shadow.position.y += pose.dy ?? 0;
+      view.shadow.scale.setScalar(scale);
+      if ((pose.dz ?? 0) > 0.4) view.shadow.visible = false;
+      if (pose.hidden) view.group.visible = false;
+    } else {
+      view.body.scale.setScalar(1);
+      view.shadow.scale.setScalar(1);
+    }
+
     this.placeTelemetry(actor, view, pos);
+  }
+
+  /**
+   * Draw a robot posed for a story beat until told otherwise. `undefined`
+   * puts it back where the simulation has it. See `RobotPose`.
+   */
+  setPose(actor: Actor, pose: RobotPose | undefined): void {
+    if (pose) this.poses.set(actor, pose);
+    else this.poses.delete(actor);
   }
 
   /**
