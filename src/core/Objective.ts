@@ -20,6 +20,7 @@ import {
   type Photo,
   type Reveal,
 } from './Activity';
+import type { RobotId } from './RobotSpec';
 import type { Actor } from './Sim';
 import type { Level } from './Venue';
 
@@ -41,6 +42,51 @@ export interface Objective {
    * cannot be lost, only scored.
    */
   failLimit?: number;
+  /**
+   * Where winning takes you, if not to the end card.
+   *
+   * On the objective and not on the chapter for the same reason `reveal`
+   * is on an activity: what finishing DOES is part of what the chapter asks
+   * of you, and the objective is one of the four things a chapter may
+   * change. A chapter that grew a `next` field would be a fifth.
+   */
+  exit?: Exit;
+  /**
+   * What happens before the objective starts running. The other half of an
+   * `exit`: whatever one chapter sends through, the next one receives.
+   */
+  arrival?: Arrival;
+}
+
+/**
+ * Leaving a chapter through the building rather than through a menu.
+ *
+ * Only a wormhole so far, and only one: Chapter I's last board powers Room
+ * 8, and the power opens something under the robot that powered it. The
+ * shape is a union so that a second way out does not have to be a flag.
+ */
+export interface Exit {
+  kind: 'wormhole';
+  /** The chapter on the far side, by id. `npm run objectives` checks it. */
+  to: string;
+}
+
+/**
+ * Arriving in a chapter: one robot in, and one more of it than went in.
+ *
+ * The cast grows by a robot a chapter, and until this it simply WAS bigger
+ * when the next chapter loaded. `split` makes the new robot a consequence
+ * rather than a casting decision: the wormhole pulls one machine through
+ * and something in it comes out the other side as a body of its own.
+ */
+export interface Arrival {
+  kind: 'split';
+  /** The robot that comes through. Must be in the chapter's cast. */
+  from: RobotId;
+  /** The robot that comes out of it. Must be in the cast too. */
+  into: RobotId;
+  /** Said once they are both standing, one box at a time. */
+  lines: { who: RobotId; text: string }[];
 }
 
 export type Status = 'locked' | 'open' | 'carried' | 'done' | 'missed' | 'failed';

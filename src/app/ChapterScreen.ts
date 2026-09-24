@@ -20,12 +20,13 @@
 import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from 'three';
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
-import { ROBOTS } from '@/core/RobotSpec';
+import { ROBOTS, type RobotId } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
-import { ObjectiveRun, type ActivityState } from '@/core/Objective';
+import { Wormhole } from '@/render/Wormhole';
+import { ObjectiveRun, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
@@ -82,6 +83,36 @@ const SELFIE_PEEK = 0.28;
 const SELFIE_SIDE = 0.32;
 /** How far beside him Voxxy is posed, centre to centre. */
 const SELFIE_BESIDE = 0.72;
+
+/*
+ * The wormhole, in seconds. See `playDeparture` and `playArrival`.
+ *
+ * Leaving: it opens under the robot, holds long enough to be seen for what
+ * it is, pulls the robot down through the floor, and the screen goes white
+ * on the way out. Arriving is the same white fading back, a fall out of the
+ * air, a landing, and a beat of nothing before the robot comes apart.
+ */
+const DEPART_OPEN = 1.3;
+const DEPART_PULL = 1.9;
+const DEPART_WHITE = 2.6;
+const DEPART_END = 3.8;
+const ARRIVE_FADE = 1.0;
+const ARRIVE_LAND = 1.75;
+const ARRIVE_SPLIT_AT = 2.5;
+const ARRIVE_SPLIT = 1.3;
+/** How far above the floor the arrival opens, metres. Under any ceiling. */
+const ARRIVE_HEIGHT = 3.2;
+/**
+ * The wormhole's colour, in both chapters: Chapter I's accent, the ghost light
+ * itself. It is the same hole seen from either end, so it cannot take the
+ * colour of whichever chapter it is being drawn in.
+ */
+const WORMHOLE_COLOUR = CHAPTER_ONE.palette.accent;
+
+/** A story beat in progress. While there is one, nobody is driving. */
+type Story =
+  | { kind: 'departure'; t: number; exit: Exit; x: number; y: number; z: number; left: boolean }
+  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: boolean };
 
 /**
  * How many of a room's audience are drawn walking out, at the point where all
@@ -154,6 +185,10 @@ export class ChapterScreen implements Screen {
   private selfie: Photo | undefined;
   /** The game's renderer, which a selfie has to be taken with. */
   private renderer!: WebGLRenderer;
+  /** The wormhole and the white it goes out on. See `Story`. */
+  private story: Story | undefined;
+  private wormhole: Wormhole | undefined;
+  private whiteout!: HTMLDivElement;
   /** True while the cast is on the forecourt. Changes what the camera frames. */
   private outside = false;
 
@@ -280,6 +315,23 @@ export class ChapterScreen implements Screen {
     this.buildHud(game);
     this.snapCamera();
 
+    // Above the print and the end card: it is the last thing on screen as a
+    // chapter leaves and the first as the next one arrives.
+    this.whiteout = el('div', {
+      position: 'absolute',
+      inset: '0',
+      background: '#f3efe6',
+      opacity: '0',
+      pointerEvents: 'none',
+      zIndex: '9',
+    });
+    game.ui.append(this.whiteout);
+    if (chapter.objective.arrival) this.arrive(chapter.objective.arrival);
+    // `?exit` opens the way out at once, for looking at the wormhole without
+    // playing Chapter I to the end first. Like `?at`, unreachable in play.
+    const exit = chapter.objective.exit;
+    if (exit && new URLSearchParams(window.location.search).has('exit')) this.depart(exit);
+
     game.keyboard.on('Escape', () => this.routes.menu());
     game.keyboard.on('F1', () => {
       this.debug = !this.debug;
@@ -325,7 +377,8 @@ export class ChapterScreen implements Screen {
 
     // Hands off once the round is over: the end card is up, and a robot still
     // answering the keyboard behind it reads as the game not having noticed.
-    if (over) {
+    // And through a story beat, which is the wormhole's turn and not yours.
+    if (over || this.story) {
       Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
     } else {
       this.controller.read(this.controlled.input);
@@ -334,7 +387,12 @@ export class ChapterScreen implements Screen {
     this.sim.advance(dt);
     this.crowd.advance(dt, this.actors);
 
-    if (!over) {
+    // Read before it is cleared below; a story beat pages on the same key.
+    const talkPressed = this.talkRequested;
+
+    // The objective does not start until the arrival has finished: Chapter
+    // II's rooms would be draining behind a robot that has not landed yet.
+    if (!over && !this.story) {
       // A press while a line is still typing itself finishes THAT line rather
       // than paging past it. Every game with a text box does this, and a
       // player who has ever held one expects it without being told.
@@ -344,12 +402,20 @@ export class ChapterScreen implements Screen {
       }
       this.run.update(dt, this.actors, this.dropRequested, this.talkRequested);
       this.consumeObjective();
-      if (this.run.phase === 'ended') this.showEndCard();
+      if (this.run.phase === 'ended') {
+        // Won, and the chapter goes somewhere: through the floor, not to a
+        // card. A lost round still gets the card — you do not fall through
+        // a wormhole for failing.
+        const exit = this.chapter.objective.exit;
+        if (exit && !this.run.failed) this.depart(exit);
+        else this.showEndCard();
+      }
     }
     this.dropRequested = false;
     this.talkRequested = false;
     this.showSessions();
-    this.updateTalk(dt);
+    if (this.story) this.updateStory(dt, talkPressed);
+    else this.updateTalk(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
     // is modelled from its own datum, so the world it is standing in moves 6.2
@@ -397,6 +463,7 @@ export class ChapterScreen implements Screen {
   }
 
   dispose(): void {
+    this.wormhole?.dispose();
     this.blockout.dispose();
   }
 
@@ -404,7 +471,7 @@ export class ChapterScreen implements Screen {
 
   private takeControl(index: number): void {
     const next = this.actors[index];
-    if (!next || next === this.controlled) return;
+    if (!next || next === this.controlled || this.story) return;
 
     // Hand the old robot a neutral input or it keeps whatever the player was
     // holding at the moment they swapped and drives off on its own.
@@ -413,6 +480,9 @@ export class ChapterScreen implements Screen {
   }
 
   private resetCast(): void {
+    // Mid-wormhole there is nothing to reset to: the robot is half through
+    // the floor, or the second one does not exist yet.
+    if (this.story) return;
     this.actors.forEach((actor, index) => {
       const spawn = this.spawns[index];
       actor.body.halt();
@@ -440,6 +510,199 @@ export class ChapterScreen implements Screen {
     this.toast.textContent = '';
     this.selfie = undefined;
     this.snapCamera();
+  }
+
+  // -- story ----------------------------------------------------------------
+
+  /** Open the wormhole under whoever finished the chapter. */
+  private depart(exit: Exit): void {
+    const { body } = this.controlled;
+    this.story = { kind: 'departure', t: 0, exit, x: body.x, y: body.y, z: body.z, left: false };
+    this.openWormhole();
+  }
+
+  /** Start a chapter out of the white, with a robot about to fall into it. */
+  private arrive(arrival: Arrival): void {
+    this.story = { kind: 'arrival', t: 0, arrival, line: -1, landed: false };
+    this.whiteout.style.opacity = '1';
+    this.openWormhole();
+    // Posed before the first frame is drawn, or it opens on both robots
+    // already standing there and the split has nothing to reveal.
+    this.playArrival(this.story, 0);
+  }
+
+  private openWormhole(): void {
+    if (this.wormhole) return;
+    this.wormhole = new Wormhole(WORMHOLE_COLOUR);
+    this.blockout.scene.add(this.wormhole.object);
+  }
+
+  private updateStory(dt: number, pressed: boolean): void {
+    const story = this.story;
+    if (!story) return;
+    this.talkPrompt.textContent = '';
+    story.t += dt;
+    if (story.kind === 'departure') this.playDeparture(story, dt);
+    else this.playArrival(story, dt, pressed);
+  }
+
+  /**
+   * The robot goes down the hole.
+   *
+   * Pulled to the middle first, then spun and shrunk and sunk, all as a pose
+   * on the renderer: the body in the simulation is braking to a stop exactly
+   * where it was, and nothing about Chapter I's physics knows a wormhole
+   * happened. The chapter changes on white, so the cut is never seen.
+   */
+  private playDeparture(story: Extract<Story, { kind: 'departure' }>, dt: number): void {
+    const { t, x, y, z } = story;
+    const robot = this.controlled;
+    const open = smooth(t / DEPART_OPEN);
+    this.wormhole?.place(x, y, z, open, dt);
+
+    const k = clamp01((t - DEPART_OPEN) / DEPART_PULL);
+    const e = k * k;
+    const drawn = smooth(t / DEPART_OPEN);
+    this.blockout.setPose(robot, {
+      dx: (x - robot.body.x) * drawn,
+      dy: (y - robot.body.y) * drawn,
+      dz: -0.9 * e,
+      scale: 1 - 0.97 * e,
+      spin: e * 18 + Math.sin(t * 31) * 0.06 * open,
+      hidden: k >= 1,
+    });
+    // A rumble that builds; not forced, so it never cuts across an impact.
+    if (t < DEPART_OPEN + DEPART_PULL) this.shake(0.12, 0.0012 + 0.0035 * open, false);
+
+    this.whiteout.style.opacity = String(smooth((t - DEPART_WHITE) / (DEPART_END - DEPART_WHITE)));
+
+    if (t >= DEPART_END && !story.left) {
+      story.left = true;
+      // Not from inside `update`: the new screen would be mounted, and this
+      // one disposed, halfway through a frame `Game` is about to draw with it.
+      const to = story.exit.to;
+      queueMicrotask(() => this.routes.chapter(to));
+    }
+  }
+
+  /**
+   * The robot comes out of the air, lands, and comes apart into two.
+   *
+   * The second machine is posed ON the first — same place, a fifth of its
+   * size — and grows out of it to where the simulation has had it standing
+   * all along, two and a half metres away. Then they talk, one box at a time,
+   * and only when the last line is paged past does the objective start.
+   */
+  private playArrival(
+    story: Extract<Story, { kind: 'arrival' }>,
+    dt: number,
+    pressed = false,
+  ): void {
+    const { arrival } = story;
+    const from = this.actors[this.chapter.cast.indexOf(arrival.from)];
+    const into = this.actors[this.chapter.cast.indexOf(arrival.into)];
+    const end = ARRIVE_SPLIT_AT + ARRIVE_SPLIT;
+    if (!from || !into) {
+      this.endStory();
+      return;
+    }
+
+    // Impatience is allowed. A press during the animation skips to the talk.
+    if (pressed && story.t < end) {
+      story.t = end;
+      pressed = false;
+    }
+    const { t } = story;
+    const fb = from.body;
+    const ib = into.body;
+
+    this.whiteout.style.opacity = String(1 - smooth(t / ARRIVE_FADE));
+    const open = 1 - smooth((t - ARRIVE_LAND) / 0.9);
+    this.wormhole?.place(fb.x, fb.y, fb.z + ARRIVE_HEIGHT, open, dt);
+
+    const dropFrom = ARRIVE_FADE * 0.55;
+    const fall = clamp01((t - dropFrom) / (ARRIVE_LAND - dropFrom));
+    if (fall >= 1 && !story.landed) {
+      story.landed = true;
+      this.shake(0.38, 0.016, true);
+    }
+
+    const split = clamp01((t - ARRIVE_SPLIT_AT) / ARRIVE_SPLIT);
+    const grown = smooth(split);
+    if (t < end) {
+      this.blockout.setPose(
+        from,
+        t < dropFrom
+          ? { hidden: true }
+          : fall < 1
+            ? { dz: ARRIVE_HEIGHT * (1 - fall * fall), spin: (1 - fall) * 9 }
+            : // Landed, and something is wrong with it: it shivers, and
+              // stops shivering as the other one comes out.
+              { scale: 1 + Math.sin(t * 41) * 0.07 * (t > ARRIVE_LAND + 0.3 ? 1 - grown : 0) },
+      );
+      this.blockout.setPose(
+        into,
+        split <= 0
+          ? { hidden: true }
+          : {
+              dx: (fb.x - ib.x) * (1 - grown),
+              dy: (fb.y - ib.y) * (1 - grown),
+              scale: 0.2 + 0.8 * grown,
+              spin: (1 - grown) * 11,
+            },
+      );
+      return;
+    }
+
+    this.blockout.setPose(from, undefined);
+    this.blockout.setPose(into, undefined);
+    if (story.line < 0) story.line = 0;
+
+    const said = arrival.lines[story.line];
+    if (!said) {
+      this.endStory();
+      return;
+    }
+    if (pressed) {
+      // Same rule as a conversation: finish the line, then page.
+      if (this.typed < this.typingLine.length) this.typed = this.typingLine.length;
+      else {
+        story.line += 1;
+        if (story.line >= arrival.lines.length) {
+          this.endStory();
+          return;
+        }
+      }
+    }
+    this.sayStory(arrival.lines[story.line], story.line < arrival.lines.length - 1, dt);
+  }
+
+  /** One box of a story beat, typed like a conversation and tinted like its speaker. */
+  private sayStory(said: { who: RobotId; text: string }, more: boolean, dt: number): void {
+    const spec = ROBOTS[said.who];
+    const tint = css(lift(spec.tint));
+    this.talkWho.style.color = tint;
+    this.talkMore.style.color = tint;
+    this.talkBox.style.borderColor = tint;
+    if (said.text !== this.typingLine) {
+      this.typingLine = said.text;
+      this.typed = 0;
+    }
+    this.typed = Math.min(said.text.length, this.typed + ChapterScreen.TYPE_RATE * dt);
+    this.talkBox.style.display = 'block';
+    this.talkWho.textContent = spec.name;
+    this.talkText.textContent = said.text.slice(0, Math.floor(this.typed));
+    this.talkMore.textContent = this.typed >= said.text.length ? (more ? '▼' : '■') : '';
+  }
+
+  private endStory(): void {
+    for (const actor of this.actors) this.blockout.setPose(actor, undefined);
+    this.wormhole?.place(0, 0, 0, 0, 0);
+    this.whiteout.style.opacity = '0';
+    this.talkBox.style.display = 'none';
+    this.typingLine = '';
+    this.typed = 0;
+    this.story = undefined;
   }
 
   // -- objective ------------------------------------------------------------
@@ -1289,6 +1552,11 @@ export class ChapterScreen implements Screen {
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
     this.cardText.textContent = this.card();
+    // Not during a story beat. The objective has not started — its locked
+    // side quests have not even been hidden yet, because nothing has been
+    // evaluated — and a card reading out a chapter the player is not in yet
+    // is the game talking over itself.
+    this.cardText.style.visibility = this.story ? 'hidden' : 'visible';
 
     if (!this.debug) return;
 
@@ -1486,4 +1754,14 @@ function clock(seconds: number): string {
 function bar(fraction: number): string {
   const filled = Math.round(Math.max(0, Math.min(1, fraction)) * 10);
   return '█'.repeat(filled) + '·'.repeat(10 - filled);
+}
+
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+/** Smoothstep on 0..1, clamped. Everything in a story beat eases. */
+function smooth(v: number): number {
+  const c = clamp01(v);
+  return c * c * (3 - 2 * c);
 }

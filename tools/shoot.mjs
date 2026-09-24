@@ -128,6 +128,21 @@ for (let index = 0; index < 3; index += 1) {
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(outDir, `0${index + 1}a-chapter-${index + 1}-start.png`) });
 
+  // Page through an arrival, the way a player does: E skips the animation
+  // and then each line. Chapter II opens on the wormhole and nobody drives
+  // until Droid has finished talking, so without this the "moved" shot is a
+  // text box. Stops as soon as the box is gone, so it never starts a talk.
+  for (let press = 0; press < 12; press += 1) {
+    const talking = await page.evaluate(() =>
+      [...document.querySelectorAll('div')].some(
+        (d) => d.style.display === 'block' && /^(Voxxy|Droid|Biggy)$/.test(d.firstChild?.textContent ?? ''),
+      ),
+    );
+    if (!talking && press > 0) break;
+    await page.keyboard.press('KeyE');
+    await page.waitForTimeout(300);
+  }
+
   // Hold a direction so the shot shows the robot mid-building, not on spawn.
   await page.keyboard.down('KeyD');
   await page.waitForTimeout(holdSeconds * 1000);

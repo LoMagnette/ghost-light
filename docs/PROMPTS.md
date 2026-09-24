@@ -4088,6 +4088,48 @@ from where the two of them are rather than being a fixed crop.
 3. Too much headroom once the frame widened to hold both of them; the side
    margin went from 0.45 m to 0.32 m.
 
+### Claude Opus — a wormhole between Chapter I and Chapter II
+
+**Prompt:**
+> I would like to create some nice transition between the levels to build a
+> more story driven arch. I was thinking from chapter one 1 to 2 by
+> activating the electricity you trigger a wormhole that pull the robot
+> through it and when land it the next level the voxxy has split into two
+> robot (voxxy, and droid) and basically because the wormhole force one of
+> the personality of voxxy to materialize as another robot
+
+**Iterations:** 1 build, then four headless film strips of the sequence.
+
+**Where it lives.** Rule 3 caps a chapter at four fields, and a `next` on
+`Chapter` would be a fifth. It went on the OBJECTIVE instead, for the reason
+`reveal` is on an activity: what winning does is part of what the chapter
+asks. `exit` on Chapter I, `arrival` on Chapter II, and `npm run objectives`
+now fails an exit to a chapter that does not exist or a split into a robot
+the next chapter does not cast. I tested that by breaking it on purpose.
+
+**Nothing in it touches the simulation.** The pull, the fall and the split
+are a `RobotPose` on the renderer (offset, scale, spin, hidden), and the
+vortex is its own drawn-only object (`render/Wormhole.ts`). The body in `Sim`
+brakes to a stop exactly where it was, which is the only way a fixed-step
+physics stays deterministic through a cutscene.
+
+**One trap avoided and one found.**
+1. Changing screen from inside `update` would mount Chapter II and dispose
+   Chapter I halfway through a frame `Game` is about to draw with the old
+   screen. The route is queued as a microtask instead.
+2. The first film strip showed the card listing Chapter II's LOCKED side
+   quests during the arrival, because nothing had been evaluated yet. The
+   card is hidden for a story beat; the objective has not started.
+
+**The tour had to learn to skip it.** `npm run shoot` drove Chapter II the
+moment it loaded, and its "moved" shot became a text box. It now pages
+through an arrival with E, the way a player does, and stops as soon as the
+box is gone so it cannot start a conversation.
+
+**Story beats are tested through `?exit`,** which opens the wormhole at
+once. Driving all three boards per screenshot would be several builds of
+guessed key timings, which is exactly what `?at` exists to avoid.
+
 ---
 
 ## Audio

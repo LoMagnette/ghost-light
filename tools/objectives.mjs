@@ -165,6 +165,23 @@ function checkPlace(chapter, activity, what, zone, specs) {
 }
 
 for (const chapter of CHAPTERS) {
+  // The wormhole. An exit to a chapter that does not exist is a Chapter I
+  // that ends by crashing, and a split into a robot the next chapter does
+  // not cast is a Droid that grows out of Voxxy and is then not there.
+  const { exit, arrival } = chapter.objective;
+  if (exit && !CHAPTERS.some((c) => c.id === exit.to)) {
+    failures.push(`${chapter.id}: exits to "${exit.to}", which is not a chapter`);
+  }
+  if (arrival) {
+    for (const id of [arrival.from, arrival.into]) {
+      if (!chapter.cast.includes(id)) failures.push(`${chapter.id}: arrival names ${id}, who is not in the cast`);
+    }
+    if (arrival.from === arrival.into) failures.push(`${chapter.id}: arrival splits ${arrival.from} into itself`);
+    for (const said of arrival.lines) {
+      if (!chapter.cast.includes(said.who)) failures.push(`${chapter.id}: arrival gives a line to ${said.who}, who is not in the cast`);
+    }
+  }
+
   const specs = chapter.cast.map((id) => ROBOTS[id]);
   const seen = new Set();
 

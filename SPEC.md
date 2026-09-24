@@ -159,6 +159,29 @@ frame; a few hundred walk, and get out of the way of anything heavy. See
 `docs/MECHANICS.md` §5.4. It does not yet drive the ambient audio bed, which
 does not exist.
 
+### Between the chapters — the wormhole
+
+**Built 24 Sep.** The chapters were an anthology you picked from a menu; the
+first seam is now a story. Chapter I's last board powers Room 8, and the
+power opens a wormhole under Voxxy. It is pulled down through the floor, the
+screen goes white, and Chapter II opens on the same white, with Voxxy falling
+out of the air over the corridor. It lands, shivers, and **comes apart into
+two**: Droid grows out of it, the part of Voxxy that stops and reads the
+manual, forced into a body of its own by the trip. Droid says so, four
+lines, and the rooms start draining only when it has finished.
+
+It runs backwards on purpose. Chapter I is the building *later* and Chapter
+II is its early years, so the way out of the silence is the way back to when
+the place was new, and the answer to "what was this place?" is to go there.
+The robot count and the story are the same sentence: the cast grows by a
+robot a chapter, and now the new robot is a consequence rather than a casting
+decision.
+
+Declared on the objectives as `exit` and `arrival` (`core/Objective.ts`), so
+it costs no fifth chapter field and no second screen, and everything the
+player sees is a render-only pose: the simulation never hears of it.
+Chapter II → III is the obvious next seam and is not built.
+
 ## 5. The robots
 
 Mass is the design. See `src/core/RobotSpec.ts` for the authoritative numbers.
