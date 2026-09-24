@@ -203,7 +203,7 @@ activities keep a room alive, and the split is the entire chapter:
 
 | | Voxxy | Droid |
 |---|---|---|
-| The AV rack, 0.9 m | `tap` → buys ~8 seconds | can do it, too slowly to matter |
+| The AV rack, 0.9 m | `tap` → buys ~12 seconds | can do it, too slowly to matter |
 | The projector, 2.0 m | **cannot reach it** | `dwell` 3 s → full reset |
 
 So Voxxy is triage and Droid is repair. Voxxy buys time it cannot spend;
@@ -213,6 +213,15 @@ and running three.
 
 A room at zero goes dark, its attendees leave, and it never comes back. Three
 dark rooms ends the day early. The day is four minutes.
+
+The meter holds 70 seconds, which is a number set by the SIDE QUEST rather
+than by the rooms. Chapter II's four speakers are about 3,050 characters of
+dialogue, and dialogue is time spent standing still: sixty-five seconds of a
+two-hundred-and-forty second day, minimum. At the 45 it held before, Room 5
+emptied from full in thirty-three seconds and one conversation cost more than
+a room's entire life — the chapter asked the player to choose and then made
+one of the choices impossible. At 70 the longest conversation plus the drive
+back always fits, and two in a row late in the day do not.
 
 Read the building, not the HUD: a draining room visibly dims from the
 corridor. The meter is a fallback, not the primary signal.

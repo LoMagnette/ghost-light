@@ -201,10 +201,40 @@ function tendRoom(id: string, label: string, drain: number): Activity {
     label,
     room: id,
     at: backOfHouse(id),
-    capacity: 45,
+    /*
+     * Seventy seconds, and it was forty-five until the corridor had people
+     * in it worth talking to.
+     *
+     * This is not "the chapter was too hard". The numbers stopped being
+     * possible, and they stopped being possible because of a change made
+     * somewhere else: Chapter II's conversations went from fifteen lines to
+     * thirty-two when the speakers got a story, and a line is a keypress
+     * and about two seconds of reading. That is 3,050 characters, which at
+     * the box's own 58 characters a second is SIXTY-FIVE SECONDS of a
+     * four-minute round spent standing still — and at forty-five capacity,
+     * Room 5 emptied from full in thirty-three seconds, or twenty-one once
+     * the ramp had bitten. One conversation cost more than a room's whole
+     * life. Not hard: arithmetically impossible, and no amount of skill
+     * touches it.
+     *
+     * Seventy gives Room 5 fifty-two seconds from full, and thirty-six at
+     * the end of the day. The longest conversation in the building is about
+     * eighteen seconds and the drive back to a rack is about ten, so ONE
+     * conversation always fits and TWO in a row late in the round do not.
+     * That is the shape the chapter wants: the side quest is affordable and
+     * being greedy with it costs you a room.
+     *
+     * The ramp comes down with it — 0.004 nearly doubled the drain by the
+     * last minute, which turned the late round into a different and much
+     * blunter game than the early one.
+     */
+    capacity: 70,
     drain,
-    drainRamp: 0.004,
-    tapBonus: 8,
+    drainRamp: 0.003,
+    // Kept at a sixth of the meter, which is what it was against forty-five.
+    // Voxxy's tap is its entire role in this chapter and a bonus that stays
+    // flat while the capacity grows quietly demotes it.
+    tapBonus: 12,
     repairSeconds: 3,
     repairReach: 2.0,
     /*
