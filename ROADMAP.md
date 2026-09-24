@@ -237,3 +237,67 @@ Pass/fail, or cheap points where dropping them costs more than it saves:
 - `docs/PROMPTS.md`
 
 **Submit a working version on 25 Sep regardless of how finished it feels.**
+
+---
+
+## Parked — after the deadline
+
+Not in the twelve days. Written down because the reasoning is cheap now and
+expensive to reconstruct in January.
+
+### Voiced dialogue
+
+**The idea:** every line in the box can also be heard, as an option the
+player turns on.
+
+**Why it is worth doing.** The text box has quietly become the main way this
+game tells you anything. Chapter II alone is 3,050 characters across
+thirty-two lines, the corridor conversation carries the whole argument the
+chapter is about, and the only performance any of it currently gets is a
+typing cursor at 58 characters a second. Audio is the difference between
+reading a line and being told it. It also makes the game legible to somebody
+who cannot comfortably read a box that is timing out while five rooms drain,
+which is worth more than it sounds.
+
+**The decision that has to come first, and it is not a technical one.** Four
+of the five people in that corridor are real, living, named, and their
+likeness is already in the game as a silhouette. The rule so far has been an
+honest abstraction rather than a bad likeness, and nothing in anybody's mouth
+that is not plainly true of their public work. **A synthesised voice breaks
+that rule in a way a nine-pixel head does not** — it is a much stronger claim
+to be somebody, it is the specific thing people object to being done with
+their likeness, and "it is only a jam entry" is not a defence anybody owes us.
+So impersonation is out, and what is left is a real choice between three:
+
+1. **A non-verbal voice**, the way *Animal Crossing* and *Undertale* do it: one
+   short blip per character revealed, pitched and filtered per speaker. It
+   makes no claim to be anyone, it costs a single sample, it is *free to
+   synchronise* because the typing cursor already exists and the blip fires on
+   the character it reveals, and a synthesised voice for a blockout person is
+   the honest answer rather than the cheap one. **This is the default** if
+   nobody decides otherwise.
+2. **Neutral synthetic voices** — one of a small set per speaker, chosen to be
+   clearly nobody in particular. More expressive, more assets, and it still
+   needs a line in the credits saying out loud that these are not the real
+   people's voices.
+3. **Ask them.** Devoxx is a real conference with a reachable founder and the
+   cameos are affectionate. Recorded lines from the actual speakers would be
+   the best version of this by a distance, and it is a human-owned task with a
+   long lead time — which is exactly why it belongs on a list written in
+   September rather than discovered in the last week.
+
+**What it would touch.** Less than it looks. `TalkActivity.lines` is already
+data, and everything about which line is showing lives in one method —
+`ChapterScreen.updateTalk`, which knows the speaker, the line and the typing
+cursor. Option 1 hangs entirely off the cursor advancing. Options 2 and 3 need
+a per-line asset id, which means `lines: string[]` grows into something with
+an id per line, and they must be *cancellable*: the box already handles a
+player who drives out of the zone mid-sentence, and audio that keeps talking
+to an empty corridor is worse than no audio.
+
+**Known snags.** Browser autoplay policy needs a user gesture first — the game
+has one, since the box only opens on a keypress, but it has to be the gesture
+the audio context is unlocked on. Bundle size matters on Pages: option 1 is
+one file, option 2 is thirty-two clips a chapter and wants streaming or a
+sprite sheet. And this stacks on whatever the footfall and ambience pass lands
+first, so it should not be designed before that exists.
