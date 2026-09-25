@@ -1589,8 +1589,10 @@ export class ChapterScreen implements Screen {
       ),
     );
 
-    if (missed > 0 || lost > 0) {
+    const extras = this.run.extras;
+    if (missed > 0 || lost > 0 || extras > 0) {
       const detail = [
+        extras > 0 ? `${extras} extra` : '',
         lost > 0 ? `${lost} room${lost === 1 ? '' : 's'} emptied` : '',
         missed > 0 ? `${missed} missed` : '',
       ]

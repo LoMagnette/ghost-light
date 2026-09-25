@@ -4200,6 +4200,36 @@ rather than `missed`, because the player did not miss them.
 **Not done: playing it.** Eleven windows set from distances and speeds.
 Whether the day is fair needs a person with a keyboard.
 
+### Claude Opus — a lighter Chapter III
+
+**Prompt:**
+> I feel like the chapter 3 his a bit heavy objective wise can we make it a
+> bit lighter
+
+**Iterations:** one question, one build, two corrections.
+
+**Three sizes offered, with the cuts named.** Trim to the essentials, trim
+harder, or keep everything and group the card. The author took the first.
+My preview said "8" and listed nine, because the shutter and the keg are
+separate lines. I built the list as shown and said so rather than quietly
+dropping one to match the number.
+
+**Cut the duplicates, not the signatures.** The crate went because the keg
+is already Biggy's heavy haul, the Room 11 talk because Room 5's carries the
+mic question, and the toilet queue because it was twenty seconds of standing
+still that belonged to nobody. The three conversations are side quests now.
+Each robot still has the job it is for.
+
+**What checking corrected.**
+1. The plan was "the 12 stands behind 0.8 m gaps", from the table in
+   MECHANICS. I swept a Droid-sized body over all 27 sticker zones first,
+   and none of them is Voxxy-only by geometry. The gate was always a rule,
+   so the twelve are chosen as a route (two inner ranks, one lap), and the
+   doc now says the gate is a rule.
+2. The counter read "0/15" beside a desk saying nine, because side quests
+   sat in the denominator. The tally counts what the chapter asks for, and
+   the end card credits side quests separately as "extra".
+
 ---
 
 ## Audio

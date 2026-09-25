@@ -633,13 +633,18 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
  * rather than twenty-seven rows.
  *
  * The gate is `maxRadius` 0.40, which admits Voxxy at 0.34 and excludes Droid
- * at 0.46 and Biggy at 0.72. That is not a rule about stickers; it is the
- * width of the gap between two stands, and the robots answer it with the
- * dimensions they already had.
+ * at 0.46 and Biggy at 0.72. It is a RULE, not a gap — checked on 25 Sep by
+ * sweeping a Droid-sized body over every sticker zone, and every one has
+ * floor Droid fits on. The sweep is Voxxy's because stickers are small and
+ * fiddly and it is the one that stops on the spot, and the card says so.
+ *
+ * Twelve of the twenty-seven, and it was all of them until Chapter III was
+ * judged too heavy. See `onTheRound`.
  */
 function stickerSweep(): Activity[] {
   return KINEPOLIS.decor
     .filter((d) => d.material === 'booth')
+    .filter(onTheRound)
     .map((stand, i) => ({
       kind: 'tap' as const,
       id: `sticker-${i}`,
@@ -659,8 +664,31 @@ function stickerSweep(): Activity[] {
 }
 
 /**
- * `docs/MECHANICS.md` §5.3. Six minutes, fifteen things — twelve of them until
- * three conversations were added — and no day is long enough for fifteen.
+ * Which stands the sweep visits: the two inner ranks of small stands, one
+ * either side of the big stands on the central aisle, and not their
+ * northernmost pair.
+ *
+ * Chosen as a ROUTE rather than a count. Twelve stickers scattered over
+ * twenty-seven stands is still a tour of the whole hall; twelve down two
+ * parallel ranks is one lap of it, which is a thing a player can plan.
+ */
+function onTheRound(stand: { bounds: Rect }): boolean {
+  const b = stand.bounds;
+  const small = b.w * b.h < 10;
+  const innerRank = b.x > -20;
+  const southOfTheEnd = b.y < -14;
+  return small && innerRank && southOfTheEnd;
+}
+
+/**
+ * `docs/MECHANICS.md` §5.3. Six minutes and nine things, and no day is long
+ * enough for nine.
+ *
+ * It was fifteen, and the author judged it too heavy on 25 Sep. What went
+ * were the duplicates — a second heavy haul beside the keg, a second talk
+ * beside Room 5's, and a twenty-second queue — and the three conversations
+ * became side quests. Every robot kept its signature job: Voxxy's stickers,
+ * Droid's polo and question at the mic, Biggy's shutter and keg.
  *
  * The one constraint everything else is arranged around: the keg is 200 kg,
  * and a Biggy carrying 200 kg cannot climb the building's only ramp — its
@@ -737,6 +765,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // already stopped there, so the first conversation in the game costs
       // nothing but the press that discovers the key exists.
       label: 'Say hello at the desk',
+      optional: true,
       who: 'Registration',
       // Conference staff blue. Kept cool against a warm chapter so the desk
       // reads from the aisle, which is the whole job of the person at it.
@@ -745,7 +774,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       after: ['badge'],
       lines: [
         'There you are. Badge is on, so you are officially at a conference.',
-        'Twelve things worth doing and one day to do them in. You will not get all of them. Nobody does.',
+        'Nine things worth doing and one day to do them in. You will not get all of them. Nobody does.',
         'Pick the ones you will be sad to have missed.',
       ],
     },
@@ -754,6 +783,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'talk',
       id: 'talk-stand',
       label: 'Talk to the stand crew',
+      optional: true,
       who: 'Stand 11',
       // An exhibitor in whatever their company decided their colour was.
       look: { shirt: 0xa63b4e, hair: 0x2e2a26, scale: 1.02 },
@@ -761,7 +791,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // past on the sticker sweep.
       at: spot(0, 14.0, -24.0, 3.2),
       lines: [
-        'Careful with that crate, it is heavier than it looks.',
+        'Careful with the coffee. It spills if you so much as brush a stand.',
         'Anything with weight in it changes how you stop, not how you start. Same motor, twice the distance.',
         'And the ramp is the one place that catches people out. Try it empty first.',
       ],
@@ -771,6 +801,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'talk',
       id: 'talk-keynote',
       label: 'Ask the steward about the keynote',
+      optional: true,
       who: 'Steward',
       // High-vis, which is the one piece of clothing in this game that is
       // doing a job rather than being a colour: a steward outside a full
@@ -816,15 +847,6 @@ export const CAPACITY_OBJECTIVE: Objective = {
     },
 
     {
-      kind: 'haul',
-      id: 'crate',
-      label: 'Crate of shirts to the pickup room',
-      at: spot(0, 14.0, -20.0, 2.6),
-      to: roomZone('polo', 0.8),
-      mass: 60,
-    },
-
-    {
       kind: 'shove',
       id: 'shutter',
       label: 'Free the jammed shutter',
@@ -867,23 +889,6 @@ export const CAPACITY_OBJECTIVE: Objective = {
     },
     {
       kind: 'attend',
-      id: 'talk-11',
-      label: 'Catch the talk in Room 11',
-      at: crossAisle('aud-11'),
-      window: { from: 140, to: 180 },
-      seconds: 22,
-    },
-
-    {
-      kind: 'dwell',
-      id: 'toilets',
-      label: 'The queue for the toilets',
-      at: roomZone('toilet-corridor', 0.6),
-      seconds: 20,
-    },
-
-    {
-      kind: 'attend',
       id: 'keynote',
       label: 'The keynote',
       at: crossAisle('aud-8'),
@@ -902,7 +907,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
      *
      * It is a chain and it is `optional`, so the chapter's own sentence
      * still holds: you cannot do all of it, and a player who spends the day
-     * on photographs has chosen that over the keg, the crate and the
+     * on photographs has chosen that over the keg, the coffee and the
      * keynote. The three things they will not get to are the price, and the
      * prints are what they have instead.
      *
