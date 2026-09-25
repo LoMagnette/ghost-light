@@ -473,6 +473,8 @@ export class ChapterScreen implements Screen {
     this.followControlled(dt);
     this.blockout.setMarkers(this.markers(), this.floor);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
+    // One robot needs no telling apart; two or three do.
+    this.blockout.setControlled(this.actors.length > 1 ? this.controlled : undefined);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
     // After the scene is dressed for this frame and not before, or the
     // selfie is of the frame BEFORE the one in which it was taken.
