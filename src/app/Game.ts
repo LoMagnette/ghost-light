@@ -12,6 +12,7 @@
 
 import { PCFSoftShadowMap, Scene, WebGLRenderer, type Camera } from 'three';
 import { currentQuality } from './quality';
+import { Mood, type Grade } from '@/render/Mood';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@/config';
 import { Keyboard } from '@/input/Keyboard';
 
@@ -26,6 +27,8 @@ import { Keyboard } from '@/input/Keyboard';
 export interface Screen {
   readonly scene?: Scene;
   readonly camera?: Camera;
+  /** How this screen's scene is seen, on high quality. See `render/Mood.ts`. */
+  readonly grade?: Grade;
   mount(game: Game): void;
   update(dt: number): void;
   dispose(): void;
@@ -69,8 +72,16 @@ export class Game {
    * mount, so a change reaches the next screen shown rather than this one.
    */
   applyQuality(): void {
-    this.renderer.shadowMap.enabled = currentQuality() === 'high';
+    const high = currentQuality() === 'high';
+    this.renderer.shadowMap.enabled = high;
+    if (!high) {
+      this.mood?.dispose();
+      this.mood = undefined;
+    }
   }
+
+  /** Built the first time a graded screen is drawn on high quality. */
+  private mood: Mood | undefined;
 
   setBackground(colour: number): void {
     this.renderer.setClearColor(colour, 1);
@@ -106,7 +117,13 @@ export class Game {
 
     screen.update(dt);
     if (screen.scene && screen.camera) {
-      this.renderer.render(screen.scene, screen.camera);
+      const grade = screen.grade;
+      if (grade && currentQuality() === 'high') {
+        this.mood ??= new Mood(this.renderer, VIEW_WIDTH, VIEW_HEIGHT);
+        this.mood.draw(screen.scene, screen.camera, grade, dt);
+      } else {
+        this.renderer.render(screen.scene, screen.camera);
+      }
     } else {
       this.renderer.clear();
     }
@@ -128,5 +145,6 @@ export class Game {
     const top = Math.round((window.innerHeight - VIEW_HEIGHT * scale) / 2);
     this.stage.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
     this.renderer.setPixelRatio(Math.min(2, (window.devicePixelRatio || 1) * scale));
+    this.mood?.setPixelRatio(this.renderer.getPixelRatio());
   };
 }

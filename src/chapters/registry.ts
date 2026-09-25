@@ -102,6 +102,14 @@ export const CHAPTER_ONE: Chapter = {
     damp: 0x2b3038,
     accent: 0xf24471,
     text: 0x9fa8b0,
+    /*
+     * Cold, drained, grainy, and dark at the edges: a building nobody has
+     * looked at in years, seen through a lens nobody has cleaned. The bloom
+     * is the strongest of the three because this is the chapter with the
+     * fewest lights, and each one — the lamp, the boards, the ghost light —
+     * has to read as a light in the dark rather than as a bright pixel.
+     */
+    grade: { tint: 0xe6f0ff, saturation: 0.72, contrast: 1.06, vignette: 0.55, grain: 0.05, bloom: 0.9 },
   },
   startFloor: 0,
   objective: SILENCE_OBJECTIVE,
@@ -173,6 +181,9 @@ export const CHAPTER_TWO: Chapter = {
     damp: 0x3a3022,
     accent: 0xeb9760, // the registration lamp — tungsten, and the era's whole mood
     text: 0xf2e8d8,
+    // Warm and a little faded, like tungsten on old stock. The early years
+    // are remembered rather than seen, and memory runs warm.
+    grade: { tint: 0xfff0dc, saturation: 0.88, contrast: 1.04, vignette: 0.35, grain: 0.03, bloom: 0.45 },
   },
   startFloor: 1,
   objective: JAVAPOLIS_OBJECTIVE,
@@ -231,6 +242,9 @@ export const CHAPTER_THREE: Chapter = {
     damp: 0x26241f,
     accent: 0xc8895f,
     text: 0xf2f5f7,
+    // Now, and clean: a touch more colour than life, almost no vignette, no
+    // grain. The only chapter the lens is not remembering.
+    grade: { tint: 0xfffaf4, saturation: 1.08, contrast: 1.05, vignette: 0.18, bloom: 0.35 },
   },
   startFloor: 0,
   objective: CAPACITY_OBJECTIVE,
