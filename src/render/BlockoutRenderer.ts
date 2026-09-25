@@ -450,6 +450,29 @@ interface RobotView {
   shadow: Mesh;
   stopLine: Line;
   stopRing: Mesh;
+  /** Hip, shoulder and neck pivots, for whichever of them this machine has. */
+  pivots: Partial<Record<PartRole, Group>>;
+  /** The ring under whoever the player is driving. See `setControlled`. */
+  ring: Mesh;
+  /** Gait and body language, carried frame to frame. See `animateRobot`. */
+  motion: RobotMotion;
+}
+
+interface RobotMotion {
+  /** Which foot the current stride is on; flips every time the phase wraps. */
+  foot: 0 | 1;
+  lastPhase: number;
+  lastSpeed: number;
+  lastHeading: number;
+  lean: number;
+  roll: number;
+  headYaw: number;
+  /** Seconds it has been standing still. */
+  still: number;
+  /** Per robot, so three idle machines do not look round in unison. */
+  seed: number;
+  /** 1 when it has just been taken over, easing to 0. The ring's pulse. */
+  pulse: number;
 }
 
 /**
@@ -462,6 +485,13 @@ interface RobotView {
  */
 interface RobotPart {
   shape: 'box' | 'blob';
+  /**
+   * Which moving part this belongs to, if any. A part with a role hangs from
+   * that role's pivot — hip, shoulder, neck — instead of straight off the
+   * body, so a leg can swing about its hip rather than about the middle of
+   * the machine. See `animateRobot`.
+   */
+  role?: PartRole;
   x?: number;
   y?: number;
   z: number;
@@ -470,6 +500,29 @@ interface RobotPart {
   h: number;
   colour: number;
 }
+
+type PartRole = 'legL' | 'legR' | 'armL' | 'armR' | 'head';
+const ROLES: PartRole[] = ['legL', 'legR', 'armL', 'armR', 'head'];
+
+/**
+ * How far each machine swings its legs at full stride, radians.
+ *
+ * Voxxy's are thin and quick and go a long way; Droid strides, which is a
+ * smaller angle on a much longer leg; Biggy barely has legs and shuffles.
+ * The same stride phase drives all three, so the difference in gait is the
+ * difference in these numbers and in `strideTime`, which is the machine's.
+ */
+const LEG_SWING: Record<string, number> = { voxxy: 0.62, droid: 0.42, biggy: 0.22 };
+/** Arms swing against the legs, at this fraction of their angle. */
+const ARM_SWING = 0.7;
+/** Forward lean per m/s² of acceleration, radians. Braking leans back. */
+const ACCEL_LEAN = 0.011;
+const MAX_LEAN = 0.13;
+/** Head turn per rad/s of turning, radians — it looks where it is going. */
+const HEAD_LEAD = 0.28;
+const MAX_HEAD = 0.65;
+/** Seconds standing still before a robot starts looking around. */
+const IDLE_AFTER = 1.4;
 
 const SCRATCH = new Object3D();
 const SCRATCH_COLOUR = new Color();
@@ -480,6 +533,10 @@ export class BlockoutRenderer {
   readonly scene = new Scene();
   /** Story poses, by robot. Empty for the whole of play. See `RobotPose`. */
   private readonly poses = new Map<Actor, RobotPose>();
+  /** The robot the player is driving, for the ring. See `setControlled`. */
+  private controlled: Actor | undefined;
+  /** Seconds of rendering, for anything that idles. */
+  private clock = 0;
 
   private readonly venue: Venue;
   private readonly palette: Palette;
@@ -1326,6 +1383,7 @@ export class BlockoutRenderer {
    * never for anything the simulation can see.
    */
   render(floor: Level, actors: Actor[], alpha: number, dt: number): void {
+    this.clock += dt;
     for (const [level, group] of this.storeys) group.visible = level === floor;
 
     this.ageMarks(dt);
@@ -1337,7 +1395,10 @@ export class BlockoutRenderer {
     for (const actor of actors) {
       const view = this.robots.get(actor) ?? this.buildRobot(actor);
       view.group.visible = actor.floor === floor;
-      if (view.group.visible) this.placeRobot(actor, view, alpha);
+      if (view.group.visible) {
+        this.placeRobot(actor, view, alpha);
+        this.animateRobot(actor, view, dt);
+      }
     }
 
     this.placeMovers(floor);
@@ -2035,18 +2096,18 @@ export class BlockoutRenderer {
        */
       case 'voxxy':
         return [
-          { shape: 'box', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
-          { shape: 'box', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
+          { shape: 'box', role: 'legR', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
           { shape: 'blob', z: 0.24 * H, w: 1.5 * R, d: 1.32 * R, h: 0.45 * H, colour: spec.tint },
-          { shape: 'box', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'box', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'blob', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
+          { shape: 'blob', role: 'head', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
           // The dark visor across the front of the head, and the pale ring
           // round it. Two of the three things anyone would draw from the
           // sheet, and both survive being eight pixels wide.
-          { shape: 'box', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
-          { shape: 'box', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
-          { shape: 'box', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'head', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
+          { shape: 'box', role: 'legL', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'legR', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
         ];
 
       /*
@@ -2057,19 +2118,19 @@ export class BlockoutRenderer {
        */
       case 'droid':
         return [
-          { shape: 'box', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
-          { shape: 'box', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
+          { shape: 'box', role: 'legR', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
           { shape: 'box', z: 0.42 * H, w: 0.62 * R, d: 0.78 * R, h: 0.1 * H, colour: spec.trim },
           { shape: 'box', z: 0.5 * H, w: 0.72 * R, d: 1.42 * R, h: 0.28 * H, colour: spec.tint },
           // Shoulders proud of the torso, which is what makes the top half
           // read as a chest rather than as a post.
           { shape: 'box', y: 0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
           { shape: 'box', y: -0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
-          { shape: 'blob', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
-          { shape: 'box', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
+          { shape: 'box', role: 'armL', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', role: 'armR', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', role: 'head', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
+          { shape: 'blob', role: 'head', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', role: 'head', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
         ];
 
       /*
@@ -2079,16 +2140,16 @@ export class BlockoutRenderer {
        */
       default:
         return [
-          { shape: 'box', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
-          { shape: 'box', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', role: 'legR', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
           // The belly, and it is the whole machine: 2R across, so the thing
           // you see is exactly the thing that collides.
           { shape: 'blob', z: 0.14 * H, w: 2 * R, d: 1.9 * R, h: 0.66 * H, colour: spec.trim },
           { shape: 'blob', z: 0.5 * H, w: 1.6 * R, d: 1.55 * R, h: 0.42 * H, colour: spec.tint },
-          { shape: 'blob', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
-          { shape: 'box', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
+          { shape: 'blob', role: 'head', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', role: 'armR', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
+          { shape: 'box', role: 'head', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
         ];
     }
   }
@@ -2111,7 +2172,31 @@ export class BlockoutRenderer {
     const body = new Group();
     const tilt = new Group();
     body.add(tilt);
-    for (const part of this.robotParts(spec)) {
+    const parts = this.robotParts(spec);
+
+    /*
+     * A pivot for every moving part, at the joint it moves about.
+     *
+     * A leg swings about its hip, which is the TOP of the leg; an arm about
+     * its shoulder, the top of the arm; the head turns about the base of the
+     * neck. Each is found from the parts that carry the role rather than
+     * typed, for the same reason the parts come out of `RobotSpec`: the
+     * joint stays where the drawing puts the limb.
+     */
+    const pivots: Partial<Record<PartRole, Group>> = {};
+    for (const role of ROLES) {
+      const mine = parts.filter((p) => p.role === role);
+      if (mine.length === 0) continue;
+      const lead = mine[0];
+      const pivot = new Group();
+      const z =
+        role === 'head' ? Math.min(...mine.map((p) => p.z)) : Math.max(...mine.map((p) => p.z + p.h));
+      pivot.position.set(role === 'head' ? 0 : lead.x ?? 0, role === 'head' ? 0 : lead.y ?? 0, z);
+      tilt.add(pivot);
+      pivots[role] = pivot;
+    }
+
+    for (const part of parts) {
       const geometry =
         part.shape === 'box'
           ? new BoxGeometry(part.w, part.d, part.h)
@@ -2119,7 +2204,13 @@ export class BlockoutRenderer {
       const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
       if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
       mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
-      tilt.add(mesh);
+      const pivot = part.role ? pivots[part.role] : undefined;
+      if (pivot) {
+        mesh.position.sub(pivot.position);
+        pivot.add(mesh);
+      } else {
+        tilt.add(mesh);
+      }
     }
     group.add(body);
 
@@ -2152,7 +2243,36 @@ export class BlockoutRenderer {
     stopRing.renderOrder = 3;
     group.add(stopRing);
 
-    const view: RobotView = { group, body, tilt, shadow, stopLine, stopRing };
+    /*
+     * Who you are driving, as a ring on the floor in the chapter's accent.
+     *
+     * In `switch` mode two or three machines stand about and the only thing
+     * that said which one answers the keyboard was the camera being centred
+     * on it — which is also true of whichever robot happens to be near the
+     * middle of the screen. A ring is unambiguous at any distance, and it
+     * pulses when TAB hands control over, so the eye follows the change.
+     */
+    const ring = new Mesh(
+      new RingGeometry(spec.radius * 1.28, spec.radius * 1.46, 40),
+      new MeshBasicMaterial({ color: this.palette.accent, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
+    ring.renderOrder = 3;
+    ring.visible = false;
+    group.add(ring);
+
+    const motion: RobotMotion = {
+      foot: 0,
+      lastPhase: actor.body.stridePhase,
+      lastSpeed: actor.body.speed,
+      lastHeading: actor.body.heading,
+      lean: 0,
+      roll: 0,
+      headYaw: 0,
+      still: 0,
+      seed: this.robots.size * 2.39,
+      pulse: 0,
+    };
+    const view: RobotView = { group, body, tilt, shadow, stopLine, stopRing, pivots, ring, motion };
     this.robots.set(actor, view);
     this.scene.add(group);
     return view;
@@ -2184,6 +2304,7 @@ export class BlockoutRenderer {
     // ground-plane contact patch to draw anyway.
     view.shadow.visible = actor.onLink === undefined;
     view.shadow.position.set(pos.x, pos.y, pos.z + DECAL_LIFT);
+    view.ring.position.set(pos.x, pos.y, pos.z + DECAL_LIFT * 1.5);
 
     const pose = this.poses.get(actor);
     if (pose) {
@@ -2201,6 +2322,8 @@ export class BlockoutRenderer {
       view.shadow.scale.setScalar(scale);
       if ((pose.dz ?? 0) > 0.4) view.shadow.visible = false;
       if (pose.hidden) view.group.visible = false;
+      // Nobody is driving a robot that is falling out of a wormhole.
+      view.ring.visible = false;
     } else {
       view.body.scale.setScalar(1);
       view.shadow.scale.setScalar(1);
@@ -2216,6 +2339,85 @@ export class BlockoutRenderer {
   setPose(actor: Actor, pose: RobotPose | undefined): void {
     if (pose) this.poses.set(actor, pose);
     else this.poses.delete(actor);
+  }
+
+  /**
+   * Which robot the player is driving, or `undefined` for none worth
+   * marking — a chapter with one robot in it has nobody to tell apart.
+   */
+  setControlled(actor: Actor | undefined): void {
+    if (actor === this.controlled) return;
+    this.controlled = actor;
+    const view = actor ? this.robots.get(actor) : undefined;
+    if (view) view.motion.pulse = 1;
+  }
+
+  /**
+   * Gait and body language, from nothing but what the simulation already
+   * knows: stride phase, speed, heading.
+   *
+   * The legs swing about their hips with the stride — one step per phase,
+   * so the foot flips every time the phase wraps — and the arms swing
+   * against them. The body leans into acceleration and back under braking,
+   * which is mass made visible: Voxxy pitches forward off the mark, Biggy
+   * hardly moves and then tips back when it finally stops. The head turns
+   * into a turn before the body does, and a robot left standing looks round.
+   *
+   * None of it is state the simulation reads, and none of it touches the
+   * body's position: it all hangs off `tilt` and the pivots inside it.
+   */
+  private animateRobot(actor: Actor, view: RobotView, dt: number): void {
+    const { body } = actor;
+    const m = view.motion;
+    const step = Math.max(dt, 1e-4);
+
+    if (body.stridePhase < m.lastPhase) m.foot = m.foot === 0 ? 1 : 0;
+    m.lastPhase = body.stridePhase;
+    const gait = (m.foot + body.stridePhase) / 2;
+    const swing = (LEG_SWING[body.spec.id] ?? 0.4) * Math.min(1, body.speedFraction * 1.4);
+    const leg = Math.sin(gait * Math.PI * 2) * swing;
+    view.pivots.legL?.rotation.set(0, leg, 0);
+    view.pivots.legR?.rotation.set(0, -leg, 0);
+    view.pivots.armL?.rotation.set(0, -leg * ARM_SWING, 0);
+    view.pivots.armR?.rotation.set(0, leg * ARM_SWING, 0);
+
+    const speed = body.speed;
+    const accel = (speed - m.lastSpeed) / step;
+    m.lastSpeed = speed;
+    let turn = body.heading - m.lastHeading;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn)) / step;
+    m.lastHeading = body.heading;
+
+    const ease = Math.min(1, dt * 8);
+    const leanTo = clampAbs(accel * ACCEL_LEAN, MAX_LEAN);
+    m.lean += (leanTo - m.lean) * ease;
+    // Into the turn, the way anything with a high centre of mass goes round.
+    const rollTo = clampAbs(-turn * body.speedFraction * 0.07, MAX_LEAN);
+    m.roll += (rollTo - m.roll) * ease;
+    // `placeRobot` has already set the climb's lean on this; add ours to it.
+    view.tilt.rotation.y += m.lean;
+    view.tilt.rotation.x = m.roll;
+
+    m.still = speed < 0.15 ? m.still + dt : 0;
+    const idle = Math.min(1, Math.max(0, (m.still - IDLE_AFTER) / 1.2));
+    const t = this.clock + m.seed;
+    const look = Math.sin(t * 0.55) * 0.55 + Math.sin(t * 1.3) * 0.12;
+    const yawTo = clampAbs(turn * HEAD_LEAD, MAX_HEAD) * (1 - idle) + look * idle;
+    m.headYaw += (yawTo - m.headYaw) * Math.min(1, dt * 4);
+    view.pivots.head?.rotation.set(0, 0, m.headYaw);
+    // Standing, it breathes. A machine that is perfectly still for a minute
+    // reads as a model rather than as something waiting.
+    view.tilt.scale.set(1, 1, 1 + Math.sin(t * 2.1) * 0.012 * idle);
+
+    const driven = actor === this.controlled && !this.poses.has(actor);
+    view.ring.visible = driven;
+    if (driven) {
+      m.pulse = Math.max(0, m.pulse - dt * 2.2);
+      const grow = 1 + m.pulse * 0.9;
+      view.ring.scale.set(grow, grow, 1);
+      const material = view.ring.material as MeshBasicMaterial;
+      material.opacity = 0.55 + 0.25 * Math.sin(this.clock * 3.2) + m.pulse * 0.2;
+    }
   }
 
   /**
@@ -2532,4 +2734,8 @@ export function shade(colour: number, factor: number): number {
   const g = Math.min(255, Math.round(((colour >> 8) & 0xff) * factor));
   const b = Math.min(255, Math.round((colour & 0xff) * factor));
   return (r << 16) | (g << 8) | b;
+}
+
+function clampAbs(v: number, limit: number): number {
+  return v < -limit ? -limit : v > limit ? limit : v;
 }
