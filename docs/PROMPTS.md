@@ -4331,6 +4331,40 @@ eases, so TAB reads as the building turning its attention.
    scene, where it looked like it belonged to the person standing under it.
    Other-storey badges are dashed and say "upstairs".
 
+### Claude Opus — the robots, closer to their sheets
+
+**Prompt:**
+> Can we clean up the droid model so they match even more the assets
+
+**Iterations:** read the three sheets, build, two corrections from zoomed
+frames.
+
+**Read as all three robots** ("they"), not only Droid.
+
+**New ways to look.** `?zoom=n` and `?face` exist so a robot can be held
+against its sheet at the size the sheet draws it and from the front. The
+game camera sees about thirty pixels of Voxxy from behind, which is not
+enough to judge a face.
+
+**What changed, per sheet.** Voxxy got the visor band with two lit orange
+eyes, white ear discs, ears on top, long arms on thin black rods with fat
+banded forearms and black claws, and short black legs on orange feet. The
+white bands had been on its legs. Droid went from a mid-grey slab on posts
+to dark charcoal, with a tapered chest, copper-rimmed shoulder caps, a
+pelvis plate over a bare spine, thigh, knee and shin, arms jointed at the
+elbow, and an elongated dome of a head with amber eyes and a grille.
+Biggy's small separate head became a helmet capping the sphere, with a dark
+visor line, rivets, an antenna and a backpack; its arms are blue-grey with
+orange shoulder pads. Eyes are self-lit now, because the game has bloom.
+
+**What the frames corrected.**
+1. Voxxy's first face was a jack-o'-lantern. The visor blob crossed the
+   head blob, and at 10 × 7 segments the seam was ragged, so the band read
+   as a grin and the eye slits as teeth. The visor now stands proud of the
+   head, the eyes are ovals on its surface, and robot blobs are 18 × 12.
+2. Everything was also checked at game scale, where Droid's much darker
+   charcoal still reads against the hall floor.
+
 ---
 
 ## Audio

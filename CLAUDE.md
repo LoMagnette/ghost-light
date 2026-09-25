@@ -60,7 +60,7 @@ held. `shoot` drives a fixed tour and is the regression check; almost every
 visual question is instead about one particular square metre of a 126 m
 building, and this answers those in a single build.
 
-Five query parameters exist for looking at the game rather than playing it,
+Seven query parameters exist for looking at the game rather than playing it,
 and none is reachable from inside it:
 
 | | |
@@ -70,6 +70,8 @@ and none is reachable from inside it:
 | `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
 | `?exit` | with `?chapter`, open that chapter's wormhole at once, if it has one |
 | `?high` / `?low` | force the graphics quality: shadows and mood, or the flat blockout |
+| `?zoom=n` | look n times closer — for holding a robot against its model sheet |
+| `?face` | turn the cast to face the camera, as on the sheets' front views |
 
 `?at=` is worth knowing about. Photographing a particular doorway thirty metres
 up a corridor by driving to it is several builds and a lot of guessed key

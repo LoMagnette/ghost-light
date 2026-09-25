@@ -245,14 +245,22 @@ const REVEAL_POWER = 5;
 const GONE = 1e-4;
 
 /**
- * The two inks that are not a robot's own livery.
+ * The inks that are not a robot's own livery, all off the model sheets.
  *
- * A visor is dark whatever colour the machine is painted, and a lit eye is
- * a lit eye. Both are `MeshLambert` like everything else rather than
- * emissive: a glow would be the only bloom in a game that has none.
+ * A visor is dark whatever colour the machine is painted. The eyes are LIT
+ * — unlit material, so they read in Chapter I's dark and bloom on high
+ * quality, which is exactly what the sheets show: Voxxy's two orange slits
+ * behind the visor, Droid's two amber points. It used to be Lambert on the
+ * grounds that a glow would be the only bloom in a game that had none; the
+ * game has bloom now.
  */
-const VISOR = 0x14171a;
+const VISOR = 0x101316;
 const EYES = 0xffc061;
+const VOXXY_EYES = 0xff8a2a;
+/** Hands, joints and Voxxy's thin limbs: near black, never pure black. */
+const JOINT = 0x1c1e21;
+/** The white of Voxxy's ear discs and the logos on Voxxy's and Biggy's chests. */
+const LOGO = 0xf2f0ea;
 
 /**
  * The two animals. Not palette entries: see `placeAnimal`.
@@ -513,6 +521,8 @@ interface RobotPart {
    * the machine. See `animateRobot`.
    */
   role?: PartRole;
+  /** Self-lit: an eye. See `VOXXY_EYES`. */
+  glow?: boolean;
   x?: number;
   y?: number;
   z: number;
@@ -2304,67 +2314,145 @@ export class BlockoutRenderer {
 
     switch (spec.id) {
       /*
-       * A big oval head on a teardrop body, on two thin legs. The head is
-       * the widest thing on it — wider than the body it sits on — which is
-       * the whole of why Voxxy reads as small and friendly rather than as
-       * a canister.
+       * Voxxy, off its sheet: a big oval head, wider than the body, with a
+       * black visor band across the front and two orange eyes lit behind it;
+       * a white disc on each side of the head like a headphone, and two
+       * round ears on top. An egg of a body with a white cat on the chest.
+       * Long arms that hang from the shoulder on a thin black rod and end in
+       * a fat orange forearm with a white band and black claws. Two short
+       * black legs on small orange feet.
+       *
+       * The white bands were on its LEGS until 25 Sep. The sheet has them on
+       * the forearms, which are the most visible thing about Voxxy after the
+       * visor, and the legs are barely there at all.
        */
       case 'voxxy':
         return [
-          { shape: 'box', role: 'legL', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
-          { shape: 'blob', z: 0.24 * H, w: 1.5 * R, d: 1.32 * R, h: 0.45 * H, colour: spec.tint },
-          { shape: 'box', role: 'armL', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'box', role: 'armR', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'blob', role: 'head', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
-          // The dark visor across the front of the head, and the pale ring
-          // round it. Two of the three things anyone would draw from the
-          // sheet, and both survive being eight pixels wide.
-          { shape: 'box', role: 'head', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
-          { shape: 'box', role: 'legL', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
-          { shape: 'box', role: 'legR', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          // Legs and feet.
+          { shape: 'box', role: 'legL', y: 0.3 * R, z: 0.03 * H, w: 0.12 * R, d: 0.12 * R, h: 0.12 * H, colour: JOINT },
+          { shape: 'box', role: 'legR', y: -0.3 * R, z: 0.03 * H, w: 0.12 * R, d: 0.12 * R, h: 0.12 * H, colour: JOINT },
+          { shape: 'blob', role: 'legL', x: 0.06 * R, y: 0.3 * R, z: 0, w: 0.4 * R, d: 0.28 * R, h: 0.06 * H, colour: spec.tint },
+          { shape: 'blob', role: 'legR', x: 0.06 * R, y: -0.3 * R, z: 0, w: 0.4 * R, d: 0.28 * R, h: 0.06 * H, colour: spec.tint },
+          // The egg, and the cat on it.
+          { shape: 'blob', z: 0.12 * H, w: 1.3 * R, d: 1.36 * R, h: 0.46 * H, colour: spec.tint },
+          { shape: 'box', x: 0.64 * R, z: 0.36 * H, w: 0.04 * R, d: 0.3 * R, h: 0.07 * H, colour: LOGO },
+          // Arms: a thin black rod from the shoulder, then the fat forearm.
+          { shape: 'box', role: 'armL', y: 0.74 * R, z: 0.4 * H, w: 0.1 * R, d: 0.1 * R, h: 0.14 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', y: -0.74 * R, z: 0.4 * H, w: 0.1 * R, d: 0.1 * R, h: 0.14 * H, colour: JOINT },
+          { shape: 'blob', role: 'armL', y: 0.86 * R, z: 0.1 * H, w: 0.44 * R, d: 0.44 * R, h: 0.32 * H, colour: spec.tint },
+          { shape: 'blob', role: 'armR', y: -0.86 * R, z: 0.1 * H, w: 0.44 * R, d: 0.44 * R, h: 0.32 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 0.86 * R, z: 0.2 * H, w: 0.46 * R, d: 0.46 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'armR', y: -0.86 * R, z: 0.2 * H, w: 0.46 * R, d: 0.46 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'armL', x: 0.06 * R, y: 0.86 * R, z: 0.05 * H, w: 0.3 * R, d: 0.3 * R, h: 0.06 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', x: 0.06 * R, y: -0.86 * R, z: 0.05 * H, w: 0.3 * R, d: 0.3 * R, h: 0.06 * H, colour: JOINT },
+          // The head: the widest thing on it, which is why it reads as small
+          // and friendly rather than as a canister.
+          { shape: 'box', role: 'head', z: 0.54 * H, w: 0.14 * R, d: 0.14 * R, h: 0.05 * H, colour: JOINT },
+          { shape: 'blob', role: 'head', z: 0.57 * H, w: 1.9 * R, d: 2.3 * R, h: 0.42 * H, colour: spec.tint },
+          // The visor stands well PROUD of the head, so the head's surface
+          // never pokes through it: two low-poly spheres crossing each other
+          // made a ragged mouth of a band and the eyes read as teeth.
+          { shape: 'blob', role: 'head', x: 0.6 * R, z: 0.63 * H, w: 0.86 * R, d: 1.76 * R, h: 0.26 * H, colour: VISOR },
+          { shape: 'blob', role: 'head', glow: true, x: 1.01 * R, y: 0.36 * R, z: 0.735 * H, w: 0.06 * R, d: 0.3 * R, h: 0.07 * H, colour: VOXXY_EYES },
+          { shape: 'blob', role: 'head', glow: true, x: 1.01 * R, y: -0.36 * R, z: 0.735 * H, w: 0.06 * R, d: 0.3 * R, h: 0.07 * H, colour: VOXXY_EYES },
+          // The white discs on the sides, with the orange core the sheet
+          // draws in each.
+          { shape: 'blob', role: 'head', y: 1.12 * R, z: 0.66 * H, w: 0.62 * R, d: 0.22 * R, h: 0.24 * H, colour: LOGO },
+          { shape: 'blob', role: 'head', y: -1.12 * R, z: 0.66 * H, w: 0.62 * R, d: 0.22 * R, h: 0.24 * H, colour: LOGO },
+          { shape: 'blob', role: 'head', y: 1.2 * R, z: 0.72 * H, w: 0.26 * R, d: 0.12 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', role: 'head', y: -1.2 * R, z: 0.72 * H, w: 0.26 * R, d: 0.12 * R, h: 0.1 * H, colour: spec.tint },
+          // Two round ears on top.
+          { shape: 'blob', role: 'head', y: 0.62 * R, z: 0.92 * H, w: 0.34 * R, d: 0.34 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', role: 'head', y: -0.62 * R, z: 0.92 * H, w: 0.34 * R, d: 0.34 * R, h: 0.1 * H, colour: spec.tint },
         ];
 
       /*
-       * Tall and thin: a slab of a torso on long legs, arms to the knee,
-       * and a small domed head a long way up. Two metres of it, which is
-       * what makes the 2 m reach gate believable when it operates a counter
-       * nothing else can.
+       * Droid, off its sheet: two metres of dark charcoal. A broad armoured
+       * chest that tapers to a thin waist, round shoulder caps rimmed in
+       * copper, a V of pelvis plate over a bare spine. Long thighs, a knee
+       * joint, thin shins, flat feet. Arms long enough to reach the knee,
+       * jointed at the elbow. A small elongated dome of a head on a thin
+       * neck, with two amber eyes and a jaw grille.
+       *
+       * It was a mid grey slab on two posts. The sheet's machine is a much
+       * darker colour and a much more articulated shape, and the taper from
+       * shoulder to waist is what makes it read as a figure at 2 m tall.
        */
       case 'droid':
         return [
-          { shape: 'box', role: 'legL', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
-          { shape: 'box', z: 0.42 * H, w: 0.62 * R, d: 0.78 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', z: 0.5 * H, w: 0.72 * R, d: 1.42 * R, h: 0.28 * H, colour: spec.tint },
-          // Shoulders proud of the torso, which is what makes the top half
-          // read as a chest rather than as a post.
-          { shape: 'box', y: 0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', y: -0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', role: 'armL', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'armR', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'head', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
-          { shape: 'blob', role: 'head', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
-          { shape: 'box', role: 'head', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
+          // Legs: thigh, knee, shin, foot.
+          { shape: 'box', role: 'legL', y: 0.34 * R, z: 0.27 * H, w: 0.42 * R, d: 0.44 * R, h: 0.2 * H, colour: spec.tint },
+          { shape: 'box', role: 'legR', y: -0.34 * R, z: 0.27 * H, w: 0.42 * R, d: 0.44 * R, h: 0.2 * H, colour: spec.tint },
+          { shape: 'blob', role: 'legL', y: 0.34 * R, z: 0.24 * H, w: 0.36 * R, d: 0.38 * R, h: 0.05 * H, colour: dark },
+          { shape: 'blob', role: 'legR', y: -0.34 * R, z: 0.24 * H, w: 0.36 * R, d: 0.38 * R, h: 0.05 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.34 * R, z: 0.03 * H, w: 0.26 * R, d: 0.28 * R, h: 0.22 * H, colour: spec.tint },
+          { shape: 'box', role: 'legR', y: -0.34 * R, z: 0.03 * H, w: 0.26 * R, d: 0.28 * R, h: 0.22 * H, colour: spec.tint },
+          { shape: 'box', role: 'legL', x: 0.1 * R, y: 0.34 * R, z: 0, w: 0.56 * R, d: 0.32 * R, h: 0.03 * H, colour: dark },
+          { shape: 'box', role: 'legR', x: 0.1 * R, y: -0.34 * R, z: 0, w: 0.56 * R, d: 0.32 * R, h: 0.03 * H, colour: dark },
+          // Pelvis plate and the bare spine above it.
+          { shape: 'box', z: 0.45 * H, w: 0.5 * R, d: 1.0 * R, h: 0.06 * H, colour: spec.tint },
+          { shape: 'box', z: 0.5 * H, w: 0.26 * R, d: 0.34 * R, h: 0.07 * H, colour: dark },
+          // The chest, as two stacked plates so it tapers: narrow at the
+          // waist, broad at the shoulders.
+          { shape: 'box', z: 0.56 * H, w: 0.6 * R, d: 1.3 * R, h: 0.08 * H, colour: spec.tint },
+          { shape: 'box', z: 0.63 * H, w: 0.7 * R, d: 1.72 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'box', x: 0.35 * R, z: 0.6 * H, w: 0.03 * R, d: 0.36 * R, h: 0.08 * H, colour: dark },
+          // Shoulder caps: a copper rim, the cap inside it.
+          { shape: 'blob', y: 0.96 * R, z: 0.64 * H, w: 0.62 * R, d: 0.5 * R, h: 0.11 * H, colour: spec.trim },
+          { shape: 'blob', y: 1.0 * R, z: 0.645 * H, w: 0.5 * R, d: 0.46 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', y: -0.96 * R, z: 0.64 * H, w: 0.62 * R, d: 0.5 * R, h: 0.11 * H, colour: spec.trim },
+          { shape: 'blob', y: -1.0 * R, z: 0.645 * H, w: 0.5 * R, d: 0.46 * R, h: 0.1 * H, colour: spec.tint },
+          // Arms, long enough to reach the knee.
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.5 * H, w: 0.2 * R, d: 0.22 * R, h: 0.15 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.5 * H, w: 0.2 * R, d: 0.22 * R, h: 0.15 * H, colour: spec.tint },
+          { shape: 'blob', role: 'armL', y: 1.04 * R, z: 0.48 * H, w: 0.2 * R, d: 0.22 * R, h: 0.04 * H, colour: dark },
+          { shape: 'blob', role: 'armR', y: -1.04 * R, z: 0.48 * H, w: 0.2 * R, d: 0.22 * R, h: 0.04 * H, colour: dark },
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.33 * H, w: 0.18 * R, d: 0.2 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.33 * H, w: 0.18 * R, d: 0.2 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.28 * H, w: 0.22 * R, d: 0.18 * R, h: 0.05 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.28 * H, w: 0.22 * R, d: 0.18 * R, h: 0.05 * H, colour: JOINT },
+          // Neck, and the elongated dome of a head.
+          { shape: 'box', role: 'head', z: 0.73 * H, w: 0.16 * R, d: 0.18 * R, h: 0.08 * H, colour: dark },
+          { shape: 'blob', role: 'head', x: 0.04 * R, z: 0.8 * H, w: 0.74 * R, d: 0.56 * R, h: 0.19 * H, colour: spec.tint },
+          { shape: 'box', role: 'head', glow: true, x: 0.38 * R, y: 0.12 * R, z: 0.88 * H, w: 0.04 * R, d: 0.08 * R, h: 0.02 * H, colour: EYES },
+          { shape: 'box', role: 'head', glow: true, x: 0.38 * R, y: -0.12 * R, z: 0.88 * H, w: 0.04 * R, d: 0.08 * R, h: 0.02 * H, colour: EYES },
+          { shape: 'box', role: 'head', x: 0.3 * R, z: 0.82 * H, w: 0.12 * R, d: 0.2 * R, h: 0.03 * H, colour: dark },
         ];
 
       /*
-       * A sphere with a cap on it and almost no legs. Wider than it is
-       * tall, which no other machine in the building is, and the reason a
-       * corridor that Voxxy treats as open floor is a decision for Biggy.
+       * Biggy, off its sheet: a great rusty-orange sphere that is most of
+       * the machine, under a blue-grey helmet that covers the top third of
+       * it, riveted, with a dark visor line where helmet meets belly and a
+       * thin antenna. Thick blue-grey arms at the sides with an orange pad
+       * at each shoulder and dark hands. Short dark legs. A backpack.
+       *
+       * The helmet used to be a separate small head sitting on top. On the
+       * sheet it is a CAP over the sphere, as wide as the sphere nearly, and
+       * that is the whole of Biggy's silhouette from the front.
        */
       default:
         return [
-          { shape: 'box', role: 'legL', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.4 * R, z: 0, w: 0.4 * R, d: 0.36 * R, h: 0.13 * H, colour: dark },
+          { shape: 'box', role: 'legR', y: -0.4 * R, z: 0, w: 0.4 * R, d: 0.36 * R, h: 0.13 * H, colour: dark },
           // The belly, and it is the whole machine: 2R across, so the thing
           // you see is exactly the thing that collides.
-          { shape: 'blob', z: 0.14 * H, w: 2 * R, d: 1.9 * R, h: 0.66 * H, colour: spec.trim },
-          { shape: 'blob', z: 0.5 * H, w: 1.6 * R, d: 1.55 * R, h: 0.42 * H, colour: spec.tint },
-          { shape: 'blob', role: 'head', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
-          { shape: 'box', role: 'armL', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'armR', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'head', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
+          { shape: 'blob', z: 0.09 * H, w: 1.94 * R, d: 2 * R, h: 0.78 * H, colour: spec.trim },
+          { shape: 'blob', x: 0.9 * R, z: 0.4 * H, w: 0.08 * R, d: 0.3 * R, h: 0.12 * H, colour: LOGO },
+          // The helmet over the top of it, and the dark line under its rim.
+          { shape: 'blob', z: 0.6 * H, w: 1.8 * R, d: 1.84 * R, h: 0.12 * H, colour: VISOR },
+          { shape: 'blob', z: 0.62 * H, w: 1.74 * R, d: 1.8 * R, h: 0.4 * H, colour: spec.tint },
+          { shape: 'blob', x: 0.66 * R, y: 0.3 * R, z: 0.86 * H, w: 0.14 * R, d: 0.14 * R, h: 0.07 * H, colour: dark },
+          { shape: 'blob', x: 0.66 * R, y: -0.3 * R, z: 0.86 * H, w: 0.14 * R, d: 0.14 * R, h: 0.07 * H, colour: dark },
+          { shape: 'box', z: 0.98 * H, w: 0.03 * R, d: 0.03 * R, h: 0.16 * H, colour: JOINT },
+          // The backpack.
+          { shape: 'box', x: -0.82 * R, z: 0.3 * H, w: 0.34 * R, d: 0.9 * R, h: 0.34 * H, colour: spec.tint },
+          // Arms: thick blue-grey, an orange pad at the shoulder, dark hands.
+          { shape: 'blob', role: 'armL', y: 0.92 * R, z: 0.54 * H, w: 0.4 * R, d: 0.34 * R, h: 0.12 * H, colour: spec.trim },
+          { shape: 'blob', role: 'armR', y: -0.92 * R, z: 0.54 * H, w: 0.4 * R, d: 0.34 * R, h: 0.12 * H, colour: spec.trim },
+          { shape: 'box', role: 'armL', y: 1.0 * R, z: 0.2 * H, w: 0.36 * R, d: 0.32 * R, h: 0.36 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.0 * R, z: 0.2 * H, w: 0.36 * R, d: 0.32 * R, h: 0.36 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', x: 0.05 * R, y: 1.0 * R, z: 0.12 * H, w: 0.3 * R, d: 0.26 * R, h: 0.09 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', x: 0.05 * R, y: -1.0 * R, z: 0.12 * H, w: 0.3 * R, d: 0.26 * R, h: 0.09 * H, colour: JOINT },
         ];
     }
   }
@@ -2380,9 +2468,11 @@ export class BlockoutRenderer {
      * from its soles — and the whole group is turned by the heading every
      * frame, so the parts never have to know which way it is facing.
      *
-     * Low segment counts on the blobs on purpose. The building is boxes and
-     * the crowd is boxes; a smooth sphere in the middle of that would be the
-     * one thing on screen pretending to be something else.
+     * Modest segment counts on the blobs. The building is boxes and the
+     * crowd is boxes, and a glassy sphere in the middle of that would be the
+     * one thing on screen pretending to be something else — but 10 × 7, the
+     * first count, made every place two blobs overlap a jagged seam, and on
+     * Voxxy's face the seam WAS the face. 18 × 12 is still visibly faceted.
      */
     const body = new Group();
     const tilt = new Group();
@@ -2415,8 +2505,14 @@ export class BlockoutRenderer {
       const geometry =
         part.shape === 'box'
           ? new BoxGeometry(part.w, part.d, part.h)
-          : new SphereGeometry(0.5, 10, 7);
-      const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
+          : // Rounder than the building's blobs: the robots are the only
+            // curved things a player looks at closely, and at 10 × 7 two
+            // overlapping spheres meet in a jagged seam.
+            new SphereGeometry(0.5, 18, 12);
+      const mesh = new Mesh(
+        geometry,
+        part.glow ? new MeshBasicMaterial({ color: part.colour }) : new MeshLambertMaterial({ color: part.colour }),
+      );
       if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
       mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
       const pivot = part.role ? pivots[part.role] : undefined;
