@@ -1201,6 +1201,36 @@ export class ChapterScreen implements Screen {
   private buildHud(game: Game): void {
     const { chapter } = this;
 
+    /*
+     * Washes behind the HUD, not boxes round it.
+     *
+     * The text sits straight on the building, and the building is busy: in
+     * Chapter III a lit wall passes behind the objective line every few
+     * seconds. A text shadow saves each letter and not the line. A gradient
+     * from the corner, dark at the text and gone by the middle of the
+     * screen, saves the line and costs no view of the game.
+     */
+    game.ui.append(
+      el('div', {
+        position: 'absolute',
+        left: '0',
+        top: '0',
+        width: '560px',
+        height: '130px',
+        pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(4,6,8,0.62), rgba(4,6,8,0) 70%)',
+      }),
+      el('div', {
+        position: 'absolute',
+        left: '0',
+        bottom: '0',
+        width: '640px',
+        height: '120px',
+        pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 100% 100% at 0% 100%, rgba(4,6,8,0.55), rgba(4,6,8,0) 70%)',
+      }),
+    );
+
     game.ui.append(
       label(
         28,
@@ -1228,11 +1258,19 @@ export class ChapterScreen implements Screen {
     // of things to do.
     this.cardText = label(0, CARD_TOP, {
       font: `12px ${MONO}`,
-      color: '#9aa3a9',
+      color: '#aab2b8',
       left: 'auto',
-      right: '28px',
+      right: '20px',
       textAlign: 'right',
       lineHeight: '1.6',
+      // A panel, because the card is a LIST and a list over a busy scene
+      // needs a ground. Translucent and blurred, so the building still
+      // shows through it and nothing important is hidden behind the card.
+      padding: '10px 14px',
+      background: 'rgba(8, 11, 14, 0.55)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      borderRadius: '4px',
+      backdropFilter: 'blur(3px)',
     });
     game.ui.append(this.cardText);
 
@@ -1647,7 +1685,7 @@ export class ChapterScreen implements Screen {
     // side quests have not even been hidden yet, because nothing has been
     // evaluated — and a card reading out a chapter the player is not in yet
     // is the game talking over itself.
-    this.cardText.style.visibility = this.story ? 'hidden' : 'visible';
+    this.cardText.style.visibility = this.story || this.cardText.textContent === '' ? 'hidden' : 'visible';
 
     if (!this.debug) return;
 

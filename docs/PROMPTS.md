@@ -4230,6 +4230,46 @@ Each robot still has the job it is for.
    sat in the denominator. The tally counts what the chapter asks for, and
    the end card credits side quests separately as "extra".
 
+### Claude Opus — a graphics polish in four parts
+
+**Prompt:**
+> Can we try do already do a polish on the graphics to make even better
+
+**Iterations:** an audit, one question, then four branches, each checked in
+headless frames before it was committed.
+
+**Audit first, from the regression shots.** Four findings, ranked: the
+robots were static and about thirty pixels tall, with nothing saying which
+one you were driving; nothing cast a shadow; every era had the same lens;
+and the menu and HUD were text on black or straight on a busy scene. The
+author picked all four.
+
+**1. Robots alive.** Parts gained a `role`, and each role hangs from a pivot
+found from its parts (hip at the top of a leg, neck at the base of a head).
+Gait comes from the stride phase the sim already had. The foot flips on
+each wrap, so a phase is a step and not a whole cycle. Lean comes from
+acceleration, so mass shows. A ring marks the driven robot and pulses on TAB.
+
+**2. Shadows: the first light was the wrong one.** Casting from the key gave
+nothing visible but black wedges at the foot of the columns, because the key
+is behind the camera and nearly overhead, so everything it casts falls out
+of sight. A second light from the north-north-west does the casting, and
+its shadows land down-right, in front of what you see. The key keeps its
+direction at 70%, so the faces it was tuned to separate read the same.
+
+**3. Mood.** Render into a 4x multisampled target, bloom only above 0.72,
+then the output conversion, then a grade in display space. Multisampled
+because the composer's target does not get the canvas's antialiasing, and
+high would have been the jagged setting.
+
+**4. Menu and HUD.** Chapter I's empty building drifts behind the menu and
+eases into each era's grade as you choose. The HUD gets corner washes and a
+panel behind the card.
+
+**All of it behind one switch**, `quality`, with G on the menu, because this
+game has never been measured on a real GPU and every one of these costs fill
+rate. Low is the blockout as it was.
+
 ---
 
 ## Audio
