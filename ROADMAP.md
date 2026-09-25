@@ -169,10 +169,10 @@ the palettes stay guesses until the files are on disk.
 
    | Frame | Robot | File |
    |---|---|---|
-   | Room 8, in front of `#DEVOXX` | **Droid** | `room-8.jpg` |
-   | BOF 1, the BeJUG banner | **Voxxy** | `bejug-banner.jpg` |
-   | Exhibition hall, Josh Long riding it | **Biggy** | `josh-long.jpg` |
-   | Exhibition hall, with Venkat Subramaniam | **all three** | `group.jpg` |
+   | Room 8, in front of `#DEVOXX` | **Droid** | `room-8.jpeg` |
+   | BOF 1, the BeJUG banner | **Voxxy** | `bejug-banner.jpeg` |
+   | Exhibition hall, Josh Long riding it | **Biggy** | `josh-long.jpeg` |
+   | Exhibition hall, with Venkat Subramaniam | **all three** | `group.jpeg` |
 
    The selfie with Dimitris needs nothing; the game renders it. **Ask Josh,
    Venkat and Dimitris first** — `public/` ships in an MIT-licensed public
