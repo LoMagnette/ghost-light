@@ -558,6 +558,8 @@ export class BlockoutRenderer {
   private controlled: Actor | undefined;
   /** Seconds of rendering, for anything that idles. */
   private clock = 0;
+  /** The last frame's length, for easing in `setMarkers`, which runs first. */
+  private lastDt = 1 / 60;
 
   private readonly venue: Venue;
   private readonly palette: Palette;
@@ -1296,17 +1298,28 @@ export class BlockoutRenderer {
       // Each marker on its own phase, so a hall of them shimmers rather than
       // blinking in step like a fairground.
       const phase = t + view.seed;
-      const size = low ? 0.62 : 1;
+      /*
+       * Focus. The robot being driven sees its own jobs a size up and
+       * everybody else's a size down and faded — still there, so the plan
+       * for the other two robots is never out of sight, but no longer
+       * competing with what THIS one should do next. Eased, so pressing TAB
+       * reads as the building turning its attention, not as a cut.
+       */
+      const focusTo = marker.focus === 'mine' ? 1.14 : marker.focus === 'theirs' ? 0.7 : 1;
+      const dimTo = marker.focus === 'theirs' ? 0.4 : 1;
+      view.focus += (focusTo - view.focus) * Math.min(1, this.lastDt * 6);
+      view.dim += (dimTo - view.dim) * Math.min(1, this.lastDt * 6);
+      const size = (low ? 0.62 : 1) * view.focus;
       view.ring.scale.set(size, size, 1);
       view.glow.scale.set(size, size, 1);
-      (view.ring.material as MeshBasicMaterial).opacity = locked ? 0.35 : 0.8 + 0.2 * Math.sin(phase * 2.4);
-      (view.glow.material as MeshBasicMaterial).opacity = locked ? 0.05 : 0.14 + 0.06 * Math.sin(phase * 2.4);
+      (view.ring.material as MeshBasicMaterial).opacity = (locked ? 0.35 : 0.8 + 0.2 * Math.sin(phase * 2.4)) * view.dim;
+      (view.glow.material as MeshBasicMaterial).opacity = (locked ? 0.05 : 0.14 + 0.06 * Math.sin(phase * 2.4)) * view.dim;
 
       // A ripple going out from the ring: "here", said the way a sonar says it.
       const cycle = (phase * 0.62) % 1;
       const spread = size * (1 + cycle * 0.9);
       view.ripple.scale.set(spread, spread, 1);
-      (view.ripple.material as MeshBasicMaterial).opacity = locked ? 0 : 0.55 * (1 - cycle) ** 2;
+      (view.ripple.material as MeshBasicMaterial).opacity = locked ? 0 : 0.55 * (1 - cycle) ** 2 * view.dim;
 
       // A stud — one of a sweep, or the floor under a person — is the ring
       // and nothing else. The person is the marker; a sweep of twelve with
@@ -1316,8 +1329,12 @@ export class BlockoutRenderer {
       view.icon3d.visible = tall;
       if (!tall) continue;
 
-      const hover = MARKER_HEIGHT + Math.sin(phase * 1.7) * 0.08;
+      const hover = (MARKER_HEIGHT + Math.sin(phase * 1.7) * 0.08) * (0.75 + 0.25 * view.focus);
       view.beam.scale.set(1, hover - 0.1, 1);
+      (view.beam.material as MeshBasicMaterial).opacity = 0.35 * view.dim;
+      view.icon3d.scale.setScalar(view.focus);
+      (view.icon3d.material as MeshBasicMaterial).opacity = 0.35 + 0.65 * view.dim;
+      if (icon === 'any') view.icon3d.scale.z = 1.45 * view.focus;
       view.beam.position.z = (hover - 0.1) / 2 + 0.05;
       view.icon3d.position.z = hover + (icon === 'drop' ? 0 : 0.06);
       view.icon3d.rotation.z = icon === 'droid' || icon === 'any' ? phase * 0.9 : 0;
@@ -1360,7 +1377,7 @@ export class BlockoutRenderer {
     beam.rotation.x = Math.PI / 2;
     beam.renderOrder = 7;
 
-    const iconMaterial = new MeshBasicMaterial();
+    const iconMaterial = new MeshBasicMaterial({ transparent: true });
     const icon3d = new Mesh(parts[icon], iconMaterial);
     // The dome is a hemisphere, which is built with its pole up the y axis.
     if (icon === 'biggy') icon3d.rotation.x = Math.PI / 2;
@@ -1380,6 +1397,8 @@ export class BlockoutRenderer {
       icon,
       materials: [glow.material, ring.material, ripple.material, beamMaterial, iconMaterial] as MeshBasicMaterial[],
       seed: this.markerViews.size * 1.37,
+      focus: 1,
+      dim: 1,
     };
   }
 
@@ -1580,6 +1599,7 @@ export class BlockoutRenderer {
    */
   render(floor: Level, actors: Actor[], alpha: number, dt: number): void {
     this.clock += dt;
+    this.lastDt = dt;
     for (const [level, group] of this.storeys) group.visible = level === floor;
 
     this.ageMarks(dt);
@@ -2826,6 +2846,12 @@ export interface ObjectiveMarker {
    * diamond when anyone can; an arrow pointing down at a drop-off.
    */
   icon?: MarkerIcon;
+  /**
+   * How much it matters to the robot being driven. `mine` is a job only
+   * this robot can do and stands out; `theirs` is a job only ANOTHER robot
+   * can do and steps back. Absent is anyone's, drawn as it always was.
+   */
+  focus?: 'mine' | 'theirs';
 }
 
 export type MarkerIcon = 'any' | 'voxxy' | 'droid' | 'biggy' | 'drop';
@@ -2840,6 +2866,9 @@ interface MarkerView {
   icon: MarkerIcon;
   materials: MeshBasicMaterial[];
   seed: number;
+  /** Eased size and brightness from `ObjectiveMarker.focus`. */
+  focus: number;
+  dim: number;
 }
 
 /** Where a marker's icon hovers, metres off the floor. Above a person's head. */

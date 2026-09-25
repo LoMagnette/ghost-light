@@ -4300,6 +4300,37 @@ robot in the same colour, and both ask `admittedBy`, so they cannot disagree.
 2. A comment of mine said the beacon draws over the crowd. It is
    depth-tested, like the post was; it simply hovers above head height.
 
+### Claude Opus — markers you can find, and markers that know who is driving
+
+**Prompt:**
+> Could we make those markers even better ?
+
+**Iterations:** an audit frame, one question, a build, two corrections from
+frames.
+
+**The audit.** From one spot in the Chapter III hall the card listed twelve
+things and two markers were on screen. The building is 126 m and the camera
+sees about forty of it, so most of the card was a list of places the player
+could not see. Four options went to the author; they chose off-screen
+arrows and focus on the driven robot.
+
+**Arrows.** A small pool of DOM badges at the screen edge. Each is a marker
+in small: its colour, its robot, which way and how far, and upstairs or
+downstairs for the other storey. They are chosen, not all of them: this
+robot's jobs and anyone's, another robot's only when it is about to be lost,
+one per sweep (the nearest), urgent first, and at most six.
+
+**Focus.** A job only the driven robot can do grows a size; a job only
+another robot can do shrinks and fades to 40%; anyone's is unchanged. It
+eases, so TAB reads as the building turning its attention.
+
+**What the frames corrected.**
+1. The badges first drew each robot's SHAPE as a character. At 28 px
+   Biggy's wide bar was a minus sign, so they are initials now: V, D, B.
+2. A job upstairs directly overhead put a solid badge in the middle of the
+   scene, where it looked like it belonged to the person standing under it.
+   Other-storey badges are dashed and say "upstairs".
+
 ---
 
 ## Audio

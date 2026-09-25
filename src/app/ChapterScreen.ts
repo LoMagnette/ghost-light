@@ -24,7 +24,7 @@ import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
-import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
+import { BlockoutRenderer, shade, type MarkerIcon, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
 import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
@@ -48,7 +48,32 @@ import {
   FOOTFALL_REFERENCE_MOMENTUM,
   IMPACT_REFERENCE_MOMENTUM,
   VIEW_HEIGHT,
+  VIEW_WIDTH,
 } from '@/config';
+
+/**
+ * A marker with what the screen needs to point at it from off-screen, on
+ * top of what the renderer needs to draw it.
+ */
+interface ScreenMarker extends ObjectiveMarker {
+  /** The sweep it belongs to, so a sweep gets one arrow and not twelve. */
+  group?: string;
+  /** Seconds until it is gone, when it has a deadline. */
+  left?: number;
+}
+
+/** Never more arrows than this. Past it the screen edge is a fence. */
+const ARROWS = 6;
+/** How far in from the edge the arrows sit, design pixels. Clear of the HUD text. */
+const ARROW_INSET = 44;
+/** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
+const URGENT_SECONDS = 20;
+/**
+ * What the badge says. The robots by initial: the first try drew their
+ * shapes as characters, and at 28 px Biggy's wide bar was a minus sign. A
+ * letter in the robot's colour is unambiguous at any size.
+ */
+const GLYPH: Record<MarkerIcon, string> = { any: '◆', voxxy: 'V', droid: 'D', biggy: 'B', drop: '▼' };
 
 /** One row of the card, and the robot it is for if only one can do it. */
 interface CardLine {
@@ -185,6 +210,8 @@ export class ChapterScreen implements Screen {
   private typed = 0;
   private typingLine = '';
   private toast!: HTMLElement;
+  /** The off-screen arrows, pooled. See `pointAt`. */
+  private readonly arrows: { root: HTMLElement; pointer: HTMLElement; badge: HTMLElement; label: HTMLElement }[] = [];
   /** What the card last showed, so it is rebuilt only when it changes. */
   private cardKey = '';
   private endCard: HTMLElement | undefined;
@@ -486,7 +513,9 @@ export class ChapterScreen implements Screen {
 
     this.applyFeedback();
     this.followControlled(dt);
-    this.blockout.setMarkers(this.markers(), this.floor);
+    const markers = this.markers();
+    this.blockout.setMarkers(markers, this.floor);
+    this.pointAt(markers);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.focus(this.cameraX, this.cameraY, this.cameraZ);
     // One robot needs no telling apart; two or three do.
@@ -1054,10 +1083,11 @@ export class ChapterScreen implements Screen {
    * of green ticks would bury it. A carried item shows its DESTINATION
    * instead of itself, which is the only thing the player still needs to know.
    */
-  private markers(): ObjectiveMarker[] {
+  private markers(): ScreenMarker[] {
     const accent = this.chapter.palette.accent;
-    const out: ObjectiveMarker[] = [];
+    const out: ScreenMarker[] = [];
     const cast = this.chapter.cast.map((id) => ROBOTS[id]);
+    const driving = this.controlled.body.spec;
 
     for (const state of this.run.states) {
       const { activity, status } = state;
@@ -1079,6 +1109,8 @@ export class ChapterScreen implements Screen {
           floor: activity.to.floor,
           colour: carrier ? carrier.signal : 0x8fd694,
           icon: 'drop',
+          focus: carrier === driving ? 'mine' : carrier ? 'theirs' : undefined,
+          left: this.secondsLeft(state),
         });
         continue;
       }
@@ -1103,6 +1135,9 @@ export class ChapterScreen implements Screen {
         colour: locked ? 0x4a5058 : only ? only.signal : accent,
         icon: only ? only.id : 'any',
         locked,
+        focus: only === undefined ? undefined : only === driving ? 'mine' : 'theirs',
+        group: activity.group,
+        left: this.secondsLeft(state),
         // Twenty-seven stickers are twenty-seven markers, and at full height
         // they turned the exhibition hall into a pole farm — more marker than
         // building. One thing you are doing gets one post; a sweep of many
@@ -1117,6 +1152,115 @@ export class ChapterScreen implements Screen {
     }
 
     return out;
+  }
+
+  /** Seconds until this is gone, for anything with a deadline that is open. */
+  private secondsLeft(state: ActivityState): number | undefined {
+    if (state.status !== 'open' && state.status !== 'carried') return undefined;
+    const a = state.activity;
+    const until = a.window?.to ?? this.run.deadline(a);
+    return until === undefined ? undefined : Math.max(0, until - this.run.elapsed);
+  }
+
+  /**
+   * Arrows at the edge of the screen for the jobs that are off it.
+   *
+   * The building is 126 m long and the camera shows about forty of it, so
+   * most of the card is somewhere the player cannot see — and a marker you
+   * cannot see is a line of text. Each arrow is the job's beacon in small:
+   * its colour, the icon of the robot it is for, which way it is and how
+   * far, or ↑ / ↓ when it is on the other storey.
+   *
+   * Chosen, not all of them: the jobs of the robot being driven and jobs
+   * anybody can do, and another robot's job only when it is about to be
+   * lost. A sweep gets one arrow, to its nearest member. Urgent first, then
+   * this robot's, then by distance, and never more than `ARROWS` — past that
+   * the edge of the screen is a fence and points at nothing.
+   */
+  private pointAt(markers: ScreenMarker[]): void {
+    const pool = this.arrows;
+    const hide = this.story !== undefined || this.run.phase === 'ended';
+    const me = this.controlled.body;
+
+    type Candidate = { m: ScreenMarker; d: number; urgent: boolean };
+    const nearest = new Map<string, Candidate>();
+    const picked: Candidate[] = [];
+    if (!hide) {
+      for (const m of markers) {
+        if (m.locked) continue;
+        const urgent = m.left !== undefined && m.left <= URGENT_SECONDS;
+        if (m.focus === 'theirs' && !urgent) continue;
+        const d = Math.hypot(m.x - me.x, m.y - me.y);
+        const c = { m, d, urgent };
+        if (m.group) {
+          const best = nearest.get(m.group);
+          if (!best || d < best.d) nearest.set(m.group, c);
+          continue;
+        }
+        picked.push(c);
+      }
+      picked.push(...nearest.values());
+    }
+    const rank = (c: Candidate): number => (c.urgent ? 0 : c.m.focus === 'mine' ? 1 : 2);
+    picked.sort((a, b) => rank(a) - rank(b) || (a.urgent && b.urgent ? (a.m.left ?? 0) - (b.m.left ?? 0) : a.d - b.d));
+
+    this.isoCamera.updateMatrixWorld();
+    const v = new Vector3();
+    let used = 0;
+    for (const c of picked) {
+      if (used >= pool.length) break;
+      const m = c.m;
+      v.set(m.x, m.y, m.z + 1.2).project(this.isoCamera);
+      const sx = ((v.x + 1) / 2) * VIEW_WIDTH;
+      const sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
+      const sameFloor = m.floor === this.floor;
+      const inside =
+        sx > ARROW_INSET && sx < VIEW_WIDTH - ARROW_INSET && sy > ARROW_INSET && sy < VIEW_HEIGHT - ARROW_INSET;
+      // On screen and on this storey, the beacon itself is the arrow.
+      if (inside && sameFloor) continue;
+
+      let x = sx;
+      let y = sy;
+      let angle: number | undefined;
+      if (!inside) {
+        const dx = sx - VIEW_WIDTH / 2;
+        const dy = sy - VIEW_HEIGHT / 2;
+        const t = Math.min(
+          (VIEW_WIDTH / 2 - ARROW_INSET) / Math.max(Math.abs(dx), 1e-6),
+          (VIEW_HEIGHT / 2 - ARROW_INSET) / Math.max(Math.abs(dy), 1e-6),
+        );
+        x = VIEW_WIDTH / 2 + dx * t;
+        y = VIEW_HEIGHT / 2 + dy * t;
+        angle = Math.atan2(dy, dx);
+      }
+
+      const arrow = pool[used++];
+      const colour = css(m.colour);
+      arrow.root.style.display = 'block';
+      arrow.root.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      arrow.badge.style.borderColor = colour;
+      // Dashed for the other storey: a solid badge in the middle of the
+      // scene reads as belonging to whoever is standing under it.
+      arrow.badge.style.borderStyle = sameFloor ? 'solid' : 'dashed';
+      arrow.badge.style.color = colour;
+      arrow.badge.textContent = GLYPH[m.icon ?? 'any'];
+      // An urgent one breathes, so it is found before it is read.
+      const pulse = c.urgent ? 1 + 0.12 * Math.sin(this.run.elapsed * 9) : 1;
+      arrow.badge.style.transform = `translate(-50%, -50%) scale(${pulse.toFixed(3)})`;
+      arrow.pointer.style.display = angle === undefined ? 'none' : 'block';
+      if (angle !== undefined) {
+        arrow.pointer.style.borderLeftColor = colour;
+        arrow.pointer.style.transform = `rotate(${angle.toFixed(3)}rad) translate(18px, -50%)`;
+      }
+      const storey = m.floor > this.floor ? '↑ upstairs · ' : m.floor < this.floor ? '↓ downstairs · ' : '';
+      arrow.label.textContent = `${storey}${Math.round(c.d)} m`;
+      // Centred under the badge, except near a side edge, where a centred
+      // "↑ upstairs · 78 m" hangs half off the screen. Anchored inwards there.
+      arrow.label.style.transform =
+        x < 110 ? 'translateX(-14px)' : x > VIEW_WIDTH - 110 ? 'translateX(calc(-100% + 14px))' : 'translateX(-50%)';
+      arrow.label.style.color = c.urgent ? '#ff8a7a' : '#c9d0d4';
+    }
+    for (let i = used; i < pool.length; i += 1) pool[i].root.style.display = 'none';
   }
 
   // -- feedback -------------------------------------------------------------
@@ -1226,6 +1370,50 @@ export class ChapterScreen implements Screen {
 
   private buildHud(game: Game): void {
     const { chapter } = this;
+
+    // The off-screen arrows: a small pool, reused every frame. See `pointAt`.
+    for (let i = 0; i < ARROWS; i += 1) {
+      const root = el('div', { position: 'absolute', left: '0', top: '0', width: '0', height: '0', display: 'none', pointerEvents: 'none', zIndex: '3' });
+      const pointer = el('div', {
+        position: 'absolute',
+        left: '0',
+        top: '0',
+        width: '0',
+        height: '0',
+        borderTop: '7px solid transparent',
+        borderBottom: '7px solid transparent',
+        borderLeft: '10px solid #fff',
+        transformOrigin: '0 50%',
+      });
+      const badge = el('div', {
+        position: 'absolute',
+        left: '0',
+        top: '0',
+        width: '28px',
+        height: '28px',
+        borderRadius: '50%',
+        border: '2px solid #fff',
+        background: 'rgba(8, 11, 14, 0.78)',
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        font: `bold 13px ${SANS}`,
+        boxShadow: '0 2px 10px rgba(0,0,0,0.6)',
+      });
+      const label = el('div', {
+        position: 'absolute',
+        left: '0',
+        top: '18px',
+        transform: 'translateX(-50%)',
+        font: `11px ${MONO}`,
+        whiteSpace: 'nowrap',
+        textShadow: '0 1px 4px rgba(0,0,0,0.95)',
+      });
+      root.append(pointer, badge, label);
+      game.ui.append(root);
+      this.arrows.push({ root, pointer, badge, label });
+    }
 
     /*
      * Washes behind the HUD, not boxes round it.
