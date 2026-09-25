@@ -18,6 +18,7 @@
 import type { Level } from '@/core/Venue';
 import type { RobotId } from '@/core/RobotSpec';
 import type { Objective } from '@/core/Objective';
+import type { Grade } from '@/render/Mood';
 
 /**
  * How the player acts on the robots.
@@ -133,6 +134,11 @@ export interface Palette {
   accent: number;
   /** HUD text. */
   text: number;
+  /**
+   * How the era is seen, after the lights: tint, saturation, contrast,
+   * vignette, grain and bloom. High quality only. See `render/Mood.ts`.
+   */
+  grade?: Grade;
 }
 
 /**

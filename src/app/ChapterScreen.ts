@@ -26,6 +26,7 @@ import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
+import type { Grade } from '@/render/Mood';
 import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
@@ -244,6 +245,10 @@ export class ChapterScreen implements Screen {
 
   get camera(): OrthographicCamera {
     return this.isoCamera;
+  }
+
+  get grade(): Grade | undefined {
+    return this.chapter.palette.grade;
   }
 
   mount(game: Game): void {
