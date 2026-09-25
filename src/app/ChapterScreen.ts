@@ -20,7 +20,7 @@
 import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from 'three';
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
-import { ROBOTS, type RobotId } from '@/core/RobotSpec';
+import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
@@ -30,7 +30,7 @@ import type { Grade } from '@/render/Mood';
 import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
-import { admits, admittedBy, inZone, zoneCentre, type Photo, type TalkActivity } from '@/core/Activity';
+import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
@@ -49,6 +49,12 @@ import {
   IMPACT_REFERENCE_MOMENTUM,
   VIEW_HEIGHT,
 } from '@/config';
+
+/** One row of the card, and the robot it is for if only one can do it. */
+interface CardLine {
+  text: string;
+  who?: RobotSpec;
+}
 
 /** Where the card sits, design pixels from the top of the design frame. */
 const CARD_TOP = 70;
@@ -179,6 +185,8 @@ export class ChapterScreen implements Screen {
   private typed = 0;
   private typingLine = '';
   private toast!: HTMLElement;
+  /** What the card last showed, so it is rebuilt only when it changes. */
+  private cardKey = '';
   private endCard: HTMLElement | undefined;
   private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
@@ -1049,6 +1057,7 @@ export class ChapterScreen implements Screen {
   private markers(): ObjectiveMarker[] {
     const accent = this.chapter.palette.accent;
     const out: ObjectiveMarker[] = [];
+    const cast = this.chapter.cast.map((id) => ROBOTS[id]);
 
     for (const state of this.run.states) {
       const { activity, status } = state;
@@ -1059,24 +1068,41 @@ export class ChapterScreen implements Screen {
 
       if (status === 'carried' && activity.kind === 'haul') {
         const centre = zoneCentre(activity.to);
+        // Where it goes, in the carrier's own colour: the drop-off is for
+        // whoever is holding the thing, whoever else could have carried it.
+        const carrier = state.carrier?.body.spec;
         out.push({
           id: `${activity.id}:to`,
           x: centre.x,
           y: centre.y,
           z: groundAt(KINEPOLIS, activity.to.floor, centre.x, centre.y),
           floor: activity.to.floor,
-          colour: 0x8fd694,
+          colour: carrier ? carrier.signal : 0x8fd694,
+          icon: 'drop',
         });
         continue;
       }
 
+      /*
+       * Who it is for, when that is one robot: its signal colour and its
+       * silhouette on top of the beam. Asked the same way the card asks it
+       * — `admittedBy` over the cast, gates and payload together — so the
+       * marker and the card cannot disagree. In a one-robot chapter
+       * everything is that robot's and saying so on every post would be
+       * noise, so Chapter I keeps the plain accent diamond.
+       */
+      const able = admittedBy(activity, cast);
+      const only = cast.length > 1 && able.length === 1 ? able[0] : undefined;
+      const locked = status === 'locked';
       out.push({
         id: activity.id,
         x: state.x,
         y: state.y,
         z: groundAt(KINEPOLIS, state.floor, state.x, state.y),
         floor: state.floor,
-        colour: status === 'locked' ? 0x4a5058 : accent,
+        colour: locked ? 0x4a5058 : only ? only.signal : accent,
+        icon: only ? only.id : 'any',
+        locked,
         // Twenty-seven stickers are twenty-seven markers, and at full height
         // they turned the exhibition hall into a pole farm — more marker than
         // building. One thing you are doing gets one post; a sweep of many
@@ -1509,9 +1535,9 @@ export class ChapterScreen implements Screen {
    * ever does at a time — a relative deadline is a consequence of something
    * the player just did, and two of those at once would be a different game.
    */
-  private card(): string {
-    const lines: string[] = [];
-    const groups = new Map<string, { done: number; total: number; shown: boolean }>();
+  private card(): CardLine[] {
+    const lines: CardLine[] = [];
+    const groups = new Map<string, { done: number; total: number; shown: boolean; who: Set<RobotSpec | undefined> }>();
 
     for (const state of this.run.states) {
       /*
@@ -1539,10 +1565,11 @@ export class ChapterScreen implements Screen {
          * than no count. So the row appears when the quest does, and it
          * appears complete, which is what a shot list is.
          */
-        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false };
+        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false, who: new Set() };
         tally.total += 1;
         if (state.status === 'done') tally.done += 1;
         if (!hidden) tally.shown = true;
+        tally.who.add(this.onlyFor(state.activity));
         groups.set(group, tally);
         continue;
       }
@@ -1560,32 +1587,73 @@ export class ChapterScreen implements Screen {
         if ((state.status !== 'open' && state.status !== 'carried') || !window) continue;
         const secs = Math.max(0, Math.ceil(window.to - this.run.elapsed));
         const glyph = state.status === 'carried' ? '»' : secs <= 10 ? '!' : '›';
-        // Who it is FOR, when only one of the cast can do it at all. The
-        // whole chapter is learning which shape each job wants, and the
-        // card says so until the player stops needing to be told.
-        const able = admittedBy(state.activity, this.chapter.cast.map((id) => ROBOTS[id]));
-        const who = able.length === 1 ? `  · ${able[0].name}` : '';
-        lines.push(`${glyph} ${state.activity.label}  ${secs}s${who}`);
+        lines.push({ text: `${glyph} ${state.activity.label}  ${secs}s`, who: this.onlyFor(state.activity) });
         continue;
       }
 
       const left = this.run.deadline(state.activity);
-      lines.push(
-        cardLine(state) +
+      const done = state.status === 'done';
+      lines.push({
+        text:
+          cardLine(state) +
           (left !== undefined && state.status === 'open'
             ? `  ${Math.max(0, Math.ceil(left - this.run.elapsed))}s`
             : ''),
-      );
+        // A finished job no longer needs anybody.
+        who: done ? undefined : this.onlyFor(state.activity),
+      });
     }
 
     for (const [name, tally] of groups) {
       if (!tally.shown) continue;
-      lines.push(`${tally.done === tally.total ? '·' : '›'} ${name} ${tally.done}/${tally.total}`);
+      const complete = tally.done === tally.total;
+      // A group names a robot only if every one of it is that robot's.
+      const who = tally.who.size === 1 && !complete ? [...tally.who][0] : undefined;
+      lines.push({ text: `${complete ? '·' : '›'} ${name} ${tally.done}/${tally.total}`, who });
     }
 
-    for (const room of this.run.lostRooms.keys()) lines.push(`× ${roomName(room)} — emptied`);
+    for (const room of this.run.lostRooms.keys()) lines.push({ text: `× ${roomName(room)} — emptied` });
 
-    return lines.join('\n');
+    return lines;
+  }
+
+  /**
+   * The one robot in the cast that can do this, if there is exactly one.
+   *
+   * The same question the markers ask, so the card and the building never
+   * disagree about whose job something is. Undefined in a one-robot
+   * chapter, where everything is Voxxy's and saying so is noise.
+   */
+  private onlyFor(activity: Activity): RobotSpec | undefined {
+    if (this.chapter.cast.length < 2) return undefined;
+    const able = admittedBy(activity, this.chapter.cast.map((id) => ROBOTS[id]));
+    return able.length === 1 ? able[0] : undefined;
+  }
+
+  /**
+   * Put the card on screen, and only rebuild it when a line has changed.
+   *
+   * DOM rather than one string now, because the robot's name is in the
+   * robot's signal colour — the same colour as the beacon over the job — and
+   * a colour is an element. Rebuilt on change rather than every frame: most
+   * frames the card is identical to the last one.
+   */
+  private renderCard(lines: CardLine[]): void {
+    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}`).join('\n');
+    if (key === this.cardKey) return;
+    this.cardKey = key;
+    this.cardText.replaceChildren(
+      ...lines.map((line) => {
+        const row = el('div', {}, line.text);
+        if (line.who) {
+          row.append(
+            el('span', { color: css(line.who.signal), marginLeft: '8px' }, '●'),
+            el('span', { color: css(line.who.signal), marginLeft: '4px' }, line.who.name),
+          );
+        }
+        return row;
+      }),
+    );
   }
 
   /**
@@ -1680,12 +1748,13 @@ export class ChapterScreen implements Screen {
       rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done}/${this.run.total}`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
-    this.cardText.textContent = this.card();
+    const lines = this.card();
+    this.renderCard(lines);
     // Not during a story beat. The objective has not started — its locked
     // side quests have not even been hidden yet, because nothing has been
     // evaluated — and a card reading out a chapter the player is not in yet
     // is the game talking over itself.
-    this.cardText.style.visibility = this.story || this.cardText.textContent === '' ? 'hidden' : 'visible';
+    this.cardText.style.visibility = this.story || lines.length === 0 ? 'hidden' : 'visible';
 
     if (!this.debug) return;
 

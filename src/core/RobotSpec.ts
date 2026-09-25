@@ -103,6 +103,18 @@ export interface RobotSpec {
    * monoliths; two is what makes a silhouette look manufactured.
    */
   trim: number;
+  /**
+   * The colour the building uses to say "this one is yours": the markers on
+   * a job only this robot can do, and its name on the card.
+   *
+   * Not `tint`, because two of the three tints are greys — Droid's slab and
+   * Biggy's shell — and a grey marker is a locked one. Each signal is the
+   * brightest honest reading of the livery: Voxxy's orange, Droid's ochre
+   * trim lifted to amber, Biggy's blue-grey lifted to a clear blue. Three
+   * hues a long way apart, so they survive being eight pixels across, and
+   * each marker carries a SHAPE as well so none of this rests on colour.
+   */
+  signal: number;
 }
 
 /** Gravity, m/s². Physical constant; nothing may redefine it. */
@@ -134,6 +146,7 @@ export const VOXXY: RobotSpec = {
   payload: 10,  // a lanyard, a coffee, a bag of stickers. It is 45 kg itself
   tint: 0xff7a1a,
   trim: 0xf2f0ea, // the white bands round its legs and the ring round its eye
+  signal: 0xff7a1a,
 };
 
 export const DROID: RobotSpec = {
@@ -152,6 +165,7 @@ export const DROID: RobotSpec = {
   payload: 90,  // a crate, and it still walks — reach and patience, laden
   tint: 0x6b7378,
   trim: 0xb07434, // the ochre trim on its shoulders and hips
+  signal: 0xf2c23a,
 };
 
 export const BIGGY: RobotSpec = {
@@ -170,6 +184,7 @@ export const BIGGY: RobotSpec = {
   payload: 400, // freight. Nearly its own mass again, and it shows in every metre
   tint: 0x7d94a8,
   trim: 0xd4622a, // the orange belly under the blue-grey shell
+  signal: 0x5aa8ff,
 };
 
 export const ROBOTS: Record<RobotId, RobotSpec> = {
