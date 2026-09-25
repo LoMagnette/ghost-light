@@ -191,16 +191,22 @@ export class ObjectiveRun {
   /**
    * Counted the way the player counts them: a GROUP is one thing.
    *
-   * Twenty-seven stickers are one line on the card and one thing you either
-   * did or did not do at the conference, so a counter reading "0/38" is
+   * Twelve stickers are one line on the card and one thing you either did
+   * or did not do at the conference, so a counter reading "0/23" is
    * describing the data structure rather than the day.
+   *
+   * And only what the chapter ASKS for. A side quest counted in the
+   * denominator made Chapter III read "0/15" beside a desk telling you there
+   * were nine things to do; side quests are counted on their own, in
+   * `extras`, and only once you have done them.
    */
-  private tally(): { done: number; total: number } {
+  private tally(optional = false): { done: number; total: number } {
     const groups = new Map<string, boolean>();
     let done = 0;
     let total = 0;
 
     for (const state of this.states) {
+      if ((state.activity.optional === true) !== optional) continue;
       const group = state.activity.group;
       if (group === undefined) {
         total += 1;
@@ -226,6 +232,11 @@ export class ObjectiveRun {
 
   get total(): number {
     return this.tally().total;
+  }
+
+  /** Side quests finished, counted the same way. For the end card. */
+  get extras(): number {
+    return this.tally(true).done;
   }
 
   /** Rooms lost to a missed breakdown. What `failLimit` counts. */

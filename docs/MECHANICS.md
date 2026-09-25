@@ -252,7 +252,7 @@ README opens with.
 Control is `switch`, and **the clock never stops**. Wherever you are, the
 other two are idling somewhere expensive.
 
-#### The card — seventeen things, and no day is long enough for seventeen
+#### The card — nine things, and no day is long enough for nine
 
 Open activities can be done whenever. Windowed ones are gone forever when
 their window closes. That is a conference, and it is the mix of a checklist
@@ -261,23 +261,38 @@ and a timetable.
 | # | Activity | Where | Kind | Who can | Window |
 |---|---|---|---|---|---|
 | 1 | Badge scan | Reception | `dwell` 2 s | any | open |
-| 2 | Sticker sweep, 27 stands | Hall | `tap` ×27 | 12 stands sit behind 0.8 m gaps — **Voxxy alone** | open |
+| 2 | Sticker sweep, 12 stands | Hall, the two inner ranks | `tap` ×12 | **Voxxy** (`maxRadius` 0.40 — a rule, not a gap) | open |
 | 3 | Pick up your polo | Polo Pickup | `dwell` 3 s, reach 2.0 m | **Droid** | open |
 | 4 | Coffee run | The Foyer, storey 1 | `haul` 2 kg, **spills over 2.5 m/s²** | Voxxy or Droid | open |
-| 5 | Crate of shirts to the pickup room | Hall → Polo | `haul` 60 kg | Droid or Biggy | open |
+| 5 | Free the jammed shutter | Hall, loading bay | `shove` ≥ 900 kg·m/s | **Biggy** | open, and it gates #6 |
 | 6 | The keg to the party stage | loading bay → hall floor | `haul` 200 kg | **Biggy** | before T+4:30 |
 | 7 | Catch the talk in Room 5 | storey 1 | `attend` | not Biggy | T+1:00 → T+1:40 |
-| 8 | Catch the talk in Room 11 | storey 1 | `attend` | not Biggy | T+2:20 → T+3:00 |
-| 9 | Ask a question at the mic | a stage, storey 1 | `dwell` 2 s, reach 2.0 m | **Droid**, and it must get down a rake on a 0.18 m riser it clears by nothing | inside a talk |
-| 10 | Free the jammed shutter | Hall, loading bay | `shove` ≥ 900 kg·m/s | **Biggy** | open, and it gates #6 |
-| 11 | The queue for the toilets | Concourse | `dwell` 20 s | any | open |
-| 12 | The keynote | Room 8, storey 1 | `attend`, seated before T+5:20 | not Biggy | T+5:20 → end |
-| 13 | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** | open |
-| 14 | Find the photographer | Hall, central aisle | `talk` | any | open |
-| 14b | A selfie with him | Hall, central aisle | `dwell` 2 s, the print rendered live: Dimitris chest-up, the top of Voxxy's head | **Voxxy** (`maxRadius` 0.40) — the joke is its size | open, after #14 |
-| 15 | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | one robot per frame: the letters **Droid** (`reach` 2.0), the banner **Voxxy** (`maxRadius` 0.40), Josh **Biggy** (`carry` 100, he sits on it); then everybody | open, chained |
+| 8 | Ask a question at the mic | a stage, storey 1 | `dwell` 2 s, reach 2.0 m | **Droid**, and it must get down a rake on a 0.18 m riser it clears by nothing | inside a talk |
+| 9 | The keynote | Room 8, storey 1 | `attend`, seated before T+5:20 | not Biggy | T+5:20 → end |
 
-Six minutes. Seventeen rows. Three robots, each locked out of several.
+And on the side, counted separately on the end card as "extra":
+
+| | Side quest | Where | Kind | Who can |
+|---|---|---|---|---|
+| a | Three conversations — the desk, a stand, the steward | Concourse, hall, storey 1 | `talk` | the steward is reach-gated: **not Biggy** |
+| b | Find the photographer | Hall, central aisle | `talk` | any |
+| c | A selfie with him | Hall, central aisle | `dwell` 2 s, the print rendered live: Dimitris chest-up, the top of Voxxy's head | **Voxxy** (`maxRadius` 0.40) — the joke is its size |
+| d | The shot list — four photographs | Room 8, BOF 1, hall ×2 | `dwell`, and the last needs **all three robots at once** | one robot per frame: the letters **Droid**, the banner **Voxxy**, Josh **Biggy**; then everybody |
+
+Six minutes. Nine things. Three robots, each locked out of several.
+
+**Lighter since 25 Sep.** It was fifteen required, and the author judged it
+too heavy. What went were the duplicates: the 60 kg crate of shirts (Biggy
+already has the keg, and Droid the polo), the talk in Room 11 (Room 5 has
+one, with the mic question inside it), and a twenty-second toilet queue. The
+sweep went from 27 stands to 12, chosen as one lap down the two inner ranks
+rather than a tour of the hall. The three conversations became side quests.
+Every robot kept its signature job.
+
+The old table said twelve of the stands "sit behind 0.8 m gaps — Voxxy
+alone". Sweeping a Droid-sized body over every sticker zone showed that is
+not so: every zone has floor Droid fits on. The Voxxy gate on stickers is a
+rule, and it is now documented as one.
 
 **#10 gates #6**, so Biggy's day is a run-up, a shutter and a keg, which is
 exactly what a 430 kg hauler should spend a conference doing.
@@ -514,7 +529,7 @@ Unchanged from `ROADMAP.md`, and now cheaper than the plan it replaces:
 1. Payload + Activity + Objective in `core/`, with `npm run physics` extended
    to the loaded cases. Everything below is configuration.
 2. **Chapter I** (Tue 22) — three activities and the zone lighting.
-3. **Chapter III** (Thu 24) — fifteen activities, the clock, the card. No crowd
+3. **Chapter III** (Thu 24) — fifteen activities (nine since 25 Sep), the clock, the card. No crowd
    simulation to write, so the differentiator lands days earlier than feared.
 4. **Chapter II** (Sat 26) — meters and the drain. Still the shrinkable one.
 

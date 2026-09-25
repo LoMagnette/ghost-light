@@ -131,9 +131,10 @@ cannot.
 - **Light:** 0.85 — Devoxx orange
 - **Starts on:** the exhibition floor
 - **Objective:** do Devoxx. You cannot do all of it
-- **Mechanic:** twelve conference activities, some open and some on a
-  timetable, against a six-minute day. Everything you pick up is added to your
-  mass. See `docs/MECHANICS.md` §5.3
+- **Mechanic:** nine conference activities, some open and some on a
+  timetable, against a six-minute day, and a photographer's shot list on the
+  side. Everything you pick up is added to your mass. See `docs/MECHANICS.md`
+  §5.3
 
 Every room is full, everything is running, and the robots are *attending*. The
 crowd is spectacle and obstacle, never something you manage. Settled 21 Sep,

@@ -186,7 +186,7 @@ export const CHAPTER_THREE: Chapter = {
   tagline: 'More conference than one day can hold.',
   brief:
     'Every room is full and everything is running. Three robots, six minutes, ' +
-    'fifteen things worth doing — and everything you pick up, you have to carry.',
+    'nine things worth doing — and everything you pick up, you have to carry.',
   controlMode: 'switch',
   cast: ['voxxy', 'droid', 'biggy'],
   crowdDensity: 1,
