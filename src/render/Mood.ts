@@ -105,6 +105,37 @@ const GRADE_SHADER = {
   `,
 };
 
+/*
+ * Replace anything that is not a number with black, before the bloom.
+ *
+ * Bloom is a chain of blurs, and a blur of a NaN is a NaN: ONE bad pixel from
+ * any shader becomes a black blot the size of the blur radius. That is what
+ * the wormhole did on real GPUs the day the mood pass landed. The wormhole is
+ * fixed at the source; this is so the next shader to divide by zero costs one
+ * pixel instead of a hole in the screen. Also clamps the bright end, because
+ * a half-float target holds 65504 and an infinity is as bad as a NaN.
+ */
+const SCRUB_SHADER = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    varying vec2 vUv;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      bvec4 bad = bvec4(isnan(c.r) || isinf(c.r), isnan(c.g) || isinf(c.g), isnan(c.b) || isinf(c.b), isnan(c.a) || isinf(c.a));
+      c = vec4(bad.r ? 0.0 : c.r, bad.g ? 0.0 : c.g, bad.b ? 0.0 : c.b, bad.a ? 1.0 : c.a);
+      gl_FragColor = clamp(c, 0.0, 64.0);
+    }
+  `,
+};
+
 /**
  * Only what is already bright blooms: the markers, the ghost light, the lamp
  * on Voxxy, the wormhole. A threshold low enough to catch a lit floor turns
@@ -118,6 +149,7 @@ export class Mood {
   private readonly render: RenderPass;
   private readonly bloom: UnrealBloomPass;
   private readonly grade: ShaderPass;
+  private readonly scrub: ShaderPass;
   private time = 0;
 
   constructor(renderer: WebGLRenderer, width: number, height: number) {
@@ -139,6 +171,8 @@ export class Mood {
     this.grade.uniforms.aspect.value = width / height;
 
     this.composer.addPass(this.render);
+    this.scrub = new ShaderPass(SCRUB_SHADER);
+    this.composer.addPass(this.scrub);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.composer.addPass(this.grade);
@@ -171,6 +205,7 @@ export class Mood {
 
   dispose(): void {
     this.bloom.dispose();
+    this.scrub.dispose();
     this.grade.dispose();
     this.composer.dispose();
   }
