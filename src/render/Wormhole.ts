@@ -57,7 +57,12 @@ const DISC_FRAGMENT = /* glsl */ `
     float r = length(p);
     if (r > 1.0) discard;
 
-    float a = atan(p.y, p.x);
+    // Not atan(p.y, p.x) bare: at the dead centre that is atan(0, 0), which
+    // is undefined and on most real GPUs is NaN. One NaN pixel was invisible
+    // until the bloom pass blurred it into a black hole over the whole
+    // effect. The software renderer returns 0 there, which is why no
+    // screenshot ever showed it.
+    float a = r < 1e-4 ? 0.0 : atan(p.y, p.x);
     // Three arms, wound tighter towards the middle, turning inwards.
     float arms = sin(a * 3.0 + log(r + 0.04) * 7.0 + time * 5.0) * 0.5 + 0.5;
     float swirl = smoothstep(0.35, 1.0, arms) * smoothstep(0.08, 0.5, r) * (1.0 - r * 0.55);
@@ -67,7 +72,7 @@ const DISC_FRAGMENT = /* glsl */ `
     vec3 light = colour * (swirl * 1.5 + rim * 2.2) + vec3(1.0) * rim * 0.35;
     vec3 c = mix(light, vec3(0.0), hole * 0.85);
     float alpha = clamp(swirl + rim + hole * 0.95, 0.0, 1.0) * open;
-    gl_FragColor = vec4(c, alpha);
+    gl_FragColor = vec4(max(c, vec3(0.0)), alpha);
   }
 `;
 
@@ -83,7 +88,9 @@ const COLUMN_FRAGMENT = /* glsl */ `
   varying vec2 vUv;
 
   void main() {
-    float fade = pow(1.0 - vUv.y, 2.2);
+    // Clamped before the pow: a varying can overshoot 1.0 by a rounding
+    // error, and pow of a negative number is NaN.
+    float fade = pow(clamp(1.0 - vUv.y, 0.0, 1.0), 2.2);
     float shimmer = 0.75 + 0.25 * sin(vUv.y * 22.0 - time * 7.0 + vUv.x * 18.0);
     gl_FragColor = vec4(colour * fade * shimmer * 0.55 * open, 1.0);
   }
