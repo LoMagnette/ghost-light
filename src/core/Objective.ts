@@ -96,7 +96,6 @@ export interface ActivityState {
   status: Status;
   /**
    * Dwell and attend: 0..1 towards completion.
-   * Tend: SECONDS of session left, which is why the field is not a fraction.
    */
   progress: number;
   /** Haul only: who has it. */
@@ -172,27 +171,29 @@ export class ObjectiveRun {
       return {
         activity,
         status: 'open' as Status,
-        progress: activity.kind === 'tend' ? activity.capacity : 0,
+        progress: 0,
         x: centre.x,
         y: centre.y,
         floor: activity.at.floor,
       };
     });
-    // Tracks which actors were inside a tend zone last frame, so a tap fires
-    // on ARRIVAL rather than continuously — otherwise parking on the rack
-    // holds a room open for ever and Droid never has to come.
-    this.inside = this.states.map(() => new Set<Actor>());
   }
 
-  private readonly inside: Set<Actor>[];
+  /**
+   * Rooms a breakdown has been missed in, and when, in chapter seconds.
+   *
+   * A room is lost ONCE. What else was going to go wrong in it never gets
+   * the chance, and the screen empties it from the moment it was lost —
+   * which it can only do if it knows when that was.
+   */
+  readonly lostRooms = new Map<string, number>();
 
   /**
    * Counted the way the player counts them: a GROUP is one thing.
    *
    * Twenty-seven stickers are one line on the card and one thing you either
    * did or did not do at the conference, so a counter reading "0/38" is
-   * describing the data structure rather than the day. Tend rooms are not
-   * counted at all — they cannot be finished, only kept.
+   * describing the data structure rather than the day.
    */
   private tally(): { done: number; total: number } {
     const groups = new Map<string, boolean>();
@@ -200,7 +201,6 @@ export class ObjectiveRun {
     let total = 0;
 
     for (const state of this.states) {
-      if (state.activity.kind === 'tend') continue;
       const group = state.activity.group;
       if (group === undefined) {
         total += 1;
@@ -228,8 +228,9 @@ export class ObjectiveRun {
     return this.tally().total;
   }
 
+  /** Rooms lost to a missed breakdown. What `failLimit` counts. */
   get lost(): number {
-    return this.states.filter((s) => s.status === 'failed').length;
+    return this.lostRooms.size;
   }
 
   /** Seconds left, or undefined on an untimed round. */
@@ -254,16 +255,13 @@ export class ObjectiveRun {
     if (this.phase === 'ended') return;
     this.elapsed += dt;
 
-    this.states.forEach((state, index) => {
-      this.advance(state, this.inside[index], dt, actors, drop, talk);
-    });
+    for (const state of this.states) this.advance(state, dt, actors, drop, talk);
 
     this.evaluate();
   }
 
   private advance(
     state: ActivityState,
-    inside: Set<Actor>,
     dt: number,
     actors: Actor[],
     drop: boolean,
@@ -278,6 +276,15 @@ export class ObjectiveRun {
       return;
     }
 
+    // A room that has already been lost has nothing left to go wrong in it.
+    // `failed` rather than `missed`: the player did not miss this, the room
+    // was gone before it could happen.
+    if (a.room !== undefined && this.lostRooms.has(a.room)) {
+      this.release(state);
+      state.status = 'failed';
+      return;
+    }
+
     // The window, which is the only thing in here that can take an activity
     // away from the player rather than give it to them.
     if (a.window) {
@@ -286,8 +293,14 @@ export class ObjectiveRun {
         return;
       }
       if (this.elapsed > a.window.to) {
+        this.release(state);
         state.status = 'missed';
-        this.say(`Missed: ${a.label}`);
+        if (a.room !== undefined) {
+          this.lostRooms.set(a.room, this.elapsed);
+          this.say(`${roomName(a.room)} emptied`);
+        } else {
+          this.say(`Missed: ${a.label}`);
+        }
         return;
       }
     }
@@ -304,7 +317,12 @@ export class ObjectiveRun {
       }
     }
 
-    if (state.status === 'locked') state.status = 'open';
+    if (state.status === 'locked') {
+      state.status = 'open';
+      // Something just went wrong in a room. That is news, and it is the
+      // only moment the player can be told it before the lights say so.
+      if (a.room !== undefined) this.say(`Breakdown — ${a.label}`);
+    }
 
     const here = actors.filter(
       (actor) =>
@@ -355,11 +373,6 @@ export class ObjectiveRun {
 
       case 'haul': {
         this.advanceHaul(state, a, actors, drop);
-        return;
-      }
-
-      case 'tend': {
-        this.advanceTend(state, a, inside, dt, actors);
         return;
       }
 
@@ -453,44 +466,16 @@ export class ObjectiveRun {
     }
   }
 
-  private advanceTend(
-    state: ActivityState,
-    a: Extract<Activity, { kind: 'tend' }>,
-    inside: Set<Actor>,
-    dt: number,
-    actors: Actor[],
-  ): void {
-    // The day gets harder on its own. Linear, so it is readable from the
-    // numbers rather than needing a curve to be tuned by feel.
-    const drain = a.drain + a.drainRamp * this.elapsed;
-    state.progress -= drain * dt;
-
-    for (const actor of actors) {
-      const within = inZone(a.at, actor.floor, actor.body.x, actor.body.y);
-      const was = inside.has(actor);
-
-      // Arriving buys time. Anyone can do it; only Voxxy can do it often
-      // enough to matter, because only Voxxy can be somewhere else by now.
-      if (within && !was) {
-        state.progress = Math.min(a.capacity, state.progress + a.tapBonus);
-        this.say(`${a.label}: +${a.tapBonus}s`);
-      }
-
-      // Standing still at the projector fixes it properly — and the projector
-      // is 2 m up, which is the one thing Voxxy cannot do.
-      if (within && actor.body.spec.height >= a.repairReach && actor.body.speed < STILL) {
-        state.progress = Math.min(a.capacity, state.progress + (a.capacity / a.repairSeconds) * dt);
-      }
-
-      if (within) inside.add(actor);
-      else inside.delete(actor);
-    }
-
-    if (state.progress <= 0) {
-      state.progress = 0;
-      state.status = 'failed';
-      this.say(`${a.label} went dark`);
-    }
+  /**
+   * Take a carried thing off whoever is carrying it, because the thing has
+   * stopped mattering. A deadline that passes with the crate on Droid's back
+   * would otherwise leave Droid 40 kg heavier for the rest of the day.
+   */
+  private release(state: ActivityState): void {
+    const carrier = state.carrier;
+    if (!carrier || state.activity.kind !== 'haul') return;
+    carrier.body.payload -= state.activity.mass;
+    state.carrier = undefined;
   }
 
   /**
@@ -531,11 +516,11 @@ export class ObjectiveRun {
   /**
    * Has the round finished, and how?
    *
-   * Three chapters, one rule set: you lose by losing too many things, you win
-   * early by finishing everything there is to finish, and otherwise the clock
-   * decides. Chapter I has no clock and no tend rooms, so only the middle
-   * clause can fire; Chapter II has only tend rooms, so only the first and
-   * last can.
+   * Three chapters, one rule set: you lose by losing too many rooms, you win
+   * early by settling everything there is to settle, and otherwise the clock
+   * decides. Chapter I has no clock and no rooms to lose, so only the middle
+   * clause can fire. Chapter II can end on any of the three: three rooms
+   * emptied, the last breakdown of the day dealt with, or the day running out.
    */
   private evaluate(): void {
     const { failLimit, clock } = this.objective;
@@ -546,12 +531,12 @@ export class ObjectiveRun {
       return;
     }
 
-    // A tend room never finishes and a side quest does not have to, so
-    // neither is evidence that the round is over.
-    const finishable = this.states.filter(
-      (s) => s.activity.kind !== 'tend' && !s.activity.optional,
+    // A side quest does not have to be finished, so it is no evidence that
+    // the round is over. A breakdown in a room already lost is settled.
+    const finishable = this.states.filter((s) => !s.activity.optional);
+    const settled = finishable.filter(
+      (s) => s.status === 'done' || s.status === 'missed' || s.status === 'failed',
     );
-    const settled = finishable.filter((s) => s.status === 'done' || s.status === 'missed');
     if (finishable.length > 0 && settled.length === finishable.length) {
       this.phase = 'ended';
       return;
@@ -561,4 +546,9 @@ export class ObjectiveRun {
       this.phase = 'ended';
     }
   }
+}
+
+/** `aud-4` is Room 4. What the building calls it, and so what the card does. */
+export function roomName(id: string): string {
+  return id.startsWith('aud-') ? `Room ${id.slice(4)}` : id;
 }

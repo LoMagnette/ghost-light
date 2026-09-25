@@ -4158,6 +4158,48 @@ Voxxy stays silent in both arrivals, which I kept on purpose.
 still ends on the card. The exit rule was already "not failed", so this
 needed no new code.
 
+### Claude Opus — Chapter II without the meters
+
+**Prompt:**
+> I would like to review the scenario of the chapter too because i don't
+> like the light system and it does not illustrate the real difference
+> between droid and voxxy
+
+**Iterations:** a design question first, then one build and five harness or
+film-strip corrections.
+
+**Asked before building, and this time it was a real choice.** I laid out
+three directions (scheduled breakdowns, a setup morning, the same rooms with
+physical fixes) and what the two robots actually differ in: speed, fit,
+reach, strength. The author chose breakdowns and named the METERS as the
+problem, not the dimming, so the dimming stayed as the warning.
+
+**`tend` is gone, and breakdowns are not a kind.** A breakdown is a deadline
+on a room, not a way of doing something, so it is `room` plus `window` on
+any activity, and the doing is the verb the job needs: `dwell` at 2 m, `tap`
+behind the lectern, `haul` 0.5 kg against the clock, `haul` 40 kg. Missing
+one loses the room, and later breakdowns in a lost room settle as `failed`
+rather than `missed`, because the player did not miss them.
+
+**What the checks corrected.**
+1. `npm run objectives` put all three mic zones INSIDE A SOLID. I had read
+   the slot as 0.85 m from the desk constants; the screen wall is 0.3 m
+   thick on its line, so it was 0.70, which is Voxxy with a centimetre
+   each side. `DESK_STANDOFF` went from 1.35 to 1.45 for a 0.80 slot, the
+   same gap the Chapter III stands use, then `venue` and `traverse` again.
+2. A zone that is clear of solids is not a zone a robot fits into, so I
+   drove both robots at the slot in the real sim: Voxxy ends in the zone,
+   Droid stops at the lectern's end.
+3. A deadline passing with the chairs on Droid's back would have left it
+   40 kg heavier for the rest of the day. `release` takes a carried thing
+   off whoever has it when it stops mattering.
+4. Measured off the frames, a waiting room went 90 → 77 → 56 in brightness
+   with the square-root fade, so it looked fine until it was too late. It
+   is linear now: 93 → 89 → 81 → 66 → 55.
+
+**Not done: playing it.** Eleven windows set from distances and speeds.
+Whether the day is fair needs a person with a keyboard.
+
 ---
 
 ## Audio

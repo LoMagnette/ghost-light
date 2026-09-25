@@ -111,9 +111,12 @@ This chapter is first for four reasons, and all four matter:
 - **Light:** 0.62 — warm, tungsten, slightly dated
 - **Starts on:** the auditorium level
 - **Objective:** keep every room running
-- **Mechanic:** five rooms with draining session meters. Voxxy taps the rack
-  and buys seconds; only Droid reaches the projector at 2 m and resets one.
-  Lose three rooms and the day ends early. See `docs/MECHANICS.md` §5.2
+- **Mechanic:** eleven breakdowns across five rooms, on a schedule, each one a
+  job only one shape of robot does well — a projector bulb 2 m up and a
+  40 kg stack of chairs for Droid, a mic cable behind the lectern and an
+  adapter sprinted to the stage for Voxxy. A room dims while it waits; miss
+  it and the room empties. Three emptied rooms end the day early. See
+  `docs/MECHANICS.md` §5.2
 
 A community event that outgrew its room. Half the floor in use, a conference
 held together by hand. Droid's reach and patience solve what Voxxy's speed

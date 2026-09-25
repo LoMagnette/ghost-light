@@ -13,7 +13,7 @@
 
 import type { Activity, Zone } from '@/core/Activity';
 import type { Look } from '@/core/Crowd';
-import type { Objective } from '@/core/Objective';
+import { roomName, type Objective } from '@/core/Objective';
 import { CROSS_AISLE, KINEPOLIS, RECEPTION_DESK } from '@/venue/kinepolis';
 import { rect, type Level, type Rect } from '@/core/Venue';
 
@@ -191,78 +191,162 @@ export const SILENCE_OBJECTIVE: Objective = {
 // Chapter II — five rooms, draining
 // ---------------------------------------------------------------------------
 
-/**
+/*
  * `docs/MECHANICS.md` §5.2.
  *
- * The west side of the corridor, which is what "half the floor in use" means
- * in a building whose rooms face each other in pairs. Room 5 is the big one
- * at 684 seats and drains fastest, because the chapter should make you choose
- * between the room that matters and the room that is closest.
+ * Five rooms, the west side of the corridor, which is what "half the floor
+ * in use" means in a building whose rooms face each other in pairs. Things
+ * go wrong in them all day, and every thing that goes wrong is a question
+ * about what shape of robot you have:
  *
- * Arriving buys eight seconds; a full reset needs three seconds standing
- * still at 2 m, and Voxxy is 1.15 m tall. That is the whole chapter: Voxxy
- * cannot fix anything and Droid cannot be everywhere.
+ *   the projector bulb    2 m up in the booth          REACH     Droid
+ *   the mic cable         behind the lectern, 0.85 m   FIT       Voxxy
+ *   the speaker's adapter the desk to the stage, now   SPEED     Voxxy, by miles
+ *   chairs for overflow   40 kg from the foyer         STRENGTH  Droid
+ *
+ * The meters this replaced asked only the first question. These ask all
+ * four, and they overlap, so the chapter is the one `switch` was built for:
+ * start Droid on the long haul, TAB to Voxxy for the sprint, TAB back.
  */
-function tendRoom(id: string, label: string, drain: number): Activity {
+
+/** A dead projector: 2 m up in the booth at the back of the room. */
+function projector(room: string, from: number, to: number): Activity {
   return {
-    kind: 'tend',
-    id: `tend-${id}`,
-    label,
-    room: id,
-    at: backOfHouse(id),
-    /*
-     * Seventy seconds, and it was forty-five until the corridor had people
-     * in it worth talking to.
-     *
-     * This is not "the chapter was too hard". The numbers stopped being
-     * possible, and they stopped being possible because of a change made
-     * somewhere else: Chapter II's conversations went from fifteen lines to
-     * thirty-two when the speakers got a story, and a line is a keypress
-     * and about two seconds of reading. That is 3,050 characters, which at
-     * the box's own 58 characters a second is SIXTY-FIVE SECONDS of a
-     * four-minute round spent standing still — and at forty-five capacity,
-     * Room 5 emptied from full in thirty-three seconds, or twenty-one once
-     * the ramp had bitten. One conversation cost more than a room's whole
-     * life. Not hard: arithmetically impossible, and no amount of skill
-     * touches it.
-     *
-     * Seventy gives Room 5 fifty-two seconds from full, and thirty-six at
-     * the end of the day. The longest conversation in the building is about
-     * eighteen seconds and the drive back to a rack is about ten, so ONE
-     * conversation always fits and TWO in a row late in the round do not.
-     * That is the shape the chapter wants: the side quest is affordable and
-     * being greedy with it costs you a room.
-     *
-     * The ramp comes down with it — 0.004 nearly doubled the drain by the
-     * last minute, which turned the late round into a different and much
-     * blunter game than the early one.
-     */
-    capacity: 70,
-    drain,
-    drainRamp: 0.003,
-    // Kept at a sixth of the meter, which is what it was against forty-five.
-    // Voxxy's tap is its entire role in this chapter and a bonus that stays
-    // flat while the capacity grows quietly demotes it.
-    tapBonus: 12,
-    repairSeconds: 3,
-    repairReach: 2.0,
-    /*
-     * The room's own house lights, and the whole reason this chapter can be
-     * read off the building rather than off the HUD.
-     *
-     * `reveal` elsewhere is what COMPLETING something switches on — Chapter
-     * I's three boards. A tend room never completes, so the screen drives
-     * this continuously from the meter instead: full session, full light;
-     * half a session, half lit; dark when it goes dark. Same data, same
-     * renderer call, and `docs/MECHANICS.md` §5.2 asks for exactly this —
-     * "a draining room visibly dims from the corridor. The meter is a
-     * fallback, not the primary signal."
-     *
-     * `to` is what a running room is worth, not a target to arrive at.
-     */
-    reveal: { ...roomBounds(id), to: 1 },
+    kind: 'dwell',
+    id: `bulb-${room}-${from}`,
+    label: `${roomName(room)}: projector bulb`,
+    room,
+    window: { from, to },
+    // Standing still up at the lamp housing while it cools enough to touch.
+    // Droid at 2.05 m is the only one of the two who gets a hand to it.
+    at: backOfHouse(room),
+    gates: { reach: 2.0 },
+    seconds: 3,
   };
 }
+
+/**
+ * A dead mic: the cable has come out behind the lectern.
+ *
+ * Between the screen wall's face and the lectern's back is 0.80 m of floor
+ * (`DESK_STANDOFF` in the venue), 0.7 m long, so behind it is a slot Voxxy
+ * fits into at 0.68 m and Droid, at 0.92 m, cannot. That is not a rule
+ * written about Voxxy — it is where every stage in the building puts its
+ * lectern. The gate says the same thing so the card can.
+ */
+function micCable(room: string, from: number, to: number): Activity {
+  const b = roomBounds(room).bounds;
+  // West rooms only: the screen wall is the room's west edge.
+  const lectern = b.y + b.h - LECTERN_FROM_NORTH - LECTERN_ALONG / 2;
+  return {
+    kind: 'tap',
+    id: `mic-${room}-${from}`,
+    label: `${roomName(room)}: mic cable`,
+    room,
+    window: { from, to },
+    at: spot(1, b.x + WALL_FACE + SLOT_DEPTH / 2, lectern, 0.5),
+    gates: { maxRadius: 0.4 },
+  };
+}
+
+/**
+ * The speaker's laptop will not talk to the projector, and the adapter is
+ * back at the organisers' desk.
+ *
+ * Either robot can carry half a kilo. Only one of them can get it from the
+ * desk to a stage down a rake at the far end of the corridor before the
+ * room gives up: 6.0 m/s and stopping on the spot, against 4.2 and a metre
+ * and a half of braking. Speed is the only question here, and it is Voxxy's.
+ */
+function adapter(room: string, from: number, to: number): Activity {
+  const b = roomBounds(room).bounds;
+  return {
+    kind: 'haul',
+    id: `adapter-${room}-${from}`,
+    label: `Adapter for ${roomName(room)}`,
+    room,
+    window: { from, to },
+    at: ORGANISERS_DESK,
+    mass: 0.5,
+    // On the stage in front of the presenter's table, which is where the
+    // laptop is and where the person waiting for it is standing.
+    to: spot(1, b.x + PRESENTER_FROM_WALL, b.y + b.h - TABLE_CENTRE_FROM_NORTH, 1.0),
+  };
+}
+
+/**
+ * More people than chairs. A stack of folding chairs from the foyer.
+ *
+ * Forty kilos, and Voxxy's whole payload is ten, so this is Droid's by
+ * arithmetic rather than by permission. It is the long job of the day —
+ * the foyer is at the far north end of the corridor — and the one a player
+ * learns to START early and leave running while they do something else.
+ */
+function chairs(room: string, from: number, to: number): Activity {
+  return {
+    kind: 'haul',
+    id: `chairs-${room}-${from}`,
+    label: `Chairs for ${roomName(room)}`,
+    room,
+    window: { from, to },
+    at: FOYER_STACK,
+    mass: 40,
+    to: crossAisle(room),
+  };
+}
+
+/*
+ * Where things are on the stages, metres, off the venue's own numbers for
+ * the lectern and the presenter's table. Kept here rather than exported
+ * from the venue because they are about where a JOB is, not where a wall is.
+ */
+/** The screen wall is 0.3 m thick, centred on the room's edge. */
+const WALL_FACE = 0.15;
+/** The slot behind the lectern, wall face to lectern back. */
+const SLOT_DEPTH = 0.8;
+/** How far the lectern starts in from the north wall, and how long it is. */
+const LECTERN_FROM_NORTH = 2.0;
+const LECTERN_ALONG = 0.7;
+/** Standing in front of the presenter's table, from the screen wall. */
+const PRESENTER_FROM_WALL = 1.95;
+/** The presenter's table's centre, from the north wall. */
+const TABLE_CENTRE_FROM_NORTH = 3.8;
+
+/**
+ * Where the adapters live: the organisers' desk, beside Stephan. Where you
+ * go when something is missing, which at a conference this size is always.
+ */
+const ORGANISERS_DESK = spot(1, 3.2, -40.0, 1.4);
+/** The chairs nobody expected to need, stacked in the foyer. */
+const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
+
+/**
+ * The day, as it goes wrong. Seconds on a four-minute clock.
+ *
+ * Written as a schedule rather than rolled at random, so every run is the
+ * same day and a player can learn it — which is what a real AV crew does
+ * with a conference they have run before. It alternates who is needed, and
+ * it overlaps so that at most moments ONE of the two robots is the right one
+ * and the other is somewhere else doing its own job.
+ *
+ * Windows are generous for the robot a job is FOR and tight for the other.
+ * An adapter's thirty seconds is plenty for Voxxy from the desk and a gamble
+ * for Droid; a chairs run gets over a minute because it is two lengths of
+ * the building with forty kilos on.
+ */
+const BREAKDOWNS: Activity[] = [
+  micCable('aud-6', 8, 48),
+  projector('aud-4', 15, 60),
+  chairs('aud-5', 40, 120),
+  adapter('aud-3', 55, 88),
+  micCable('aud-2', 95, 135),
+  projector('aud-6', 110, 150),
+  adapter('aud-4', 125, 157),
+  chairs('aud-3', 150, 215),
+  micCable('aud-5', 165, 200),
+  projector('aud-2', 185, 222),
+  adapter('aud-6', 198, 230),
+];
 
 /**
  * The people who actually built this conference, standing in the corridor of
@@ -294,9 +378,9 @@ function tendRoom(id: string, label: string, drain: number): Activity {
  * The cost is still the point, and it is the same cost the chapter is about.
  * The corridor is 126 m, the four of them are spread up its west side
  * outside the rooms they are speaking in, and every second spent being
- * sociable is a second five session meters are draining without you. The
- * round still ends on its clock or on three dark rooms and never because the
- * player went and said hello — but the chapter is asking a real question
+ * sociable is a second the next breakdown is waiting without you. The
+ * round still ends on its clock or on three emptied rooms and never because
+ * the player went and said hello — but the chapter is asking a real question
  * now, and both answers are defensible.
  */
 function speaker(
@@ -362,7 +446,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       { who: 'droid', text: 'That was not a power cut. You switched the rack on and the building folded in half.' },
       { who: 'droid', text: 'It pulled one of us in and put two of us out. I am the part of you that stops and reads the manual.' },
       { who: 'droid', text: 'Listen. The building is full. This is years ago, when it was still JavaPolis.' },
-      { who: 'droid', text: 'You are quick and I can reach. Between the two of us, we keep these rooms running.' },
+      { who: 'droid', text: 'You are small and quick. I am tall and strong. Whatever breaks today, one of us is the right shape for it.' },
     ],
   },
   line: 'Keep every room running',
@@ -377,11 +461,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
    */
   exit: { kind: 'wormhole', to: 'capacity' },
   activities: [
-    tendRoom('aud-5', 'Room 5', 1.35),
-    tendRoom('aud-4', 'Room 4', 1.15),
-    tendRoom('aud-6', 'Room 6', 1.15),
-    tendRoom('aud-3', 'Room 3', 1.0),
-    tendRoom('aud-2', 'Room 2', 1.0),
+    ...BREAKDOWNS,
 
     {
       kind: 'talk',

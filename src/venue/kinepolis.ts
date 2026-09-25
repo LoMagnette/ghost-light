@@ -1932,8 +1932,19 @@ const LECTERN_HEIGHT = 1.2;
 /** Gap between the lectern and the table, metres. They nearly touch. */
 const DESK_GAP = 0.15;
 
-/** How far the front of the desk stands off the screen wall, metres. */
-const DESK_STANDOFF = 1.35;
+/**
+ * How far the front of the desk stands off the screen wall, metres.
+ *
+ * 1.45, and it was 1.35 until Chapter II needed the slot BEHIND the lectern.
+ * The screen wall is 0.3 m thick on its line, so 1.35 left 0.70 m of clear
+ * floor between its face and the lectern's back: Voxxy, 0.68 m across, with
+ * a centimetre either side, which is a gap in the numbers and not one anybody
+ * can drive into. 1.45 leaves 0.80 — the same gap the Chapter III stands put
+ * between them, so "Voxxy fits and Droid does not" means one thing all over
+ * the building. The mic cable a Chapter II breakdown sends Voxxy after is in
+ * there.
+ */
+const DESK_STANDOFF = 1.45;
 
 /**
  * How far the desk sits in from the side wall it stands by, metres.
