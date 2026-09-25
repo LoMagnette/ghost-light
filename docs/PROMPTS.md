@@ -4365,6 +4365,38 @@ orange shoulder pads. Eyes are self-lit now, because the game has bloom.
 2. Everything was also checked at game scale, where Droid's much darker
    charcoal still reads against the hall floor.
 
+### Claude Opus — attendees at the robots' level of detail
+
+**Prompt:**
+> Can you remodel the attendee to make them more in the same level as the
+> robot in therm of details
+
+**Iterations:** 1 build, three zoomed film strips.
+
+**The budget is different.** Three robots can be thirty parts each; the
+crowd is up to four hundred walkers and five thousand seated people,
+instanced. A walker went from 4 boxes to at most 13, still in one draw.
+
+**What a person is now.** Two legs and two shoes swinging about the hip,
+arms swinging against them with a hand at the end, hair (one in seven
+without), a lanyard in the era's accent with a white badge on everyone (it is
+a conference), and a backpack on about a third. The seated audience gets
+hair too, which matters more than it sounds: the camera sees a full house
+from above and behind, so an audience is five hundred heads of hair, and
+without it they read as upholstery.
+
+**The walk comes from distance, not time.** The crowd simulation knows
+nothing about legs and stays that way. The renderer keeps an odometer per
+person, and one step is 0.36 m of it, so a queue shuffles and a hall-crosser
+strides. Jumps (a reseat or a reset) are not counted as walking.
+
+**A decision worth writing down: skin is stylised.** Heads were the crowd
+colour lifted, grey balls. They are now a narrow band of warm neutrals,
+leaning to the era colour, and deliberately not a range of real skin tones:
+that would put a claim about who somebody is on every head, including the
+real people in the Chapter II corridor, where the rule has always been
+silhouette facts only.
+
 ---
 
 ## Audio

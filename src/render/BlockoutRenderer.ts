@@ -316,8 +316,40 @@ function tone(x: number, y: number, z: number): number {
 
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
-/** Boxes per standing person: legs, torso, two arms. */
-const PERSON_PARTS = 4;
+/**
+ * Boxes per standing person, at most: two legs and two shoes, a torso, two
+ * arms and two hands, a lanyard and its badge, hair, a backpack.
+ *
+ * It was four — legs as one slab, a torso, two arms in the same plane — and
+ * beside three robots built from twenty-odd parts each, the attendees read
+ * as a different game. Thirteen is still one instanced draw for the whole
+ * crowd; it is matrix writes per frame that it costs, and four hundred
+ * people is five thousand of them.
+ */
+const PERSON_PARTS = 13;
+/** The most a named person's face adds on top: see `placeFace`. */
+const FACE_PARTS = 5;
+/** One step, metres. The walk cycle is driven by distance, not by time. */
+const STEP_LENGTH = 0.36;
+/** How far a leg swings at a full walk, radians; arms swing against it. */
+const PERSON_LEG_SWING = 0.42;
+const PERSON_ARM_SWING = 0.3;
+/**
+ * Skin, as a narrow band of warm neutrals rather than a range of real
+ * skin tones.
+ *
+ * Deliberately stylised, like everything else about a figure six pixels
+ * wide. Real tones would put a claim about who somebody is on every head —
+ * including the real people in the corridor, where the rule has been
+ * silhouette facts only. A warm head over clothing is what makes a figure a
+ * PERSON rather than a post; its exact colour is not information this
+ * scale can carry honestly.
+ */
+const SKIN_BAND: readonly number[] = [0xd9b08c, 0xcfa27d, 0xc4956f, 0xba8a66];
+/** Hair, for the people who are nobody in particular. Named people have their own. */
+const HAIR_COLOURS: readonly number[] = [0x1f1b18, 0x2f241c, 0x4a3322, 0x6b4a2e, 0x8f7552, 0x7a7671];
+/** How far every head and hair colour leans to the era's crowd colour, 0..1. */
+const ERA_TINT = 0.22;
 /** Blobs per person: the shoulder mass and the head. */
 const PERSON_BLOBS = 2;
 
@@ -400,7 +432,6 @@ function smoothstep(x: number, from: number, to: number): number {
  */
 const TROUSER_SHADE = 0.62;
 const CLOTHING_RANGE: [number, number] = [0.78, 1.34];
-const HEAD_LIFT = 0.46;
 
 /**
  * Exponent that carries the chapter's light level into the renderer's space.
@@ -556,6 +587,32 @@ const MAX_HEAD = 0.65;
 const IDLE_AFTER = 1.4;
 
 const SCRATCH = new Object3D();
+/** For limbs, which pitch in their own frame before the heading turns them. */
+const LIMB = new Object3D();
+LIMB.rotation.order = 'ZYX';
+/**
+ * Each leg's offset from the centre line, and its width, out of the hip
+ * width in `core/Crowd` — so the two legs fill the hips the old single slab
+ * did, with a gap between them that says "two".
+ */
+const LEG_APART = PERSON_HIP / 4;
+const LEG_WIDE = PERSON_HIP * 0.4;
+
+/**
+ * A stable 0..1 for one person, from where they FIRST stood — so a walker
+ * keeps their hair and their backpack as they cross the hall. `salt` gives
+ * each question its own answer.
+ */
+const SEEDS = new WeakMap<object, number>();
+function personSeed(person: Person, salt: number): number {
+  let base = SEEDS.get(person);
+  if (base === undefined) {
+    base = tone(person.x, person.y, person.z + person.tint * 7);
+    SEEDS.set(person, base);
+  }
+  const n = Math.sin(base * 1000 + salt * 12.9898) * 43758.5453;
+  return n - Math.floor(n);
+}
 const SCRATCH_COLOUR = new Color();
 const SCRATCH_VIEW = new Vector3();
 
@@ -568,6 +625,8 @@ export class BlockoutRenderer {
   private controlled: Actor | undefined;
   /** Seconds of rendering, for anything that idles. */
   private clock = 0;
+  /** Each walker's odometer, for the walk cycle. See `gaitOf`. */
+  private readonly gaits = new WeakMap<Person, { x: number; y: number; walked: number; moving: number }>();
   /** The last frame's length, for easing in `setMarkers`, which runs first. */
   private lastDt = 1 / 60;
 
@@ -830,11 +889,19 @@ export class BlockoutRenderer {
      */
     const crowd = person.posted ? mix(this.palette.crowd, this.palette.accent, 0.34) : this.palette.crowd;
     const [low, high] = CLOTHING_RANGE;
-    return [
-      shade(crowd, TROUSER_SHADE),
-      shade(crowd, low + person.tint * (high - low)),
-      mix(crowd, this.palette.sign, HEAD_LIFT),
-    ];
+    // A head is skin, leaning a little to the era so a full room still
+    // photographs as one crowd. It used to be the crowd colour lifted, which
+    // made every head in the building a grey ball.
+    const skin = SKIN_BAND[Math.floor(personSeed(person, 3) * SKIN_BAND.length)];
+    return [shade(crowd, TROUSER_SHADE), shade(crowd, low + person.tint * (high - low)), mix(skin, crowd, ERA_TINT)];
+  }
+
+  /** Somebody's hair, when the objective has not said what it is. */
+  private hairOf(person: Person): number | undefined {
+    const seed = personSeed(person, 7);
+    // One in seven has none worth drawing: shaved, bald, or a hat's worth.
+    if (seed < 0.14) return undefined;
+    return mix(HAIR_COLOURS[Math.floor(seed * 997) % HAIR_COLOURS.length], this.palette.crowd, ERA_TINT);
   }
 
   /**
@@ -893,6 +960,27 @@ export class BlockoutRenderer {
         top: person.z + SEATED_ARM_TOP,
         colour: shade(clothing, 0.74),
       })),
+      /*
+       * Hair, and it is most of what you see of an audience: the camera
+       * looks at a room from above and behind the back row, so a full house
+       * is five hundred heads of hair. Without it, it was five hundred grey
+       * balls in rows, which read as seating upholstery.
+       *
+       * Always present, unlike a walker's: in the standing crowd a missing
+       * cap is somebody bald; baked into a room, the same odds read as
+       * holes. A seated person with no hair of their own gets the darkest.
+       */
+      {
+        bounds: rect(
+          spine - PERSON_HEAD_WIDE * 0.5,
+          person.y - PERSON_HEAD_WIDE * 0.47,
+          PERSON_HEAD_WIDE * 0.94,
+          PERSON_HEAD_WIDE * 0.94,
+        ),
+        bottom: person.z + SEATED_PERSON_HEIGHT - 0.07,
+        top: person.z + SEATED_PERSON_HEIGHT + 0.012,
+        colour: this.hairOf(person) ?? mix(HAIR_COLOURS[0], this.palette.crowd, ERA_TINT),
+      },
     ];
   }
 
@@ -1012,6 +1100,7 @@ export class BlockoutRenderer {
         i = this.placeAnimal(i, person);
         continue;
       }
+      if (i + PERSON_PARTS + FACE_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
       const [trousers, plain, head] = this.personColours(person);
       const look = person.look;
       const clothing = look?.shirt ?? plain;
@@ -1021,15 +1110,35 @@ export class BlockoutRenderer {
       const up = (z: number): number => z * k;
 
       /*
-       * Legs, torso, two arms — all on the same centre line, so the heading
-       * rotates the whole figure and no part has to orbit another.
+       * The walk, from how far they have walked.
+       *
+       * The crowd simulation moves people and knows nothing about legs, and
+       * it should stay that way. So the renderer keeps an odometer per person
+       * and one step is `STEP_LENGTH` of it: somebody shuffling in a queue
+       * takes small steps, somebody crossing the hall strides, and somebody
+       * standing still has both feet down — all of it from where they
+       * actually went, which a clock could not know.
+       */
+      const gait = this.gaitOf(person);
+      const legSwing = Math.sin(gait.walked / STEP_LENGTH * Math.PI) * PERSON_LEG_SWING * gait.moving;
+      const armSwing = -legSwing * (PERSON_ARM_SWING / PERSON_LEG_SWING);
+
+      /*
+       * Two legs and two shoes, swinging about the hip.
        *
        * `thick` is front to back and `wide` is side to side. They were the
        * wrong way round in the first version, which turned every walker
        * ninety degrees: perfectly symmetrical at rest and unmistakable the
        * moment anyone walked anywhere.
        */
-      i = this.placePart(i, person, 0, up(PERSON_LEG_TOP), PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      const hip = up(PERSON_LEG_TOP);
+      const shoe = shade(trousers, 0.5);
+      for (const [side, swing] of [[LEG_APART, legSwing], [-LEG_APART, -legSwing]] as const) {
+        i = this.placeLimb(i, person, hip, up(0.07), PERSON_THICK * 0.62, LEG_WIDE, trousers, side, 0, swing);
+        const foot = Math.sin(swing) * (hip - up(0.07));
+        i = this.placePart(i, person, 0, up(0.07), 0.24, LEG_WIDE * 1.05, shoe, side, foot + 0.04);
+      }
+
       i = this.placePart(
         i,
         person,
@@ -1041,29 +1150,48 @@ export class BlockoutRenderer {
       );
 
       /*
-       * Arms: two darker strips either side of the torso, in the SAME
-       * plane as it rather than proud of it.
+       * Arms: darker strips either side of the torso, swinging against the
+       * legs, with a hand at the end of each.
        *
-       * The pass before this one built them sticking out, measured the
-       * seven centimetres they protrude, found it came to two pixels, and
-       * deleted them — the right measurement answering the wrong question.
-       * An arm at this size does not read as a silhouette. It reads as
-       * tone: dark, light, dark across the body, which is the difference
-       * between a person and a slab.
+       * Still in the torso's plane rather than proud of it — at this size an
+       * arm reads as TONE, dark-light-dark across the body, and that is what
+       * stops a person being a slab. What is new is that they move, and that
+       * a skin-coloured hand at the bottom of each says "arm" rather than
+       * "stripe".
        */
       const sleeve = shade(clothing, 0.74);
       const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
-      for (const side of [reach, -reach]) {
-        i = this.placePart(
-          i,
-          person,
-          up(PERSON_ARM_BOTTOM),
-          up(PERSON_ARM_TOP),
-          PERSON_THICK,
-          PERSON_ARM_WIDE,
-          sleeve,
-          side,
-        );
+      const arm = up(PERSON_ARM_TOP) - up(PERSON_ARM_BOTTOM);
+      for (const [side, swing] of [[reach, armSwing], [-reach, -armSwing]] as const) {
+        i = this.placeLimb(i, person, up(PERSON_ARM_TOP), up(PERSON_ARM_BOTTOM), PERSON_THICK * 0.7, PERSON_ARM_WIDE, sleeve, side, 0, swing);
+        const hand = up(PERSON_ARM_TOP) - Math.cos(swing) * arm;
+        i = this.placePart(i, person, hand - up(0.08), hand, 0.08, PERSON_ARM_WIDE * 0.9, head, side, Math.sin(swing) * arm);
+      }
+
+      /*
+       * A lanyard and a badge, on everybody. It is a conference.
+       *
+       * The single most recognisable thing about a person at one: from the
+       * far side of an exhibition hall you cannot see a face, but you can see
+       * the white card on the chest and the strap it hangs from. The strap is
+       * the era's accent, as a conference's lanyards always are.
+       */
+      const chest = PERSON_THICK / 2 + 0.008;
+      i = this.placePart(i, person, up(1.2), up(PERSON_NECK - 0.02), 0.012, 0.05, this.palette.accent, 0, chest);
+      i = this.placePart(i, person, up(1.1), up(1.2), 0.014, 0.085, mix(LOGO, this.palette.crowd, 0.12), 0, chest);
+
+      // A backpack, on about a third of them. Conference people carry their
+      // laptop; the ones who do not are the speakers and the organisers.
+      if (!person.posted && look === undefined && personSeed(person, 11) < 0.32) {
+        i = this.placePart(i, person, up(0.98), up(1.36), 0.15, 0.3, shade(clothing, 0.55), 0, -(PERSON_THICK / 2 + 0.07));
+      }
+
+      // Hair for the people who are nobody in particular. The named ones get
+      // theirs from `placeFace`, which knows their hairline.
+      const hair = look === undefined ? this.hairOf(person) : undefined;
+      if (hair !== undefined) {
+        const w = PERSON_HEAD_WIDE;
+        i = this.placePart(i, person, up(PERSON_HEIGHT) - 0.07, up(PERSON_HEIGHT) + 0.012, w * 0.94, w * 0.96, hair, 0, -w * 0.05);
       }
 
       // Hair, beard and glasses, for the people who are somebody. Up to
@@ -1117,6 +1245,65 @@ export class BlockoutRenderer {
     this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
     this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
+  }
+
+  /**
+   * A box hung from a joint at `from`, down to `to`, swung forward by
+   * `swing` radians about the figure's own side-to-side axis. A leg about
+   * its hip, an arm about its shoulder.
+   */
+  private placeLimb(
+    index: number,
+    person: Person,
+    from: number,
+    to: number,
+    thick: number,
+    wide: number,
+    colour: number,
+    across: number,
+    along: number,
+    swing: number,
+  ): number {
+    const half = (from - to) / 2;
+    const forward = along + Math.sin(swing) * half;
+    const c = Math.cos(person.heading);
+    const sn = Math.sin(person.heading);
+    LIMB.position.set(
+      person.x + c * forward - sn * across,
+      person.y + sn * forward + c * across,
+      person.z + from - Math.cos(swing) * half,
+    );
+    LIMB.scale.set(thick, wide, from - to);
+    // Pitch in the figure's own frame, then the heading: 'ZYX' is exactly
+    // that, and it is why this has its own Object3D rather than `SCRATCH`.
+    LIMB.rotation.set(0, swing, person.heading);
+    LIMB.updateMatrix();
+    this.moverMesh.setMatrixAt(index, LIMB.matrix);
+    this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
+    return index + 1;
+  }
+
+  /**
+   * How far somebody has walked, and whether they are walking now.
+   *
+   * Kept here and not in `Crowd`, because it is only ever needed to draw
+   * legs. A person who jumps a long way in a frame — reseated, reset, taken
+   * to another storey — has not walked it, so jumps are not counted.
+   */
+  private gaitOf(person: Person): { walked: number; moving: number } {
+    let g = this.gaits.get(person);
+    if (!g) {
+      g = { x: person.x, y: person.y, walked: personSeed(person, 5) * STEP_LENGTH * 2, moving: 0 };
+      this.gaits.set(person, g);
+    }
+    const d = Math.hypot(person.x - g.x, person.y - g.y);
+    g.x = person.x;
+    g.y = person.y;
+    if (d < 0.5) g.walked += d;
+    const speed = d / Math.max(this.lastDt, 1e-3);
+    const target = Math.min(1, speed / 0.8);
+    g.moving += (target - g.moving) * Math.min(1, this.lastDt * 8);
+    return g;
   }
 
   /** The same, for the rounded parts: the shoulders and the head. */
