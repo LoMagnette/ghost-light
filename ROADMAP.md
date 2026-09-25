@@ -2,6 +2,7 @@
 
 Twelve days to the deadline: **Wed 30 September 2026, 23:59 CEST**.
 
+`STATUS.md` is the board: done, in progress, to do, one row each.
 `SPEC.md` § 7 holds the milestone view — what "done" means at each stage. This
 file holds the dated view and, more usefully, **who owns what**. The short
 version of the division of labour:
