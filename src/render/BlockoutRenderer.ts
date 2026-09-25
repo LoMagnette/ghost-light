@@ -202,6 +202,24 @@ const KEY = 0.972;
  */
 const KEY_DIRECTION = new Vector3(-0.196, -0.355, 0.914);
 
+/** Half the side of the square the shadow map covers, metres. See `focus`. */
+const SHADOW_REACH = 34;
+/** How far up the sun's own axis the shadow camera stands, metres. */
+const SHADOW_DISTANCE = 60;
+/**
+ * Where the shadow-casting sun comes from: high, and from the north-north-
+ * west, so what it casts falls down-right on screen. See the constructor.
+ */
+const SUN_DIRECTION = new Vector3(-0.22, 0.5, 0.84).normalize();
+/** How much of the key's light the sun takes over, 0..1. */
+const SUN_SHARE = 0.3;
+/**
+ * The sun is brighter than the share it takes, because it lights only the
+ * tops and north faces and the floor — the key lit those AND the two faces
+ * the camera sees. Without this the floor goes a shade darker on high.
+ */
+const SUN_GAIN = 1.1;
+
 /**
  * three.js lights are physically scaled: a Lambert surface reflects
  * `intensity / PI`, so an intensity of 1 is a face at about a third of its own
@@ -552,6 +570,9 @@ export class BlockoutRenderer {
   private readonly storeys = new Map<Level, Group>();
 
   private readonly robots = new Map<Actor, RobotView>();
+  /** Shadows on, and the light that casts them. See `focus`. */
+  private readonly shadows: boolean;
+  private sun: DirectionalLight | undefined;
   private readonly marks: SkidMark[] = [];
   private readonly markMesh: InstancedMesh;
   private readonly markColour: Color;
@@ -635,8 +656,10 @@ export class BlockoutRenderer {
     lightLevel: number,
     crowd: Crowd,
     decay: Decay,
+    shadows = false,
   ) {
     this.camera = camera;
+    this.shadows = shadows;
     this.venue = venue;
     this.palette = palette;
     // Before the storeys are built: each one bakes its own seated population
@@ -656,12 +679,49 @@ export class BlockoutRenderer {
     const key = new DirectionalLight(0xffffff, KEY * lit);
     key.position.copy(KEY_DIRECTION);
     this.scene.add(key);
+    if (shadows) {
+      /*
+       * Shadows come from a SECOND light, not the key.
+       *
+       * The key is behind the camera and nearly overhead on purpose — see
+       * `KEY_DIRECTION` — which means everything it casts falls behind the
+       * thing that cast it, out of sight. The first try cast from it and got
+       * nothing but black wedges at the foot of the columns. So the key
+       * keeps its job and its direction, a little dimmer, and a sun from
+       * the north-north-west does the casting: its shadows fall south, which
+       * on this screen is down and to the right, in FRONT of the walls the
+       * player is looking at. The south and west faces the key was tuned to
+       * separate get none of the sun, so they read exactly as they did.
+       *
+       * Over a square that follows the camera, not over the building: 126 m
+       * at a useful resolution is a map nobody's graphics card wants.
+       * SHADOW_REACH either side of where the camera looks covers the frame,
+       * and 2048 texels over it is about three centimetres each.
+       */
+      key.intensity = KEY * lit * (1 - SUN_SHARE);
+      const sun = new DirectionalLight(0xfff4e6, KEY * lit * SUN_SHARE * SUN_GAIN);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      const cam = sun.shadow.camera;
+      cam.left = -SHADOW_REACH;
+      cam.right = SHADOW_REACH;
+      cam.top = SHADOW_REACH;
+      cam.bottom = -SHADOW_REACH;
+      cam.near = 1;
+      cam.far = 140;
+      sun.shadow.bias = -0.0005;
+      sun.shadow.normalBias = 0.03;
+      sun.shadow.radius = 3;
+      this.scene.add(sun, sun.target);
+      this.sun = sun;
+    }
 
     for (const floor of storeysOf(venue)) {
       const group = this.buildStorey(floor);
       group.visible = false;
       this.storeys.set(floor, group);
       this.scene.add(group);
+      this.castAndReceive(group);
     }
 
     // The marks and the floor they scuff are unlit — a decal has no normal
@@ -692,6 +752,7 @@ export class BlockoutRenderer {
     this.buildEnvelope();
     this.envelope.visible = false;
     this.scene.add(this.envelope);
+    this.castAndReceive(this.envelope);
 
     this.moverMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
@@ -718,6 +779,8 @@ export class BlockoutRenderer {
     this.moverHeads.frustumCulled = false;
     this.moverHeads.setColorAt(0, SCRATCH_COLOUR.set(0xffffff));
     this.scene.add(this.moverHeads);
+    this.castAndReceive(this.moverMesh);
+    this.castAndReceive(this.moverHeads);
   }
 
   /** Trousers, clothing and head for one person, in this era's colours. */
@@ -1238,6 +1301,36 @@ export class BlockoutRenderer {
 
   moveLamp(x: number, y: number, z: number): void {
     this.lamp?.position.set(x, y, z + 1.4);
+  }
+
+  /**
+   * Centre the shadow map on where the camera is looking. A no-op on low
+   * quality, where nothing casts.
+   */
+  focus(x: number, y: number, z: number): void {
+    if (!this.sun) return;
+    this.sun.target.position.set(x, y, z);
+    this.sun.position.set(x, y, z).addScaledVector(SUN_DIRECTION, SHADOW_DISTANCE);
+  }
+
+  /**
+   * Everything solid under `root` casts and everything receives.
+   *
+   * Transparent things do not cast: the ghost pass of the cutaway, the
+   * glazing and the decals are all see-through on purpose, and a shadow
+   * from a wall the renderer has made see-through so you can look past it
+   * would put the dark straight back.
+   */
+  private castAndReceive(root: Object3D): void {
+    if (!this.shadows) return;
+    root.traverse((object) => {
+      if (!(object instanceof Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const clear = materials.some((m) => m.transparent);
+      const lit = materials.every((m) => !(m instanceof MeshBasicMaterial));
+      object.castShadow = !clear && lit;
+      object.receiveShadow = lit;
+    });
   }
 
   /**
@@ -2273,6 +2366,7 @@ export class BlockoutRenderer {
       pulse: 0,
     };
     const view: RobotView = { group, body, tilt, shadow, stopLine, stopRing, pivots, ring, motion };
+    this.castAndReceive(body);
     this.robots.set(actor, view);
     this.scene.add(group);
     return view;

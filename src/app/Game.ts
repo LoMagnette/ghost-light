@@ -10,7 +10,8 @@
  * can only be one of.
  */
 
-import { Scene, WebGLRenderer, type Camera } from 'three';
+import { PCFSoftShadowMap, Scene, WebGLRenderer, type Camera } from 'three';
+import { currentQuality } from './quality';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@/config';
 import { Keyboard } from '@/input/Keyboard';
 
@@ -54,9 +55,21 @@ export class Game {
     // pixel ratio tracks the window. See index.html.
     this.renderer.setSize(VIEW_WIDTH, VIEW_HEIGHT, false);
     this.renderer.setClearColor(0x06080a, 1);
+    // Soft, because the key light is nearly overhead and a hard-edged
+    // shadow at this angle is a black outline round the foot of every wall.
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.applyQuality();
 
     this.resize();
     window.addEventListener('resize', this.resize);
+  }
+
+  /**
+   * Take up the current quality setting. Screens build their materials on
+   * mount, so a change reaches the next screen shown rather than this one.
+   */
+  applyQuality(): void {
+    this.renderer.shadowMap.enabled = currentQuality() === 'high';
   }
 
   setBackground(colour: number): void {

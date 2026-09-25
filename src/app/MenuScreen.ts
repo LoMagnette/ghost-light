@@ -16,6 +16,7 @@ import { GAME_SUBTITLE, GAME_TITLE, VIEW_HEIGHT, VIEW_WIDTH } from '@/config';
 import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { el, MONO, SANS, SERIF } from './dom';
+import { currentQuality, setQuality } from './quality';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 240;
@@ -63,6 +64,24 @@ export class MenuScreen implements Screen {
         'L   movement lab (dev)',
       ),
     );
+
+    /*
+     * The one setting, on the one screen that is never in the middle of
+     * anything. It changes the NEXT chapter started, because materials are
+     * built when a chapter mounts — which is also exactly when a player who
+     * finds the game slow would reach for it.
+     */
+    const graphics = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
+    const showGraphics = (): void => {
+      graphics.textContent = `G   graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
+    };
+    showGraphics();
+    game.ui.append(graphics);
+    game.keyboard.on('KeyG', () => {
+      setQuality(currentQuality() === 'high' ? 'low' : 'high');
+      game.applyQuality();
+      showGraphics();
+    });
 
     game.keyboard.on('ArrowLeft', () => this.move(-1));
     game.keyboard.on('ArrowRight', () => this.move(1));

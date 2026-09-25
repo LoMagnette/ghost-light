@@ -38,6 +38,7 @@ import { abandoned, type Chapter } from '@/chapters/Chapter';
 import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS } from './dom';
+import { currentQuality } from './quality';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
@@ -323,6 +324,7 @@ export class ChapterScreen implements Screen {
       chapter.lightLevel,
       this.crowd,
       decay,
+      currentQuality() === 'high',
     );
     this.blockout.telemetry = this.debug;
 
@@ -473,6 +475,7 @@ export class ChapterScreen implements Screen {
     this.followControlled(dt);
     this.blockout.setMarkers(this.markers(), this.floor);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
+    this.blockout.focus(this.cameraX, this.cameraY, this.cameraZ);
     // One robot needs no telling apart; two or three do.
     this.blockout.setControlled(this.actors.length > 1 ? this.controlled : undefined);
     this.blockout.render(this.floor, this.actors, this.sim.alpha, dt);
