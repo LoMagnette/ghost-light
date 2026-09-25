@@ -341,6 +341,13 @@ export function admits(activity: Activity, spec: RobotSpec): boolean {
     if (gates.carry !== undefined && spec.payload < gates.carry) return false;
   }
   if (activity.kind === 'haul' && spec.payload < activity.mass) return false;
+  /*
+   * A shove needs the momentum, and a machine that cannot reach it at its
+   * own top speed never will. Voxxy tops out at 270 kg·m/s and Droid at
+   * 798 against a 900 shutter, so the shutter is Biggy's by arithmetic —
+   * and saying so here is what lets the marker and the card say it too.
+   */
+  if (activity.kind === 'shove' && spec.mass * spec.maxSpeed < activity.momentum) return false;
   return true;
 }
 

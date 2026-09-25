@@ -4270,6 +4270,36 @@ panel behind the card.
 game has never been measured on a real GPU and every one of these costs fill
 rate. Low is the blockout as it was.
 
+### Claude Opus — markers that say whose job it is
+
+**Prompt:**
+> I would that we work on how the objective are marked on the map because
+> right now it's a bit rough with just a candy par colored. And maybe also
+> a visual clue on for it's for
+
+**Iterations:** 1, and two corrections from the frames.
+
+**What replaced the post.** A ring on the floor with a glow inside it and a
+ripple going out, a thin beam, and an icon hovering at 2.35 m, a head above
+anyone in the building. All unlit, for the reason the post was: Chapter I is
+played at 0.18 light.
+
+**Whose it is, twice over.** Each robot got a `signal` colour. It is not
+`tint`, because two of the three tints are greys and a grey marker means
+locked. Each icon is also the robot's silhouette as one primitive: Voxxy an
+orb, Droid a tall slab, Biggy a wide dome. Anyone's job is a diamond in the
+chapter accent, and a drop-off is an arrow in the carrier's colour. Shape as
+well as colour, so none of it depends on seeing colour. The card names the
+robot in the same colour, and both ask `admittedBy`, so they cannot disagree.
+
+**What the frames corrected.**
+1. The shutter came up as "anyone's". It is Biggy's by momentum (900
+   kg·m/s against Voxxy's 270 and Droid's 798), and `admits` did not know
+   that. It does now, so the marker, the card and `npm run objectives` all
+   say Biggy.
+2. A comment of mine said the beacon draws over the crowd. It is
+   depth-tested, like the post was; it simply hovers above head height.
+
 ---
 
 ## Audio

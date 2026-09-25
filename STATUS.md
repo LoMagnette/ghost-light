@@ -18,6 +18,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Chapter II: JavaPolis | 🔄 | Rebuilt as breakdowns; not pushed, not played |
 | Chapter III: At Capacity | 🔄 | Trimmed to nine things; not pushed, not played |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8) |
+| Objective markers | ✅ | Ring, beacon and a robot-shaped icon in that robot's colour; the card names it too. Not pushed |
 | Photographer side quest | 🔄 | Code merged (#6); the four photographs are still to come |
 | Art | ✅ | Robots walk, lean and look round; shadows, a mood per era, a live menu. Not pushed |
 | Audio | ⬜ | Nothing yet |

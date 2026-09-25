@@ -31,6 +31,8 @@ import {
   BufferGeometry,
   CircleGeometry,
   Color,
+  ConeGeometry,
+  CylinderGeometry,
   DirectionalLight,
   DoubleSide,
   Float32BufferAttribute,
@@ -43,6 +45,7 @@ import {
   MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
+  OctahedronGeometry,
   PointLight,
   RingGeometry,
   Scene,
@@ -598,9 +601,23 @@ export class BlockoutRenderer {
    * is deliberately almost too dark to read. A Lambert post would be a rumour.
    */
   private readonly markerGroup = new Group();
-  private readonly markerMeshes = new Map<string, Mesh>();
-  private readonly markerGeometry = new BoxGeometry(0.45, 0.45, 2.3);
-  private readonly markerDisc = new CircleGeometry(1.3, 24);
+  private readonly markerViews = new Map<string, MarkerView>();
+  /**
+   * Shared by every marker. The icons are the robots' silhouettes reduced to
+   * one primitive each — Voxxy's round head, Droid's tall slab, Biggy's wide
+   * dome — and a diamond for a job anyone can do. See `setMarkers`.
+   */
+  private readonly markerParts = {
+    ring: new RingGeometry(0.78, 0.95, 48),
+    ripple: new RingGeometry(0.9, 1.0, 48),
+    glow: new CircleGeometry(0.95, 48),
+    beam: new CylinderGeometry(0.035, 0.035, 1, 8, 1, true),
+    any: new OctahedronGeometry(0.26),
+    voxxy: new SphereGeometry(0.24, 18, 12),
+    droid: new BoxGeometry(0.2, 0.2, 0.56),
+    biggy: new SphereGeometry(0.34, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+    drop: new ConeGeometry(0.26, 0.42, 4),
+  };
 
   /**
    * The lamp the cast carries, and the lights the player switches back on.
@@ -1255,35 +1272,121 @@ export class BlockoutRenderer {
    */
   setMarkers(markers: readonly ObjectiveMarker[], floor: Level): void {
     const seen = new Set<string>();
+    const t = this.clock;
 
     for (const marker of markers) {
       seen.add(marker.id);
-      let mesh = this.markerMeshes.get(marker.id);
-      if (!mesh) {
-        mesh = new Mesh(this.markerGeometry, new MeshBasicMaterial({ color: marker.colour }));
-        const disc = new Mesh(this.markerDisc, new MeshBasicMaterial({ color: marker.colour }));
-        // Just off the floor, or it fights the floor plate for the same depth.
-        disc.position.z = -1.14;
-        mesh.add(disc);
-        this.markerMeshes.set(marker.id, mesh);
-        this.markerGroup.add(mesh);
+      const icon = marker.icon ?? 'any';
+      let view = this.markerViews.get(marker.id);
+      if (!view || view.icon !== icon) {
+        if (view) this.dropMarker(marker.id, view);
+        view = this.buildMarker(icon);
+        this.markerViews.set(marker.id, view);
       }
+
       const visible = marker.floor === floor;
-      mesh.visible = visible;
+      view.group.visible = visible;
       if (!visible) continue;
-      const scale = marker.low ? 0.34 : 1;
-      mesh.scale.set(1, 1, scale);
-      mesh.position.set(marker.x, marker.y, marker.z + 1.15 * scale);
-      const material = mesh.material as MeshBasicMaterial;
-      material.color.setHex(marker.colour);
-      for (const child of mesh.children) {
-        ((child as Mesh).material as MeshBasicMaterial).color.setHex(marker.colour);
-      }
+
+      const locked = marker.locked === true;
+      const low = marker.low === true;
+      view.group.position.set(marker.x, marker.y, marker.z);
+      for (const m of view.materials) m.color.setHex(marker.colour);
+
+      // Each marker on its own phase, so a hall of them shimmers rather than
+      // blinking in step like a fairground.
+      const phase = t + view.seed;
+      const size = low ? 0.62 : 1;
+      view.ring.scale.set(size, size, 1);
+      view.glow.scale.set(size, size, 1);
+      (view.ring.material as MeshBasicMaterial).opacity = locked ? 0.35 : 0.8 + 0.2 * Math.sin(phase * 2.4);
+      (view.glow.material as MeshBasicMaterial).opacity = locked ? 0.05 : 0.14 + 0.06 * Math.sin(phase * 2.4);
+
+      // A ripple going out from the ring: "here", said the way a sonar says it.
+      const cycle = (phase * 0.62) % 1;
+      const spread = size * (1 + cycle * 0.9);
+      view.ripple.scale.set(spread, spread, 1);
+      (view.ripple.material as MeshBasicMaterial).opacity = locked ? 0 : 0.55 * (1 - cycle) ** 2;
+
+      // A stud — one of a sweep, or the floor under a person — is the ring
+      // and nothing else. The person is the marker; a sweep of twelve with
+      // twelve beacons over it is a pole farm.
+      const tall = !low && !locked;
+      view.beam.visible = tall;
+      view.icon3d.visible = tall;
+      if (!tall) continue;
+
+      const hover = MARKER_HEIGHT + Math.sin(phase * 1.7) * 0.08;
+      view.beam.scale.set(1, hover - 0.1, 1);
+      view.beam.position.z = (hover - 0.1) / 2 + 0.05;
+      view.icon3d.position.z = hover + (icon === 'drop' ? 0 : 0.06);
+      view.icon3d.rotation.z = icon === 'droid' || icon === 'any' ? phase * 0.9 : 0;
+      if (icon === 'drop') view.icon3d.rotation.set(Math.PI, 0, phase * 0.9);
     }
 
-    for (const [id, mesh] of this.markerMeshes) {
-      if (!seen.has(id)) mesh.visible = false;
+    for (const [id, view] of this.markerViews) {
+      if (!seen.has(id)) view.group.visible = false;
     }
+  }
+
+  /**
+   * One marker: a ring on the floor with a glow inside it and a ripple going
+   * out, a thin beam, and an icon hovering at the top of the beam.
+   *
+   * All of it unlit, for the reason the old post was: Chapter I is played in
+   * a building at 0.18 light, and a lit marker there would be a rumour. The
+   * floor parts draw after the floor and never write depth, so they lie ON it
+   * rather than fighting it. The icon hovers at 2.35 m, a head above anyone
+   * in the building, so a job in a packed hall is never hidden by the people
+   * standing at it — and it is still depth-tested, so a job behind a wall
+   * stays behind the wall, as the post always did.
+   */
+  private buildMarker(icon: MarkerIcon): MarkerView {
+    const parts = this.markerParts;
+    const flat = (): MeshBasicMaterial =>
+      new MeshBasicMaterial({ transparent: true, depthWrite: false, side: DoubleSide });
+    const group = new Group();
+
+    const glow = new Mesh(parts.glow, flat());
+    const ring = new Mesh(parts.ring, flat());
+    const ripple = new Mesh(parts.ripple, flat());
+    for (const [k, m] of [glow, ring, ripple].entries()) {
+      m.position.z = 0.02 + k * 0.005;
+      m.renderOrder = 4 + k;
+    }
+
+    const beamMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0.35, depthWrite: false });
+    const beam = new Mesh(parts.beam, beamMaterial);
+    beam.rotation.x = Math.PI / 2;
+    beam.renderOrder = 7;
+
+    const iconMaterial = new MeshBasicMaterial();
+    const icon3d = new Mesh(parts[icon], iconMaterial);
+    // The dome is a hemisphere, which is built with its pole up the y axis.
+    if (icon === 'biggy') icon3d.rotation.x = Math.PI / 2;
+    // Tall shapes stand up the z axis like everything else in this world.
+    if (icon === 'any') icon3d.scale.set(1, 1, 1.45);
+    icon3d.renderOrder = 8;
+
+    group.add(glow, ring, ripple, beam, icon3d);
+    this.markerGroup.add(group);
+    return {
+      group,
+      ring,
+      ripple,
+      glow,
+      beam,
+      icon3d,
+      icon,
+      materials: [glow.material, ring.material, ripple.material, beamMaterial, iconMaterial] as MeshBasicMaterial[],
+      seed: this.markerViews.size * 1.37,
+    };
+  }
+
+  private dropMarker(id: string, view: MarkerView): void {
+    view.group.removeFromParent();
+    for (const m of view.materials) m.dispose();
+    this.markerViews.delete(id);
   }
 
   /**
@@ -1663,11 +1766,10 @@ export class BlockoutRenderer {
     });
     this.scene.clear();
     this.robots.clear();
-    // Shared between every marker, so the traversal above disposed it once per
-    // mesh and it still has to be dropped here — it is not owned by any of them.
-    this.markerGeometry.dispose();
-    this.markerDisc.dispose();
-    this.markerMeshes.clear();
+    // Shared between every marker, so the traversal above disposed them once
+    // per mesh and they still have to be dropped here — no marker owns them.
+    for (const geometry of Object.values(this.markerParts)) geometry.dispose();
+    this.markerViews.clear();
   }
 
   // -- the building ---------------------------------------------------------
@@ -2715,9 +2817,33 @@ export interface ObjectiveMarker {
   z: number;
   floor: Level;
   colour: number;
-  /** One of many. Drawn as a stud rather than a post. See `markers()`. */
+  /** One of many, or a person standing on it. Just the ring. See `markers()`. */
   low?: boolean;
+  /** Not yet available. A dim ring, no beacon. */
+  locked?: boolean;
+  /**
+   * What hovers over it: the robot it is for, when only one can do it; a
+   * diamond when anyone can; an arrow pointing down at a drop-off.
+   */
+  icon?: MarkerIcon;
 }
+
+export type MarkerIcon = 'any' | 'voxxy' | 'droid' | 'biggy' | 'drop';
+
+interface MarkerView {
+  group: Group;
+  ring: Mesh;
+  ripple: Mesh;
+  glow: Mesh;
+  beam: Mesh;
+  icon3d: Mesh;
+  icon: MarkerIcon;
+  materials: MeshBasicMaterial[];
+  seed: number;
+}
+
+/** Where a marker's icon hovers, metres off the floor. Above a person's head. */
+const MARKER_HEIGHT = 2.35;
 
 /**
  * Write a run of boxes into an instanced mesh at `from`.
