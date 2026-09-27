@@ -215,7 +215,7 @@ human answer is genuinely better than the agent's guess.
 | ~~How do robots climb stairs?~~ | ~~—~~ | **Settled 18 Sep: by `maxStepRise`. Voxxy 0.20 m, Droid 0.18 m, Biggy 0.00 — Biggy never climbs.** See SPEC § 5 |
 | ~~Does Biggy ever reach floor 1?~~ | ~~Thu 24 Sep~~ | **Settled 21 Sep: never. No goods lift. It is why Biggy cannot attend the keynote, and loaded it cannot even use the ramp.** |
 | ~~What is the failure state in Chapter II?~~ | ~~Sat 26 Sep~~ | **Settled 21 Sep: a room drains, goes dark and never returns. Three dark rooms end the day early.** |
-| Audio: generated or library? | Mon 28 Sep | Generated, so it belongs in the prompt log |
+| ~~Audio: generated or library?~~ | ~~Mon 28 Sep~~ | **Settled 27 Sep: mixed.** The robots and the UI are synthesised from the sim's own momentum; ambience and music are supplied files. See `docs/AUDIO.md` |
 | ~~Final title~~ | ~~Wed 30 Sep~~ | **Settled 18 Sep: _Ghost Light_** |
 
 All five closed on 21 Sep in one design pass; `docs/MECHANICS.md` is the
