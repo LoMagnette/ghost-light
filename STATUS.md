@@ -23,7 +23,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Robot models | 🔄 | Rebuilt against the sheets; `robot-models` pushed, **not merged** |
 | Attendees | 🔄 | Legs, hands, hair, lanyards; `attendees` partly pushed, **not merged** |
 | Shot-list photographs | 🔄 | **2 of 4** in the game: Room 8, BeJUG |
-| Audio | ⬜ | Nothing yet |
+| Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
+| Audio | ⬜ | Planned in `docs/AUDIO.md`; nothing playing yet |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
@@ -32,7 +33,7 @@ pie showData
     title Work items by state
     "Done" : 24
     "In progress" : 4
-    "To do" : 11
+    "To do" : 16
 ```
 
 ---
@@ -94,27 +95,13 @@ pie showData
 | Judge the feel: drive all three in the lab (`L`) | Human | Sun 27 Sep | 20 points, and only a person can judge it |
 | Check the frame rate on real hardware (`F1`), **high and low**, in a packed Chapter III | Human | Sun 27 Sep | Shadows, mood and the 13-box attendees are all new GPU cost; nothing measured in the sandbox counts |
 | Watch both wormholes once: faster, slower, or fine | Human | Sun 27 Sep | About 4 s to leave and 4 s to arrive, judged from frames only |
-| Audio: footfall per robot first, then ambience | Human generates · agent integrates | Mon 28 Sep | Open decision below |
+| **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
+| Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | Planned 27 Sep in `docs/AUDIO.md`, with the list of files and their names |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
 | README reread and tech/genAI description | Agent | Wed 30 Sep | |
 | `docs/PROMPTS.md` kept current | Agent | ongoing | Up to date through the attendees |
 | **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
-
-### Small, whenever there is a gap
-
-| What | Owner | Notes |
-|---|---|---|
-| Off-screen arrow labels overlap when two arrows land close together | Agent | Push them apart along the edge |
-| Watch the four drone flights against the blockout | Human | Not blocking |
-
-### Open decisions
-
-| Decision | Default if unanswered |
-|---|---|
-| Arrows in Chapter I: always, off, or only after 30 s without progress? | Always (current). Chapter I is about finding your way in the dark, and they point at every board |
-| Skin in the crowd: the stylised warm band, or a real range for the anonymous crowd only? | Stylised band (current). A real range on the named people is out either way |
-| Audio: generated or library? | Generated, so it belongs in the prompt log |
 
 ### If behind, cut in this order (from `ROADMAP.md`)
 
