@@ -23,7 +23,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Robot models | 🔄 | Rebuilt against the sheets; `robot-models` pushed, **not merged** |
 | Attendees | 🔄 | Legs, hands, hair, lanyards; `attendees` partly pushed, **not merged** |
 | Shot-list photographs | 🔄 | **2 of 4** in the game: Room 8, BeJUG |
-| Audio | ⬜ | Nothing yet |
+| Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
+| Audio | ⬜ | Nothing yet; brainstorm started 27 Sep |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
@@ -32,7 +33,7 @@ pie showData
     title Work items by state
     "Done" : 24
     "In progress" : 4
-    "To do" : 11
+    "To do" : 12
 ```
 
 ---
@@ -94,7 +95,8 @@ pie showData
 | Judge the feel: drive all three in the lab (`L`) | Human | Sun 27 Sep | 20 points, and only a person can judge it |
 | Check the frame rate on real hardware (`F1`), **high and low**, in a packed Chapter III | Human | Sun 27 Sep | Shadows, mood and the 13-box attendees are all new GPU cost; nothing measured in the sandbox counts |
 | Watch both wormholes once: faster, slower, or fine | Human | Sun 27 Sep | About 4 s to leave and 4 s to arrive, judged from frames only |
-| Audio: footfall per robot first, then ambience | Human generates · agent integrates | Mon 28 Sep | Open decision below |
+| **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
+| Audio: sound and music | Human generates · agent integrates | Mon 28 Sep | Brainstorm started 27 Sep; open decision below |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
 | README reread and tech/genAI description | Agent | Wed 30 Sep | |
