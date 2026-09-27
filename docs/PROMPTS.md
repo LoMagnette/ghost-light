@@ -4331,6 +4331,72 @@ eases, so TAB reads as the building turning its attention.
    scene, where it looked like it belonged to the person standing under it.
    Other-storey badges are dashed and say "upstairs".
 
+### Claude Opus — the robots, closer to their sheets
+
+**Prompt:**
+> Can we clean up the droid model so they match even more the assets
+
+**Iterations:** read the three sheets, build, two corrections from zoomed
+frames.
+
+**Read as all three robots** ("they"), not only Droid.
+
+**New ways to look.** `?zoom=n` and `?face` exist so a robot can be held
+against its sheet at the size the sheet draws it and from the front. The
+game camera sees about thirty pixels of Voxxy from behind, which is not
+enough to judge a face.
+
+**What changed, per sheet.** Voxxy got the visor band with two lit orange
+eyes, white ear discs, ears on top, long arms on thin black rods with fat
+banded forearms and black claws, and short black legs on orange feet. The
+white bands had been on its legs. Droid went from a mid-grey slab on posts
+to dark charcoal, with a tapered chest, copper-rimmed shoulder caps, a
+pelvis plate over a bare spine, thigh, knee and shin, arms jointed at the
+elbow, and an elongated dome of a head with amber eyes and a grille.
+Biggy's small separate head became a helmet capping the sphere, with a dark
+visor line, rivets, an antenna and a backpack; its arms are blue-grey with
+orange shoulder pads. Eyes are self-lit now, because the game has bloom.
+
+**What the frames corrected.**
+1. Voxxy's first face was a jack-o'-lantern. The visor blob crossed the
+   head blob, and at 10 × 7 segments the seam was ragged, so the band read
+   as a grin and the eye slits as teeth. The visor now stands proud of the
+   head, the eyes are ovals on its surface, and robot blobs are 18 × 12.
+2. Everything was also checked at game scale, where Droid's much darker
+   charcoal still reads against the hall floor.
+
+### Claude Opus — attendees at the robots' level of detail
+
+**Prompt:**
+> Can you remodel the attendee to make them more in the same level as the
+> robot in therm of details
+
+**Iterations:** 1 build, three zoomed film strips.
+
+**The budget is different.** Three robots can be thirty parts each; the
+crowd is up to four hundred walkers and five thousand seated people,
+instanced. A walker went from 4 boxes to at most 13, still in one draw.
+
+**What a person is now.** Two legs and two shoes swinging about the hip,
+arms swinging against them with a hand at the end, hair (one in seven
+without), a lanyard in the era's accent with a white badge on everyone (it is
+a conference), and a backpack on about a third. The seated audience gets
+hair too, which matters more than it sounds: the camera sees a full house
+from above and behind, so an audience is five hundred heads of hair, and
+without it they read as upholstery.
+
+**The walk comes from distance, not time.** The crowd simulation knows
+nothing about legs and stays that way. The renderer keeps an odometer per
+person, and one step is 0.36 m of it, so a queue shuffles and a hall-crosser
+strides. Jumps (a reseat or a reset) are not counted as walking.
+
+**A decision worth writing down: skin is stylised.** Heads were the crowd
+colour lifted, grey balls. They are now a narrow band of warm neutrals,
+leaning to the era colour, and deliberately not a range of real skin tones:
+that would put a claim about who somebody is on every head, including the
+real people in the Chapter II corridor, where the rule has always been
+silhouette facts only.
+
 ---
 
 ## Audio

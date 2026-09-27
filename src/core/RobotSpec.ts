@@ -163,7 +163,7 @@ export const DROID: RobotSpec = {
   maxStepRise: 0.18, // exactly the building's riser: these stairs and nothing steeper
   maxSlope: 0.27, //  60% of 855 N / (190 kg · g)
   payload: 90,  // a crate, and it still walks — reach and patience, laden
-  tint: 0x6b7378,
+  tint: 0x454b52, // dark charcoal, off the sheet — it was a mid grey
   trim: 0xb07434, // the ochre trim on its shoulders and hips
   signal: 0xf2c23a,
 };
@@ -182,7 +182,7 @@ export const BIGGY: RobotSpec = {
   maxStepRise: 0.0, // never. 430 kg on a staircase is an accident, not a route
   maxSlope: 0.11, //  60% of 774 N / (430 kg · g) — Biggy needs a gentle ramp
   payload: 400, // freight. Nearly its own mass again, and it shows in every metre
-  tint: 0x7d94a8,
+  tint: 0x5c6d80, // the sheet's weathered blue-grey
   trim: 0xd4622a, // the orange belly under the blue-grey shell
   signal: 0x5aa8ff,
 };

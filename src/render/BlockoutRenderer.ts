@@ -245,14 +245,22 @@ const REVEAL_POWER = 5;
 const GONE = 1e-4;
 
 /**
- * The two inks that are not a robot's own livery.
+ * The inks that are not a robot's own livery, all off the model sheets.
  *
- * A visor is dark whatever colour the machine is painted, and a lit eye is
- * a lit eye. Both are `MeshLambert` like everything else rather than
- * emissive: a glow would be the only bloom in a game that has none.
+ * A visor is dark whatever colour the machine is painted. The eyes are LIT
+ * — unlit material, so they read in Chapter I's dark and bloom on high
+ * quality, which is exactly what the sheets show: Voxxy's two orange slits
+ * behind the visor, Droid's two amber points. It used to be Lambert on the
+ * grounds that a glow would be the only bloom in a game that had none; the
+ * game has bloom now.
  */
-const VISOR = 0x14171a;
+const VISOR = 0x101316;
 const EYES = 0xffc061;
+const VOXXY_EYES = 0xff8a2a;
+/** Hands, joints and Voxxy's thin limbs: near black, never pure black. */
+const JOINT = 0x1c1e21;
+/** The white of Voxxy's ear discs and the logos on Voxxy's and Biggy's chests. */
+const LOGO = 0xf2f0ea;
 
 /**
  * The two animals. Not palette entries: see `placeAnimal`.
@@ -308,8 +316,40 @@ function tone(x: number, y: number, z: number): number {
 
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
-/** Boxes per standing person: legs, torso, two arms. */
-const PERSON_PARTS = 4;
+/**
+ * Boxes per standing person, at most: two legs and two shoes, a torso, two
+ * arms and two hands, a lanyard and its badge, hair, a backpack.
+ *
+ * It was four — legs as one slab, a torso, two arms in the same plane — and
+ * beside three robots built from twenty-odd parts each, the attendees read
+ * as a different game. Thirteen is still one instanced draw for the whole
+ * crowd; it is matrix writes per frame that it costs, and four hundred
+ * people is five thousand of them.
+ */
+const PERSON_PARTS = 13;
+/** The most a named person's face adds on top: see `placeFace`. */
+const FACE_PARTS = 5;
+/** One step, metres. The walk cycle is driven by distance, not by time. */
+const STEP_LENGTH = 0.36;
+/** How far a leg swings at a full walk, radians; arms swing against it. */
+const PERSON_LEG_SWING = 0.42;
+const PERSON_ARM_SWING = 0.3;
+/**
+ * Skin, as a narrow band of warm neutrals rather than a range of real
+ * skin tones.
+ *
+ * Deliberately stylised, like everything else about a figure six pixels
+ * wide. Real tones would put a claim about who somebody is on every head —
+ * including the real people in the corridor, where the rule has been
+ * silhouette facts only. A warm head over clothing is what makes a figure a
+ * PERSON rather than a post; its exact colour is not information this
+ * scale can carry honestly.
+ */
+const SKIN_BAND: readonly number[] = [0xd9b08c, 0xcfa27d, 0xc4956f, 0xba8a66];
+/** Hair, for the people who are nobody in particular. Named people have their own. */
+const HAIR_COLOURS: readonly number[] = [0x1f1b18, 0x2f241c, 0x4a3322, 0x6b4a2e, 0x8f7552, 0x7a7671];
+/** How far every head and hair colour leans to the era's crowd colour, 0..1. */
+const ERA_TINT = 0.22;
 /** Blobs per person: the shoulder mass and the head. */
 const PERSON_BLOBS = 2;
 
@@ -392,7 +432,6 @@ function smoothstep(x: number, from: number, to: number): number {
  */
 const TROUSER_SHADE = 0.62;
 const CLOTHING_RANGE: [number, number] = [0.78, 1.34];
-const HEAD_LIFT = 0.46;
 
 /**
  * Exponent that carries the chapter's light level into the renderer's space.
@@ -513,6 +552,8 @@ interface RobotPart {
    * the machine. See `animateRobot`.
    */
   role?: PartRole;
+  /** Self-lit: an eye. See `VOXXY_EYES`. */
+  glow?: boolean;
   x?: number;
   y?: number;
   z: number;
@@ -546,6 +587,32 @@ const MAX_HEAD = 0.65;
 const IDLE_AFTER = 1.4;
 
 const SCRATCH = new Object3D();
+/** For limbs, which pitch in their own frame before the heading turns them. */
+const LIMB = new Object3D();
+LIMB.rotation.order = 'ZYX';
+/**
+ * Each leg's offset from the centre line, and its width, out of the hip
+ * width in `core/Crowd` — so the two legs fill the hips the old single slab
+ * did, with a gap between them that says "two".
+ */
+const LEG_APART = PERSON_HIP / 4;
+const LEG_WIDE = PERSON_HIP * 0.4;
+
+/**
+ * A stable 0..1 for one person, from where they FIRST stood — so a walker
+ * keeps their hair and their backpack as they cross the hall. `salt` gives
+ * each question its own answer.
+ */
+const SEEDS = new WeakMap<object, number>();
+function personSeed(person: Person, salt: number): number {
+  let base = SEEDS.get(person);
+  if (base === undefined) {
+    base = tone(person.x, person.y, person.z + person.tint * 7);
+    SEEDS.set(person, base);
+  }
+  const n = Math.sin(base * 1000 + salt * 12.9898) * 43758.5453;
+  return n - Math.floor(n);
+}
 const SCRATCH_COLOUR = new Color();
 const SCRATCH_VIEW = new Vector3();
 
@@ -558,6 +625,8 @@ export class BlockoutRenderer {
   private controlled: Actor | undefined;
   /** Seconds of rendering, for anything that idles. */
   private clock = 0;
+  /** Each walker's odometer, for the walk cycle. See `gaitOf`. */
+  private readonly gaits = new WeakMap<Person, { x: number; y: number; walked: number; moving: number }>();
   /** The last frame's length, for easing in `setMarkers`, which runs first. */
   private lastDt = 1 / 60;
 
@@ -820,11 +889,19 @@ export class BlockoutRenderer {
      */
     const crowd = person.posted ? mix(this.palette.crowd, this.palette.accent, 0.34) : this.palette.crowd;
     const [low, high] = CLOTHING_RANGE;
-    return [
-      shade(crowd, TROUSER_SHADE),
-      shade(crowd, low + person.tint * (high - low)),
-      mix(crowd, this.palette.sign, HEAD_LIFT),
-    ];
+    // A head is skin, leaning a little to the era so a full room still
+    // photographs as one crowd. It used to be the crowd colour lifted, which
+    // made every head in the building a grey ball.
+    const skin = SKIN_BAND[Math.floor(personSeed(person, 3) * SKIN_BAND.length)];
+    return [shade(crowd, TROUSER_SHADE), shade(crowd, low + person.tint * (high - low)), mix(skin, crowd, ERA_TINT)];
+  }
+
+  /** Somebody's hair, when the objective has not said what it is. */
+  private hairOf(person: Person): number | undefined {
+    const seed = personSeed(person, 7);
+    // One in seven has none worth drawing: shaved, bald, or a hat's worth.
+    if (seed < 0.14) return undefined;
+    return mix(HAIR_COLOURS[Math.floor(seed * 997) % HAIR_COLOURS.length], this.palette.crowd, ERA_TINT);
   }
 
   /**
@@ -883,6 +960,27 @@ export class BlockoutRenderer {
         top: person.z + SEATED_ARM_TOP,
         colour: shade(clothing, 0.74),
       })),
+      /*
+       * Hair, and it is most of what you see of an audience: the camera
+       * looks at a room from above and behind the back row, so a full house
+       * is five hundred heads of hair. Without it, it was five hundred grey
+       * balls in rows, which read as seating upholstery.
+       *
+       * Always present, unlike a walker's: in the standing crowd a missing
+       * cap is somebody bald; baked into a room, the same odds read as
+       * holes. A seated person with no hair of their own gets the darkest.
+       */
+      {
+        bounds: rect(
+          spine - PERSON_HEAD_WIDE * 0.5,
+          person.y - PERSON_HEAD_WIDE * 0.47,
+          PERSON_HEAD_WIDE * 0.94,
+          PERSON_HEAD_WIDE * 0.94,
+        ),
+        bottom: person.z + SEATED_PERSON_HEIGHT - 0.07,
+        top: person.z + SEATED_PERSON_HEIGHT + 0.012,
+        colour: this.hairOf(person) ?? mix(HAIR_COLOURS[0], this.palette.crowd, ERA_TINT),
+      },
     ];
   }
 
@@ -1002,6 +1100,7 @@ export class BlockoutRenderer {
         i = this.placeAnimal(i, person);
         continue;
       }
+      if (i + PERSON_PARTS + FACE_PARTS > MAX_MOVERS * PERSON_PARTS) continue;
       const [trousers, plain, head] = this.personColours(person);
       const look = person.look;
       const clothing = look?.shirt ?? plain;
@@ -1011,15 +1110,35 @@ export class BlockoutRenderer {
       const up = (z: number): number => z * k;
 
       /*
-       * Legs, torso, two arms — all on the same centre line, so the heading
-       * rotates the whole figure and no part has to orbit another.
+       * The walk, from how far they have walked.
+       *
+       * The crowd simulation moves people and knows nothing about legs, and
+       * it should stay that way. So the renderer keeps an odometer per person
+       * and one step is `STEP_LENGTH` of it: somebody shuffling in a queue
+       * takes small steps, somebody crossing the hall strides, and somebody
+       * standing still has both feet down — all of it from where they
+       * actually went, which a clock could not know.
+       */
+      const gait = this.gaitOf(person);
+      const legSwing = Math.sin(gait.walked / STEP_LENGTH * Math.PI) * PERSON_LEG_SWING * gait.moving;
+      const armSwing = -legSwing * (PERSON_ARM_SWING / PERSON_LEG_SWING);
+
+      /*
+       * Two legs and two shoes, swinging about the hip.
        *
        * `thick` is front to back and `wide` is side to side. They were the
        * wrong way round in the first version, which turned every walker
        * ninety degrees: perfectly symmetrical at rest and unmistakable the
        * moment anyone walked anywhere.
        */
-      i = this.placePart(i, person, 0, up(PERSON_LEG_TOP), PERSON_THICK * 0.8, PERSON_HIP, trousers);
+      const hip = up(PERSON_LEG_TOP);
+      const shoe = shade(trousers, 0.5);
+      for (const [side, swing] of [[LEG_APART, legSwing], [-LEG_APART, -legSwing]] as const) {
+        i = this.placeLimb(i, person, hip, up(0.07), PERSON_THICK * 0.62, LEG_WIDE, trousers, side, 0, swing);
+        const foot = Math.sin(swing) * (hip - up(0.07));
+        i = this.placePart(i, person, 0, up(0.07), 0.24, LEG_WIDE * 1.05, shoe, side, foot + 0.04);
+      }
+
       i = this.placePart(
         i,
         person,
@@ -1031,29 +1150,48 @@ export class BlockoutRenderer {
       );
 
       /*
-       * Arms: two darker strips either side of the torso, in the SAME
-       * plane as it rather than proud of it.
+       * Arms: darker strips either side of the torso, swinging against the
+       * legs, with a hand at the end of each.
        *
-       * The pass before this one built them sticking out, measured the
-       * seven centimetres they protrude, found it came to two pixels, and
-       * deleted them — the right measurement answering the wrong question.
-       * An arm at this size does not read as a silhouette. It reads as
-       * tone: dark, light, dark across the body, which is the difference
-       * between a person and a slab.
+       * Still in the torso's plane rather than proud of it — at this size an
+       * arm reads as TONE, dark-light-dark across the body, and that is what
+       * stops a person being a slab. What is new is that they move, and that
+       * a skin-coloured hand at the bottom of each says "arm" rather than
+       * "stripe".
        */
       const sleeve = shade(clothing, 0.74);
       const reach = (PERSON_TORSO_WIDE + PERSON_ARM_WIDE) / 2;
-      for (const side of [reach, -reach]) {
-        i = this.placePart(
-          i,
-          person,
-          up(PERSON_ARM_BOTTOM),
-          up(PERSON_ARM_TOP),
-          PERSON_THICK,
-          PERSON_ARM_WIDE,
-          sleeve,
-          side,
-        );
+      const arm = up(PERSON_ARM_TOP) - up(PERSON_ARM_BOTTOM);
+      for (const [side, swing] of [[reach, armSwing], [-reach, -armSwing]] as const) {
+        i = this.placeLimb(i, person, up(PERSON_ARM_TOP), up(PERSON_ARM_BOTTOM), PERSON_THICK * 0.7, PERSON_ARM_WIDE, sleeve, side, 0, swing);
+        const hand = up(PERSON_ARM_TOP) - Math.cos(swing) * arm;
+        i = this.placePart(i, person, hand - up(0.08), hand, 0.08, PERSON_ARM_WIDE * 0.9, head, side, Math.sin(swing) * arm);
+      }
+
+      /*
+       * A lanyard and a badge, on everybody. It is a conference.
+       *
+       * The single most recognisable thing about a person at one: from the
+       * far side of an exhibition hall you cannot see a face, but you can see
+       * the white card on the chest and the strap it hangs from. The strap is
+       * the era's accent, as a conference's lanyards always are.
+       */
+      const chest = PERSON_THICK / 2 + 0.008;
+      i = this.placePart(i, person, up(1.2), up(PERSON_NECK - 0.02), 0.012, 0.05, this.palette.accent, 0, chest);
+      i = this.placePart(i, person, up(1.1), up(1.2), 0.014, 0.085, mix(LOGO, this.palette.crowd, 0.12), 0, chest);
+
+      // A backpack, on about a third of them. Conference people carry their
+      // laptop; the ones who do not are the speakers and the organisers.
+      if (!person.posted && look === undefined && personSeed(person, 11) < 0.32) {
+        i = this.placePart(i, person, up(0.98), up(1.36), 0.15, 0.3, shade(clothing, 0.55), 0, -(PERSON_THICK / 2 + 0.07));
+      }
+
+      // Hair for the people who are nobody in particular. The named ones get
+      // theirs from `placeFace`, which knows their hairline.
+      const hair = look === undefined ? this.hairOf(person) : undefined;
+      if (hair !== undefined) {
+        const w = PERSON_HEAD_WIDE;
+        i = this.placePart(i, person, up(PERSON_HEIGHT) - 0.07, up(PERSON_HEIGHT) + 0.012, w * 0.94, w * 0.96, hair, 0, -w * 0.05);
       }
 
       // Hair, beard and glasses, for the people who are somebody. Up to
@@ -1107,6 +1245,65 @@ export class BlockoutRenderer {
     this.moverMesh.setMatrixAt(index, SCRATCH.matrix);
     this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
     return index + 1;
+  }
+
+  /**
+   * A box hung from a joint at `from`, down to `to`, swung forward by
+   * `swing` radians about the figure's own side-to-side axis. A leg about
+   * its hip, an arm about its shoulder.
+   */
+  private placeLimb(
+    index: number,
+    person: Person,
+    from: number,
+    to: number,
+    thick: number,
+    wide: number,
+    colour: number,
+    across: number,
+    along: number,
+    swing: number,
+  ): number {
+    const half = (from - to) / 2;
+    const forward = along + Math.sin(swing) * half;
+    const c = Math.cos(person.heading);
+    const sn = Math.sin(person.heading);
+    LIMB.position.set(
+      person.x + c * forward - sn * across,
+      person.y + sn * forward + c * across,
+      person.z + from - Math.cos(swing) * half,
+    );
+    LIMB.scale.set(thick, wide, from - to);
+    // Pitch in the figure's own frame, then the heading: 'ZYX' is exactly
+    // that, and it is why this has its own Object3D rather than `SCRATCH`.
+    LIMB.rotation.set(0, swing, person.heading);
+    LIMB.updateMatrix();
+    this.moverMesh.setMatrixAt(index, LIMB.matrix);
+    this.moverMesh.setColorAt(index, SCRATCH_COLOUR.set(colour));
+    return index + 1;
+  }
+
+  /**
+   * How far somebody has walked, and whether they are walking now.
+   *
+   * Kept here and not in `Crowd`, because it is only ever needed to draw
+   * legs. A person who jumps a long way in a frame — reseated, reset, taken
+   * to another storey — has not walked it, so jumps are not counted.
+   */
+  private gaitOf(person: Person): { walked: number; moving: number } {
+    let g = this.gaits.get(person);
+    if (!g) {
+      g = { x: person.x, y: person.y, walked: personSeed(person, 5) * STEP_LENGTH * 2, moving: 0 };
+      this.gaits.set(person, g);
+    }
+    const d = Math.hypot(person.x - g.x, person.y - g.y);
+    g.x = person.x;
+    g.y = person.y;
+    if (d < 0.5) g.walked += d;
+    const speed = d / Math.max(this.lastDt, 1e-3);
+    const target = Math.min(1, speed / 0.8);
+    g.moving += (target - g.moving) * Math.min(1, this.lastDt * 8);
+    return g;
   }
 
   /** The same, for the rounded parts: the shoulders and the head. */
@@ -2304,67 +2501,145 @@ export class BlockoutRenderer {
 
     switch (spec.id) {
       /*
-       * A big oval head on a teardrop body, on two thin legs. The head is
-       * the widest thing on it — wider than the body it sits on — which is
-       * the whole of why Voxxy reads as small and friendly rather than as
-       * a canister.
+       * Voxxy, off its sheet: a big oval head, wider than the body, with a
+       * black visor band across the front and two orange eyes lit behind it;
+       * a white disc on each side of the head like a headphone, and two
+       * round ears on top. An egg of a body with a white cat on the chest.
+       * Long arms that hang from the shoulder on a thin black rod and end in
+       * a fat orange forearm with a white band and black claws. Two short
+       * black legs on small orange feet.
+       *
+       * The white bands were on its LEGS until 25 Sep. The sheet has them on
+       * the forearms, which are the most visible thing about Voxxy after the
+       * visor, and the legs are barely there at all.
        */
       case 'voxxy':
         return [
-          { shape: 'box', role: 'legL', y: 0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.47 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.25 * H, colour: dark },
-          { shape: 'blob', z: 0.24 * H, w: 1.5 * R, d: 1.32 * R, h: 0.45 * H, colour: spec.tint },
-          { shape: 'box', role: 'armL', y: 0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'box', role: 'armR', y: -0.85 * R, z: 0.31 * H, w: 0.24 * R, d: 0.3 * R, h: 0.3 * H, colour: spec.tint },
-          { shape: 'blob', role: 'head', z: 0.62 * H, w: 2 * R, d: 1.5 * R, h: 0.38 * H, colour: spec.tint },
-          // The dark visor across the front of the head, and the pale ring
-          // round it. Two of the three things anyone would draw from the
-          // sheet, and both survive being eight pixels wide.
-          { shape: 'box', role: 'head', x: 0.62 * R, z: 0.68 * H, w: 0.3 * R, d: 1.2 * R, h: 0.2 * H, colour: VISOR },
-          { shape: 'box', role: 'legL', y: 0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
-          { shape: 'box', role: 'legR', y: -0.72 * R, z: 0.1 * H, w: 0.32 * R, d: 0.36 * R, h: 0.06 * H, colour: spec.trim },
+          // Legs and feet.
+          { shape: 'box', role: 'legL', y: 0.3 * R, z: 0.03 * H, w: 0.12 * R, d: 0.12 * R, h: 0.12 * H, colour: JOINT },
+          { shape: 'box', role: 'legR', y: -0.3 * R, z: 0.03 * H, w: 0.12 * R, d: 0.12 * R, h: 0.12 * H, colour: JOINT },
+          { shape: 'blob', role: 'legL', x: 0.06 * R, y: 0.3 * R, z: 0, w: 0.4 * R, d: 0.28 * R, h: 0.06 * H, colour: spec.tint },
+          { shape: 'blob', role: 'legR', x: 0.06 * R, y: -0.3 * R, z: 0, w: 0.4 * R, d: 0.28 * R, h: 0.06 * H, colour: spec.tint },
+          // The egg, and the cat on it.
+          { shape: 'blob', z: 0.12 * H, w: 1.3 * R, d: 1.36 * R, h: 0.46 * H, colour: spec.tint },
+          { shape: 'box', x: 0.64 * R, z: 0.36 * H, w: 0.04 * R, d: 0.3 * R, h: 0.07 * H, colour: LOGO },
+          // Arms: a thin black rod from the shoulder, then the fat forearm.
+          { shape: 'box', role: 'armL', y: 0.74 * R, z: 0.4 * H, w: 0.1 * R, d: 0.1 * R, h: 0.14 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', y: -0.74 * R, z: 0.4 * H, w: 0.1 * R, d: 0.1 * R, h: 0.14 * H, colour: JOINT },
+          { shape: 'blob', role: 'armL', y: 0.86 * R, z: 0.1 * H, w: 0.44 * R, d: 0.44 * R, h: 0.32 * H, colour: spec.tint },
+          { shape: 'blob', role: 'armR', y: -0.86 * R, z: 0.1 * H, w: 0.44 * R, d: 0.44 * R, h: 0.32 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 0.86 * R, z: 0.2 * H, w: 0.46 * R, d: 0.46 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'armR', y: -0.86 * R, z: 0.2 * H, w: 0.46 * R, d: 0.46 * R, h: 0.06 * H, colour: spec.trim },
+          { shape: 'box', role: 'armL', x: 0.06 * R, y: 0.86 * R, z: 0.05 * H, w: 0.3 * R, d: 0.3 * R, h: 0.06 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', x: 0.06 * R, y: -0.86 * R, z: 0.05 * H, w: 0.3 * R, d: 0.3 * R, h: 0.06 * H, colour: JOINT },
+          // The head: the widest thing on it, which is why it reads as small
+          // and friendly rather than as a canister.
+          { shape: 'box', role: 'head', z: 0.54 * H, w: 0.14 * R, d: 0.14 * R, h: 0.05 * H, colour: JOINT },
+          { shape: 'blob', role: 'head', z: 0.57 * H, w: 1.9 * R, d: 2.3 * R, h: 0.42 * H, colour: spec.tint },
+          // The visor stands well PROUD of the head, so the head's surface
+          // never pokes through it: two low-poly spheres crossing each other
+          // made a ragged mouth of a band and the eyes read as teeth.
+          { shape: 'blob', role: 'head', x: 0.6 * R, z: 0.63 * H, w: 0.86 * R, d: 1.76 * R, h: 0.26 * H, colour: VISOR },
+          { shape: 'blob', role: 'head', glow: true, x: 1.01 * R, y: 0.36 * R, z: 0.735 * H, w: 0.06 * R, d: 0.3 * R, h: 0.07 * H, colour: VOXXY_EYES },
+          { shape: 'blob', role: 'head', glow: true, x: 1.01 * R, y: -0.36 * R, z: 0.735 * H, w: 0.06 * R, d: 0.3 * R, h: 0.07 * H, colour: VOXXY_EYES },
+          // The white discs on the sides, with the orange core the sheet
+          // draws in each.
+          { shape: 'blob', role: 'head', y: 1.12 * R, z: 0.66 * H, w: 0.62 * R, d: 0.22 * R, h: 0.24 * H, colour: LOGO },
+          { shape: 'blob', role: 'head', y: -1.12 * R, z: 0.66 * H, w: 0.62 * R, d: 0.22 * R, h: 0.24 * H, colour: LOGO },
+          { shape: 'blob', role: 'head', y: 1.2 * R, z: 0.72 * H, w: 0.26 * R, d: 0.12 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', role: 'head', y: -1.2 * R, z: 0.72 * H, w: 0.26 * R, d: 0.12 * R, h: 0.1 * H, colour: spec.tint },
+          // Two round ears on top.
+          { shape: 'blob', role: 'head', y: 0.62 * R, z: 0.92 * H, w: 0.34 * R, d: 0.34 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', role: 'head', y: -0.62 * R, z: 0.92 * H, w: 0.34 * R, d: 0.34 * R, h: 0.1 * H, colour: spec.tint },
         ];
 
       /*
-       * Tall and thin: a slab of a torso on long legs, arms to the knee,
-       * and a small domed head a long way up. Two metres of it, which is
-       * what makes the 2 m reach gate believable when it operates a counter
-       * nothing else can.
+       * Droid, off its sheet: two metres of dark charcoal. A broad armoured
+       * chest that tapers to a thin waist, round shoulder caps rimmed in
+       * copper, a V of pelvis plate over a bare spine. Long thighs, a knee
+       * joint, thin shins, flat feet. Arms long enough to reach the knee,
+       * jointed at the elbow. A small elongated dome of a head on a thin
+       * neck, with two amber eyes and a jaw grille.
+       *
+       * It was a mid grey slab on two posts. The sheet's machine is a much
+       * darker colour and a much more articulated shape, and the taper from
+       * shoulder to waist is what makes it read as a figure at 2 m tall.
        */
       case 'droid':
         return [
-          { shape: 'box', role: 'legL', y: 0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.36 * R, z: 0, w: 0.3 * R, d: 0.34 * R, h: 0.44 * H, colour: dark },
-          { shape: 'box', z: 0.42 * H, w: 0.62 * R, d: 0.78 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', z: 0.5 * H, w: 0.72 * R, d: 1.42 * R, h: 0.28 * H, colour: spec.tint },
-          // Shoulders proud of the torso, which is what makes the top half
-          // read as a chest rather than as a post.
-          { shape: 'box', y: 0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', y: -0.8 * R, z: 0.68 * H, w: 0.6 * R, d: 0.38 * R, h: 0.1 * H, colour: spec.trim },
-          { shape: 'box', role: 'armL', y: 0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'armR', y: -0.82 * R, z: 0.38 * H, w: 0.26 * R, d: 0.28 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'head', z: 0.78 * H, w: 0.3 * R, d: 0.32 * R, h: 0.06 * H, colour: dark },
-          { shape: 'blob', role: 'head', z: 0.84 * H, w: 0.56 * R, d: 0.6 * R, h: 0.16 * H, colour: spec.tint },
-          { shape: 'box', role: 'head', x: 0.3 * R, z: 0.88 * H, w: 0.1 * R, d: 0.4 * R, h: 0.05 * H, colour: EYES },
+          // Legs: thigh, knee, shin, foot.
+          { shape: 'box', role: 'legL', y: 0.34 * R, z: 0.27 * H, w: 0.42 * R, d: 0.44 * R, h: 0.2 * H, colour: spec.tint },
+          { shape: 'box', role: 'legR', y: -0.34 * R, z: 0.27 * H, w: 0.42 * R, d: 0.44 * R, h: 0.2 * H, colour: spec.tint },
+          { shape: 'blob', role: 'legL', y: 0.34 * R, z: 0.24 * H, w: 0.36 * R, d: 0.38 * R, h: 0.05 * H, colour: dark },
+          { shape: 'blob', role: 'legR', y: -0.34 * R, z: 0.24 * H, w: 0.36 * R, d: 0.38 * R, h: 0.05 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.34 * R, z: 0.03 * H, w: 0.26 * R, d: 0.28 * R, h: 0.22 * H, colour: spec.tint },
+          { shape: 'box', role: 'legR', y: -0.34 * R, z: 0.03 * H, w: 0.26 * R, d: 0.28 * R, h: 0.22 * H, colour: spec.tint },
+          { shape: 'box', role: 'legL', x: 0.1 * R, y: 0.34 * R, z: 0, w: 0.56 * R, d: 0.32 * R, h: 0.03 * H, colour: dark },
+          { shape: 'box', role: 'legR', x: 0.1 * R, y: -0.34 * R, z: 0, w: 0.56 * R, d: 0.32 * R, h: 0.03 * H, colour: dark },
+          // Pelvis plate and the bare spine above it.
+          { shape: 'box', z: 0.45 * H, w: 0.5 * R, d: 1.0 * R, h: 0.06 * H, colour: spec.tint },
+          { shape: 'box', z: 0.5 * H, w: 0.26 * R, d: 0.34 * R, h: 0.07 * H, colour: dark },
+          // The chest, as two stacked plates so it tapers: narrow at the
+          // waist, broad at the shoulders.
+          { shape: 'box', z: 0.56 * H, w: 0.6 * R, d: 1.3 * R, h: 0.08 * H, colour: spec.tint },
+          { shape: 'box', z: 0.63 * H, w: 0.7 * R, d: 1.72 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'box', x: 0.35 * R, z: 0.6 * H, w: 0.03 * R, d: 0.36 * R, h: 0.08 * H, colour: dark },
+          // Shoulder caps: a copper rim, the cap inside it.
+          { shape: 'blob', y: 0.96 * R, z: 0.64 * H, w: 0.62 * R, d: 0.5 * R, h: 0.11 * H, colour: spec.trim },
+          { shape: 'blob', y: 1.0 * R, z: 0.645 * H, w: 0.5 * R, d: 0.46 * R, h: 0.1 * H, colour: spec.tint },
+          { shape: 'blob', y: -0.96 * R, z: 0.64 * H, w: 0.62 * R, d: 0.5 * R, h: 0.11 * H, colour: spec.trim },
+          { shape: 'blob', y: -1.0 * R, z: 0.645 * H, w: 0.5 * R, d: 0.46 * R, h: 0.1 * H, colour: spec.tint },
+          // Arms, long enough to reach the knee.
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.5 * H, w: 0.2 * R, d: 0.22 * R, h: 0.15 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.5 * H, w: 0.2 * R, d: 0.22 * R, h: 0.15 * H, colour: spec.tint },
+          { shape: 'blob', role: 'armL', y: 1.04 * R, z: 0.48 * H, w: 0.2 * R, d: 0.22 * R, h: 0.04 * H, colour: dark },
+          { shape: 'blob', role: 'armR', y: -1.04 * R, z: 0.48 * H, w: 0.2 * R, d: 0.22 * R, h: 0.04 * H, colour: dark },
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.33 * H, w: 0.18 * R, d: 0.2 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.33 * H, w: 0.18 * R, d: 0.2 * R, h: 0.16 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', y: 1.04 * R, z: 0.28 * H, w: 0.22 * R, d: 0.18 * R, h: 0.05 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', y: -1.04 * R, z: 0.28 * H, w: 0.22 * R, d: 0.18 * R, h: 0.05 * H, colour: JOINT },
+          // Neck, and the elongated dome of a head.
+          { shape: 'box', role: 'head', z: 0.73 * H, w: 0.16 * R, d: 0.18 * R, h: 0.08 * H, colour: dark },
+          { shape: 'blob', role: 'head', x: 0.04 * R, z: 0.8 * H, w: 0.74 * R, d: 0.56 * R, h: 0.19 * H, colour: spec.tint },
+          { shape: 'box', role: 'head', glow: true, x: 0.38 * R, y: 0.12 * R, z: 0.88 * H, w: 0.04 * R, d: 0.08 * R, h: 0.02 * H, colour: EYES },
+          { shape: 'box', role: 'head', glow: true, x: 0.38 * R, y: -0.12 * R, z: 0.88 * H, w: 0.04 * R, d: 0.08 * R, h: 0.02 * H, colour: EYES },
+          { shape: 'box', role: 'head', x: 0.3 * R, z: 0.82 * H, w: 0.12 * R, d: 0.2 * R, h: 0.03 * H, colour: dark },
         ];
 
       /*
-       * A sphere with a cap on it and almost no legs. Wider than it is
-       * tall, which no other machine in the building is, and the reason a
-       * corridor that Voxxy treats as open floor is a decision for Biggy.
+       * Biggy, off its sheet: a great rusty-orange sphere that is most of
+       * the machine, under a blue-grey helmet that covers the top third of
+       * it, riveted, with a dark visor line where helmet meets belly and a
+       * thin antenna. Thick blue-grey arms at the sides with an orange pad
+       * at each shoulder and dark hands. Short dark legs. A backpack.
+       *
+       * The helmet used to be a separate small head sitting on top. On the
+       * sheet it is a CAP over the sphere, as wide as the sphere nearly, and
+       * that is the whole of Biggy's silhouette from the front.
        */
       default:
         return [
-          { shape: 'box', role: 'legL', y: 0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
-          { shape: 'box', role: 'legR', y: -0.42 * R, z: 0, w: 0.38 * R, d: 0.4 * R, h: 0.2 * H, colour: dark },
+          { shape: 'box', role: 'legL', y: 0.4 * R, z: 0, w: 0.4 * R, d: 0.36 * R, h: 0.13 * H, colour: dark },
+          { shape: 'box', role: 'legR', y: -0.4 * R, z: 0, w: 0.4 * R, d: 0.36 * R, h: 0.13 * H, colour: dark },
           // The belly, and it is the whole machine: 2R across, so the thing
           // you see is exactly the thing that collides.
-          { shape: 'blob', z: 0.14 * H, w: 2 * R, d: 1.9 * R, h: 0.66 * H, colour: spec.trim },
-          { shape: 'blob', z: 0.5 * H, w: 1.6 * R, d: 1.55 * R, h: 0.42 * H, colour: spec.tint },
-          { shape: 'blob', role: 'head', z: 0.76 * H, w: 0.9 * R, d: 0.86 * R, h: 0.24 * H, colour: spec.tint },
-          { shape: 'box', role: 'armL', y: 0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'armR', y: -0.88 * R, z: 0.3 * H, w: 0.34 * R, d: 0.3 * R, h: 0.34 * H, colour: dark },
-          { shape: 'box', role: 'head', x: 0.42 * R, z: 0.82 * H, w: 0.12 * R, d: 0.5 * R, h: 0.07 * H, colour: EYES },
+          { shape: 'blob', z: 0.09 * H, w: 1.94 * R, d: 2 * R, h: 0.78 * H, colour: spec.trim },
+          { shape: 'blob', x: 0.9 * R, z: 0.4 * H, w: 0.08 * R, d: 0.3 * R, h: 0.12 * H, colour: LOGO },
+          // The helmet over the top of it, and the dark line under its rim.
+          { shape: 'blob', z: 0.6 * H, w: 1.8 * R, d: 1.84 * R, h: 0.12 * H, colour: VISOR },
+          { shape: 'blob', z: 0.62 * H, w: 1.74 * R, d: 1.8 * R, h: 0.4 * H, colour: spec.tint },
+          { shape: 'blob', x: 0.66 * R, y: 0.3 * R, z: 0.86 * H, w: 0.14 * R, d: 0.14 * R, h: 0.07 * H, colour: dark },
+          { shape: 'blob', x: 0.66 * R, y: -0.3 * R, z: 0.86 * H, w: 0.14 * R, d: 0.14 * R, h: 0.07 * H, colour: dark },
+          { shape: 'box', z: 0.98 * H, w: 0.03 * R, d: 0.03 * R, h: 0.16 * H, colour: JOINT },
+          // The backpack.
+          { shape: 'box', x: -0.82 * R, z: 0.3 * H, w: 0.34 * R, d: 0.9 * R, h: 0.34 * H, colour: spec.tint },
+          // Arms: thick blue-grey, an orange pad at the shoulder, dark hands.
+          { shape: 'blob', role: 'armL', y: 0.92 * R, z: 0.54 * H, w: 0.4 * R, d: 0.34 * R, h: 0.12 * H, colour: spec.trim },
+          { shape: 'blob', role: 'armR', y: -0.92 * R, z: 0.54 * H, w: 0.4 * R, d: 0.34 * R, h: 0.12 * H, colour: spec.trim },
+          { shape: 'box', role: 'armL', y: 1.0 * R, z: 0.2 * H, w: 0.36 * R, d: 0.32 * R, h: 0.36 * H, colour: spec.tint },
+          { shape: 'box', role: 'armR', y: -1.0 * R, z: 0.2 * H, w: 0.36 * R, d: 0.32 * R, h: 0.36 * H, colour: spec.tint },
+          { shape: 'box', role: 'armL', x: 0.05 * R, y: 1.0 * R, z: 0.12 * H, w: 0.3 * R, d: 0.26 * R, h: 0.09 * H, colour: JOINT },
+          { shape: 'box', role: 'armR', x: 0.05 * R, y: -1.0 * R, z: 0.12 * H, w: 0.3 * R, d: 0.26 * R, h: 0.09 * H, colour: JOINT },
         ];
     }
   }
@@ -2380,9 +2655,11 @@ export class BlockoutRenderer {
      * from its soles — and the whole group is turned by the heading every
      * frame, so the parts never have to know which way it is facing.
      *
-     * Low segment counts on the blobs on purpose. The building is boxes and
-     * the crowd is boxes; a smooth sphere in the middle of that would be the
-     * one thing on screen pretending to be something else.
+     * Modest segment counts on the blobs. The building is boxes and the
+     * crowd is boxes, and a glassy sphere in the middle of that would be the
+     * one thing on screen pretending to be something else — but 10 × 7, the
+     * first count, made every place two blobs overlap a jagged seam, and on
+     * Voxxy's face the seam WAS the face. 18 × 12 is still visibly faceted.
      */
     const body = new Group();
     const tilt = new Group();
@@ -2415,8 +2692,14 @@ export class BlockoutRenderer {
       const geometry =
         part.shape === 'box'
           ? new BoxGeometry(part.w, part.d, part.h)
-          : new SphereGeometry(0.5, 10, 7);
-      const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: part.colour }));
+          : // Rounder than the building's blobs: the robots are the only
+            // curved things a player looks at closely, and at 10 × 7 two
+            // overlapping spheres meet in a jagged seam.
+            new SphereGeometry(0.5, 18, 12);
+      const mesh = new Mesh(
+        geometry,
+        part.glow ? new MeshBasicMaterial({ color: part.colour }) : new MeshLambertMaterial({ color: part.colour }),
+      );
       if (part.shape === 'blob') mesh.scale.set(part.w, part.d, part.h);
       mesh.position.set(part.x ?? 0, part.y ?? 0, part.z + part.h / 2);
       const pivot = part.role ? pivots[part.role] : undefined;

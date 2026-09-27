@@ -318,6 +318,11 @@ export class ChapterScreen implements Screen {
       this.actors.push(this.sim.add(actor));
     });
     this.controlled = this.actors[0];
+    // `?face` turns the cast towards the camera, which stands to the south-
+    // west: for holding the robots against the front views on their sheets.
+    if (new URLSearchParams(window.location.search).has('face')) {
+      for (const actor of this.actors) actor.body.heading = -Math.PI * 0.75;
+    }
 
     // Before the renderer, which bakes the seated crowd into each storey as
     // it builds it.
@@ -386,6 +391,13 @@ export class ChapterScreen implements Screen {
     }
 
     this.buildHud(game);
+    // `?zoom=4` looks at the game four times closer, for comparing the robots
+    // against their model sheets. Like `?at`, never reachable from the game.
+    const zoom = Number(new URLSearchParams(window.location.search).get('zoom'));
+    if (Number.isFinite(zoom) && zoom > 0) {
+      this.isoCamera.zoom = zoom;
+      this.isoCamera.updateProjectionMatrix();
+    }
     this.snapCamera();
 
     // Above the print and the end card: it is the last thing on screen as a

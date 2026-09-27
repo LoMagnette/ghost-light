@@ -1,7 +1,7 @@
 # Photographs
 
 Drop the four prints in here. Vite copies `public/` to the site root, so a
-file called `room-8.jpg` is served at `photos/room-8.jpg` and the game builds
+file called `room-8.jpeg` is served at `photos/room-8.jpeg` and the game builds
 that path off `import.meta.env.BASE_URL` — which is what makes it survive
 GitHub Pages serving the whole thing from a subdirectory.
 
@@ -15,7 +15,7 @@ could be judged before the art existed.
 To wire one up, add `file` beside the caption that is already there:
 
 ```ts
-photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpg' },
+photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpeg' },
 ```
 
 Each frame has exactly one robot in it, and only that robot can earn it —
@@ -24,10 +24,10 @@ player did not bring. Shoot them that way.
 
 | Activity | Robot in the frame | Caption | Suggested file |
 |---|---|---|---|
-| `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.jpg` |
-| `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.jpg` |
-| `photo-josh` | **Biggy**, with Josh sitting on it | Exhibition hall — Josh Long, riding Biggy | `josh-long.jpg` |
-| `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.jpg` |
+| `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.jpeg` |
+| `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.jpeg` |
+| `photo-josh` | **Biggy**, with Josh sitting on it | Exhibition hall — Josh Long, riding Biggy | `josh-long.jpeg` |
+| `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.jpeg` |
 
 The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
 no file: it is `selfie: true`, and the screen takes it off the game's own

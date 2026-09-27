@@ -1004,7 +1004,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
        */
       gates: { reach: 2.0 },
       seconds: 2.5,
-      photo: { caption: 'Room 8 — Droid, in front of the letters' },
+      photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpeg' },
     },
     {
       kind: 'dwell',
@@ -1022,7 +1022,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // should cover as little of it as a robot can.
       gates: { maxRadius: 0.4 },
       seconds: 2.5,
-      photo: { caption: 'BOF 1 — Voxxy under the BeJUG banner' },
+      photo: { caption: 'BOF 1 — Voxxy under the BeJUG banner', file: 'bejug-banner.jpeg' },
     },
     {
       kind: 'dwell',
