@@ -31,6 +31,12 @@ Two three.js facts that are not obvious and have already cost time:
   of the same type with different injected code are handed the SAME compiled
   program unless you set `customProgramCacheKey`. That is how the cutaway's
   solid and ghost passes would silently become the same pass.
+- **Changing how many lights there are recompiles every material.** three.js
+  builds each shader for an exact light count, so a `PointLight` added,
+  removed, or hidden with its parent mid-play is a visible stutter — the one
+  Chapter I had when a board came on (24 programs became 32). Build every
+  light a chapter will use at load, dark, on the scene, and switch them by
+  intensity. See `prepareZone` in `BlockoutRenderer`.
 - **The scene is linear, the palette is sRGB.** Every colour in
   `chapters/registry.ts` was measured off a photograph and tuned against a
   renderer that multiplied sRGB bytes. Multiplying a light by `lightLevel`

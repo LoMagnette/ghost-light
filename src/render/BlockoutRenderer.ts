@@ -706,7 +706,9 @@ export class BlockoutRenderer {
    * EVERY FRAME off a draining meter, and the unkeyed version hung a fresh
    * grid of point lights on the storey each time it was asked.
    */
-  private readonly zoneLights = new Map<string, PointLight[]>();
+  private readonly zoneLights = new Map<string, ZoneRig>();
+  /** The storey on show, for `powerRig`. Set every frame in `render`. */
+  private shownFloor: Level = 0;
 
   /**
    * The people on their feet, rewritten every frame.
@@ -1670,12 +1672,11 @@ export class BlockoutRenderer {
   lightZone(id: string, bounds: Rect, floor: Level, level: number): void {
     const existing = this.zoneLights.get(id);
     if (existing) {
-      const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
-      for (const light of existing) light.intensity = intensity;
+      existing.level = level;
+      this.powerRig(existing);
       return;
     }
 
-    const storey = this.storeys.get(floor);
     const made: PointLight[] = [];
 
     /*
@@ -1693,23 +1694,48 @@ export class BlockoutRenderer {
      */
     const across = Math.max(1, Math.round(bounds.w / REVEAL_SPACING));
     const along = Math.max(1, Math.round(bounds.h / REVEAL_SPACING));
-    const intensity = level * REVEAL_POWER * LAMBERT_SCALE;
     const range = REVEAL_SPACING * 1.8;
 
     for (let i = 0; i < across * along; i += 1) {
       const x = bounds.x + (bounds.w * ((i % across) + 0.5)) / across;
       const y = bounds.y + (bounds.h * (Math.floor(i / across) + 0.5)) / along;
-      const light = new PointLight(0xffe9c8, intensity, range, 1.0);
+      const light = new PointLight(0xffe9c8, 0, range, 1.0);
       light.position.set(x, y, 4.5);
-      // Parented to the storey so it goes away with it: a light left in the
-      // scene while its floor is hidden lights the floor you ARE looking at,
-      // through six metres of concrete.
-      if (storey) storey.add(light);
-      else this.scene.add(light);
+      /*
+       * On the SCENE, not on its storey, and that is the fix for a stutter.
+       *
+       * three.js compiles every material for an exact number of lights, so
+       * the moment that number changes, every shader in the building is
+       * rebuilt — which is the hitch the author felt when a Chapter I board
+       * came on. A light hung on its storey dropped out of the count every
+       * time the storey was hidden, so each flight of stairs rebuilt them
+       * too. On the scene they are always counted, and a rig on the storey
+       * not being looked at is dark instead of absent: see `powerRig`. It
+       * still cannot light the floor you are on through six metres of
+       * concrete, which is what the storey parenting was for.
+       */
+      this.scene.add(light);
       this.revealed.push(light);
       made.push(light);
     }
-    this.zoneLights.set(id, made);
+    const rig = { lights: made, floor, level };
+    this.zoneLights.set(id, rig);
+    this.powerRig(rig);
+  }
+
+  /**
+   * Build a light rig now, dark, so turning it on later is a change of
+   * brightness and never a change in how many lights there are. Call once
+   * per rig when a chapter loads. See `lightZone`.
+   */
+  prepareZone(id: string, bounds: Rect, floor: Level): void {
+    if (!this.zoneLights.has(id)) this.lightZone(id, bounds, floor, 0);
+  }
+
+  /** A rig at its level on the storey on show, and at nothing on any other. */
+  private powerRig(rig: ZoneRig): void {
+    const intensity = rig.floor === this.shownFloor ? rig.level * REVEAL_POWER * LAMBERT_SCALE : 0;
+    for (const light of rig.lights) light.intensity = intensity;
   }
 
   /**
@@ -1783,9 +1809,12 @@ export class BlockoutRenderer {
 
   /** Put the building back in the dark. Called when a round is restarted. */
   clearReveals(): void {
-    for (const light of this.revealed) light.removeFromParent();
-    this.revealed.length = 0;
-    this.zoneLights.clear();
+    // Dark, not removed: removing them changes the light count and rebuilds
+    // every shader, which is the stutter `lightZone` exists to avoid.
+    for (const rig of this.zoneLights.values()) {
+      rig.level = 0;
+      this.powerRig(rig);
+    }
   }
 
   /**
@@ -1797,6 +1826,10 @@ export class BlockoutRenderer {
   render(floor: Level, actors: Actor[], alpha: number, dt: number): void {
     this.clock += dt;
     this.lastDt = dt;
+    if (floor !== this.shownFloor) {
+      this.shownFloor = floor;
+      for (const rig of this.zoneLights.values()) this.powerRig(rig);
+    }
     for (const [level, group] of this.storeys) group.visible = level === floor;
 
     this.ageMarks(dt);
@@ -3138,6 +3171,13 @@ export interface ObjectiveMarker {
 }
 
 export type MarkerIcon = 'any' | 'voxxy' | 'droid' | 'biggy' | 'drop';
+
+/** A zone's light rig: its lights, the storey they belong to, and how lit it is. */
+interface ZoneRig {
+  lights: PointLight[];
+  floor: Level;
+  level: number;
+}
 
 interface MarkerView {
   group: Group;

@@ -388,6 +388,20 @@ export class ChapterScreen implements Screen {
       .filter((r) => named.has(r.id))
       .map((r) => ({ id: r.id, floor: r.floor, bounds: r.bounds }));
 
+    /*
+     * Every light this chapter will ever switch on, built now and dark.
+     *
+     * A light that appears mid-chapter changes the scene's light count, and
+     * three.js answers that by recompiling every material in the building:
+     * the stutter the author felt when a Chapter I board came on. Built
+     * here, they are all counted from the first frame, and turning one on
+     * is only a change of brightness. See `BlockoutRenderer.lightZone`.
+     */
+    for (const a of chapter.objective.activities) {
+      if (a.reveal) this.blockout.prepareZone(a.id, a.reveal.bounds, a.reveal.floor);
+    }
+    for (const room of this.sessionRooms) this.blockout.prepareZone(`room:${room.id}`, room.bounds, room.floor);
+
     // A building this dark is unplayable without something to see by, and a
     // lamp on the robot is both the cheapest answer and the right one: it
     // makes the dark a thing you carry a hole in rather than a thing you
