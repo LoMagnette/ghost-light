@@ -31,9 +31,9 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 24
+    "Done" : 27
     "In progress" : 4
-    "To do" : 16
+    "To do" : 13
 ```
 
 ---
@@ -66,6 +66,9 @@ pie showData
 | Off-screen arrows and focus on the driven robot | `markers-2` | Went to `main` without a PR number |
 | Chapter I finishable: three boards, the dark, the cat and dog | — | |
 | MIT `LICENSE` and a README | — | README should be reread before submitting |
+| **The robots' feel, judged by a person** | — | 27 Sep: the author drove them and calls the feel OK. Closed; the movement numbers stay guarded by `npm run physics` |
+| **Both wormholes watched** | — | 27 Sep: the author says they look great. Pacing unchanged: about 4 s to leave, 4 s to arrive |
+| **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
 
@@ -74,7 +77,7 @@ pie showData
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
 | **Robots rebuilt against the model sheets**: Voxxy's visor, ears and banded arms; Droid dark and jointed; Biggy's helmet and backpack | `robot-models` | Pushed, harnesses pass, **not merged** | Open a PR and merge | Human |
-| **Attendees**: two legs and shoes, hands, hair, lanyard and badge, backpacks, a walk from distance | `attendees` (on top of `robot-models`) | Pushed up to the remodel; **3 newer commits not pushed** (the `.jpeg` names, a tool fix, the two photos wired) | Push `attendees` again, open a PR, merge. Check a packed Chapter III's frame rate | Human |
+| **Attendees**: two legs and shoes, hands, hair, lanyard and badge, backpacks, a walk from distance | `attendees` (on top of `robot-models`) | Pushed up to the remodel; **3 newer commits not pushed** (the `.jpeg` names, a tool fix, the two photos wired) | Push `attendees` again, open a PR, merge | Human |
 | **Shot-list photographs** | `attendees` | `room-8.jpeg` and `bejug-banner.jpeg` wired in. `room-8.jpeg` is 681 KB; a 1020 × 680 copy would be about a seventh of that | Add `josh-long.jpeg` (Biggy, Josh sitting on it) and `group.jpeg` (all three, Venkat) to `public/photos/`; the agent wires them | Human, then agent |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
@@ -92,9 +95,6 @@ pie showData
 |---|---|---|---|
 | **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
 | Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
-| Judge the feel: drive all three in the lab (`L`) | Human | Sun 27 Sep | 20 points, and only a person can judge it |
-| Check the frame rate on real hardware (`F1`), **high and low**, in a packed Chapter III | Human | Sun 27 Sep | Shadows, mood and the 13-box attendees are all new GPU cost; nothing measured in the sandbox counts |
-| Watch both wormholes once: faster, slower, or fine | Human | Sun 27 Sep | About 4 s to leave and 4 s to arrive, judged from frames only |
 | **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
 | Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | Planned 27 Sep in `docs/AUDIO.md`, with the list of files and their names |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
@@ -133,7 +133,7 @@ gantt
     section Merge
     Merge robot-models and attendees  :active, m1, 2026-09-27, 1d
     section Human
-    Play II and III, feel, frame rate :active, h1, 2026-09-27, 1d
+    Play Chapter II and III           :active, h1, 2026-09-27, 1d
     Last two photographs              :h2, 2026-09-27, 2d
     Playtest with a stranger          :t1, 2026-09-29, 1d
     Final submission                  :crit, s2, 2026-09-30, 1d

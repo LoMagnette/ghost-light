@@ -4428,6 +4428,38 @@ a stray `git stash` in the same command took my edit, comment and all, and
 a `sed` put the bare value back. I noticed it in the next output, restored
 the stash, and confirmed it was empty.
 
+### Claude Opus — the stutter when a Chapter I light comes on
+
+**Prompt:**
+> the frame rate is ok at the moment the only stutter I notice is when
+> turning on the light in chapter 1
+
+**Iterations:** 1, measured before and after.
+
+**Diagnosis from the symptom, then proof.** A hitch at the exact moment a
+light appears is three.js compiling each material for a light count, and a
+new light changing that count. The code confirmed it: each board built its
+point lights the moment it was tapped. Two more instances were hiding in the
+same design: the lights hung on their storey, so every flight of stairs
+changed the count, and R removed them all.
+
+**Measured, not argued.** A throwaway build exposed the renderer, and
+Voxxy was driven into the hall board while `renderer.info.programs` was
+sampled. Old code: 24 programs became 32 as the board came on, eight
+compiles in mid-play. With the fix: 24 throughout. The hook was reverted
+before committing.
+
+**The fix.** Every light rig a chapter will use is built dark at load, on
+the scene rather than on a storey, and switched by intensity. A rig on the
+storey not being looked at is at zero rather than absent, so it still cannot
+light the floor you are on through the ceiling. Written into CLAUDE.md's
+three.js facts, because the next light added mid-play would do it again.
+
+**Finding the board.** The first test drove the wrong way for 3 seconds and
+proved nothing, since the board never came on. Trying each direction from the
+same start found the two that reach it, and only then were the numbers worth
+reading.
+
 ---
 
 ## Audio
