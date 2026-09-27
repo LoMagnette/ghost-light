@@ -4397,6 +4397,37 @@ that would put a claim about who somebody is on every head, including the
 real people in the Chapter II corridor, where the rule has always been
 silhouette facts only.
 
+### Claude Opus — faster stairs, and a face in the dialogue box
+
+**Prompt:**
+> two thing I would like to adapt. First I feel that the robot are really
+> slow in the stairs making the gameplay unconfortable. Second when a dialog
+> is trigger it could be cool to see so king of picture of the person we are
+> speaking to in an frame next to the next. I'll provide the picture.
+
+**Stairs, measured before and after.** One constant, `STAIR_PACE`, caps
+speed on every flight and every rake. I drove each robot up the real west
+flight in the sim at both values: at 0.28, Voxxy took 6.4 s on the flight
+and Droid 9.3 s; at 0.6, 3.1 s and 4.4 s. It stays a fraction of each
+robot's own top speed, so Voxxy keeps its edge on stairs. `physics`,
+`traverse` and `objectives` still pass.
+
+**Portraits found by file name.** The author will supply the pictures, so
+the question was what makes adding one cheapest. They live in
+`src/portraits/` and are found at build time with `import.meta.glob`, keyed
+by the speaker's name as the box prints it ("Stephan Janssen" is
+`stephan-janssen.jpeg`). Nothing is wired per picture, a missing one costs
+nothing, and the files are fingerprinted. The alternative, paths under
+`public/`, would make every missing portrait a 404, and `npm run shoot`
+rightly fails on console errors. Until a picture lands the frame shows the
+speaker's initials in their colour, so the layout can be judged now. A
+README in the folder lists all thirteen speakers and their file names.
+
+**One thing I got wrong on the way.** Timing the old pace against the new,
+a stray `git stash` in the same command took my edit, comment and all, and
+a `sed` put the bare value back. I noticed it in the next output, restored
+the stash, and confirmed it was empty.
+
 ---
 
 ## Audio

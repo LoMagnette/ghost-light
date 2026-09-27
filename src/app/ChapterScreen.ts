@@ -40,6 +40,7 @@ import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS } from './dom';
 import { currentQuality } from './quality';
+import { portraitOf } from './portraits';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
@@ -61,6 +62,9 @@ interface ScreenMarker extends ObjectiveMarker {
   /** Seconds until it is gone, when it has a deadline. */
   left?: number;
 }
+
+/** The dialogue portrait's side, design pixels. Two lines of text and a name, and a little over. */
+const PORTRAIT = 92;
 
 /** Never more arrows than this. Past it the screen edge is a fence. */
 const ARROWS = 6;
@@ -194,6 +198,9 @@ export class ChapterScreen implements Screen {
   private talkWho!: HTMLElement;
   private talkText!: HTMLElement;
   private talkMore!: HTMLElement;
+  /** The speaker's picture, and whose it is, so it is rebuilt only on a change. */
+  private talkPortrait!: HTMLElement;
+  private portraitOfWho = '';
   /** "E  Talk to …", shown when you are in range and the box is shut. */
   private talkPrompt!: HTMLElement;
   /** Edge-triggered, exactly like `dropRequested`. */
@@ -806,7 +813,8 @@ export class ChapterScreen implements Screen {
       this.typed = 0;
     }
     this.typed = Math.min(said.text.length, this.typed + ChapterScreen.TYPE_RATE * dt);
-    this.talkBox.style.display = 'block';
+    this.talkBox.style.display = 'flex';
+    this.showPortrait(spec.name, tint);
     this.talkWho.textContent = spec.name;
     this.talkText.textContent = said.text.slice(0, Math.floor(this.typed));
     this.talkMore.textContent = this.typed >= said.text.length ? (more ? '▼' : '■') : '';
@@ -1572,6 +1580,8 @@ export class ChapterScreen implements Screen {
       border: `2px solid ${css(chapter.palette.text)}`,
       borderRadius: '3px',
       display: 'none',
+      gap: '18px',
+      alignItems: 'center',
       // Above the canvas and above the card, but it is the only thing that
       // ever overlaps either, so nothing else needs a z-index of its own.
       zIndex: '5',
@@ -1603,7 +1613,32 @@ export class ChapterScreen implements Screen {
       },
       '',
     );
-    this.talkBox.append(this.talkWho, this.talkText, this.talkMore);
+    /*
+     * The portrait: whoever is speaking, in a frame beside what they say.
+     *
+     * Every game with a text box that has ever made it feel like a
+     * CONVERSATION rather than a caption has a face in it. Framed in the
+     * speaker's own colour, like the box and the name, so the three read
+     * as one person. See `app/portraits.ts` for how a picture is found.
+     */
+    this.talkPortrait = el('div', {
+      flex: '0 0 auto',
+      width: `${PORTRAIT}px`,
+      height: `${PORTRAIT}px`,
+      boxSizing: 'border-box',
+      border: `2px solid ${css(chapter.palette.text)}`,
+      borderRadius: '3px',
+      overflow: 'hidden',
+      background: css(shade(chapter.palette.void, 2.2)),
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      font: `bold 26px ${SANS}`,
+      letterSpacing: '0.04em',
+    });
+    const words = el('div', { flex: '1 1 auto', minWidth: '0' });
+    words.append(this.talkWho, this.talkText, this.talkMore);
+    this.talkBox.append(this.talkPortrait, words);
     game.ui.append(this.talkBox);
 
     this.talkPrompt = label(28, VIEW_HEIGHT - 80, {
@@ -1662,6 +1697,34 @@ export class ChapterScreen implements Screen {
    * thing that decides when the conversation is finished the first time a
    * robot was driven out of the zone mid-sentence.
    */
+  /**
+   * Put a speaker's portrait in the frame: their picture if one has been
+   * supplied, their initials in their own colour until then. The initials
+   * are not an apology — they are how the size and the layout get judged
+   * before anybody has chosen a picture, the same bargain the prints made.
+   */
+  private showPortrait(who: string, tint: string): void {
+    this.talkPortrait.style.borderColor = tint;
+    if (who === this.portraitOfWho) return;
+    this.portraitOfWho = who;
+    const url = portraitOf(who);
+    if (url) {
+      const img = el('img', { width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
+      img.src = url;
+      img.alt = who;
+      this.talkPortrait.replaceChildren(img);
+      return;
+    }
+    const initials = who
+      .replace(/^The\s+/i, '')
+      .split(/\s+/)
+      .map((word) => word[0] ?? '')
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+    this.talkPortrait.replaceChildren(el('span', { color: tint }, initials));
+  }
+
   private updateTalk(dt: number): void {
     const found = this.talkHere();
 
@@ -1709,7 +1772,8 @@ export class ChapterScreen implements Screen {
     }
     this.typed = Math.min(line.length, this.typed + ChapterScreen.TYPE_RATE * dt);
 
-    this.talkBox.style.display = 'block';
+    this.talkBox.style.display = 'flex';
+    this.showPortrait(activity.who, tint);
     this.talkWho.textContent = activity.who;
     this.talkText.textContent = line.slice(0, Math.floor(this.typed));
     // The marker every text box in the world uses for "there is more", and
