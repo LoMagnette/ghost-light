@@ -103,29 +103,6 @@ pie showData
 | `docs/PROMPTS.md` kept current | Agent | ongoing | Up to date through the attendees |
 | **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
 
-### Design follow-ups, added 27 Sep
-
-| What | Owner | Notes |
-|---|---|---|
-| **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
-| **Show the object a robot-specific job is about** | Agent | When a job needs one robot, the THING should say why: a projector visibly two metres up in the booth, the cable behind the lectern, the adapter on the organisers' desk, the stack of chairs in the foyer, the keg, the shutter. The marker says whose job it is; the object should say why it is theirs. Props are `decor` in `kinepolis.ts` or drawn per activity |
-| **Chapter I: more cats, more over time** | Agent, one design question first | Cats appearing in more places as the chapter goes on, so the building fills with them the longer you take. Today there is one cat, and it starts the 45-second hunt for the dog. To settle first: is every new cat another threat with its own clock, or atmosphere around the one that matters? |
-| **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
-
-### Small, whenever there is a gap
-
-| What | Owner | Notes |
-|---|---|---|
-| Off-screen arrow labels overlap when two arrows land close together | Agent | Push them apart along the edge |
-| Watch the four drone flights against the blockout | Human | Not blocking |
-
-### Open decisions
-
-| Decision | Default if unanswered |
-|---|---|
-| Arrows in Chapter I: always, off, or only after 30 s without progress? | Always (current). Chapter I is about finding your way in the dark, and they point at every board |
-| Skin in the crowd: the stylised warm band, or a real range for the anonymous crowd only? | Stylised band (current). A real range on the named people is out either way |
-
 ### If behind, cut in this order (from `ROADMAP.md`)
 
 1. Chapter II shrinks to a 60-second set piece
