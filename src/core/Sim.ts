@@ -24,8 +24,18 @@ const MAX_STEPS_PER_FRAME = 8;
 /** Coefficient of restitution for robot/wall and robot/robot contacts. */
 const RESTITUTION = 0.18;
 
-/** Fraction of top speed a robot manages on stairs. See limitStairSpeed. */
-const STAIR_PACE = 0.28;
+/**
+ * Fraction of top speed a robot manages on stairs. See limitStairSpeed.
+ *
+ * 0.6, and it was 0.28 until the author played it and called the stairs
+ * uncomfortable. At 0.28 Droid crossed a 12 m flight at 1.2 m/s — ten
+ * seconds of holding a key — and the same cap applies to every rake in the
+ * building, so reaching any stage was a wade. At 0.6 Droid does 2.5 m/s,
+ * Voxxy 3.6, and a flight is about five seconds: still visibly slower than
+ * the floor, and still Voxxy's advantage, because it is a fraction of each
+ * machine's own top speed.
+ */
+const STAIR_PACE = 0.6;
 
 export interface Actor {
   body: Body;
