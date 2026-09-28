@@ -655,12 +655,12 @@ for (const room of auditoria) {
 }
 
 // --- every link must actually join the two places it claims to join --------
-// Two staircases out of the hall, the grand flight out of the concourse, plus
-// the steps down from the concourse into the hall. Four flights, plus one
-// rake per auditorium.
+// Two staircases out of the hall, the grand flight out of the concourse, the
+// steps down from the concourse into the hall, and the steps up into each of
+// the two BOF rooms. Six flights, plus one rake per auditorium.
 check(
-  KINEPOLIS.links.length === 4 + auditoria.length,
-  `expected ${4 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
+  KINEPOLIS.links.length === 6 + auditoria.length,
+  `expected ${6 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
 );
 for (const link of KINEPOLIS.links) {
   for (const floor of new Set([link.from, link.to])) {
@@ -745,10 +745,15 @@ for (const link of KINEPOLIS.links) {
 // simulation makes a robot stand on.
 
 /** What `BlockoutRenderer.datumFor` does. Keep the two in step. */
+// The renderer's rule, `datumFor` in BlockoutRenderer: a flight from the
+// storey datum, a piece that names its datum from that, anything else from
+// the plate under its centre.
 const datumFor = (piece) =>
   piece.linkId
     ? 0
-    : groundAt(KINEPOLIS, piece.floor, piece.bounds.x + piece.bounds.w / 2, piece.bounds.y + piece.bounds.h / 2);
+    : piece.datum !== undefined
+      ? piece.datum
+      : groundAt(KINEPOLIS, piece.floor, piece.bounds.x + piece.bounds.w / 2, piece.bounds.y + piece.bounds.h / 2);
 
 /**
  * A tread is a flat slab spanning one step and the simulation's surface is a

@@ -4951,6 +4951,118 @@ other. The author: "Just keep the steps and forget about the ramp."
 - **Dialogue:** the stand crew's line about the ramp now says Biggy does not
   do steps.
 
+### Clearing the rooms east of the reception
+
+> Let's continue improving the model. For this I would like for you to remove
+> all the rooms on the right side of the reception. just remove the wall we
+> gonna rebuild each room
+
+**Done (branch `reception-east`):**
+- **Removed:** BOF 1, 2 and 3, the three rooms east of the concourse. Its
+  east wall is now the building's edge until the rooms are rebuilt.
+- **Kept:** the toilets, which stand inside the concourse's north-east corner
+  rather than beside it.
+- **Parked:** the BeJUG photograph was in BOF 1, so its spot is now at
+  (20.0, -55.0), just inside the east wall. It goes back when BOF 1 does.
+
+### The toilets, in the top-right corner
+
+> Let's with the toilet they should on the top right corner. You can look at
+> this map to build them @references/venue/maps/toilet-reception.png
+>
+> there's some left over there
+
+**Done (branch `reception-east`):**
+- **Old block removed:** the toilets that stood inside the concourse's
+  north-east corner were the leftover. Their walls are gone.
+- **Rebuilt from the crop:** the toilets now sit in the building's north-east
+  corner, read at 0.079 m/px:
+  - a 1.77 m passage along the hall wall;
+  - the women's room, 5.34 m: basins on the west wall, four cubicles on the
+    east;
+  - the men's room, 3.93 m: two cubicles and two urinals on the west wall,
+    basins on the east;
+  - a 1.78 m lobby off reception, with both doors where the plan hangs them.
+- **Wall builder:** a room that sets `doorMargin` now gets its door even on a
+  short frontage. Without this the men's room had no wall on its lobby side.
+- **Not built:** the area under the "Toilets >" label (the plan doesn't say
+  what it is) and the 2.1 m service strip with the stair on the east edge.
+
+> the toilet are almost good just the wall in the back should one with the one behind
+
+**Done:** the passage along the hall wall is gone. It put a second wall
+behind the toilets' back wall. The toilets now run back to the hall-wall
+line, 5.87 m deep, so there is one wall. The fittings stay where the plan
+draws them, in the southern 4.1 m.
+
+> almost there theres now a missing wall
+
+**Done:** the back line was open for 1.9 m between the hall's south-east
+corner and the women's room. No room owned that stretch, because nothing is
+built under the label yet, so the wall builder left it open. It now has an
+envelope wall of its own, in `toiletFitOut`.
+
+> the wall is just too short compare to the one next to him
+
+**Done:** the renderer measures a wall from the floor under its centre and
+cuts it off 2.7 m above that. The new piece had no floor under it, so it was
+measured from the hall's level and came out 1.2 m lower than the toilet walls.
+A thin `landing` plate at concourse level (`TOILET_BACK_PLATE`) now stands
+under it, and the two tops meet.
+
+> You're still not there
+
+**Done:** the hall's own south wall, behind the unbuilt area, had the same
+fault: it was measured from the hall floor, so it came out 1.2 m low beside
+the new piece. The plate now runs the whole back of that area, from the
+concourse's east wall to the women's room. That puts the whole back line on
+the concourse datum, as the wall between the hall and the reception already
+is.
+
+### The BOF rooms
+
+> So the next part goes next to the wall next to the corridor that goes to the
+> toilet. It should share the coridor wall and extends until the front wall to
+> give you a width idea. It too separate room with small steps to get in. You
+> can you at the map here @references/venue/maps/bof-rooms.png
+
+**Done:**
+- **Two rooms, from `bof-rooms.png`:** BOF 1 (front) and BOF 2 (north), split
+  by the plan's partition. They share the toilet lobby's south wall and run
+  to the old BOF front line, across the whole east wing.
+- **Doors:** each has a ~2 m door off the reception, at the pier between the
+  two.
+- **Steps:** three small risers up inside each door, 3.5 m wide along the
+  wall as the plan draws them. The rooms stand 0.54 m over the concourse.
+  The plan doesn't say up or down, so I read "small steps to get in" as up.
+- **Wall rule:** a wall between two levels now reaches down to the lower
+  floor. Without it, the rooms' wall onto the reception floated 0.54 m over
+  the concourse.
+- **BeJUG photograph:** back in BOF 1 at (32.2, -57.0).
+- **Tests:** three new `traverse` scenarios. Voxxy climbs in, Biggy is
+  stopped at the foot, and the wall beside the door holds.
+
+> there's a bit a flickering on the stairs of those rooms
+
+**Done:** the rooms' floor plates were drawn over their own steps. Both are
+solid blocks from the ground up, so the plate and the top step shared a face
+and flickered where they met. Each plate now has its flight cut out
+(`voids`), the way a stairwell is cut out of the floor it arrives on.
+
+> the stairs goes down into the room not up
+
+**Done:**
+- **Steps flipped:** the steps now go down, and both rooms sit 0.54 m under
+  the reception.
+- **`Obstacle.datum`:** this is the plate a wall is measured from. The BOF
+  rooms are the first smaller room that is lower than what it faces, so
+  their wall onto the reception would have stood on their floor and been
+  cut off short. The wall builder now stands a wall between two levels on
+  the higher one and reaches `base` down to the lower one. The renderer and
+  `npm run venue` both read it.
+- **Tests:** the traverse scenario is now "Voxxy walks down the steps into
+  BOF 2".
+
 ---
 
 ## Audio

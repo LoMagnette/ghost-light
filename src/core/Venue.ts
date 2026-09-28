@@ -161,6 +161,19 @@ export interface Obstacle {
    */
   exterior?: boolean;
 
+  /**
+   * The plate this solid is measured from, when it is not the one under its
+   * centre. Only the renderer reads it.
+   *
+   * A wall between two levels is on both plates at once, and the one under
+   * its centre is the smaller room's. When the smaller room is the LOWER
+   * one — the BOF rooms, down three steps off the reception — the wall stood
+   * on that floor and was cut off 0.54 m below the reception's walls beside
+   * it. Such a wall is measured from the higher floor, and `base` takes it
+   * down to the lower one.
+   */
+  datum?: number;
+
   /** Biggy can shove this out of the way if its momentum is high enough. */
   movable?: boolean;
   /** kg, only meaningful when movable. */
