@@ -512,6 +512,16 @@ scenario(
 );
 
 /*
+ * The glass front is doors, every bay of it (28 Sep): come in off the
+ * forecourt through a bay well east of the entrance, between two mullions.
+ */
+scenario(
+  'Biggy drives in off the forecourt through the glass doors',
+  (r) => r.y > -59.5 && Math.abs(r.z - CONCOURSE_LEVEL) < 0.1,
+  () => drive('biggy', { x: 18.6, y: -63.5 }, NORTH, 6),
+);
+
+/*
  * The door behind the information island (`reception-desk.png`): out of the
  * staff floor behind the west desk, south towards the head of the flight.
  * The stair hall's west wall used to end 0.7 m in front of it.
