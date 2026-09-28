@@ -4951,6 +4951,20 @@ other. The author: "Just keep the steps and forget about the ramp."
 - **Dialogue:** the stand crew's line about the ramp now says Biggy does not
   do steps.
 
+### Clearing the rooms east of the reception
+
+> Let's continue improving the model. For this I would like for you to remove
+> all the rooms on the right side of the reception. just remove the wall we
+> gonna rebuild each room
+
+**Done (branch `reception-east`):**
+- **Removed:** BOF 1, 2 and 3, the three rooms east of the concourse. Its
+  east wall is now the building's edge until the rooms are rebuilt.
+- **Kept:** the toilets, which stand inside the concourse's north-east corner
+  rather than beside it.
+- **Parked:** the BeJUG photograph was in BOF 1, so its spot is now at
+  (20.0, -55.0), just inside the east wall. It goes back when BOF 1 does.
+
 ---
 
 ## Audio

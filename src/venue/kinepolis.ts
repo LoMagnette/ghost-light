@@ -676,17 +676,11 @@ const floor0Rooms: Room[] = [
      * plate at its edge, so there is nothing of it under here to uncover.
      */
   },
-  // BOF rooms, south-east of the concourse.
-  //
-  // There is no seminar suite here. An earlier pass read the plan's "∧ Rooms ∧"
-  // as labelling a room; it labels the grand stair BELOW it, and means "this
-  // way up to the cinema rooms". See `receptionStairs`.
-  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: rect(22.3, -60.8, 19.8, 7.6), elevation: CONCOURSE_LEVEL },
-  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: rect(22.3, -52.9, 19.8, 7.7), elevation: CONCOURSE_LEVEL },
-  // The strip the toilets used to hold. Three rooms of 7.6, 7.7 and 7.8 m on
-  // one 19.8 m frontage is what that side of the building always was; the
-  // toilets were only ever standing in the third of them. See `TOILETS`.
-  { id: 'bof-3', label: 'BOF 3', kind: 'service', floor: 0, bounds: rect(22.3, -45.2, 19.8, 7.8), elevation: CONCOURSE_LEVEL },
+  /*
+   * No rooms east of the concourse, for now. BOF 1, 2 and 3 stood here, and
+   * the author is rebuilding that side one room at a time (28 Sep), so the
+   * concourse's east wall is the building's edge until they come back.
+   */
   /*
    * The toilets, in the concourse's north-east corner — see `TOILETS` for why
    * they are there and not out in the service strip with the BOF rooms.

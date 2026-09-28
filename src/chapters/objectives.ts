@@ -1060,7 +1060,11 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // BOF 1, off the reception concourse. A Birds-of-a-Feather room is
       // where a user group actually meets, so it is where the banner of the
       // user group that started this conference hangs.
-      at: spot(0, 32.2, -57.0, 3.0),
+      //
+      // Parked inside the concourse's east wall while the BOF rooms are
+      // being rebuilt (28 Sep); it was (32.2, -57.0), and goes back into
+      // BOF 1 when BOF 1 does.
+      at: spot(0, 20.0, -55.0, 3.0),
       // Voxxy's. A BOF room is the smallest room in the building and full of
       // chairs, and the banner is the subject: the robot in front of it
       // should cover as little of it as a robot can.
