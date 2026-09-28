@@ -5063,6 +5063,36 @@ and flickered where they met. Each plate now has its flight cut out
 - **Tests:** the traverse scenario is now "Voxxy walks down the steps into
   BOF 2".
 
+### The centre of the reception
+
+> Great we are done with this part. The next one will be the hardest I think.
+> It the center of the reception since it has a bunch of wall a desk on one
+> side. and a door behind the desk. Thickest wall on the map are in reallity a
+> desk with an average height of 1,5m. there's multiple pillar. You will see 5
+> of them. then thin wall are in reallity real walls. here's the map
+> @references/venue/maps/reception-desk.png
+
+**Done (branch `reception-centre`):**
+- **Scale:** 0.0208 m/px. Three things agree on it: the pillars' 6.5 m
+  pitch, the island's 5.6 m and the flight's 15.9 m.
+- **Placed on the column grid:** `exhibition-floor.jpg` shows the five
+  pillars in line with the hall's door-wall columns (columns 2, 3 and 4), so
+  x comes from the grid and y from the head of the grand flight.
+- **Desks (1.5 m):** the north desk turning down the east side, the west
+  desk with a pillar in the corner, the inner L desk, and the free counter.
+  The counter is back where the drawing has it, 1.6 m off the head.
+- **Walls (thin):** the box between the inner desk and the east leg, the
+  wall running east from it, and the south wall with the door behind the
+  west desk, tied to the pillar at the head.
+- **Stair hall east side:** the east wall, the return to the column-4 pillar
+  and the thin wall down from it are now on their drawn line. The drawing's
+  flight is 15.9 m wide and this one is 9.55 (Room 7 upstairs cuts it off),
+  so there is flat concourse between the flight and that wall.
+- **Checks:** `venue` now counts 51 columns. The under-the-stair traverse
+  scenario comes in between the island and the counter.
+- **Left out:** the "i" in a circle (a floor symbol), and the box with a
+  scroll at the head of the flight, which isn't in the key.
+
 ---
 
 ## Audio
