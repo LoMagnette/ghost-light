@@ -498,7 +498,7 @@ const BREAKDOWNS: Activity[] = [
  * now, and both answers are defensible.
  */
 /** How far into the corridor the speakers stand, x. */
-const SPEAKER_X = -3.4;
+const SPEAKER_X = -2.8;
 
 function speaker(
   id: string,
@@ -515,9 +515,9 @@ function speaker(
     look,
     // The corridor's west side, outside the room they are on in. Not the
     // south end: floor 1 has no floor there, it has the grand stairwell.
-    // 3.4 m in from the west wall, not 4.0: the long tables along it
-    // between Rooms 5 and 6 take two metres, and a speaker stands in the
-    // corridor, not at a table.
+    // 4.35 m in from the west wall, not 3.75: the long tables along it
+    // between Rooms 5 and 6 take three metres with the gap behind them, and
+    // a speaker stands in the corridor, not at a table.
     at: spot(1, SPEAKER_X, y, 3.2),
     group: 'the speakers',
     optional: true,

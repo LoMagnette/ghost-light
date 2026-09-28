@@ -5491,6 +5491,21 @@ and the lens turned white.
   camera and only shows through the cutaway, like anything against a west
   wall.
 
+> put a metter between the chair and the wall btw the chairs are flickering
+
+**Done:**
+- **A metre off the wall:** the tables now leave a metre between the
+  wall-side chairs and the wall (`TABLE_OFF_WALL`). The speakers moved out to
+  x −2.8 to stay clear.
+- **The flicker was z-fighting:** faces lying in the same plane.
+  - A chair back started exactly where its seat ended and shared the seat's
+    side faces.
+  - Chair and table legs stopped flush with the underside of the seat or top.
+  - A stanchion's cap sat flush on its post.
+  - Each part now overlaps the next slightly and is inset from its edges.
+- **Checked:** `traverse` (all four doors, the stop at a table),
+  `objectives` and `shoot` pass.
+
 ---
 
 ## Audio

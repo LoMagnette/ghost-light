@@ -4764,7 +4764,8 @@ export function sessionLimits(inUse: readonly string[]): { solids: Obstacle[]; d
     decor.push({
       floor: 1,
       bounds: rect(x - 0.05, y - 0.05, 0.1, 0.1),
-      base: STANCHION_HEIGHT,
+      // Down over the post's top, not sitting on it: flush faces flicker.
+      base: STANCHION_HEIGHT - 0.02,
       height: STANCHION_HEIGHT + 0.05,
       material: 'stanchion',
     });
@@ -4843,34 +4844,38 @@ export function corridorTables(): { solids: Obstacle[]; decor: Decor[] } {
     const wall = side === -1 ? c.x : c.x + c.w;
     const out = (d0: number, d1: number): [number, number] =>
       side === -1 ? [wall + d0, d1 - d0] : [wall - d1, d1 - d0];
-    const [fx, fw] = out(0.05, TABLE_FOOTPRINT);
+    const [fx, fw] = out(TABLE_OFF_WALL + 0.05, TABLE_OFF_WALL + TABLE_FOOTPRINT);
     solids.push({ floor: 1, bounds: rect(fx, y0, fw, y1 - y0), height: 0.9, hidden: true });
 
     const tables = Math.floor((y1 - y0) / CORRIDOR_TABLE);
     const spare = (y1 - y0 - tables * CORRIDOR_TABLE) / 2;
-    const [tx, tw] = out(CHAIR_ROW, CHAIR_ROW + TABLE_DEEP);
+    const [tx, tw] = out(TABLE_OFF_WALL + CHAIR_ROW, TABLE_OFF_WALL + CHAIR_ROW + TABLE_DEEP);
     for (let i = 0; i < tables; i += 1) {
       const ty = y0 + spare + i * CORRIDOR_TABLE;
       // Butted end to end with a hairline between, so a run of them reads
       // as tables and not as one bar.
       decor.push({ floor: 1, bounds: rect(tx, ty + 0.01, tw, CORRIDOR_TABLE - 0.02), base: 0.71, height: 0.75, material: 'desk' });
       for (const ly of [ty + 0.08, ty + CORRIDOR_TABLE - 0.12]) {
-        decor.push({ floor: 1, bounds: rect(tx + 0.06, ly, tw - 0.12, 0.04), height: 0.71, material: 'desk' });
+        // Up into the top, not flush with it: two faces in one plane flicker.
+        decor.push({ floor: 1, bounds: rect(tx + 0.06, ly, tw - 0.12, 0.04), height: 0.72, material: 'desk' });
       }
       // Three chairs a side to a table.
       for (let k = 0; k < 3; k += 1) {
         const cy = ty + (CORRIDOR_TABLE / 3) * (k + 0.5);
         for (const [d0, facing] of [
-          [0.1, 1],
-          [CHAIR_ROW + TABLE_DEEP + 0.05, -1],
+          [TABLE_OFF_WALL + 0.1, 1],
+          [TABLE_OFF_WALL + CHAIR_ROW + TABLE_DEEP + 0.05, -1],
         ] as const) {
           const [sx, sw] = out(d0, d0 + CHAIR);
           decor.push({ floor: 1, bounds: rect(sx, cy - CHAIR / 2, sw, CHAIR), base: 0.42, height: 0.46, material: 'chair' });
-          // The back is on the side away from the table.
-          const back = facing === 1 ? d0 : d0 + CHAIR - 0.05;
+          // The back is on the side away from the table. Inset from the
+          // seat's edges and run down into it, so no face of the back lies in
+          // a plane with a face of the seat: coplanar faces were what made
+          // every chair in the row flicker (28 Sep).
+          const back = facing === 1 ? d0 + 0.01 : d0 + CHAIR - 0.06;
           const [bx, bw] = out(back, back + 0.05);
-          decor.push({ floor: 1, bounds: rect(bx, cy - CHAIR / 2, bw, CHAIR), base: 0.46, height: 0.86, material: 'chair' });
-          decor.push({ floor: 1, bounds: rect(sx + sw / 2 - 0.02, cy - 0.02, 0.04, 0.04), height: 0.42, material: 'stanchion' });
+          decor.push({ floor: 1, bounds: rect(bx, cy - CHAIR / 2 + 0.01, bw, CHAIR - 0.02), base: 0.43, height: 0.86, material: 'chair' });
+          decor.push({ floor: 1, bounds: rect(sx + sw / 2 - 0.02, cy - 0.02, 0.04, 0.04), height: 0.43, material: 'stanchion' });
         }
       }
     }
@@ -4908,6 +4913,11 @@ function doorAlong(id: string, side: -1 | 1): { from: number; to: number } | und
   return b.y + b.h - at > 1.0 ? { from: at, to: b.y + b.h } : undefined;
 }
 
+/**
+ * Wall to the back of the wall-side chairs, metres: a metre to get behind
+ * them and sit down (the author, 28 Sep).
+ */
+const TABLE_OFF_WALL = 1.0;
 /** Doorway to the first table, and last table to the next doorway, metres. */
 const TABLE_CLEAR = 2.0;
 /** One trestle table, end to end, and how deep it is. */
@@ -4916,7 +4926,7 @@ const TABLE_DEEP = 0.75;
 /** A chair, square, and the strip a row of them takes from the wall. */
 const CHAIR = 0.44;
 const CHAIR_ROW = 0.62;
-/** Wall to the back of the outer chairs, metres. */
+/** Back of the wall-side chairs to the back of the corridor-side ones, metres. */
 const TABLE_FOOTPRINT = CHAIR_ROW + TABLE_DEEP + CHAIR_ROW;
 
 /** The opening left in the middle of a session line, metres. Two people abreast, or Droid with room. */

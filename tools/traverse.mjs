@@ -418,8 +418,8 @@ for (const [room, y] of Object.entries(EAST_DOORS)) {
 }
 scenario(
   'Voxxy is stopped by a corridor table',
-  (r) => r.x > -5.2,
-  () => drive('voxxy', { x: -2.0, y: -33.0 }, WEST, 3, 1, DEVOXX_DAY),
+  (r) => r.x > -4.4,
+  () => drive('voxxy', { x: -1.0, y: -33.0 }, WEST, 3, 1, DEVOXX_DAY),
 );
 
 scenario(
