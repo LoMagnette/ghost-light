@@ -502,11 +502,11 @@ scenario(
 
 /*
  * The grand flight runs wall to wall now (`GRAND_EAST`), and its east part
- * comes up into the corridor's bay in front of Room 7. Up that part, from
- * the concourse.
+ * comes up into the widened corridor, where Room 7's frontage used to be.
+ * Up that part, from the concourse.
  */
 scenario(
-  'Voxxy climbs the east end of the grand flight into the corridor bay',
+  'Voxxy climbs the east end of the grand flight into the corridor',
   (r) => r.floor === 1 && r.x > 7.3,
   () => drive('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.5, y: GRAND.bounds.y - 0.6 }, NORTH, 14),
 );

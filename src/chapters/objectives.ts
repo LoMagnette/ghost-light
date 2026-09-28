@@ -75,6 +75,9 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
   return { floor: room.floor, bounds: room.bounds };
 };
 
+/** The keynote room. Spots on its stage are taken from its screen end. */
+const ROOM_8 = roomBounds('aud-8').bounds;
+
 // ---------------------------------------------------------------------------
 // Chapter I — three boards, and the light spreads
 // ---------------------------------------------------------------------------
@@ -186,7 +189,9 @@ const SILENCE: Activity[] = [
     // only way down is the rake, which is a real staircase of 0.18 m risers —
     // so this last board is also the only part of Chapter I that tests
     // whether you can slow a robot down on a slope.
-    at: spot(1, 35.3, -31.0, 2.6),
+    // From Room 8's screen end, so it goes where the room goes: the room
+    // moved 5.4 m east when the corridor was widened (28 Sep).
+    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -31.0, 2.6),
     after: ['board-hall', 'board-concourse'],
     reveal: { ...roomBounds('aud-8'), to: 0.62 },
   },
@@ -1037,7 +1042,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // has already proved a robot can reach. Biggy cannot: no goods lift,
       // and the rake is a real staircase. It is not in this photograph, and
       // that is the building's decision rather than mine.
-      at: spot(1, 34.2, -31.0, 3.0),
+      at: spot(1, ROOM_8.x + ROOM_8.w - 3.15, -31.0, 3.0),
       /*
        * Droid's, and the gate says why rather than who: the letters are
        * 1.5 m (`GLYPH_HEIGHT`), and Droid at 2.05 m is the only one of the

@@ -5125,6 +5125,20 @@ author: "You should widen the stair and widden the hallway upstairs".
 - **Tests:** a new `traverse` scenario, "Voxxy climbs the east end of the
   grand flight into the corridor bay".
 
+> You should havr widdent the full hallway not just on the leve of room 7
+
+**Done:**
+- **Whole corridor widened:** the corridor is 5.4 m wider on its east side
+  along its whole length (`CORRIDOR_EAST`). Every room on that side, 7 to
+  14, stands that much further east, each unchanged. The Room 7 bay is gone.
+- **Hall's east flight:** it stays on its old line and still lands inside
+  the corridor.
+- **Wall rule:** the rule about auditorium end-wall doors is reverted. With
+  Room 7 and Room 8 moving together, nothing needs it.
+- **Room 8 spots:** the amplifier rack and the letters photograph were
+  literals, so they are now taken from Room 8's screen end and move with
+  the room.
+
 ---
 
 ## Audio

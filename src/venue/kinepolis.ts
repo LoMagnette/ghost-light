@@ -969,7 +969,11 @@ export const KEYNOTE_ROOM = 8;
 /** Seats Devoxx actually sells in Room 8 today, against 746 on the 2012 plan. */
 export const KEYNOTE_SEATS_TODAY = 694;
 
-/** Half of the measured 14.3 m corridor. A concourse, not a passage. */
+/**
+ * The corridor's WEST half: half of the measured 14.3 m, which is where its
+ * west wall and the hall's flights still stand. Its east wall is further out
+ * than the other half, at `CORRIDOR_EAST`.
+ */
 const CORRIDOR_HALF = 7.15;
 
 /** South end of the southernmost pair of auditoriums. */
@@ -1074,17 +1078,27 @@ const GRAND_WEST = -2.4;
  * is on its x 887. The flight had stopped 5.25 m short of it, at the
  * corridor's east wall, and the concourse beside it was flat floor. The
  * author wants it to run to the wall and the hallway upstairs to widen to
- * take it (28 Sep), so Room 7 stands `EAST_BAY` further east and the
- * corridor has a bay in front of it. See `auditoriums`.
+ * take it: the whole hallway, not just in front of Room 7 (28 Sep). So the
+ * corridor's east wall, and every room on that side, stands `EAST_BAY`
+ * further east. See `CORRIDOR_EAST`.
  */
 const GRAND_EAST = planX(887);
 
 /**
- * How far Room 7 stands east of the corridor's wall: the corridor's bay in
- * front of it, as wide as the flight's overrun. Its west wall is centred on
- * the line the stair hall's east wall stands on downstairs.
+ * How much wider the corridor is on its east side than the 14.3 m it was
+ * measured at: the grand flight's overrun. The east wall is centred on the
+ * line the stair hall's east wall stands on downstairs.
  */
 const EAST_BAY = GRAND_EAST + WALL_THICKNESS / 2 - CORRIDOR_HALF;
+
+/**
+ * The corridor's east wall, and the frontage of every room on that side.
+ *
+ * The hall's east flight stays where it was, against the old line
+ * (`STAIR_EAST`). It is placed by the hall under it, not by this wall, and
+ * it still lands inside the corridor.
+ */
+const CORRIDOR_EAST = CORRIDOR_HALF + EAST_BAY;
 
 /**
  * The grand flight's pitch: the building's riser on a 0.26 m going.
@@ -1128,8 +1142,8 @@ const GRAND_LANDING = 1.2;
 /**
  * The WELL — the hole the grand flight comes up through. Exactly as wide as
  * the flight: walled on the west by the block round the curve, and on the
- * east by the wall between the corridor's bay and Room 7, so there is no
- * drop beside the flight to rail off.
+ * east by the corridor's east wall, so there is no drop beside the flight to
+ * rail off.
  */
 const GRAND_WELL = rect(
   GRAND_WEST,
@@ -1293,8 +1307,7 @@ function auditoriums(): {
   const place = (list: Auditorium[], side: -1 | 1, gapAfter = 0): number => {
     let y = SOUTH_END;
     for (const aud of list) {
-      // Room 7 stands back behind the corridor's bay: see `EAST_BAY`.
-      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF + (aud.number === 7 ? EAST_BAY : 0);
+      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_EAST;
       const bounds = rect(x, y, aud.depth, aud.frontage);
 
       /**
@@ -1430,17 +1443,7 @@ function auditoriums(): {
     label: 'Central Corridor',
     kind: 'corridor',
     floor: 1,
-    bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF * 2, northEnd - SOUTH_END),
-  });
-
-  // The bay in front of Room 7, which the grand flight comes up into. See
-  // `GRAND_EAST`.
-  rooms.push({
-    id: 'corridor-bay',
-    label: 'Central Corridor',
-    kind: 'corridor',
-    floor: 1,
-    bounds: rect(CORRIDOR_HALF, SOUTH_END, EAST_BAY, EAST[0].frontage),
+    bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF + CORRIDOR_EAST, northEnd - SOUTH_END),
   });
 
   // The curved concession foyer, north-west past Room 1 — the arc of counters
@@ -2599,17 +2602,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           // single doorway in the middle of the building and walled off the
           // thirteen doors the rooms had each opened for themselves.
           kind.push(0);
-        } else if (
-          !mine &&
-          theirs &&
-          sameLevel &&
-          !(room.kind === 'auditorium' && edge.horizontal && neighbour.kind === 'corridor')
-        ) {
-          // An auditorium is entered off its frontage onto the corridor, which
-          // is one of its long sides and never an end wall. Room 8's end wall
-          // faces the corridor's bay in front of Room 7, and it had punched a
-          // door into the side of its own rake. Room 1's door off the foyer,
-          // in its end wall, is the plan's and stays.
+        } else if (!mine && theirs && sameLevel) {
           kind.push(2); // room onto circulation — this one earns a door
           // ...but only onto circulation at its own level. BOF 3 stands on
           // the concourse, 1.2 m over the hall, and its north wall is the
@@ -3269,7 +3262,7 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
    */
   {
     floor: 1,
-    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF * 2 + 1, 1.2),
+    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF + CORRIDOR_EAST + 1, 1.2),
     kind: 'window',
   },
 ];
