@@ -592,15 +592,14 @@ const TOILET_LOBBY_RECT = rect(
  * off 2.7 m above that floor. Nothing is built under the "Toilets >" label
  * yet, so this stretch of wall stood on the hall's datum and was cut 1.2 m
  * lower than the toilets' walls beside it (the author, 28 Sep: "too short
- * compare to the one next to him"). A `landing` is a plate the wall
- * builder leaves alone, so this adds the floor and nothing else.
+ * compare to the one next to him"). So was the hall's own south wall west
+ * of it, for the same reason, so the plate runs the whole back of the
+ * unbuilt area, from the concourse's east wall to the women's room. That
+ * puts those walls on the concourse datum, as the wall between the hall and
+ * the reception already is. A `landing` is a plate the wall builder leaves
+ * alone, so this adds the floor and nothing else.
  */
-const TOILET_BACK_PLATE = rect(
-  HALL.x + HALL.w - WALL_THICKNESS / 2,
-  HALL.y - WALL_THICKNESS / 2,
-  WOMENS.x - (HALL.x + HALL.w - WALL_THICKNESS / 2),
-  WALL_THICKNESS,
-);
+const TOILET_BACK_PLATE = rect(EAST_WING_X, HALL.y - WALL_THICKNESS / 2, WOMENS.x - EAST_WING_X, WALL_THICKNESS);
 
 /**
  * What is in the two rooms, from the plan.
@@ -682,9 +681,10 @@ function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    *
    * It stands on `TOILET_BACK_PLATE`: see there for why it needs one.
    */
+  const hallCorner = HALL.x + HALL.w - WALL_THICKNESS / 2;
   solids.push({
     floor: 0,
-    bounds: TOILET_BACK_PLATE,
+    bounds: rect(hallCorner, TOILET_BACK_PLATE.y, WOMENS.x - hallCorner, WALL_THICKNESS),
     height: WALL_HEIGHT,
     exterior: true,
   });

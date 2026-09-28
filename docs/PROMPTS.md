@@ -5010,6 +5010,15 @@ measured from the hall's level and came out 1.2 m lower than the toilet walls.
 A thin `landing` plate at concourse level (`TOILET_BACK_PLATE`) now stands
 under it, and the two tops meet.
 
+> You're still not there
+
+**Done:** the hall's own south wall, behind the unbuilt area, had the same
+fault: it was measured from the hall floor, so it came out 1.2 m low beside
+the new piece. The plate now runs the whole back of that area, from the
+concourse's east wall to the women's room. That puts the whole back line on
+the concourse datum, as the wall between the hall and the reception already
+is.
+
 ---
 
 ## Audio
