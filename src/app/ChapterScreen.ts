@@ -1218,7 +1218,7 @@ export class ChapterScreen implements Screen {
     if (!swarm) return;
     this.crowd.clearCats();
     this.crowd.seedCats(Math.floor(Math.random() * 0x7fffffff));
-    this.crowd.spawnCat();
+    for (let i = 0; i < swarm.start; i += 1) this.crowd.spawnCat();
     this.nextCatAt = swarm.every;
     this.hordeCalled = false;
     for (const actor of this.actors) actor.body.speedScale = 1;

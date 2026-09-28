@@ -28,7 +28,7 @@
  */
 
 import { rectContains, type Level, type Rect, type Venue } from './Venue';
-import { groundAt } from './Venue';
+import { FLOOR_HEIGHT, groundAt } from './Venue';
 import type { Actor } from './Sim';
 import { ISO_AZIMUTH } from './Iso';
 
@@ -122,6 +122,10 @@ const CAT_LUNGE = 4.2;
 const CAT_FLEE = 4.5;
 /** Seconds a scattered cat runs before it is gone for good. */
 const CAT_FLEE_FOR = 3.5;
+/** m/s up or down a staircase, for a cat. Stairs slow a cat less than a robot. */
+const CAT_CLIMB = 2.2;
+/** Seconds between rebuilds of the way to the robot, at most. See `routeField`. */
+const ROUTE_EVERY = 0.2;
 /** How close to a robot a following cat settles, beyond the robot's own radius. */
 const CAT_SETTLE = 0.26;
 /** How close counts as underfoot, beyond the robot's radius. See `catsUnderfoot`. */
@@ -379,6 +383,8 @@ interface Mover extends Person {
   fleeing?: number;
   /** Where this cat is in its own lurch, so a horde does not surge in step. */
   lurch?: number;
+  /** Partway up or down a staircase. See `startClimb`. */
+  climb?: Climb;
   /** Where they are walking to. */
   tx: number;
   ty: number;
@@ -394,6 +400,25 @@ interface Mover extends Person {
 }
 
 /** Walkable cells of one storey, as a set of packed grid coordinates. */
+/** A cat on a staircase: where it got on, where it gets off, and how far it is. */
+interface Climb {
+  from: { x: number; y: number; z: number; floor: Level };
+  to: { x: number; y: number; z: number; floor: Level };
+  /** Metres along the flight, and its length. */
+  gone: number;
+  length: number;
+}
+
+/**
+ * A staircase as the floor plan sees it: a cell at its foot on one storey
+ * and a cell at its top on the other, and the two points a cat stands on to
+ * get on and off. See `portals`.
+ */
+interface Portal {
+  from: { floor: Level; key: number; x: number; y: number };
+  to: { floor: Level; key: number; x: number; y: number };
+}
+
 interface Floorplan {
   floor: Level;
   cells: Set<number>;
@@ -426,6 +451,17 @@ export class Crowd {
   /** Seconds the cats have been about, for their lurch. */
   private catClock = 0;
   private catTarget: { x: number; y: number; floor: Level; radius: number } | undefined;
+  /**
+   * The way to the robot, for every cell of both storeys: how many cells
+   * away it is, by the shortest walk, stairs included. Built outward from
+   * the robot by `routeField` and shared by every cat, so thirty cats cost
+   * one search, not thirty.
+   */
+  private route = new Map<number, number>();
+  private routeFrom = -1;
+  private routeAge = Infinity;
+  /** The staircases, found once. See `portals`. */
+  private stairs: Portal[] | undefined;
 
   private readonly venue: Venue;
   private readonly walkers: Mover[] = [];
@@ -809,6 +845,11 @@ export class Crowd {
   private stepCat(cat: Mover, dt: number): void {
     if (cat.hidden) return;
     const target = this.catTarget;
+    // Halfway up a flight, a cat finishes the flight, whatever else is going on.
+    if (cat.climb) {
+      this.stepClimb(cat, dt);
+      return;
+    }
     if (this.catMode === 'flee') {
       cat.fleeing = (cat.fleeing ?? 0) - dt;
       if (cat.fleeing <= 0) {
@@ -816,10 +857,9 @@ export class Crowd {
         return;
       }
       this.stepToward(cat, cat.tx, cat.ty, CAT_FLEE, 0.2, dt);
-    } else if (this.catMode === 'follow' && target && target.floor === cat.floor) {
-      const d = Math.hypot(target.x - cat.x, target.y - cat.y);
-      const speed = d < CAT_LUNGE_FROM ? CAT_LUNGE : CAT_CHASE * this.lurchOf(cat);
-      this.stepToward(cat, target.x, target.y, speed, target.radius + CAT_SETTLE, dt);
+    } else if (this.catMode === 'follow' && target) {
+      this.stepFollow(cat, target, dt);
+      return;
     } else {
       // Nowhere in particular: the same wander the crowd does, slower.
       const d = Math.hypot(cat.tx - cat.x, cat.ty - cat.y);
@@ -827,6 +867,219 @@ export class Crowd {
       else this.stepToward(cat, cat.tx, cat.ty, CAT_WANDER, 0, dt);
     }
     cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
+  }
+
+  /**
+   * A hunting cat's step: along the route to the robot, round whatever is
+   * in the way, and up or down the stairs if that is where the robot went.
+   *
+   * On the robot's own storey and within a couple of cells, the cat simply
+   * goes for it — that is the lunge. Otherwise it steps to whichever
+   * neighbouring cell is fewer cells from the robot, and if the nearest way
+   * on is a staircase it starts to climb. A cat that the route cannot reach
+   * at all (the robot is on a stage, or somewhere with no floor plan) waits
+   * where it is rather than wandering off.
+   */
+  private stepFollow(cat: Mover, target: { x: number; y: number; floor: Level; radius: number }, dt: number): void {
+    this.routeField(target, dt);
+    const plan = this.planOf(cat.floor);
+    let key = pack(Math.floor(cat.x / CELL), Math.floor(cat.y / CELL));
+    // Pushed off the plan by the others: carry on from the nearest cell that is on it.
+    if (!plan.cells.has(key)) key = this.nearestCell(plan, cat.x, cat.y) ?? key;
+    const here = this.route.get(nodeOf(cat.floor, key));
+    const d = Math.hypot(target.x - cat.x, target.y - cat.y);
+
+    if (cat.floor === target.floor && (here === undefined || here <= 2 || d < CAT_LUNGE_FROM)) {
+      const speed = d < CAT_LUNGE_FROM ? CAT_LUNGE : CAT_CHASE * this.lurchOf(cat);
+      this.stepToward(cat, target.x, target.y, speed, target.radius + CAT_SETTLE, dt);
+      cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
+      return;
+    }
+    if (here === undefined) return;
+
+    // The best way on: a neighbouring cell, or a staircase from this one.
+    let best = here;
+    let next: { x: number; y: number } | undefined;
+    let portal: Portal | undefined;
+    const [cx, cy] = unpack(key);
+    for (let i = 0; i < 8; i += 1) {
+      const ox = NEIGHBOURS[i * 2];
+      const oy = NEIGHBOURS[i * 2 + 1];
+      const n = pack(cx + ox, cy + oy);
+      if (!plan.cells.has(n)) continue;
+      // No cutting a corner a cat would have to walk through a wall to cut.
+      if (ox !== 0 && oy !== 0 && (!plan.cells.has(pack(cx + ox, cy)) || !plan.cells.has(pack(cx, cy + oy)))) continue;
+      const cost = this.route.get(nodeOf(cat.floor, n));
+      if (cost !== undefined && cost < best) {
+        best = cost;
+        next = { x: (cx + ox + 0.5) * CELL, y: (cy + oy + 0.5) * CELL };
+        portal = undefined;
+      }
+    }
+    for (const p of this.portals()) {
+      for (const [a, b] of [[p.from, p.to], [p.to, p.from]] as const) {
+        if (a.floor !== cat.floor || a.key !== key) continue;
+        const cost = this.route.get(nodeOf(b.floor, b.key));
+        if (cost !== undefined && cost < best) {
+          best = cost;
+          portal = p;
+          next = { x: a.x, y: a.y };
+        }
+      }
+    }
+    if (!next) return;
+
+    const speed = CAT_CHASE * this.lurchOf(cat);
+    if (portal) {
+      const [on, off] = portal.from.floor === cat.floor ? [portal.from, portal.to] : [portal.to, portal.from];
+      if (Math.hypot(on.x - cat.x, on.y - cat.y) < 0.4) {
+        this.startClimb(cat, on, off);
+        return;
+      }
+    }
+    this.stepToward(cat, next.x, next.y, speed, 0, dt);
+    cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
+  }
+
+  /**
+   * Build the route outward from the robot, when it has moved to a new cell
+   * or the old route is stale: a breadth-first search over both storeys'
+   * floor plans, eight ways round each cell and both ways up each staircase.
+   */
+  private routeField(target: { x: number; y: number; floor: Level }, dt: number): void {
+    this.routeAge += dt;
+    const plan = this.planOf(target.floor);
+    let key = pack(Math.floor(target.x / CELL), Math.floor(target.y / CELL));
+    // A robot somewhere the plan does not reach — a stage, a flight of
+    // stairs — is routed to from the nearest cell that is on it.
+    if (!plan.cells.has(key)) key = this.nearestCell(plan, target.x, target.y) ?? key;
+    const origin = nodeOf(target.floor, key);
+    if (origin === this.routeFrom && this.routeAge < ROUTE_EVERY) return;
+    this.routeFrom = origin;
+    this.routeAge = 0;
+
+    const route = new Map<number, number>([[origin, 0]]);
+    const queue: number[] = [origin];
+    const portals = this.portals();
+    for (let head = 0; head < queue.length; head += 1) {
+      const node = queue[head];
+      const cost = route.get(node) as number;
+      const floor = floorOfNode(node);
+      const cell = cellOfNode(node);
+      const cells = this.planOf(floor).cells;
+      const [cx, cy] = unpack(cell);
+      for (let i = 0; i < 8; i += 1) {
+        const ox = NEIGHBOURS[i * 2];
+        const oy = NEIGHBOURS[i * 2 + 1];
+        const n = pack(cx + ox, cy + oy);
+        if (!cells.has(n)) continue;
+        if (ox !== 0 && oy !== 0 && (!cells.has(pack(cx + ox, cy)) || !cells.has(pack(cx, cy + oy)))) continue;
+        const nn = nodeOf(floor, n);
+        if (route.has(nn)) continue;
+        route.set(nn, cost + 1);
+        queue.push(nn);
+      }
+      for (const p of portals) {
+        for (const [a, b] of [[p.from, p.to], [p.to, p.from]] as const) {
+          if (a.floor !== floor || a.key !== cell) continue;
+          const nn = nodeOf(b.floor, b.key);
+          if (route.has(nn)) continue;
+          // A flight is a long walk, and the route should know it.
+          route.set(nn, cost + 6);
+          queue.push(nn);
+        }
+      }
+    }
+    this.route = route;
+  }
+
+  /**
+   * Every staircase between the storeys, as a pair of floor-plan cells: the
+   * one at its foot and the one at its top, just off each end of the flight.
+   * Found from the venue's links, so a moved staircase moves the cats' way
+   * up with it.
+   */
+  private portals(): Portal[] {
+    if (this.stairs) return this.stairs;
+    const out: Portal[] = [];
+    for (const link of this.venue.links) {
+      if (link.from === link.to) continue;
+      const b = link.bounds;
+      const along = (v: number): { x: number; y: number } =>
+        link.axis === 'y' ? { x: b.x + b.w / 2, y: v } : { x: v, y: b.y + b.h / 2 };
+      const lo = link.axis === 'y' ? b.y : b.x;
+      const hi = lo + (link.axis === 'y' ? b.h : b.w);
+      // The low end is where height starts; step just off each end.
+      const [foot, top] = link.ascending ? [lo - 0.9, hi + 0.9] : [hi + 0.9, lo - 0.9];
+      const f = along(foot);
+      const t = along(top);
+      const footKey = this.nearestCell(this.planOf(link.from), f.x, f.y);
+      const topKey = this.nearestCell(this.planOf(link.to), t.x, t.y);
+      if (footKey === undefined || topKey === undefined) continue;
+      out.push({
+        from: { floor: link.from, key: footKey, ...f },
+        to: { floor: link.to, key: topKey, ...t },
+      });
+    }
+    this.stairs = out;
+    return out;
+  }
+
+  /** The walkable cell nearest a point, within a few cells, if there is one. */
+  private nearestCell(plan: Floorplan, x: number, y: number): number | undefined {
+    const cx = Math.floor(x / CELL);
+    const cy = Math.floor(y / CELL);
+    let best: number | undefined;
+    let bestD = Infinity;
+    for (let ox = -3; ox <= 3; ox += 1) {
+      for (let oy = -3; oy <= 3; oy += 1) {
+        const k = pack(cx + ox, cy + oy);
+        if (!plan.cells.has(k)) continue;
+        const d = Math.hypot((cx + ox + 0.5) * CELL - x, (cy + oy + 0.5) * CELL - y);
+        if (d < bestD) {
+          bestD = d;
+          best = k;
+        }
+      }
+    }
+    return best;
+  }
+
+  /** Get on a staircase at one end, to get off at the other. */
+  private startClimb(cat: Mover, on: { x: number; y: number; floor: Level }, off: { x: number; y: number; floor: Level }): void {
+    const zOn = groundAt(this.venue, on.floor, on.x, on.y);
+    // Measured in the storey it starts on, so the top of a flight up is a
+    // whole floor above, and the bottom of a flight down a floor below.
+    const zOff = groundAt(this.venue, off.floor, off.x, off.y) + (off.floor - on.floor) * FLOOR_HEIGHT;
+    cat.climb = {
+      from: { x: on.x, y: on.y, z: zOn, floor: on.floor },
+      to: { x: off.x, y: off.y, z: zOff, floor: off.floor },
+      gone: 0,
+      length: Math.hypot(off.x - on.x, off.y - on.y),
+    };
+  }
+
+  /**
+   * Partway up or down: along the flight at `CAT_CLIMB`, rising or falling
+   * with it, and onto the other storey halfway — which is where the renderer
+   * stops drawing it on the one and starts drawing it on the other.
+   */
+  private stepClimb(cat: Mover, dt: number): void {
+    const c = cat.climb as Climb;
+    c.gone = Math.min(c.length, c.gone + CAT_CLIMB * dt);
+    const f = c.length > 0 ? c.gone / c.length : 1;
+    cat.x = c.from.x + (c.to.x - c.from.x) * f;
+    cat.y = c.from.y + (c.to.y - c.from.y) * f;
+    cat.heading = Math.atan2(c.to.y - c.from.y, c.to.x - c.from.x);
+    const z = c.from.z + (c.to.z - c.from.z) * f;
+    const across = f >= 0.5;
+    cat.floor = across ? c.to.floor : c.from.floor;
+    cat.z = across ? z - (c.to.floor - c.from.floor) * FLOOR_HEIGHT : z;
+    if (f >= 1) {
+      cat.climb = undefined;
+      cat.tx = cat.x;
+      cat.ty = cat.y;
+    }
   }
 
   /**
@@ -1196,6 +1449,17 @@ export const SEATED_SPINE_BACK = 0.07;
 export const SEATED_LAP_FORWARD = 0.15;
 
 const NEIGHBOURS = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, 1, -1, -1, 1, -1, -1];
+
+/** A floor-plan cell on a particular storey, as one number: the route's key. */
+function nodeOf(floor: Level, cell: number): number {
+  return floor * 8_000_000 + cell;
+}
+function floorOfNode(node: number): Level {
+  return Math.floor(node / 8_000_000) as Level;
+}
+function cellOfNode(node: number): number {
+  return node % 8_000_000;
+}
 
 /** Grid coordinates into one number. Offset so negatives pack cleanly. */
 function pack(gx: number, gy: number): number {

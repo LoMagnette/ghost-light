@@ -204,6 +204,9 @@ export const SILENCE_OBJECTIVE: Objective = {
    * over.
    */
   swarm: {
+    // Five from the start, so the building is already somebody's when
+    // Voxxy arrives, and the first cat reached is rarely far.
+    start: 5,
     every: 20,
     max: 16,
     wake: 'cat',

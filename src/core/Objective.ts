@@ -75,6 +75,8 @@ export interface Objective {
  * more arriving. Everything else about them is the crowd's (`Crowd.spawnCat`).
  */
 export interface Swarm {
+  /** Cats in the building from the first frame. */
+  start: number;
   /** Seconds between one cat and the next, from the start of the chapter. */
   every: number;
   /** The most there will ever be. */
