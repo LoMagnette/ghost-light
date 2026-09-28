@@ -118,13 +118,32 @@ const HALL_NORTH = HALL.y + HALL.h;
 export const HALL_AREA_M2 = 2411.41;
 
 /**
- * The Devoxx polo pickup: a room behind the hall's east wall where it steps in.
+ * The hall's east side, which steps out twice going south.
  *
- * `hollywood-area.png` draws it as a room of its own in the set-back, with a
- * bank of doors onto the hall — not a box standing in the hall, which is what
- * it had been. Declared up here because the set-back is cut round it.
+ * Mapped off `polo-desk.png`, the author's crop of `exhibition-floor.jpg`
+ * (28 Sep), at that plan's 0.0798 m/px:
+ *   - the north 26.3 m, where the east wall stands on column line 7 (the
+ *     columns on it are built into it);
+ *   - a middle stretch, 2.4 m further out, with the polo pickup's counter
+ *     inside it, down to 40.5 m from the north wall;
+ *   - the rest, out to the full width.
+ * Beyond the first two is not hall. The plan leaves it white; the 2012
+ * drawing has back rooms there (the stock bar and stores), which nobody
+ * playing ever goes into. Until 28 Sep it was built as closed blocks, which
+ * read as rooms with no way in (the author: "some closed space that
+ * probably not be there"). Now it is outside: no floor, and a wall along
+ * the line.
  */
-const POLO = rect(21.9, HALL_NORTH - 19.9, 6.9, 6.6);
+const HALL_NE_WALL = -23.5 + 45.67; // column line 7: HALL.x + COLUMN_X[6]
+const HALL_MID_WALL = HALL_NE_WALL + 2.4;
+const HALL_STEP = HALL_NORTH - 26.3;
+const HALL_MID_FOOT = HALL_NORTH - 40.5;
+const HALL_EAST = HALL.x + HALL.w;
+/** The two pieces of the box that are outside, north then middle. */
+const HALL_OUTSIDE = [
+  rect(HALL_NE_WALL, HALL_STEP, HALL_EAST - HALL_NE_WALL, HALL_NORTH - HALL_STEP),
+  rect(HALL_MID_WALL, HALL_MID_FOOT, HALL_EAST - HALL_MID_WALL, HALL_STEP - HALL_MID_FOOT),
+];
 
 /**
  * The parts of the bounding box that are not exhibition floor.
@@ -134,25 +153,19 @@ const POLO = rect(21.9, HALL_NORTH - 19.9, 6.9, 6.6);
  * printed area was being met by a box that was missing 330 m² of its own:
  *
  *   - north-west, the toilets and the corridor in to them. 78 m².
- *   - north-east, where the east wall steps in for the northern 26 m of the
- *     hall, with the polo pickup behind it. 181 m², polo included. It was a
- *     72 m² recess, which is the set-back with two-thirds of it left out.
+ *   - north-east and east, outside the building: see `HALL_OUTSIDE`. These
+ *     collide but are not drawn, and the hall's plate has them cut out.
  *   - south-west, the curved cast concrete in the photographs, which ends in
  *     a notch 3.5 m deep beside the threshold steps. 45 m².
  *
  * The stair cores and the columns are not floor either, and `HALL_FLOOR_M2`
  * takes them off too.
  */
-const SETBACK_DEPTH = 26.3;
-
 function hallCutaways(): Obstacle[] {
-  const setbackFoot = HALL_NORTH - SETBACK_DEPTH;
-  const east = HALL.x + HALL.w;
   const solid: Obstacle[] = [
     { floor: 0, bounds: rect(HALL.x, HALL_NORTH - 6.0, 13.0, 6.0), height: 3.4 },
-    // The set-back, either side of the polo room it holds.
-    { floor: 0, bounds: rect(POLO.x, setbackFoot, east - POLO.x, POLO.y - setbackFoot), height: 3.4 },
-    { floor: 0, bounds: rect(POLO.x, POLO.y + POLO.h, east - POLO.x, HALL_NORTH - POLO.y - POLO.h), height: 3.4 },
+    // Outside, so nothing to see: there is no floor there to see it on.
+    ...HALL_OUTSIDE.map((bounds): Obstacle => ({ floor: 0, bounds, height: 3.4, hidden: true })),
   ];
 
   // South-west: the notch, running east to where the concourse begins, and
@@ -849,7 +862,7 @@ const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
 ];
 
 const floor0Rooms: Room[] = [
-  { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
+  { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL, voids: HALL_OUTSIDE },
   // After the hall, always: the wall builder asks "which room is on the far
   // side of this edge" and takes the first answer, and the answer for the
   // concourse's north wall has to be the hall.
@@ -897,7 +910,6 @@ const floor0Rooms: Room[] = [
   // its frontage, the men's at the east end.
   { id: 'toilets-women', label: 'Toilets', kind: 'service', floor: 0, bounds: WOMENS, elevation: CONCOURSE_LEVEL, doorSide: 'low', doorMargin: 0.5 },
   { id: 'toilets-men', label: 'Toilets', kind: 'service', floor: 0, bounds: MENS, elevation: CONCOURSE_LEVEL, doorSide: 'high', doorMargin: 0.7 },
-  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: POLO },
   {
     id: 'forecourt',
     label: 'Outside',
@@ -2393,6 +2405,26 @@ function presenterDesk(room: Rect, side: -1 | 1): Obstacle[] {
 const HALL_CUTAWAYS = hallCutaways();
 
 /**
+ * The hall's east wall where it steps: see `HALL_OUTSIDE`. North to south:
+ * down column line 7, out along the step, down the middle stretch, and out
+ * along its foot to the full width.
+ *
+ * The plan draws a door in the middle stretch, behind the counter, and a
+ * pair at its foot. Both lead into the back rooms, which are not built, so
+ * they are wall for now.
+ */
+function hallEastWalls(): Obstacle[] {
+  const t = WALL_THICKNESS;
+  const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: WALL_HEIGHT, exterior: true });
+  return [
+    wall(rect(HALL_NE_WALL - t / 2, HALL_STEP - t / 2, t, HALL_NORTH - HALL_STEP + t / 2)),
+    wall(rect(HALL_NE_WALL - t / 2, HALL_STEP - t / 2, HALL_MID_WALL - HALL_NE_WALL + t, t)),
+    wall(rect(HALL_MID_WALL - t / 2, HALL_MID_FOOT - t / 2, t, HALL_STEP - HALL_MID_FOOT + t)),
+    wall(rect(HALL_MID_WALL - t / 2, HALL_MID_FOOT - t / 2, HALL_EAST - HALL_MID_WALL + t / 2, t)),
+  ];
+}
+
+/**
  * Walkable floor of the hall: the bounding box less the pieces that are not
  * really in it. This is the number that should match the 2411.41 m² printed on
  * the plan, and tools/venue.mjs checks that it does.
@@ -2408,7 +2440,6 @@ const CORE_FOOTPRINT = (STAIR_WIDTH + WALL_THICKNESS * 2) * (STAIR_RUN + CORE_VE
 export const HALL_FLOOR_M2 =
   HALL.w * HALL.h -
   HALL_CUTAWAYS.reduce((sum, o) => sum + o.bounds.w * o.bounds.h, 0) -
-  POLO.w * POLO.h -
   CORE_FOOTPRINT * 2 -
   COLUMN_X.length * COLUMN_Y.length * COLUMN_SIZE * COLUMN_SIZE;
 
@@ -2578,6 +2609,13 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           // An opening wider than the flight standing in it. See HALL_OPENING.
           WALL_OPENINGS.some((o) => o.floor === room.floor && rectContains(o.bounds, px, py));
         if (crossing) {
+          kind.push(0);
+          continue;
+        }
+        // The hall's bounding box runs on past the building on the east:
+        // no wall on the box where the box is outside. `hallEastWalls`
+        // builds the real line.
+        if (room.kind === 'hall' && room.voids?.some((v) => rectContains(v, px, py))) {
           kind.push(0);
           continue;
         }
@@ -4407,6 +4445,44 @@ function receptionFitOut(): Obstacle[] {
 }
 
 /**
+ * The polo pickup: an L-shaped counter in the hall's middle east stretch.
+ *
+ * Off `polo-desk.png`. It is not a room: it is a desk standing in the hall,
+ * which is what the author wanted modelled (28 Sep). One run goes down the
+ * west side from just under the step, 7.0 m long, with the fittings on its
+ * inner face. The other goes along the south, out to the wall. The staff
+ * floor inside the L is reached through the gap between the counter's
+ * north end and the east wall. The public side is outside the L, where
+ * `POLO_DESK` is.
+ *
+ * The plan also draws a thin line round it, 1.2 m off the counter. It is
+ * not in the author's key, so it is left out. The column on line 7 stands
+ * in the south run, as the plan hides it there.
+ */
+/** A counter's depth: the plan's double line, fittings and all. */
+const POLO_COUNTER_DEPTH = 0.65;
+const POLO_WEST_RUN = rect(HALL_NE_WALL - 2.0, HALL_STEP - 7.1, POLO_COUNTER_DEPTH, 7.0);
+const POLO_SOUTH_RUN = rect(
+  POLO_WEST_RUN.x,
+  POLO_WEST_RUN.y,
+  HALL_MID_WALL - WALL_THICKNESS / 2 - POLO_WEST_RUN.x,
+  POLO_COUNTER_DEPTH,
+);
+
+/** Where you are served: the public side of the counter's west run. */
+export const POLO_DESK = {
+  floor: 0 as const,
+  x: POLO_WEST_RUN.x - 0.9,
+  y: POLO_WEST_RUN.y + POLO_WEST_RUN.h / 2,
+};
+
+function poloDesk(): Obstacle[] {
+  return [POLO_WEST_RUN, POLO_SOUTH_RUN].map(
+    (bounds): Obstacle => ({ floor: 0, bounds, height: COUNTER_HEIGHT, material: 'desk' }),
+  );
+}
+
+/**
  * The walls of the stair hall — the two the plan marks and the building had
  * none of.
  *
@@ -4604,6 +4680,8 @@ export const KINEPOLIS: Venue = {
     ...exhibitionColumns(),
     ...BOOTHS.solids,
     ...HALL_CUTAWAYS,
+    ...hallEastWalls(),
+    ...poloDesk(),
     ...auditoriumSolids,
     ...STAIRS.solids,
     ...stairCores(),
