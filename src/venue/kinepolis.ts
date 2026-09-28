@@ -771,6 +771,27 @@ const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, S
 const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
+ * The box each hall flight starts in, metres.
+ *
+ * `hollywood-area.png` draws both flights as enclosed cores: walls down both
+ * sides and across the north end, and at the foot a vestibule with a pair of
+ * doors in EACH side wall. You do not walk up to the bottom step from the
+ * hall; you go in at the side, turn, and climb. The author confirmed it
+ * against the building (28 Sep) — the flights had been open at the foot and
+ * along both flanks, which made them two ramps standing in the room.
+ *
+ * On the plan the vestibule is about 5.4 m of a 3.1 m-wide core and the doors
+ * sit 0.55–3.1 m from its north wall. The hall has 8.4 m between these feet
+ * and its north wall, so the vestibule keeps its proportions at 4 m and the
+ * doors stay in its northern half, with the doorway the building's usual 1.8 m
+ * pair of leaves.
+ */
+export const CORE_VESTIBULE = 4.0;
+export const CORE_DOOR = 1.8;
+/** From the vestibule's north wall to the near jamb of its side doors. */
+export const CORE_DOOR_SET = 0.5;
+
+/**
  * How much corridor is left at each side of the grand flight, metres.
  *
  * It used to be none: the flight was the full 14.3 m width of the corridor it
@@ -4172,6 +4193,37 @@ function grandWellHeadRails(): Obstacle[] {
   }));
 }
 
+/**
+ * The walls round the two hall flights — see `CORE_VESTIBULE`.
+ *
+ * Floor 0 only, and full clear height like a column: from the hall a stair
+ * core is a room, not a balustrade. The walls stand OUTSIDE the flight's own
+ * bounds, so nothing about the stair rule changes — the treads are still what
+ * a robot climbs or is refused by — and the only thing that has moved is
+ * where you can step onto the bottom one from.
+ */
+function stairCores(): Obstacle[] {
+  const walls: Obstacle[] = [];
+  const wall = (bounds: Rect): void => {
+    walls.push({ floor: 0, bounds, height: FLOOR_CLEAR });
+  };
+  for (const flight of [STAIR_WEST, STAIR_EAST]) {
+    const west = flight.x - WALL_THICKNESS;
+    const east = flight.x + flight.w;
+    const north = STAIR_FOOT_Y + CORE_VESTIBULE;
+    const doorTop = north - CORE_DOOR_SET;
+    const doorFoot = doorTop - CORE_DOOR;
+    for (const x of [west, east]) {
+      // Beside the flight and the south half of the vestibule, then the stub
+      // of wall between the doors and the north-east or north-west corner.
+      wall(rect(x, flight.y, WALL_THICKNESS, doorFoot - flight.y));
+      wall(rect(x, doorTop, WALL_THICKNESS, north - doorTop));
+    }
+    wall(rect(west, north, flight.w + WALL_THICKNESS * 2, WALL_THICKNESS));
+  }
+  return walls;
+}
+
 const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
@@ -4185,6 +4237,7 @@ export const KINEPOLIS: Venue = {
     ...HALL_CUTAWAYS,
     ...auditoriumSolids,
     ...STAIRS.solids,
+    ...stairCores(),
     ...RAILS.solids,
     ...grandWellHeadRails(),
     ...receptionFitOut(),

@@ -62,7 +62,7 @@ Module._resolveFilename = function (request, ...rest) {
 const { Body } = await import(pathToFileURL(join(out, 'core/Body.js')));
 const { Sim, makeActor, FIXED_DT } = await import(pathToFileURL(join(out, 'core/Sim.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
-const { KINEPOLIS } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
+const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
 rmSync(out, { recursive: true, force: true });
 
 /** Drive one robot from a point in a fixed world direction, and report where it stopped. */
@@ -83,6 +83,31 @@ function drive(robotId, from, dir, seconds, floor = 0) {
     minZ = Math.min(minZ, body.z);
   }
   return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, minZ, onLink: actor.onLink };
+}
+
+/**
+ * A drive in legs: each one a direction held for so many seconds.
+ *
+ * For anything that is not straight ahead — the hall flights are entered
+ * through a door in the side of their core, so reaching the bottom step is
+ * a turn.
+ */
+function route(robotId, from, legs, floor = 0) {
+  const sim = new Sim(KINEPOLIS);
+  const body = new Body(ROBOTS[robotId], from.x, from.y);
+  const actor = makeActor(body, floor);
+  sim.add(actor);
+
+  let peakZ = 0;
+  for (const [dir, seconds] of legs) {
+    const mag = Math.hypot(dir.x, dir.y);
+    Object.assign(actor.input, { dirX: dir.x / mag, dirY: dir.y / mag, throttle: 1, braking: false });
+    for (let t = 0; t < seconds; t += FIXED_DT) {
+      sim.advance(FIXED_DT);
+      peakZ = Math.max(peakZ, body.z);
+    }
+  }
+  return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, onLink: actor.onLink };
 }
 
 /**
@@ -158,6 +183,15 @@ const APPROACH = 2.2;
 // end at hall level — is the northern one, and the landing is south.
 const STAIR_FOOT = { x: -6.0, y: WEST_FLIGHT.bounds.y + WEST_FLIGHT.bounds.h + APPROACH };
 const STAIR_LANDING = { x: -6.0, y: WEST_FLIGHT.bounds.y - APPROACH };
+
+/*
+ * The core round the flight: its north wall, and the doors in its sides.
+ * STAIR_FOOT above is inside the vestibule, which is where the climbing
+ * scenarios want to start; these are about getting in.
+ */
+const CORE_NORTH = WEST_FLIGHT.bounds.y + WEST_FLIGHT.bounds.h + CORE_VESTIBULE;
+const CORE_DOOR_Y = CORE_NORTH - CORE_DOOR_SET - CORE_DOOR / 2;
+const FLIGHT_MID_X = WEST_FLIGHT.bounds.x + WEST_FLIGHT.bounds.w / 2;
 
 /*
  * The threshold between the hall and the concourse, READ OFF THE FLIGHT.
@@ -273,6 +307,35 @@ scenario(
   (r) => r.floor === 0 && r.peakZ < 0.1,
   () => drive('biggy', STAIR_FOOT, SOUTH, 16),
 );
+
+// The hall flights are cores: shut at the north end and along both flanks,
+// with a door in each side of the vestibule at the foot.
+scenario(
+  'Voxxy cannot walk onto a hall flight from the north',
+  (r) => r.peakZ < 0.1 && r.y > CORE_NORTH,
+  () => drive('voxxy', { x: FLIGHT_MID_X, y: CORE_NORTH + APPROACH }, SOUTH, 8),
+);
+
+scenario(
+  'Voxxy cannot step onto a hall flight off its flank',
+  (r) => r.peakZ < 0.1,
+  () => drive('voxxy', { x: WEST_FLIGHT.bounds.x - APPROACH, y: WEST_FLIGHT.bounds.y + 4 }, EAST, 6),
+);
+
+for (const [side, from, dir] of [
+  ['west', WEST_FLIGHT.bounds.x - APPROACH, EAST],
+  ['east', WEST_FLIGHT.bounds.x + WEST_FLIGHT.bounds.w + APPROACH, WEST],
+]) {
+  // Across into the vestibule, then turn south up the flight.
+  // A player eases off in the doorway; held flat out, Voxxy crosses the
+  // 2.3 m vestibule and leaves by the far door. 0.8–1.0 s all turn in.
+  const across = 0.9;
+  scenario(
+    `Voxxy goes in at the ${side} door and climbs to floor 1`,
+    (r) => r.floor === 1 && r.peakZ > 6.0,
+    () => route('voxxy', { x: from, y: CORE_DOOR_Y }, [[dir, across], [SOUTH, 12]]),
+  );
+}
 
 // The one that is easy to get wrong: walking into the TOP of a flight from the
 // floor below must be a wall, not a lift to the upper landing.
