@@ -75,6 +75,16 @@ const browser = await chromium.launch(
 );
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
+// The title sequence plays on a first visit, and every headless visit is a
+// first visit. These are photographs of the game, not of its intro.
+await page.addInitScript(() => {
+  try {
+    localStorage.setItem('ghost-light:intro-seen', '1');
+  } catch {
+    // An opaque origin has no storage; the menu then waits on the intro.
+  }
+});
+
 const errors = [];
 page.on('console', (m) => {
   if (m.type() === 'error') errors.push(m.text());

@@ -31,7 +31,8 @@ import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { el, MONO, SANS, SERIF } from './dom';
 import { currentQuality, setQuality } from './quality';
-import { isMuted, onMuteChange, playAmbience, playMusic } from './audio';
+import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic } from './audio';
+import { Intro, introWanted } from './Intro';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 240;
@@ -40,6 +41,9 @@ const CARD_GAP = 28;
 /** Seconds for the lens to ease from one era's grade to the next. */
 const GRADE_EASE = 1.6;
 
+/** Seconds the menu takes to come up once the intro has gone. */
+const INTRO_FADE = 1.2;
+
 export class MenuScreen implements Screen {
   private selected = 0;
   private cards: HTMLElement[] = [];
@@ -47,6 +51,10 @@ export class MenuScreen implements Screen {
   private backdrop!: BlockoutRenderer;
   private readonly isoCamera: OrthographicCamera = createIsoCamera();
   private drift = 0;
+  /** The title sequence, while it plays. See `Intro`. */
+  private intro: Intro | undefined;
+  /** Everything on the menu but the backdrop, so the intro can hold it back. */
+  private layer!: HTMLElement;
   /** The grade on screen, easing towards the selected chapter's. */
   private readonly shown: Required<Grade> = {
     tint: 0xffffff,
@@ -104,7 +112,10 @@ export class MenuScreen implements Screen {
       }),
     );
 
-    game.ui.append(
+    this.layer = el('div', { position: 'absolute', inset: '0', transition: `opacity ${INTRO_FADE}s` });
+    game.ui.append(this.layer);
+
+    this.layer.append(
       centred(70, { font: `44px ${SANS}`, color: '#f2f5f7', textShadow: '0 2px 18px rgba(0,0,0,0.9)', letterSpacing: '0.02em' }, GAME_TITLE),
       centred(132, { font: `15px ${SANS}`, color: '#8b9398', textShadow: '0 1px 8px rgba(0,0,0,0.9)' }, GAME_SUBTITLE),
     );
@@ -123,10 +134,10 @@ export class MenuScreen implements Screen {
       });
       card.addEventListener('click', () => this.routes.chapter(chapter.id));
       this.cards.push(card);
-      game.ui.append(card);
+      this.layer.append(card);
     });
 
-    game.ui.append(
+    this.layer.append(
       centred(
         VIEW_HEIGHT - 78,
         { font: `13px ${MONO}`, color: '#5b6266' },
@@ -150,40 +161,68 @@ export class MenuScreen implements Screen {
       graphics.textContent = `G   graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
     };
     showGraphics();
-    game.ui.append(graphics);
+    this.layer.append(graphics);
     const sound = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
     const showSound = (): void => {
       sound.textContent = `M   sound: ${isMuted() ? 'off' : 'on'}`;
     };
     showSound();
-    game.ui.append(sound);
+    this.layer.append(sound);
     this.stopListening = onMuteChange(showSound);
 
-    game.keyboard.on('KeyG', () => {
-      setQuality(currentQuality() === 'high' ? 'low' : 'high');
-      game.applyQuality();
-      showGraphics();
-    });
+    this.layer.append(
+      centred(VIEW_HEIGHT - 146, { font: `12px ${MONO}`, color: '#6f777c' }, 'I   intro'),
+    );
 
-    game.keyboard.on('ArrowLeft', () => this.move(-1));
-    game.keyboard.on('ArrowRight', () => this.move(1));
-    game.keyboard.on('Enter', () => this.routes.chapter(CHAPTERS[this.selected].id));
-    game.keyboard.on('Space', () => this.routes.chapter(CHAPTERS[this.selected].id));
-    // The movement lab is a tuning rig, not a chapter. It is reachable but not
-    // offered: it never appears as a card, because a judge choosing it by
-    // accident would be choosing a debug screen over the game.
-    game.keyboard.on('KeyL', () => this.routes.chapter(MOVEMENT_LAB.id));
+    // Bound only once the intro has gone, and rebound after a replay. Keys
+    // pressed while the words are up belong to the intro.
+    this.bindKeys = (): void => {
+      game.keyboard.on('KeyG', () => {
+        setQuality(currentQuality() === 'high' ? 'low' : 'high');
+        game.applyQuality();
+        showGraphics();
+      });
+
+      game.keyboard.on('ArrowLeft', () => this.move(-1));
+      game.keyboard.on('ArrowRight', () => this.move(1));
+      game.keyboard.on('Enter', () => this.routes.chapter(CHAPTERS[this.selected].id));
+      game.keyboard.on('Space', () => this.routes.chapter(CHAPTERS[this.selected].id));
+      // The movement lab is a tuning rig, not a chapter. It is reachable but not
+      // offered: it never appears as a card, because a judge choosing it by
+      // accident would be choosing a debug screen over the game.
+      game.keyboard.on('KeyL', () => this.routes.chapter(MOVEMENT_LAB.id));
+      game.keyboard.on('KeyI', () => this.playIntro(game));
+    };
 
     this.refresh();
+    if (introWanted()) this.playIntro(game);
+    else this.bindKeys();
+  }
+
+  private bindKeys: () => void = () => undefined;
+
+  private playIntro(game: Game): void {
+    game.keyboard.clearBindings();
+    this.layer.style.opacity = '0';
+    this.layer.style.pointerEvents = 'none';
+    const accent = `#${CHAPTER_ONE.palette.accent.toString(16).padStart(6, '0')}`;
+    this.intro = new Intro(game.ui, !audioUnlocked(), accent, () => {
+      this.intro = undefined;
+      this.layer.style.opacity = '1';
+      this.layer.style.pointerEvents = '';
+      this.bindKeys();
+    });
   }
 
   update(dt: number): void {
+    this.intro?.update(dt);
     this.drift += dt;
     this.moveBackdrop(dt);
     this.easeGrade(dt);
   }
 
   dispose(): void {
+    this.intro?.dispose();
     this.stopListening();
     this.cards = [];
     this.backdrop.dispose();

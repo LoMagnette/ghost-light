@@ -75,6 +75,7 @@ and none is reachable from inside it:
 | `?lab` | straight into the movement rig |
 | `?chapter=<id>` | straight into a chapter, no menu |
 | `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
+| `?intro` / `?nointro` | force the title sequence before the menu, or skip it (it otherwise plays once per browser; `shoot` and `peek` mark it seen) |
 | `?exit` | with `?chapter`, open that chapter's wormhole at once, if it has one |
 | `?high` / `?low` | force the graphics quality: shadows and mood, or the flat blockout |
 | `?zoom=n` | look n times closer — for holding a robot against its model sheet |

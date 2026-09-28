@@ -1469,6 +1469,52 @@ the far one. The building has no opinion about which side a desk goes (the AV
 crew decides, and the rooms mirror each other anyway), so this costs nothing
 and buys a desk you can see in all fourteen.
 
+### Claude Opus — an intro, and some lore
+
+**Prompt:**
+> All the branch you mentionned are merged now. I was thinking it would be a good thinking to give an intro to the game and communicate some lore.
+
+Two choices put to the author: a title sequence before the menu, and lore
+that hints rather than explains. The second keeps SPEC's rule for Chapter I,
+that the game never says why the building is empty; an intro that told you
+would spend the game's one mystery before a robot had moved.
+
+**The words** (`src/chapters/intro.ts`), in the order they appear: what a
+ghost light is; that theatres keep one against the dark, and some say for
+the ghosts; that this cinema held a conference every year for more than
+twenty years; that it is empty now and the power is off, nearly
+everywhere; that something small still walks it with a light of its own
+(Voxxy, and the lamp it carries); and that the building remembers, and
+power may show you — the wormhole back to JavaPolis, promised without being
+named. Nothing is said by or about anybody real.
+
+**It waits for a key first.** Not for effect: a browser will not play
+sound before a gesture, and the sequence is written to sit on Chapter I's
+music. The key that skips it cannot also start Chapter I: the menu's keys
+are bound only once the words have faded, 1.4 s later. Checked headless:
+wait, lines, skip to the menu, remembered on reload, replayed with I.
+
+**Then the author took the lore further:**
+> The intro a bit too light. It go a bit further in 2126 a robot and their space ship land on a lost planet call Earth and decide to research what what some left over of old scripture. Those talks about a time where human where writing code and love to chat talk about this hobby long gone. One of those temple what supposed to be a country just a bit larger then a stamps, in city well known at the time for it's harbor and diamonds... Antwerp.
+
+Rewritten to that frame in nine lines, the author's beats in the author's
+order: 2126; the ship and the lost planet; the scriptures; humans who wrote
+code and gathered by the thousand to talk about it; the temples; the
+country the size of a stamp and the city of the harbour and the diamonds;
+Antwerp. Then the two lines that tie it to the game: the dark temple with
+one light still burning, and the promise that it will show you what it was.
+The date and the city get a setting of their own, mono and spaced, and a
+large serif. About 50 s; any key still skips. Still unsaid, on purpose: why
+the humans are gone.
+
+**And it plays on its own:**
+> the intro should automatically played the first time you access the game
+
+No more "press any key" first. The catch is the browser's rule that a page
+makes no sound before a key or a click, so the first key while the words
+run turns the music on instead of skipping, and the hint says exactly that:
+"any key for sound · esc to skip". After that any key skips.
+
 Also caught here, and unrelated to the desk: `npm run shoot` was drawing 1217
 boxes a frame on the auditorium level and dropping one frame in five. The cull
 margin was 160 px, which sounds harmless and is an eighty percent increase in
