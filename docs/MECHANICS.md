@@ -148,7 +148,7 @@ Three `tap` activities, each raising the light in one zone:
 | 3 | Stage amplifier rack | Room 8 stage, storey 1, foot of the 4.5 m rake | the auditorium level |
 
 The building assembles itself around the player as they play. There is no score and no
-clock. The only thing in here that can be lost is the cat's threat, below. The reveal is the reward and it does not need
+clock on the chapter. What can be lost is the cats, below, and losing one ends the chapter. The reveal is the reward and it does not need
 another one.
 
 **The route is a wordless tutorial, and every beat uses geometry that already
@@ -173,12 +173,30 @@ kitten in the deck that ends it — the mechanic, not the wordmark, and no art
 or text is borrowed. It gives you **45 seconds to find the dog**, because a
 dog is the only thing that defuses a cat.
 
-That is the one deadline in a chapter that otherwise has no clock, and it is
-deliberately not a clock on the CHAPTER: the three boards are still untimed
-and still cannot be lost, and running the 45 seconds out costs you the dog
-and nothing else. The card shows the count down beside "Find the dog". A cat
-that says forty-five seconds and does not mean it is a worse joke than a cat
-that does.
+**And the deck keeps dealing** (since 28 Sep, the author's choice between
+cats as atmosphere and cats as threats). After the first defuse, seven more
+cats turn up around the building, each sooner than the last (at 40, 80, 110,
+135, 155, 170 and 185 s), in the places the boards never send you: the
+toilets, the polo room, the foyer and corridor upstairs, Room 5, the organisers'
+desk and the far side of the hall. Each announces itself ("Somewhere in the
+building, something starts ticking"), and each has two clocks: **30 seconds
+to reach it**, and reaching it lights a **45-second fuse** back to the dog.
+One visit to the dog puts out every fuse that is burning. **Miss either
+clock and the chapter is over**, for the first cat as for the rest.
+
+The boards stay untimed, and the cats are optional: powering the last board
+ends the chapter through the wormhole whatever is still ticking. So the
+chapter's clock is the player's own pace. Someone who learns the building
+meets two cats; someone lost in it meets eight, and has to run the whole
+building to live with them. A cat that has not arrived has no figure, no
+marker and no line on the card, so nothing gives away where the next one
+will be.
+
+Built from the existing vocabulary plus three fields on `Common`: `delay`
+(exists only so long after its `after`), `failsRound` (missing it ends the
+round) and `announce` (said when it opens). `npm run objectives` rejects a
+`delay` with nothing to count from and a cat whose deadline falls before it
+appears.
 
 **The ending.** Board three brings up the ghost light on the keynote stage,
 and the projector starts running a recording — **and the recording is

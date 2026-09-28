@@ -1094,6 +1094,7 @@ export class BlockoutRenderer {
     let i = 0;
     let h = 0;
     for (const person of this.crowd.movers) {
+      if (person.hidden) continue;
       if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
       // An animal is thirteen boxes against a person's four, so the box
       // budget has to be checked rather than assumed from the blob one.

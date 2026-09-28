@@ -308,6 +308,14 @@ export interface Person {
   shape?: 'cat' | 'dog';
   /** Who they are, for the ones who are somebody. See `Look`. */
   look?: Look;
+  /** For a post: the activity that put them there. See `Post.activity`. */
+  activity?: string;
+  /**
+   * Not drawn. A post whose activity has not happened yet — a Chapter I cat
+   * that has not turned up — is in the crowd from the start, because the
+   * crowd is built once, and is simply not there to look at.
+   */
+  hidden?: boolean;
   /**
    * The room this person is in, for the ones who are in a room.
    *
@@ -336,6 +344,8 @@ export interface Post {
   floor: Level;
   shape?: 'cat' | 'dog';
   look?: Look;
+  /** The activity that put them here, so the screen can hide them until it opens. */
+  activity?: string;
 }
 
 interface Mover extends Person {
@@ -821,6 +831,7 @@ export class Crowd {
         posted: true,
         shape: post.shape,
         look: post.look,
+        activity: post.activity,
       };
       this.walkers.push(mover);
       this.movers.push(mover);

@@ -358,6 +358,7 @@ export class ChapterScreen implements Screen {
           floor: a.at.floor,
           shape: a.shape,
           look: a.look,
+          activity: a.id,
         };
       });
 
@@ -524,6 +525,7 @@ export class ChapterScreen implements Screen {
     this.dropRequested = false;
     this.talkRequested = false;
     this.showSessions(dt);
+    this.hideUnarrived();
     if (this.story) this.updateStory(dt, talkPressed);
     else this.updateTalk(dt);
 
@@ -1129,6 +1131,8 @@ export class ChapterScreen implements Screen {
       // A breakdown that has not happened yet has no post. A grey marker on
       // a projector that is working is a spoiler for the next two minutes.
       if (activity.room !== undefined && status === 'locked') continue;
+      // Nor a cat that has not turned up. Its grey ring would say where.
+      if (activity.delay !== undefined && status === 'locked') continue;
 
       if (status === 'carried' && activity.kind === 'haul') {
         const centre = zoneCentre(activity.to);
@@ -1186,6 +1190,21 @@ export class ChapterScreen implements Screen {
     }
 
     return out;
+  }
+
+  /**
+   * Hide the people and animals whose activity has not happened yet.
+   *
+   * Only for things that ARRIVE — an activity with a `delay`. Everybody else
+   * posted by the objective stands there from the start, locked or not:
+   * Stephan is at his desk before you are allowed to go back to him.
+   */
+  private hideUnarrived(): void {
+    for (const person of this.crowd.movers) {
+      if (person.activity === undefined) continue;
+      const state = this.run.states.find((s) => s.activity.id === person.activity);
+      person.hidden = state !== undefined && state.activity.delay !== undefined && state.status === 'locked';
+    }
   }
 
   /** Seconds until this is gone, for anything with a deadline that is open. */

@@ -221,6 +221,15 @@ for (const chapter of CHAPTERS) {
     // choice in the design.
     // A relative deadline counts from the last of `after`, so without one it
     // counts from nothing and silently never fires.
+    // A delay counts from the same moment a relative deadline does, so it
+    // needs something to count from, and a deadline that falls before the
+    // thing has even appeared is a cat that goes off before it turns up.
+    if (activity.delay !== undefined && (activity.after?.length ?? 0) === 0) {
+      failures.push(`${chapter.id}/${activity.id}: a \`delay\` with no \`after\` to count it from`);
+    }
+    if (activity.delay !== undefined && activity.within !== undefined && activity.within <= activity.delay) {
+      failures.push(`${chapter.id}/${activity.id}: its deadline (${activity.within}s) falls before it appears (${activity.delay}s)`);
+    }
     if (activity.within !== undefined && (activity.after?.length ?? 0) === 0) {
       failures.push(
         `${chapter.id}/${activity.id}: a \`within\` deadline with no \`after\` to count it from`,

@@ -141,6 +141,8 @@ export class ObjectiveRun {
   phase: 'running' | 'ended' = 'running';
   /** True when the round ended badly rather than merely ending. */
   failed = false;
+  /** Something that `failsRound` was missed. See `Activity.failsRound`. */
+  private fatal = false;
 
   /** Consumed and cleared by the screen each frame. */
   readonly events: ObjectiveEvent[] = [];
@@ -312,6 +314,7 @@ export class ObjectiveRun {
         } else {
           this.say(`Missed: ${a.label}`);
         }
+        if (a.failsRound) this.fatal = true;
         return;
       }
     }
@@ -319,17 +322,29 @@ export class ObjectiveRun {
     // A relative deadline: so many seconds from whatever unlocked this. It is
     // checked AFTER `after`, because it is counted from when the last of them
     // finished and before that there is nothing to count from.
+    // Not there yet: a cat that turns up a while after the last one.
+    if (a.delay !== undefined) {
+      const started = this.startedAt(a);
+      if (started === undefined || this.elapsed < started + a.delay) {
+        state.status = 'locked';
+        return;
+      }
+    }
+
     if (a.within !== undefined && this.deadline(a) !== undefined) {
       const deadline = this.deadline(a) as number;
       if (this.elapsed > deadline) {
+        this.release(state);
         state.status = 'missed';
         this.say(`Too late: ${a.label}`);
+        if (a.failsRound) this.fatal = true;
         return;
       }
     }
 
     if (state.status === 'locked') {
       state.status = 'open';
+      if (a.announce !== undefined) this.say(a.announce);
       // Something just went wrong in a room. That is news, and it is the
       // only moment the player can be told it before the lights say so.
       if (a.room !== undefined) this.say(`Breakdown — ${a.label}`);
@@ -497,14 +512,24 @@ export class ObjectiveRun {
    * cannot start before the thing it is a consequence of.
    */
   deadline(a: Activity): number | undefined {
-    if (a.within === undefined || !a.after?.length) return undefined;
+    if (a.within === undefined) return undefined;
+    const started = this.startedAt(a);
+    return started === undefined ? undefined : started + a.within;
+  }
+
+  /**
+   * When the last of an activity's prerequisites finished, in chapter
+   * seconds: the moment `within` and `delay` both count from.
+   */
+  private startedAt(a: Activity): number | undefined {
+    if (!a.after?.length) return undefined;
     let started = -Infinity;
     for (const id of a.after) {
       const at = this.states.find((s) => s.activity.id === id)?.doneAt;
       if (at === undefined) return undefined;
       started = Math.max(started, at);
     }
-    return started + a.within;
+    return started;
   }
 
   private isDone(id: string): boolean {
@@ -536,7 +561,7 @@ export class ObjectiveRun {
   private evaluate(): void {
     const { failLimit, clock } = this.objective;
 
-    if (failLimit !== undefined && this.lost >= failLimit) {
+    if (this.fatal || (failLimit !== undefined && this.lost >= failLimit)) {
       this.phase = 'ended';
       this.failed = true;
       return;

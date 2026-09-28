@@ -4460,6 +4460,43 @@ proved nothing, since the board never came on. Trying each direction from the
 same start found the two that reach it, and only then were the numbers worth
 reading.
 
+### Claude Opus — the deck keeps dealing: more cats in Chapter I
+
+**Prompt:**
+> Start the task on concerning the amount of cats
+
+**Iterations:** one design question, a build, a logic test against the real
+objective runner, one frame.
+
+**The design question had to come first**, and it was on the board: are the
+new cats atmosphere or threats? The two make different chapters, one calm and
+one timed. I offered atmosphere, threats and collectibles, with previews and
+my recommendation (atmosphere). The author chose threats.
+
+**Built out of the vocabulary, plus three fields.** Each cat is a `talk`
+with a `delay` after the first dog, a `within` of delay + 30 s, and
+`failsRound`; each has a paired dog `talk` at the same spot (`alreadyHere`)
+with `within: 45`. Every open fuse is a talk in the dog's zone, so one visit
+puts them all out. They are `optional`, so the last board still ends the
+chapter. A cat that has not arrived is hidden (posts carry their activity
+and the screen hides them while it is locked), and so are its marker and its
+card line.
+
+**Tested as rules, not as frames.** Driving Voxxy through the whole sequence
+headless is minutes of guessed keys, so the sequence ran against the real
+`ObjectiveRun` in node with a stand-in robot moved from zone to zone:
+cat 2 locked at 30 s and open, announced, at 42 s; reached, fused, defused
+without failing; ignored, and the chapter fails; reached with no dog, and
+the chapter fails. Then one frame at the toilets at the start of the
+chapter, to see that cat 2 is not there yet.
+
+**Two things found on the way.** The harness's new check was proved by
+breaking a cat on purpose: a deadline before its appearance is now an error.
+And the board on `main` had lost three sections (the design follow-ups
+including this task, the small items, the open decisions), dropped in the
+conflict resolution of a merge into `dialogue-portraits`. They are restored
+from the commit that wrote them.
+
 ---
 
 ## Audio
