@@ -656,11 +656,11 @@ for (const room of auditoria) {
 
 // --- every link must actually join the two places it claims to join --------
 // Two staircases out of the hall, the grand flight out of the concourse, plus
-// the steps and the ramp down from the concourse into the hall.
-// Five flights and ramps, plus one rake per auditorium.
+// the steps down from the concourse into the hall. Four flights, plus one
+// rake per auditorium.
 check(
-  KINEPOLIS.links.length === 5 + auditoria.length,
-  `expected ${5 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
+  KINEPOLIS.links.length === 4 + auditoria.length,
+  `expected ${4 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
 );
 for (const link of KINEPOLIS.links) {
   for (const floor of new Set([link.from, link.to])) {
@@ -688,10 +688,10 @@ for (const link of KINEPOLIS.links) {
   console.log(`  ${link.id.padEnd(17)} ${ramp ? `ramp ${(slope * 100).toFixed(0)}%` : `stairs`.padEnd(9)}  ${who.join(', ') || 'NOBODY'}`);
 }
 
-// Biggy climbs nothing, so it must have at least one route somewhere, or it is
-// sealed into whichever room it spawns in.
-const biggyRoutes = KINEPOLIS.links.filter((l) => l.id.includes('ramp'));
-check(biggyRoutes.length > 0, 'Biggy cannot climb, and there is no ramp anywhere — it would be sealed in');
+// Biggy climbs nothing and there is no ramp (the author, 28 Sep: the threshold
+// has steps at both ends), so Biggy lives on the hall floor. That is only a
+// problem if something asks it to leave, which `npm run objectives` checks.
+
 
 // --- a staircase you can actually put a foot on -----------------------------
 //

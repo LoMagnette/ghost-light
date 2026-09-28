@@ -155,9 +155,9 @@ another one.
 exists:**
 
 1. The hall, near-black — drive.
-2. The 23 m threshold terrace up to the concourse — climb; then come back down
-   the wheelchair ramp, which **accelerates you**, because `Body` has applied
-   slope force since the first week. Braking, taught by the building.
+2. The 23.5 m threshold up to the concourse — climb; a landing with steps
+   on three sides. (There was a wheelchair ramp to come back down, which
+   accelerated you; it went on 28 Sep, see §5.3.)
 3. Find *which* staircase goes up, in the dark — the venue's vertical.
 4. Down the Room 8 rake: 4.5 m of terracing, downhill, with a stage at the
    bottom. Braking now has a consequence.
@@ -378,7 +378,15 @@ over the first time they existed.
 
 #### The constraint the building handed us
 
-The wheelchair ramp is the only route between the hall and the concourse that
+> **28 Sep: there is no ramp any more.** The author's drawing has steps at
+> both ends of the threshold and asked for the steps, so Biggy — which
+> climbs no riser at all — now never leaves the hall floor, laden or not. The
+> conclusion below stands and is now stronger: nothing heavy changes level,
+> because the one robot that can carry it cannot change level. `npm run
+> objectives` holds each of Biggy's jobs to the hall floor. What follows is
+> how the constraint was first found, with the ramp still there.
+
+The wheelchair ramp was the only route between the hall and the concourse that
 Biggy can use: 1.2 m of rise over 12 m of run, a 10% gradient, against a
 `maxSlope` of 0.11. It clears it **empty, by one percentage point.**
 

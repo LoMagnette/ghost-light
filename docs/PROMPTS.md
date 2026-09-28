@@ -4930,6 +4930,27 @@ beside Rooms 4 and 9. With the deeper hall they land beside Rooms 3 and 10.
 The two drawings disagree by about 7 m, and the author chose the ground
 floor's.
 
+### 28 Sep — The double wall on the right of the steps
+
+> there's still an issue. on the right side of this stairs instead of having
+> the stairs it self theres some kind of double wall.
+
+**Found:** the "double wall" was the wheelchair ramp. The ramp surface had
+never been drawn: the old ramp ran under the reception floor, so nothing
+showed it was missing. What you could see was its 2.4 m balustrade standing
+beside the door wall. I asked whether that end should be steps like the
+other. The author: "Just keep the steps and forget about the ramp."
+
+**Done:**
+- **Ramp removed:** the east end of the threshold is steps down to the wall.
+- **Biggy:** it climbs nothing, so it now never leaves the hall floor.
+  `npm run objectives` now holds Biggy's jobs to the hall level, not just
+  storey 0, and `venue` no longer demands a ramp.
+- **Nothing lost:** the keg's delivery was already in the hall, so no
+  chapter changed.
+- **Dialogue:** the stand crew's line about the ramp now says Biggy does not
+  do steps.
+
 ---
 
 ## Audio

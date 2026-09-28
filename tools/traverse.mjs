@@ -115,8 +115,8 @@ function route(robotId, from, legs, floor = 0) {
  *
  * A payload is not a flag the traversal system checks — it is mass in the
  * body, which changes the force available against the slope. So the only
- * honest way to ask "can Biggy get up the ramp with the keg" is to put the
- * keg on Biggy and drive it at the ramp, which is what this does.
+ * honest way to ask what a load does on a slope or a stair is to put it on
+ * the robot and drive, which is what this does.
  */
 function driveLoaded(robotId, from, dir, seconds, payload, floor = 0) {
   const sim = new Sim(KINEPOLIS);
@@ -155,20 +155,6 @@ const HALL_ROOM = KINEPOLIS.rooms.find((r) => r.id === 'hall').bounds;
 const HALL_NORTH = HALL_ROOM.y + HALL_ROOM.h;
 // Midway between two rows of columns, and clear of the stands either side.
 const HALL = { x: 0, y: -17.7 };
-/*
- * Where to stand to meet the ramp, READ OFF THE RAMP.
- *
- * Its foot is its EAST end — it runs along the door wall, down from the
- * landing — so this stands out on the hall floor past that end, on its
- * centre line, and the scenarios drive west. A literal position survives the
- * ramp moving only by landing beside it instead of on it, and the scenario
- * then fails for a reason that has nothing to do with what it is testing.
- */
-const RAMP_LINK = KINEPOLIS.links.find((l) => l.id === 'wheelchair-ramp');
-const RAMP = {
-  x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w + 2.2,
-  y: RAMP_LINK.bounds.y + RAMP_LINK.bounds.h / 2,
-};
 /*
  * Where to stand to meet the west flight, READ OFF THE FLIGHT.
  *
@@ -276,44 +262,37 @@ scenario(
 // robot held at full throttle long enough drives out of it and back down to
 // zero. See the note at the end of this file.
 /*
- * The wall between the hall and the reception, beside the ramp.
+ * The wall between the hall and the reception, east of the steps.
  *
- * The ramp used to come through the concourse and cut its own way through
- * this wall — eleven metres of it at first, then a 4 m doorway, which was
- * still a hole the building does not have. It starts from the landing now,
- * inside the hall, and east of the landing the wall is unbroken. This stands
- * past the ramp's foot and drives at it.
+ * A ramp once came through the concourse here and cut its own way through
+ * this wall — eleven metres of it at first, then a 4 m doorway — and BOF 3
+ * had a door in it onto a 1.2 m drop. Neither plan draws either. East of the
+ * steps the wall is unbroken, and this drives at it.
  */
 const HALL_WALL = KINEPOLIS.rooms.find((r) => r.id === 'reception').bounds;
-// 1.5 m EAST of the ramp's foot, where the wall once had BOF 3's door in it.
-const BESIDE_RAMP = {
-  x: RAMP_LINK.bounds.x + RAMP_LINK.bounds.w + 1.5,
+const EAST_OF_STEPS = {
+  x: THRESHOLD.bounds.x + THRESHOLD.bounds.w + 3,
   y: HALL_WALL.y + HALL_WALL.h + 6,
 };
 
 scenario(
-  'Voxxy is stopped by the wall beside the ramp',
+  'Voxxy is stopped by the wall east of the steps',
   (r) => r.z < 0.1 && r.y > HALL_WALL.y + HALL_WALL.h,
-  () => drive('voxxy', BESIDE_RAMP, SOUTH, 8),
+  () => drive('voxxy', EAST_OF_STEPS, SOUTH, 8),
+);
+
+// Both ends are steps, down to the wall: up the east one, and the reverse of
+// the box at the west end.
+scenario(
+  'Voxxy climbs the threshold off its east end, beside the wall',
+  (r) => r.z > 1.1,
+  () => drive('voxxy', { x: THRESHOLD.bounds.x + THRESHOLD.bounds.w + APPROACH, y: THRESHOLD_TOP + 1.2 }, WEST, 4),
 );
 
 scenario(
-  'Biggy reaches the concourse by the ramp',
-  (r) => r.peakZ > 1.1,
-  () => drive('biggy', RAMP, WEST, 16),
-);
-
-/*
- * ...and on into it. Up the ramp is only half of Biggy's way in: the top of
- * the ramp is the landing, and the landing has to be a floor Biggy can cross
- * to the doors, not the top step of a flight it may not use.
- */
-// Four columns stand in the doorway, so the turn south has to come between
-// two of them, as a driver's would: 13, 14 and 15 s west all find a door.
-scenario(
-  'Biggy crosses the landing into the concourse',
-  (r) => r.z > 1.1 && r.y < THRESHOLD_TOP - 1,
-  () => route('biggy', RAMP, [[WEST, 14], [SOUTH, 4]]),
+  'Biggy is stopped by the east end of the steps',
+  (r) => r.z < 0.1 && r.x > THRESHOLD.bounds.x + THRESHOLD.bounds.w - 0.2,
+  () => drive('biggy', { x: THRESHOLD.bounds.x + THRESHOLD.bounds.w + APPROACH, y: THRESHOLD_TOP + 1.2 }, WEST, 8),
 );
 
 scenario(
@@ -638,29 +617,17 @@ scenario(
 );
 
 /*
- * The ramp, loaded — and the constraint Chapter III is built around.
+ * Loaded, on stairs — and the constraint Chapter III is built around.
  *
- * The wheelchair ramp is 1.2 m over 12 m, a 10% gradient, and it is the only
- * way between the hall and the concourse that Biggy can use at all. Empty it
- * clears it by one percentage point. With the 200 kg keg its limit falls to
- * 0.075 and it must not: anything heavy stays on the exhibition floor, the
- * party is in the hall, and no objective may ever ask a laden Biggy to change
- * level. See docs/MECHANICS.md §5.3.
- *
- * Both halves are asserted, because each protects against the opposite
- * mistake — making Biggy stronger silently deletes the design, and making it
- * weaker strands it on one floor with no way back.
+ * There is no ramp (the author, 28 Sep: steps at both ends of the
+ * threshold), so Biggy never changes level, laden or not: it cannot climb a
+ * single riser. What a load CAN change is who else can: a step is a step
+ * whatever you carry, so Droid still takes a crate up. See `canTraverse`.
  */
 scenario(
-  'Biggy climbs the ramp empty',
-  (r) => r.z > 1.1,
-  () => driveLoaded('biggy', RAMP, WEST, 18, 0),
-);
-
-scenario(
-  'Biggy cannot climb the ramp carrying the keg',
-  (r) => r.z < 0.6,
-  () => driveLoaded('biggy', RAMP, WEST, 18, 200),
+  'Biggy cannot climb the concourse steps even empty',
+  (r) => r.z < 0.1,
+  () => driveLoaded('biggy', HALL, SOUTH, 20, 0),
 );
 
 scenario(

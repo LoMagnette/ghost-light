@@ -6,8 +6,8 @@
  * building is built to. Voxxy clears them, Droid matches them exactly and can
  * climb these stairs and nothing steeper, Biggy is 0.00 and never climbs
  * anything. A ramp has no step to get over, so `maxSlope` decides that one
- * instead — and every robot clears the wheelchair ramp, including the one that
- * can climb no stairs at all.
+ * instead. The building has none now — the threshold is steps at both ends —
+ * but the rule stays, because it is how a ramp would work if one came back.
  *
  * The consequence is the thing worth having: the same flight is a route for
  * one robot and a wall for another, out of the same geometry, with no
@@ -28,8 +28,7 @@ import { maxSlopeLoaded, type RobotSpec } from './RobotSpec';
  * `payload` is what it is carrying, kg. A step is a step whatever you are
  * holding, so `maxStepRise` does not care — but a gradient is fought with
  * force against weight, and a laden robot has less of the first and more of
- * the second. That is how the only ramp in the building came to be passable
- * empty and impassable with the keg. See `maxSlopeLoaded`.
+ * the second. See `maxSlopeLoaded`.
  */
 export function canTraverse(spec: RobotSpec, link: Link, payload = 0): boolean {
   if (link.riser > 0) return spec.maxStepRise >= link.riser;

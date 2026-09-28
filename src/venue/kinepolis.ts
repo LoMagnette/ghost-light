@@ -429,7 +429,7 @@ const RECEPTION = rect(-13.6, -60.4, 36.3, 23.0);
  * How far the concourse stands above the exhibition hall, in metres.
  *
  * You come in at street level and go down into the hall. Small, and the only
- * reason the broad flight and the ramp at the boundary exist at all.
+ * reason the broad flight at the boundary exists at all.
  */
 const CONCOURSE_LEVEL = 1.2;
 
@@ -475,9 +475,9 @@ const LANDING_DEPTH = 3.0;
 /**
  * The landing: from the column the doors start at to the one they end at.
  *
- * A plate of its own at concourse height (see the `threshold` room), so the
- * one machine that climbs no steps can still cross it from the doors to the
- * ramp. It is the flight's top step as well, which is the same surface.
+ * A plate of its own at concourse height (see the `threshold` room) rather
+ * than the flight's top tread: a tread 19.6 m by 3 m is a floor, and drawn as
+ * one it would be solid to anything that cannot climb the flight.
  */
 const THRESHOLD_LANDING = rect(
   HALL.x + COLUMN_X[1],
@@ -576,28 +576,13 @@ const TOILETS = rect(
 );
 const TOILET_CORRIDOR = rect(TOILETS.x, TOILETS.y - 1.78, TOILETS.w, 1.78);
 
-/**
- * The wheelchair ramp, from the landing's east end down into the hall.
- *
- * `exhibition-floor.jpg` labels it "Wheelchair access" and draws it where it
- * is: in the hall, along the door wall, starting from the landing and folding
- * back once on itself. It had been a 5.5 m-wide run cut through the
- * CONCOURSE with a doorway of its own in the wall, which was the hole the
- * author found beside the steps (28 Sep). The real one needs no hole: you
- * come through the doors onto the landing like everybody else, and turn east.
- *
- * Straight rather than folded, because a link is a rectangle and climbs one
- * way. 12 m of run for 1.2 m of rise is the gradient it always had — the one
- * that lets Biggy up empty and not with the keg — and it is as wide as the
- * landing is deep, which is both legs of the drawn switchback side by side.
+/*
+ * No wheelchair ramp. `exhibition-floor.jpg` labels one off the landing's
+ * east end, and it stood there for a day, but the author's drawing has steps
+ * at that end as at the other and the author wants the steps (28 Sep). So
+ * Biggy, which climbs nothing, stays on whichever level it starts on — which
+ * the chapters already assumed: nothing heavy ever changes level.
  */
-const RAMP_RUN = 12.0;
-const RAMP = rect(
-  THRESHOLD_LANDING.x + THRESHOLD_LANDING.w,
-  HALL.y + WALL_THICKNESS / 2,
-  RAMP_RUN,
-  LANDING_DEPTH - WALL_THICKNESS / 2,
-);
 
 /**
  * The forecourt, and the way out onto it.
@@ -2230,8 +2215,8 @@ const CIRCULATION = new Set<RoomKind>(['hall', 'corridor', 'foyer', 'stairs']);
  * That level qualification is load-bearing. The concourse stands 1.2 m over
  * the hall, and both are circulation — leave them open and a robot crossing
  * the boundary anywhere except the steps gets snapped 1.2 m upward by
- * `groundAt`, which is a teleport dressed as a floor. The steps and the ramp
- * are the only ways between those two levels, and now the geometry says so.
+ * `groundAt`, which is a teleport dressed as a floor. The steps are the only
+ * way between those two levels, and now the geometry says so.
  *
  * Everything else gets a wall, with a door punched in the middle of any run
  * that separates a room from circulation. Two auditoriums side by side get no
@@ -2262,7 +2247,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
     // different in extent, so the dedupe below could not see it.
     //
     // The threshold's landing is the same thing standing in the hall: its
-    // edges are the steps, the ramp and the box, never a wall.
+    // edges are the steps and the box, never a wall.
     if (room.kind === 'stage' || room.kind === 'landing') continue;
 
     const b = room.bounds;
@@ -2305,13 +2290,11 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
               /*
                * ...and only a flight in a slot. A stepped flight is a made
                * thing as wide as the way through it, so it can be trusted to
-               * cut its own hole. The other two here cannot: a terrace meets
-               * the wall across its whole 23 m and is only at door height for
-               * the middle 18, and the ramp is a 10 m drivable wedge standing
-               * for a ramp a fraction of that. Letting it punch left eleven
-               * metres of the wall between the hall and the reception simply
-               * missing, which is what you notice from inside. Both say where
-               * their opening is instead — see WALL_OPENINGS.
+               * cut its own hole. The terrace cannot: it meets the wall across
+               * its whole 23.5 m and is only at door height along its landing,
+               * and a ramp that once stood beside it punched eleven metres of
+               * the wall between the hall and the reception simply out. It
+               * says where its opening is instead — see WALL_OPENINGS.
                */
               l.wrap === undefined &&
               l.riser > 0 &&
@@ -2349,7 +2332,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           kind.push(2); // room onto circulation — this one earns a door
           // ...but only onto circulation at its own level. BOF 3 stands on
           // the concourse, 1.2 m over the hall, and its north wall is the
-          // hall's south wall east of the ramp: it had punched a door in it
+          // hall's south wall east of the steps: it had punched a door in it
           // that opened onto a drop, which neither plan draws (the author,
           // 28 Sep: "a hole in the wall further on the side of the stairs").
         } else {
@@ -2581,10 +2564,8 @@ const {
  *
  * The concourse does not sit flush with the exhibition hall, and it is the
  * HIGHER of the two: you come in at street level and go DOWN a broad flight
- * into the hall. A wheelchair ramp runs beside it, and that ramp is the proof
- * the level change is real — a plan does not label "wheelchair access" across
- * a flat opening. Both are short rises, so they are links from floor 0 to
- * floor 0, which reads oddly in the type and is what the building does.
+ * into the hall. It is a short rise, so it is a link from floor 0 to floor 0,
+ * which reads oddly in the type and is what the building does.
  *
  * Going UP, the concourse reaches the auditorium level by the ~16 m grand
  * flight the plan labels "∧ Rooms ∧". So there are THREE ways to floor 1: two
@@ -2593,19 +2574,6 @@ const {
  * matters more now that Biggy cannot use any of them.
  */
 const receptionStairs: Link[] = [
-  /**
-   * The ramp off the landing, and Biggy's only way between the two levels.
-   *
-   * Listed BEFORE the steps, and that order is load-bearing: the ramp's top
-   * end lies over the east end of the steps (see `RAMP`), and `linkAt` takes
-   * the first link it finds. Found second, the ramp would be a strip of steps
-   * as far as Biggy was concerned, which is to say a wall.
-   *
-   * Climbs along x, because it runs along the door wall: you come off the
-   * landing and go east, down to the hall floor. It used to climb north–south
-   * through the concourse, back when the concourse was where it stood.
-   */
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: RAMP, base: 0, rise: CONCOURSE_LEVEL, axis: 'x', ascending: false, riser: 0 },
   // Concourse → hall: the landing, and the steps down from it on three sides.
   { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER, wrap: THRESHOLD_WRAP },
   /**
@@ -2767,10 +2735,11 @@ function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
  * is the landing, and the landing is a floor (see the `threshold` room), not
  * a tread: drawn as one, it would be solid to Biggy, which has to cross it.
  *
- * The flanks stop `clear` short of the wall. On the one terrace there is,
- * the box at the west end and the ramp at the east end stand there instead.
+ * A flank may stop short of the wall: `clearWest` and `clearEast` metres of
+ * it are left out, for whatever stands there instead — on the one terrace
+ * there is, the box at its west end.
  */
-function terraceSteps(link: Link, clear: number): Obstacle[] {
+function terraceSteps(link: Link, clearWest: number, clearEast: number): Obstacle[] {
   const b = link.bounds;
   const steps = Math.round(link.rise / link.riser);
   const going = (link.wrap ?? 0) / steps;
@@ -2790,9 +2759,8 @@ function terraceSteps(link: Link, clear: number): Obstacle[] {
       base: 0,
       linkId: link.id,
     };
-    const flank = depth - clear;
-    pieces.push({ ...step, bounds: rect(x0, b.y + clear, going, flank) });
-    pieces.push({ ...step, bounds: rect(x1 - going, b.y + clear, going, flank) });
+    pieces.push({ ...step, bounds: rect(x0, b.y + clearWest, going, depth - clearWest) });
+    pieces.push({ ...step, bounds: rect(x1 - going, b.y + clearEast, going, depth - clearEast) });
     pieces.push({ ...step, bounds: rect(x0 + going, b.y + depth - going, x1 - x0 - going * 2, going) });
   }
   return pieces;
@@ -2827,55 +2795,11 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
   const solid: Obstacle[] = [];
   const soffits: Decor[] = [];
   for (const link of links) {
-    /*
-     * A ramp has no treads — it is a surface, and it is the accessible route
-     * by definition. It gets ONE solid: a threshold lip across the doorway at
-     * its foot, carrying the link's id like every tread in the building does.
-     *
-     * Without it the ramp was the one level change in the Kinepolis that
-     * nothing could be refused. That was true while `maxSlope` was a constant
-     * per robot and every robot cleared 10%; it stopped being true the day a
-     * robot could be CARRYING something, because the gradient it can hold
-     * falls with the weight on it. `canTraverse` then said no and no geometry
-     * said anything at all, so a laden Biggy walked up a ramp it cannot climb
-     * and the concourse plate lifted it the 1.2 m for free.
-     *
-     * `npm run traverse` found that within a minute of the assertion existing,
-     * which is the entire argument for the harness.
-     */
-    if (link.id === 'wheelchair-ramp') {
-      const b = link.bounds;
-      // A lip, not a wall: this is what a ramp meets a floor with. It is
-      // solid to a machine that may not use the ramp and invisible to one
-      // that may, which is the same rule as every staircase here. One at
-      // each end, since the landing is a floor at the top just as the hall
-      // is at the foot.
-      // The top one is flush with the landing, which is what it is a lip to.
-      const ends = [
-        { x: b.x + (link.ascending ? b.w : 0), height: link.rise },
-        { x: b.x + (link.ascending ? 0 : b.w), height: 0.14 },
-      ];
-      for (const end of ends) {
-        solid.push({ floor: link.from, bounds: rect(end.x - 0.3, b.y, 0.6, b.h), height: end.height, linkId: link.id });
-      }
-      // And a rail down its open side, stepping down with it, so the only
-      // way off it is at an end. The steps beside its top are 0.8 m below it.
-      const pieces = 6;
-      const piece = b.w / pieces;
-      for (let i = 0; i < pieces; i += 1) {
-        const high = link.rise * (1 - (i * piece) / b.w);
-        solid.push({
-          floor: link.from,
-          bounds: rect(b.x + i * piece, b.y + b.h, piece, RAIL_THICKNESS),
-          height: high + RAIL_HEIGHT,
-        });
-      }
-      continue;
-    }
-
     // A flight that also climbs from its flanks is not a run of bands.
     if (link.wrap) {
-      solid.push(...terraceSteps(link, LANDING_DEPTH));
+      // The box stands over the west flank's south end; the east one runs
+      // to the wall.
+      solid.push(...terraceSteps(link, LANDING_DEPTH, 0));
       continue;
     }
 

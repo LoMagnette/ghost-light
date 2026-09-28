@@ -735,10 +735,10 @@ function onTheRound(stand: { bounds: Rect }): boolean {
  * Droid's polo and question at the mic, Biggy's shutter and keg.
  *
  * The one constraint everything else is arranged around: the keg is 200 kg,
- * and a Biggy carrying 200 kg cannot climb the building's only ramp — its
- * gradient limit falls from 0.11 to 0.075 against a 10% slope. So the keg
- * goes to the party stage in the HALL, and nothing heavy ever needs to change
- * level. See `maxSlopeLoaded` and the assertion in `npm run traverse`.
+ * only Biggy can carry it, and Biggy climbs nothing — there is no ramp
+ * between the hall and the concourse, only steps. So the keg goes to the
+ * party stage in the HALL, and nothing heavy ever needs to change level.
+ * `npm run objectives` holds every one of Biggy's jobs to the hall floor.
  */
 export const CAPACITY_OBJECTIVE: Objective = {
   line: 'Do Devoxx. You cannot do all of it',
@@ -837,7 +837,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       lines: [
         'Careful with the coffee. It spills if you so much as brush a stand.',
         'Anything with weight in it changes how you stop, not how you start. Same motor, twice the distance.',
-        'And the ramp is the one place that catches people out. Try it empty first.',
+        'And the big one does not do steps. Not one. Plan around it.',
       ],
     },
 
