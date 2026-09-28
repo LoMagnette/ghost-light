@@ -4635,6 +4635,25 @@ start in the building.
 had been reworded a round earlier, and nothing was written. It was re-read
 and redone rather than forced.
 
+### Claude Opus — the dog, visibly; and cats in eight coats
+
+**Prompt:**
+> Can you make the fact that talking to the dog make the cat go away. Can
+> the cat have different skins.
+
+**Read as: it already worked, but nobody could tell.** Finishing the dog's
+conversation already scattered the cats, but on its last line, after
+paging through it all with the horde still underfoot. Now reaching the dog
+starts it (`autoStart`), the cats run as it starts, a toast credits the dog,
+and a conversation under way cannot be missed on its deadline. Tested
+against the runner: reached at 89.5 s, it opens itself; at 92.5 s, mid-read,
+the chapter has not failed; paged out, it is done.
+
+**Skins** are eight coats with body, head, paws and tail coloured apart,
+weighted to light coats because Chapter I's dark swallows a black cat.
+Checked in a throwaway build with sixty cats (restored from git afterwards,
+not from a copy): black, ginger and pale in one frame.
+
 ---
 
 ## Audio

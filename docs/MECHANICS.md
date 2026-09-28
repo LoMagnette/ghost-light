@@ -201,8 +201,14 @@ way, and the cats are meant to be somewhere new every time.
   The speed limit drops and the excess bleeds off (`Body.speedScale`), so
   running into them is wading, not a wall. Keep moving and you leave them
   behind; stop and you are swamped.
-- **The dog calls them all off**: every cat runs and is gone, and no more
-  come. **Missing the 90 seconds ends the chapter.**
+- **The dog calls them all off, the moment Voxxy reaches it**: its
+  conversation starts by itself, every cat runs while it speaks, a toast says
+  so, and no more come. Reaching the dog in time is what counts; a
+  conversation already under way cannot be missed on its deadline. **Missing
+  the 90 seconds ends the chapter.**
+- **Eight coats**, one per cat from its own dice: pale grey, ginger, black,
+  white, grey tabby, tuxedo, Siamese, calico, with head, paws and tail
+  coloured apart so the patterns read.
 
 The boards stay untimed. The chapter's clock is the player's own pace: the
 longer they take, the more cats the dog has to call off.
