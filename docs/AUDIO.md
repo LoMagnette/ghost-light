@@ -86,8 +86,18 @@ silent.
 
 **Format.** `.ogg` (Vorbis or Opus) for size; `.mp3` works too. 44.1 or
 48 kHz. Loops cut on a zero crossing so they do not click. Mixed quietly —
-the synthesised robots sit on top. Keep the whole folder under about 3 MB:
-it is downloaded before the first chapter.
+the synthesised robots sit on top. Each file is fetched the first time it
+is wanted, so a big one delays only its own chapter's music, but keep the
+folder to a few MB all the same: it is what a judge downloads.
+
+**Built 28 Sep (`audio` branch):** the engine, the unlock on the first key
+or click, M to mute (remembered), and music and ambience playback per
+chapter with a 2.2 s crossfade that carries through the wormholes. The menu
+plays `music-menu`, or Chapter I's track if there is none. Checked in a
+headless browser with three test tones: nothing before the first key, the
+same track carries from the menu into Chapter I without restarting, Chapter
+II crossfades to its own, and mute survives a reload. Not yet built:
+everything synthesised, and the Chapter III tension layer.
 
 ## How it will work
 

@@ -32,6 +32,7 @@ import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
+import { playAmbience, playMusic } from './audio';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
@@ -315,6 +316,11 @@ export class ChapterScreen implements Screen {
 
     game.setBackground(chapter.palette.void);
     this.renderer = game.renderer;
+    // Each era its own tune, by file name: `music-silence`, `music-javapolis`,
+    // `music-capacity`. Crossfaded from whatever was playing, which through a
+    // wormhole is the chapter before. See `app/audio.ts`.
+    playMusic(`music-${chapter.id}`);
+    playAmbience(`ambience-${chapter.id}`);
 
     this.sim = new Sim(KINEPOLIS);
 
@@ -1691,6 +1697,7 @@ export class ChapterScreen implements Screen {
       ...(chapter.cast.length > 1 ? ['TAB robot', 'SPACE drop'] : []),
       ...(talks ? ['E talk'] : []),
       'R reset',
+      'M sound',
       'ESC menu',
     ].join('   ');
 

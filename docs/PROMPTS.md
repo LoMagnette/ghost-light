@@ -4702,6 +4702,24 @@ reception desk trapped anyone a robot shoved into it; the floor plan now
 drops islands under 24 cells. After all three, across four seeds, no cell
 anywhere holds more than 3.6 times its room's average.
 
+### Claude Opus — music, one track per chapter
+
+**Prompt:**
+> Let starts working on sound. I've 3 sound one for each level how can you move on this.
+
+**Built the player before the files arrived.** Step one of `docs/AUDIO.md`,
+music first because that is what the author has: `src/app/audio.ts` finds
+tracks by file name, like portraits, so the three files need no wiring.
+Music is module state, not a screen's, because the wormhole is a screen
+change and the music has to crossfade through it rather than cut.
+
+**Checked without ears.** A headless browser, three generated test tones of
+different lengths standing in for the tracks, and the audio source nodes
+counted as they start and stop: nothing before the first key, the menu's
+tune carries into Chapter I without restarting, Chapter II crossfades, and
+mute survives a reload. The tones were deleted, not committed. Whether it
+SOUNDS right is the author's call.
+
 ---
 
 ## Audio

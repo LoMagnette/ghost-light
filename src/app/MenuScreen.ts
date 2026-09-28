@@ -31,6 +31,7 @@ import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { el, MONO, SANS, SERIF } from './dom';
 import { currentQuality, setQuality } from './quality';
+import { isMuted, onMuteChange, playAmbience, playMusic } from './audio';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 240;
@@ -42,6 +43,7 @@ const GRADE_EASE = 1.6;
 export class MenuScreen implements Screen {
   private selected = 0;
   private cards: HTMLElement[] = [];
+  private stopListening: () => void = () => undefined;
   private backdrop!: BlockoutRenderer;
   private readonly isoCamera: OrthographicCamera = createIsoCamera();
   private drift = 0;
@@ -71,6 +73,10 @@ export class MenuScreen implements Screen {
 
   mount(game: Game): void {
     game.setBackground(CHAPTER_ONE.palette.void);
+    // The menu's own tune if there is one; otherwise Chapter I's, which is
+    // the building the backdrop shows.
+    playMusic('music-menu', 'music-silence');
+    playAmbience();
 
     // The empty building, lit by nothing but its own dark and one lamp.
     this.backdrop = new BlockoutRenderer(
@@ -139,12 +145,20 @@ export class MenuScreen implements Screen {
      * built when a chapter mounts — which is also exactly when a player who
      * finds the game slow would reach for it.
      */
-    const graphics = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
+    const graphics = centred(VIEW_HEIGHT - 128, { font: `12px ${MONO}`, color: '#6f777c' }, '');
     const showGraphics = (): void => {
       graphics.textContent = `G   graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
     };
     showGraphics();
     game.ui.append(graphics);
+    const sound = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
+    const showSound = (): void => {
+      sound.textContent = `M   sound: ${isMuted() ? 'off' : 'on'}`;
+    };
+    showSound();
+    game.ui.append(sound);
+    this.stopListening = onMuteChange(showSound);
+
     game.keyboard.on('KeyG', () => {
       setQuality(currentQuality() === 'high' ? 'low' : 'high');
       game.applyQuality();
@@ -170,6 +184,7 @@ export class MenuScreen implements Screen {
   }
 
   dispose(): void {
+    this.stopListening();
     this.cards = [];
     this.backdrop.dispose();
   }

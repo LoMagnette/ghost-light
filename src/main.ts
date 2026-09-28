@@ -14,6 +14,7 @@ import { MenuScreen } from '@/app/MenuScreen';
 import { ChapterScreen } from '@/app/ChapterScreen';
 import type { Routes } from '@/app/Routes';
 import { MOVEMENT_LAB } from '@/chapters/lab';
+import { installAudio } from '@/app/audio';
 import { assertMatchesProjection, createIsoCamera } from '@/render/IsoCamera';
 
 const stage = document.getElementById('stage');
@@ -28,6 +29,8 @@ if (!(stage instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement) ||
 // venue was surveyed from all have to agree about which way the building
 // faces. This is the half of that which can be checked by a machine.
 if (import.meta.env.DEV) assertMatchesProjection(createIsoCamera());
+
+installAudio();
 
 const game = new Game(stage, canvas, ui);
 

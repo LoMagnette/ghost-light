@@ -24,7 +24,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Attendees | 🔄 | Models merged (#17, #18) and judged good; the bunching is fixed on `crowd-spread`, **not merged** |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
-| Audio | ⬜ | Planned in `docs/AUDIO.md`; nothing playing yet |
+| Audio | 🔄 | Engine and per-chapter music built on `audio`, **waiting for the three tracks** in `src/audio/` |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
@@ -100,7 +100,7 @@ pie showData
 | Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
 | **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
 | 🔄 **Attendees bunch up in some areas of the map** | Agent | Mon 28 Sep | **Fixed 28 Sep on `crowd-spread`, not merged.** A bug in how walkers pick their next step pushed everyone north-east, so every room emptied into its top-right corner (37× the average in the reception). Also fixed: people following walls, and a pocket in the reception desk nobody could leave. `npm run crowd` now guards it: worst cell 3.6× average. Needs a look in the game |
-| Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | Planned 27 Sep in `docs/AUDIO.md`, with the list of files and their names |
+| 🔄 Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | **28 Sep, `audio` branch:** music per chapter plays, crossfades, mutes on M. The author has one track per chapter: name them `music-silence`, `music-javapolis`, `music-capacity` in `src/audio/`. Next: the robots' footfalls and impacts, synthesised |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
 | README reread and tech/genAI description | Agent | Wed 30 Sep | |
