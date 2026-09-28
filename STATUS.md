@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Mon 28 Sep, evening: two days left.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Mon 28 Sep, late evening: two days left.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -15,15 +15,15 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 |---|---|---|
 | Engine, physics, venue | ✅ | Built, measured, on `main` |
 | Chapter I: The Silence | ✅ | Finishable, and the cat horde is done and on `main` |
-| Chapter II: JavaPolis | 🔄 | Breakdowns merged (#10); **never played by a person**, windows untuned |
-| Chapter III: At Capacity | 🔄 | Nine things, merged (#9); **never played by a person** |
+| Chapter II: JavaPolis | 🔄 | Nine breakdowns in Rooms 3–8 with gaps for the speakers, merged (#32); **never played by a person** |
+| Chapter III: At Capacity | 🔄 | Nine things in Rooms 3–10, merged (#9, #32); **never played by a person** |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12) |
 | Objective markers | ✅ | Beacons per robot (#15), off-screen arrows and focus on `main` |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), menu and HUD (#11) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18) and judged good; the bunching fix is merged (#21) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#31), the front's glass doors, the storey swap and the longer grand flight included. One cinema-room improvement is noted for later |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#31), the front's glass doors, the storey swap and the longer grand flight included; the job objects, stanchions and corridor tables merged (#32–#34). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
@@ -31,8 +31,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 39
-    "In progress" : 3
+    "Done" : 42
+    "In progress" : 1
     "To do" : 12
 ```
 
@@ -80,6 +80,9 @@ pie showData
 | Attendees no longer bunch into every room's north-east corner | #21 `crowd-spread` | `npm run crowd` guards it: worst cell 3.6× the average |
 | **The venue remodelled zone by zone, from the author's plans** | #25 `reception-east`, #26 `stair-cores`, #27 `hall-threshold`, #28 `reception-centre`, #29 `hall-north-east` | 28 Sep, the author: "good enough for now". What changed:<ul><li>the hall flights are walled cores entered from the side;</li><li>the hall is a bay deeper, and the threshold has a landing with steps on three sides and no ramp;</li><li>two BOF rooms down three steps, and toilets in the north-east corner;</li><li>the reception island, five pillars and the free counter are on the column grid;</li><li>the grand flight runs wall to wall, with the corridor upstairs 5.4 m wider along its whole east side;</li><li>the hall's east side steps as drawn, and the polo pickup is an L-shaped counter</li></ul> |
 | Glass doors across the whole front; the storey swaps half way up a flight; one tread per riser; a 10.2 m grand flight of 34 steps | #30 `entrance-doors`, #31 `stair-treads` (with `stair-swap`) | 28 Sep |
+| **The objects the jobs are about, and Chapter II retuned** | #32 `job-props` | 28 Sep: every job shows its object (board, rack, projector, cable, adapter, chairs, coffee, keg, shutter, mic, scanner, polo) with a lamp for broken or fixed; the zones and pickup range are wider, and the projector counts anywhere in the back aisle. Devoxx uses Rooms 3–10, JavaPolis 3–8. Chapter II has nine breakdowns, not eleven, with longer windows and gaps for the speakers |
+| **Stanchions where the rooms in use stop** | #33 `session-drape` | 28 Sep: posts and a red rope across the upstairs corridor, open in the middle. The author: "perfect" |
+| **Long tables along the corridor**, between Rooms 5/6 and 7/8 | #34 `corridor-tables` | 28 Sep: chairs on both sides, a metre off the wall, starting 2 m past each door so the entrances stay free; the chair flicker (coplanar faces) is fixed. The west tables show only through the cutaway |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
@@ -88,8 +91,6 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **The objects the jobs are about, and Chapter II retuned** | `job-props` | Every job has its object, and the zones are wider (the projector counts anywhere in the back aisle). Devoxx uses Rooms 3–10, JavaPolis 3–8. Chapter II has nine breakdowns, not eleven, with longer windows and gaps for the speakers | Push, then merge | Agent, once the push works |
-| **Stanchions where the rooms in use stop** | `session-drape`, on `job-props` | Posts and a red rope across the upstairs corridor, open in the middle. The author: "perfect" (28 Sep) | Push, then merge after `job-props` | Agent, once the push works |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from

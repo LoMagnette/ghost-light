@@ -5506,6 +5506,12 @@ and the lens turned white.
 - **Checked:** `traverse` (all four doors, the stop at a table),
   `objectives` and `shoot` pass.
 
+> Update the project status based on the recently merge branches
+
+**Done:** `job-props`, `session-drape` and `corridor-tables` are merged
+(#32, #33, #34). Their rows moved to Done in `STATUS.md`, with a new row for
+the corridor tables, and the pie chart and chapter rows are updated.
+
 ---
 
 ## Audio
