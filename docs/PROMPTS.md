@@ -4836,6 +4836,34 @@ vestibule and leaves by the far door. The drive now eases off after 0.9 s
 before turning to climb. Only 0.8–1.0 s works, so a player has to steer
 into the turn rather than hold the key down.
 
+### Claude Opus — a terrace at the head of the grand stair
+
+**Prompt:**
+> Great on room floor, the access to the main stair case is not aligned. It
+> missing a terasse like part. You can find schematic about it here:
+> references/venue/maps/access-main-stairs.png
+
+**What was wrong:** on the plan the corridor between Rooms 5 and 8 opens onto
+a wide landing. The flight starts from its far side, off to the east, and a
+curved wall closes the corner beside it. Ours was centred with an open drop
+down each side, and it started 4.7 m from the rooms instead of 10.4 m. The
+cause was a choice made earlier: the flight had been given a gentle
+"ceremonial" pitch 11.9 m long, and that length is exactly what used up the
+terrace. Both floor plans draw a short flight, about 6–7 m, offset east by
+the same amount.
+
+**Built:** the flight now runs from 2.4 m west of the centre line to the
+corridor's east wall. Its pitch is the building's 0.18 riser on a 0.26 going,
+so it is 7.3 m long and leaves 9.3 m of terrace. The corner behind the curved
+wall is a solid block with a rounded corner. Downstairs the reception island
+and counter moved east with the flight, as they are anchored to it.
+
+**Caught by the harnesses:** `npm run objectives` found Chapter I's cat
+inside the counter that had moved, so the cat now sits north of it.
+`npm run traverse` started a robot inside the island, which is now in front
+of the flight's west half, so that start point moved east. A new scenario
+walks into the curved wall.
+
 ---
 
 ## Audio
