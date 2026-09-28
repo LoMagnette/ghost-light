@@ -5105,6 +5105,26 @@ turns west to the pillar, as `reception-desk.png` draws it. The door opens
 onto the full 1.1 m down to the head. There is a new `traverse` scenario:
 "Voxxy walks out through the door behind the reception desk".
 
+> for this part. Since we've update the area the staircase on the other side
+> need to be updated since it should form one wall to the other.
+
+Asked what happens upstairs, where Room 7 stood over the extra width. The
+author: "You should widen the stair and widden the hallway upstairs".
+
+**Done:**
+- **Wider flight:** the grand flight runs wall to wall, 14.8 m, to the stair
+  hall's east wall on `reception-desk.png`'s line (`GRAND_EAST`). It was
+  9.55 m.
+- **Wider hallway:** upstairs, Room 7 stands 5.4 m further east, whole, with
+  its seats, rake and door unchanged (`EAST_BAY`). The corridor has a bay
+  in front of it that the flight's east part comes up into.
+- **Wall rule:** an auditorium gets no door in an end wall facing a
+  corridor. Room 8's end wall faces the new bay and had punched a door into
+  the side of its rake. Room 1's door off the foyer is unchanged; a wall
+  diff confirmed nothing else moved.
+- **Tests:** a new `traverse` scenario, "Voxxy climbs the east end of the
+  grand flight into the corridor bay".
+
 ---
 
 ## Audio

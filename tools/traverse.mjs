@@ -501,6 +501,17 @@ scenario(
 );
 
 /*
+ * The grand flight runs wall to wall now (`GRAND_EAST`), and its east part
+ * comes up into the corridor's bay in front of Room 7. Up that part, from
+ * the concourse.
+ */
+scenario(
+  'Voxxy climbs the east end of the grand flight into the corridor bay',
+  (r) => r.floor === 1 && r.x > 7.3,
+  () => drive('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.5, y: GRAND.bounds.y - 0.6 }, NORTH, 14),
+);
+
+/*
  * The door behind the information island (`reception-desk.png`): out of the
  * staff floor behind the west desk, south towards the head of the flight.
  * The stair hall's west wall used to end 0.7 m in front of it.

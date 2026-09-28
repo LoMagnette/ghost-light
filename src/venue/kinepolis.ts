@@ -516,6 +516,15 @@ const HALL_OPENING = rect(THRESHOLD_LANDING.x, HALL.y - 1, THRESHOLD_LANDING.w, 
 const DOOR_WALL_COLUMNS = [1, 2, 3, 4].map((i) => HALL.x + COLUMN_X[i]);
 
 /**
+ * Metres per pixel of `reception-desk.png`, the author's crop of the
+ * reception, and x on it in metres. The drawing's pillars stand on these
+ * columns' lines: column 2 is x 109 on it, column 4 x 730. The reception's
+ * fit-out and the grand flight's east edge are both read off it.
+ */
+const DESK_PLAN_SCALE = (DOOR_WALL_COLUMNS[3] - DOOR_WALL_COLUMNS[1]) / (730 - 109);
+const planX = (px: number) => DOOR_WALL_COLUMNS[1] + (px - 109) * DESK_PLAN_SCALE;
+
+/**
  * The box at the landing's west end.
  *
  * Both drawings have it, from the concourse's west wall to the landing, as
@@ -1052,11 +1061,30 @@ export const CORE_DOOR_SET = 0.5;
  * centre. It had been centred with a 1.5 m gap down each side, and the author
  * walked up it (28 Sep): the stair "is not aligned".
  *
- * Room 7 abuts the corridor in this model, so the flight stops at the
- * corridor's east wall rather than running on under the room: 9.55 m of the
- * plan's 12.25, all of it lost off the east side.
+ * It stopped at the corridor's east wall, 9.55 m wide, because Room 7
+ * abutted the corridor. Now it runs wall to wall in its stair hall: see
+ * `GRAND_EAST`.
  */
 const GRAND_WEST = -2.4;
+
+/**
+ * Where the grand flight's EAST edge is: the stair hall's east wall.
+ *
+ * `reception-desk.png` draws the flight wall to wall, 15.9 m, and that wall
+ * is on its x 887. The flight had stopped 5.25 m short of it, at the
+ * corridor's east wall, and the concourse beside it was flat floor. The
+ * author wants it to run to the wall and the hallway upstairs to widen to
+ * take it (28 Sep), so Room 7 stands `EAST_BAY` further east and the
+ * corridor has a bay in front of it. See `auditoriums`.
+ */
+const GRAND_EAST = planX(887);
+
+/**
+ * How far Room 7 stands east of the corridor's wall: the corridor's bay in
+ * front of it, as wide as the flight's overrun. Its west wall is centred on
+ * the line the stair hall's east wall stands on downstairs.
+ */
+const EAST_BAY = GRAND_EAST + WALL_THICKNESS / 2 - CORRIDOR_HALF;
 
 /**
  * The grand flight's pitch: the building's riser on a 0.26 m going.
@@ -1100,8 +1128,8 @@ const GRAND_LANDING = 1.2;
 /**
  * The WELL — the hole the grand flight comes up through. Exactly as wide as
  * the flight: walled on the west by the block round the curve, and on the
- * east by the corridor's own wall, so there is no drop beside the flight to
- * rail off.
+ * east by the wall between the corridor's bay and Room 7, so there is no
+ * drop beside the flight to rail off.
  */
 const GRAND_WELL = rect(
   GRAND_WEST,
@@ -1110,7 +1138,7 @@ const GRAND_WELL = rect(
   // the building's own end wall with no plate at all — 14.3 m of it hanging
   // over the reception, which `npm run venue` reports the moment you try it.
   SOUTH_END + WALL_THICKNESS / 2,
-  CORRIDOR_HALF - GRAND_WEST,
+  GRAND_EAST - GRAND_WEST,
   GRAND_RUN + GRAND_LANDING,
 );
 
@@ -1265,7 +1293,8 @@ function auditoriums(): {
   const place = (list: Auditorium[], side: -1 | 1, gapAfter = 0): number => {
     let y = SOUTH_END;
     for (const aud of list) {
-      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF;
+      // Room 7 stands back behind the corridor's bay: see `EAST_BAY`.
+      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF + (aud.number === 7 ? EAST_BAY : 0);
       const bounds = rect(x, y, aud.depth, aud.frontage);
 
       /**
@@ -1402,6 +1431,16 @@ function auditoriums(): {
     kind: 'corridor',
     floor: 1,
     bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF * 2, northEnd - SOUTH_END),
+  });
+
+  // The bay in front of Room 7, which the grand flight comes up into. See
+  // `GRAND_EAST`.
+  rooms.push({
+    id: 'corridor-bay',
+    label: 'Central Corridor',
+    kind: 'corridor',
+    floor: 1,
+    bounds: rect(CORRIDOR_HALF, SOUTH_END, EAST_BAY, EAST[0].frontage),
   });
 
   // The curved concession foyer, north-west past Room 1 — the arc of counters
@@ -2560,7 +2599,17 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           // single doorway in the middle of the building and walled off the
           // thirteen doors the rooms had each opened for themselves.
           kind.push(0);
-        } else if (!mine && theirs && sameLevel) {
+        } else if (
+          !mine &&
+          theirs &&
+          sameLevel &&
+          !(room.kind === 'auditorium' && edge.horizontal && neighbour.kind === 'corridor')
+        ) {
+          // An auditorium is entered off its frontage onto the corridor, which
+          // is one of its long sides and never an end wall. Room 8's end wall
+          // faces the corridor's bay in front of Room 7, and it had punched a
+          // door into the side of its own rake. Room 1's door off the foyer,
+          // in its end wall, is the plan's and stays.
           kind.push(2); // room onto circulation — this one earns a door
           // ...but only onto circulation at its own level. BOF 3 stands on
           // the concourse, 1.2 m over the hall, and its north wall is the
@@ -4244,11 +4293,10 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
  * grid, and y from the head of the grand flight, which is the line along
  * the bottom of the crop.
  *
- * That puts everything where the drawing has it except the flight. The
- * drawing's flight is 15.9 m wide and this one is 9.55 (see `GRAND_WEST`:
- * Room 7 upstairs cuts it off). So the stair hall's east wall stands where
- * the drawing puts it, 5.3 m past the flight's east edge, and between the
- * two is flat concourse where the drawing has the rest of the steps.
+ * That puts everything where the drawing has it, the flight included: it
+ * runs to the stair hall's east wall (see `GRAND_EAST`). Its west edge is
+ * the one thing off the drawing, 1.05 m east of it, because it is fixed by
+ * the corridor upstairs (see `GRAND_WEST`).
  *
  * Reading the island, north to south:
  *   - a desk along the north, turning south down the east side;
@@ -4273,11 +4321,7 @@ const COUNTER_HEIGHT = 1.5;
 /** The thin walls: 6 px on the drawing. */
 const THIN_WALL = 0.15;
 
-/** Metres per pixel of `reception-desk.png`. */
-const DESK_PLAN_SCALE = (DOOR_WALL_COLUMNS[3] - DOOR_WALL_COLUMNS[1]) / (730 - 109);
-
-/** A point on the drawing, in metres: column 2 is x 109 there, the flight's head y 407. */
-const planX = (px: number) => DOOR_WALL_COLUMNS[1] + (px - 109) * DESK_PLAN_SCALE;
+/** A point on `reception-desk.png`, in metres: the flight's head is y 407 there. See `planX`. */
 const planY = (py: number) => GRAND_WELL.y + GRAND_WELL.h + (407 - py) * DESK_PLAN_SCALE;
 
 /** A rectangle on the drawing, corners in pixels. */
@@ -4397,9 +4441,8 @@ function receptionFitOut(): Obstacle[] {
  *           column 4. A thin wall comes 2.9 m back down from that pillar.
  *
  * The east side is placed off `reception-desk.png` on the column grid, not
- * on the well: see `RECEPTION_PILLARS`. The drawing's flight is 6.3 m wider
- * than this one, so there is flat concourse between the flight's east edge
- * and this wall, where the drawing has the rest of the steps.
+ * on the well: see `RECEPTION_PILLARS`. The flight runs to it: see
+ * `GRAND_EAST`.
  *
  * Both stop short of the entrance elevation by the LOBBY the plan leaves —
  * 80 px, 3.3 m — rather than running down to the foot of the flight. On the
