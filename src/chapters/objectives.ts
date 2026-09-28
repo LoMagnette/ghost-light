@@ -14,7 +14,7 @@
 import type { Activity, Zone } from '@/core/Activity';
 import type { Look } from '@/core/Crowd';
 import { roomName, type Objective } from '@/core/Objective';
-import { CROSS_AISLE, KINEPOLIS, RECEPTION_DESK } from '@/venue/kinepolis';
+import { CROSS_AISLE, KINEPOLIS, POLO_DESK, RECEPTION_DESK } from '@/venue/kinepolis';
 import { rect, type Level, type Rect } from '@/core/Venue';
 
 /** A small square zone around a point. The usual shape of a thing to touch. */
@@ -875,8 +875,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'dwell',
       id: 'polo',
       label: 'Pick up your polo',
-      // The counter is at 2 m, so this is Droid's and nobody else's.
-      at: roomZone('polo', 0.8),
+      // Handed across a 1.5 m counter, so this is Droid's and nobody else's.
+      // The public side of it: see POLO_DESK.
+      at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 1.2),
       gates: { reach: 2.0 },
       seconds: 3,
     },

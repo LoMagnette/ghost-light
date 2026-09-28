@@ -5147,6 +5147,33 @@ the old 14.3 m line, so it arrives against the corridor's east wall as
 before. Its walled core in the hall moved 5.4 m east with it. It stands
 clear of the column lines and of every stand, and all the checks pass.
 
+### The hall's north-east corner and the polo pickup
+
+> Theres another layout issue in the top right corner of the exhibition hall
+> you've model some closed space that probably not be there. You didn't
+> modelize correctly the desk to collect the polor. Take a look at this image
+> to help you @references/venue/maps/polo-desk.png
+
+**Done (branch `hall-north-east`):**
+- **Outline from the plan:** `polo-desk.png` is a crop of
+  `exhibition-floor.jpg`. On it the hall's east wall stands on column line 7
+  for the north 26.3 m, then steps out 2.4 m for a middle stretch down to
+  40.5 m from the north wall, then out to the full width.
+- **No closed blocks:** beyond that line was built as solid 3.4 m blocks,
+  which read as rooms with no way in. It is now outside (`HALL_OUTSIDE`):
+  - the hall's plate has it cut out;
+  - it collides but is not drawn;
+  - the wall builder leaves the bounding box unwalled there;
+  - `hallEastWalls` builds the real line.
+- **Polo pickup:** it was a separate room. It is now the plan's L-shaped
+  counter standing in the hall's middle stretch: a 7 m run down the west
+  side and a run along the south to the wall, 1.5 m high. The activity now
+  stands at `POLO_DESK`, on the public side.
+- **Hall floor:** 2441 m² against the printed 2411 (1.2%). It was 2494.
+- **Left out:**
+  - the plan's thin line round the counter (not in the key);
+  - the two doors into the back rooms, which aren't built.
+
 ---
 
 ## Audio
