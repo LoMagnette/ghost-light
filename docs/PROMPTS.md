@@ -4674,6 +4674,34 @@ of mine: the author dropped it in the folder and my `git add -A` took it
 without my noticing. It was the intended file, but I should have looked at
 what I was committing. This commit stages by name.
 
+### Claude Opus — the crowd that ran into the corner
+
+**Prompt:**
+> Let's update the status the robot more are good. The picture for the photograph mission are their. The humans are good just one issue they tend to cluter to getter creating some mess in some area of the map.
+>
+> two spots as an example top right corner of the exhibition area and top right corner of the reception.
+
+**Measured first.** A new harness, `npm run crowd`, walks a full crowd for
+ten simulated minutes and counts where everybody on their feet stands once
+a second. Before the fix the busiest cell of the reception held 37 times the
+room's average and the forecourt's 102 times, and the map showed every room
+emptying into its north-east corner, which is the top right on this camera.
+It was not two spots; it was every room.
+
+**The cause was a bug, not a tuning.** `retarget` scored the eight
+neighbouring cells against the walker's heading, but wrote each new
+favourite into that heading as it went, so every later cell was judged
+against the previous candidate. East is listed first, so the whole crowd
+drifted east and north. Fixed by holding the heading apart from the choice,
+and scoring by cosine so a diagonal is not twice as persuasive.
+
+**Two smaller ones the heatmap showed next.** Walkers who met a wall
+followed it, because along the wall was the nearest thing to straight on;
+now a blocked walker chooses afresh. And a two-cell pocket inside the
+reception desk trapped anyone a robot shoved into it; the floor plan now
+drops islands under 24 cells. After all three, across four seeds, no cell
+anywhere holds more than 3.6 times its room's average.
+
 ---
 
 ## Audio
