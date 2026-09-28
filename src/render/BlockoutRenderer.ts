@@ -316,6 +316,8 @@ function tone(x: number, y: number, z: number): number {
 
 /** Lit eyes at most: two for each of the most cats a horde can be. */
 const MAX_EYES = 80;
+/** A hunting cat's eye, metres on a side. Stylised: see `placeAnimal`. */
+const EYE_SIZE = 0.065;
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
 /**
@@ -1106,9 +1108,17 @@ export class BlockoutRenderer {
     for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, CAT_FUR, across, 0.285);
     // Up, and the tallest thing on it. At this size the tail IS the cat.
     part(0.33, 0.75, 0.09, 0.09, CAT_FUR, 0, -0.33);
-    // Hunting: the eyes, on the face of the head, just proud of it.
+    /*
+     * Hunting: the eyes, big, and on the top-front corner of the head.
+     *
+     * Not a cat's real eyes. Those came out two by four centimetres, which
+     * at this camera is a pixel, and on the FRONT of the head, which a cat
+     * running away from the camera hides. A 6.5 cm cube at the corner is two
+     * or three pixels that the camera sees from above whichever way the cat
+     * is facing, and bloom does the rest.
+     */
     if (animal.hunting) {
-      for (const across of [0.052, -0.052]) this.placeEye(animal, 0.42, across, 0.418);
+      for (const across of [0.06, -0.06]) this.placeEye(animal, 0.49, across, 0.39);
     }
     return i;
   }
@@ -1123,7 +1133,7 @@ export class BlockoutRenderer {
       animal.y + sn * along + c * across,
       animal.z + height,
     );
-    SCRATCH.scale.set(0.02, 0.045, 0.035);
+    SCRATCH.scale.set(EYE_SIZE, EYE_SIZE, EYE_SIZE);
     SCRATCH.rotation.set(0, 0, animal.heading);
     SCRATCH.updateMatrix();
     this.eyeMesh.setMatrixAt(this.eyes, SCRATCH.matrix);
