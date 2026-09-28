@@ -15,8 +15,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 |---|---|---|
 | Engine, physics, venue | ✅ | Built, measured, on `main` |
 | Chapter I: The Silence | ✅ | Finishable, and the cat horde is done and on `main` |
-| Chapter II: JavaPolis | 🔄 | Nine breakdowns in Rooms 3–8 with gaps for the speakers, merged (#32); **never played by a person** |
-| Chapter III: At Capacity | 🔄 | Nine things in Rooms 3–10, merged (#9, #32); **never played by a person** |
+| Chapter II: JavaPolis | ✅ | Nine breakdowns in Rooms 3–8 with gaps for the speakers, merged (#32); balance done for now, on the author's word (28 Sep) |
+| Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); balance done for now, on the author's word (28 Sep) |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12) |
 | Objective markers | ✅ | Beacons per robot (#15), off-screen arrows and focus on `main` |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), menu and HUD (#11) |
@@ -31,8 +31,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 42
-    "In progress" : 1
+    "Done" : 43
+    "In progress" : 0
     "To do" : 12
 ```
 
@@ -83,6 +83,7 @@ pie showData
 | **The objects the jobs are about, and Chapter II retuned** | #32 `job-props` | 28 Sep: every job shows its object (board, rack, projector, cable, adapter, chairs, coffee, keg, shutter, mic, scanner, polo) with a lamp for broken or fixed; the zones and pickup range are wider, and the projector counts anywhere in the back aisle. Devoxx uses Rooms 3–10, JavaPolis 3–8. Chapter II has nine breakdowns, not eleven, with longer windows and gaps for the speakers |
 | **Stanchions where the rooms in use stop** | #33 `session-drape` | 28 Sep: posts and a red rope across the upstairs corridor, open in the middle. The author: "perfect" |
 | **Long tables along the corridor**, between Rooms 5/6 and 7/8 | #34 `corridor-tables` | 28 Sep: chairs on both sides, a metre off the wall, starting 2 m past each door so the entrances stay free; the chair flicker (coplanar faces) is fixed. The west tables show only through the cutaway |
+| **Chapter II and III balance** | #32 `job-props` | 28 Sep: done for now, on the author's word. Chapter II has nine breakdowns with longer windows; Rooms 3–8 for JavaPolis, 3–10 for Devoxx. Reopen after the stranger playtest if it shows a wall |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
@@ -91,7 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
+| _Nothing in flight._ | | | | |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
 > the host, or set the token once:

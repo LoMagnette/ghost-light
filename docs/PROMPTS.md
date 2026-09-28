@@ -5512,6 +5512,11 @@ and the lens turned white.
 (#32, #33, #34). Their rows moved to Done in `STATUS.md`, with a new row for
 the corridor tables, and the pie chart and chapter rows are updated.
 
+> I think for now Chapter II and III balance is done
+
+**Done:** the balance row moved to Done in `STATUS.md`, and both chapters
+are ✅ at a glance. The stranger playtest is still ahead.
+
 ---
 
 ## Audio
