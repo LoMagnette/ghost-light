@@ -5408,6 +5408,20 @@ and the lens turned white.
   Peeks were taken in Rooms 7 and 8 of the mirrored projector and of the
   mirrored lectern with its cable.
 
+> I think the timing is still a bit thin so maybe we could remove one or two
+> activities round. and let more time between them so we can chat with the
+> speakers
+
+**Done:** nine breakdowns instead of eleven.
+- **What went:** a spare adapter and a spare projector. Voxxy keeps three mic
+  cables and two adapters; Droid keeps three projectors and one chairs run.
+- **Spacing:** the rest are spread out. Voxxy has about a minute free after
+  the first cable, and Droid has gaps either side of the chairs run.
+- **One job per room at a time:** no two jobs in the same room overlap, so
+  losing one never fails another.
+- **Docs:** `SPEC.md` and `MECHANICS.md` updated.
+- **Checked:** `objectives` and `shoot` pass.
+
 ---
 
 ## Audio

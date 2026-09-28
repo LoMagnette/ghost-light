@@ -238,12 +238,15 @@ player can never reach. *Something is still walking the building.*
 
 **Objective: keep every room running. Lose three and the day ends.**
 
-Five rooms in use — 2, 3, 4, 5 and 6, the west side of the corridor, with
-Room 5 (684 seats) as the main hall. Half the floor, which is what
-`crowdDensity` 0.35 already says.
+Six rooms in use, 3 to 8: two fewer than the eight Devoxx runs sessions in
+today (Chapter III uses 3 to 10). Four are on the west side of the corridor
+and two, 7 and 8, face them from the east; Room 5 (684 seats) is the main
+hall. The objective names them (`Objective.rooms`), and the other rooms stand
+dark.
 
-Things go wrong in them all day, on a schedule: eleven breakdowns in four
-minutes, overlapping. Each is a question about what shape of robot you have,
+Things go wrong in them all day, on a schedule: nine breakdowns in four
+minutes, spread out so there is time between them to go and talk to the
+speakers in the corridor. Each is a question about what shape of robot you have,
 and the four questions are the four real differences between the two:
 
 | Breakdown | Where | Verb | Asks | Robot |
@@ -281,9 +284,10 @@ centimetre each side. At 1.45 it is 0.80, the same gap the Chapter III stands
 use, and driving both robots at it in the real sim puts Voxxy in the zone and
 stops Droid at the lectern's end.
 
-The day has not been played by a person yet. Its windows are set from
-distances, not from feel, and the schedule is `BREAKDOWNS` in
-`src/chapters/objectives.ts` — a list of eleven lines to tune.
+The author played it on 28 Sep and found it thin, twice. The windows are now
+about half as long again as they were first set, and the schedule went from
+eleven jobs to nine. It is `BREAKDOWNS` in `src/chapters/objectives.ts`, a
+list of nine lines to tune.
 
 ### 5.3 Chapter III — At Capacity · *the conference*
 

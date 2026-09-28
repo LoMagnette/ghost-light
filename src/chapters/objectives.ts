@@ -440,19 +440,26 @@ const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
  * 55, a projector from about 40 to about 60, an adapter from about 32 to
  * about 45, and a chairs run from 65 to 80 s up to 110. The last ones close
  * at 238, inside the four-minute day.
+ *
+ * Nine, not eleven, since the same day: the author still found it thin, and
+ * wanted time between the jobs to go and talk to the speakers. The corridor
+ * conversations are half the chapter, and a schedule with no gaps in it
+ * said they were not. A spare adapter and a spare projector went, and the
+ * rest are spread out. Voxxy has a minute free after the first mic cable
+ * (about 20 to 80 s), and Droid has from its first projector to the chairs
+ * and from the chairs to the next projector. Nothing overlaps within one
+ * room, so losing one job never takes another down with it.
  */
 const BREAKDOWNS: Activity[] = [
-  micCable('aud-6', 8, 62),
-  projector('aud-4', 15, 78),
-  chairs('aud-5', 40, 150),
-  adapter('aud-8', 55, 105),
-  micCable('aud-3', 95, 152),
-  projector('aud-7', 110, 172),
-  adapter('aud-4', 125, 172),
-  chairs('aud-3', 152, 238),
-  micCable('aud-8', 165, 222),
-  projector('aud-6', 185, 238),
-  adapter('aud-7', 198, 238),
+  micCable('aud-6', 10, 65),
+  projector('aud-4', 15, 75),
+  chairs('aud-5', 55, 165),
+  adapter('aud-8', 80, 125),
+  micCable('aud-3', 115, 170),
+  projector('aud-7', 140, 200),
+  adapter('aud-4', 160, 205),
+  projector('aud-6', 195, 238),
+  micCable('aud-5', 195, 238),
 ];
 
 /**
