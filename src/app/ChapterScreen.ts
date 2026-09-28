@@ -2363,7 +2363,10 @@ export class ChapterScreen implements Screen {
  * Derived rather than declared, because a chapter may only change four
  * things and this is not one of them. Two sources, in order:
  *
- *   1. every room the objective actually names — Chapter II tends five rooms
+ *   0. the rooms the objective says the day uses, when it says: Devoxx
+ *      today runs sessions in Rooms 3 to 10, and JavaPolis in 3 to 8, so
+ *      Chapters II and III both do, and the other rooms stand dark;
+ *   1. every room the objective actually names — Chapter II tends six rooms
  *      and Chapter III sends you to three, and a room the player is told to
  *      go to had better have a talk in it;
  *   2. then filled out to `crowdDensity` of the building's fourteen rooms,
@@ -2399,6 +2402,10 @@ function roomsInUse(chapter: Chapter): string[] {
       if (room) named.add(room.id);
     }
   }
+
+  // Stated by the objective where it says which rooms the day uses.
+  const listed = chapter.objective.rooms;
+  if (listed) return [...new Set([...named, ...listed])];
 
   const wanted = Math.round(chapter.crowdDensity * auditoria.length);
   for (const id of auditoria) {

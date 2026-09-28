@@ -5374,6 +5374,40 @@ reach gate still makes it Droid's.
 corridor. The job completed about 4 s after stopping just inside the door,
 and the lens turned white.
 
+### Fewer rooms, longer Chapter II windows
+
+> So two thing the timer are sometime a bit too short on chapter 2 and devoxx
+> only use room 3,4,5,6,7,8,9,10 now a days. So we should limit at least to
+> these rooms and probably even two less for the java polis version
+
+**Done** on `job-props`:
+- **Rooms:** an objective can now name the rooms its day uses
+  (`Objective.rooms`); every other room stands dark and empty.
+  - Chapter III (Devoxx today) uses Rooms 3–10.
+  - Chapter II (JavaPolis) uses Rooms 3–8, two fewer.
+  - `npm run objectives` now fails any job in a room outside the list. It was
+    tested by taking Room 8 out, which failed as it should.
+- **Chapter II rewritten for its six rooms:** its jobs had been in Rooms 2–6,
+  and Room 2 is no longer used.
+  - The job helpers were written for west-side rooms only. They now mirror for
+    the east side (`fromScreen`, `fromBack`), because the venue lays out an
+    east room's lectern and table as a mirror image.
+  - Room 2's jobs moved to Rooms 3 and 4; Rooms 7 and 8 took three of the
+    others, so each of the six rooms has at least one breakdown.
+  - The HUD reads 6/6 running. The limit on lost rooms stays at three.
+  - Rod Johnson stood outside Room 2, so he moved to Room 6; his lines don't
+    name a room.
+  - Stephan's two "five rooms" lines now say six.
+- **Windows:** every Chapter II window is about half as long again:
+  - mic cable ~40 → ~55 s;
+  - projector ~40 → ~60 s;
+  - adapter ~32 → ~45 s;
+  - chairs 65–80 → 86–110 s.
+  The last ones close at 238 s, inside the 240 s day.
+- **Checked:** `objectives`, `traverse`, `crowd`, `venue` and `shoot` pass.
+  Peeks were taken in Rooms 7 and 8 of the mirrored projector and of the
+  mirrored lectern with its cable.
+
 ---
 
 ## Audio
