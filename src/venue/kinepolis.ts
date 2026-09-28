@@ -586,6 +586,23 @@ const TOILET_LOBBY_RECT = rect(
 );
 
 /**
+ * A strip of concourse floor under the back wall west of the women's room.
+ *
+ * The renderer measures a wall from the floor under its centre and cuts it
+ * off 2.7 m above that floor. Nothing is built under the "Toilets >" label
+ * yet, so this stretch of wall stood on the hall's datum and was cut 1.2 m
+ * lower than the toilets' walls beside it (the author, 28 Sep: "too short
+ * compare to the one next to him"). A `landing` is a plate the wall
+ * builder leaves alone, so this adds the floor and nothing else.
+ */
+const TOILET_BACK_PLATE = rect(
+  HALL.x + HALL.w - WALL_THICKNESS / 2,
+  HALL.y - WALL_THICKNESS / 2,
+  WOMENS.x - (HALL.x + HALL.w - WALL_THICKNESS / 2),
+  WALL_THICKNESS,
+);
+
+/**
  * What is in the two rooms, from the plan.
  *
  * Each cubicle bank collides as one hidden block, because a robot does not go
@@ -662,11 +679,12 @@ function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * built under the "Toilets >" label, so no room owned this stretch of the
    * back line and the wall builder left it open. It is the building's
    * edge, like the rest of that line.
+   *
+   * It stands on `TOILET_BACK_PLATE`: see there for why it needs one.
    */
-  const hallCorner = HALL.x + HALL.w - WALL_THICKNESS / 2;
   solids.push({
     floor: 0,
-    bounds: rect(hallCorner, HALL.y - WALL_THICKNESS / 2, WOMENS.x - hallCorner, WALL_THICKNESS),
+    bounds: TOILET_BACK_PLATE,
     height: WALL_HEIGHT,
     exterior: true,
   });
@@ -780,6 +798,7 @@ const floor0Rooms: Room[] = [
    * author is rebuilding that side one room at a time (28 Sep), so the rest
    * of the east wing is the building's edge until they come back.
    */
+  { id: 'toilet-back-wall', label: 'Toilets', kind: 'landing', floor: 0, bounds: TOILET_BACK_PLATE, elevation: CONCOURSE_LEVEL },
   { id: 'toilet-lobby', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_LOBBY_RECT, elevation: CONCOURSE_LEVEL },
   // The doors are where the plan hangs them: the women's at the west end of
   // its frontage, the men's at the east end.

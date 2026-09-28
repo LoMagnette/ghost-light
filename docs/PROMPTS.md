@@ -5002,6 +5002,14 @@ corner and the women's room. No room owned that stretch, because nothing is
 built under the label yet, so the wall builder left it open. It now has an
 envelope wall of its own, in `toiletFitOut`.
 
+> the wall is just too short compare to the one next to him
+
+**Done:** the renderer measures a wall from the floor under its centre and
+cuts it off 2.7 m above that. The new piece had no floor under it, so it was
+measured from the hall's level and came out 1.2 m lower than the toilet walls.
+A thin `landing` plate at concourse level (`TOILET_BACK_PLATE`) now stands
+under it, and the two tops meet.
+
 ---
 
 ## Audio
