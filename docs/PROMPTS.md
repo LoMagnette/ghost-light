@@ -5042,6 +5042,13 @@ is.
 - **Tests:** three new `traverse` scenarios. Voxxy climbs in, Biggy is
   stopped at the foot, and the wall beside the door holds.
 
+> there's a bit a flickering on the stairs of those rooms
+
+**Done:** the rooms' floor plates were drawn over their own steps. Both are
+solid blocks from the ground up, so the plate and the top step shared a face
+and flickered where they met. Each plate now has its flight cut out
+(`voids`), the way a stairwell is cut out of the floor it arrives on.
+
 ---
 
 ## Audio

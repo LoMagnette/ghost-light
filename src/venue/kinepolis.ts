@@ -873,8 +873,13 @@ const floor0Rooms: Room[] = [
    * of the east wing is the building's edge until they come back.
    */
   // South first, as they always were: BOF 1 is the one on the front.
-  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: BOF_SOUTH_ROOM, elevation: BOF_LEVEL },
-  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: BOF_NORTH_ROOM, elevation: BOF_LEVEL },
+  //
+  // Each plate has its flight cut out of it. The plate is drawn as a block
+  // from the ground up and the treads are too, so without the hole the two
+  // shared the top step's face and every face along the flight's sides, and
+  // the steps flickered (the author, 28 Sep).
+  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: BOF_SOUTH_ROOM, elevation: BOF_LEVEL, voids: [BOF_FLIGHTS[1]] },
+  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: BOF_NORTH_ROOM, elevation: BOF_LEVEL, voids: [BOF_FLIGHTS[0]] },
   { id: 'toilet-back-wall', label: 'Toilets', kind: 'landing', floor: 0, bounds: TOILET_BACK_PLATE, elevation: CONCOURSE_LEVEL },
   { id: 'toilet-lobby', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_LOBBY_RECT, elevation: CONCOURSE_LEVEL },
   // The doors are where the plan hangs them: the women's at the west end of
