@@ -119,7 +119,7 @@ This chapter is first for four reasons, and all four matter:
 - **Light:** 0.62 — warm, tungsten, slightly dated
 - **Starts on:** the auditorium level
 - **Objective:** keep every room running
-- **Mechanic:** eleven breakdowns across five rooms, on a schedule, each one a
+- **Mechanic:** nine breakdowns across six rooms (3 to 8), on a schedule, each one a
   job only one shape of robot does well — a projector bulb 2 m up and a
   40 kg stack of chairs for Droid, a mic cable behind the lectern and an
   adapter sprinted to the stage for Voxxy. A room dims while it waits; miss
@@ -165,7 +165,10 @@ is very cheap to build and very hard to misread.
 
 **Built 21 Sep.** It drives the population — nobody, 904 people, 3197 people
 — and it also decides how much of the building is in use, because 0.35 of
-fourteen auditoriums is five and that is exactly the five Chapter II tends.
+fourteen auditoriums is five and that was exactly the five Chapter II tended.
+Since 28 Sep the objective names the rooms instead: Devoxx today runs
+sessions in Rooms 3 to 10, JavaPolis in two fewer (3 to 8), and the rest
+stand dark.
 Thousands of seated figures are baked into their storey and cost nothing per
 frame; a few hundred walk, and get out of the way of anything heavy. See
 `docs/MECHANICS.md` §5.4. It does not yet drive the ambient audio bed, which

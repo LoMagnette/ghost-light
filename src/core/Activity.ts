@@ -185,6 +185,47 @@ interface Common {
    * changes at all to be photographed.
    */
   photo?: Photo;
+  /**
+   * The thing the job is about, drawn where it is.
+   *
+   * A marker says whose job it is. The object says WHY it is theirs: a
+   * projector two metres up on the back wall is Droid's before the card
+   * says so, and a keg is Biggy's the moment you see it. Rendering only —
+   * a prop never collides, and nothing in the simulation reads it.
+   */
+  prop?: Prop;
+}
+
+/**
+ * What a job's object is. Each is drawn by `render/Props.ts`.
+ *
+ * A fix (a board, a projector, a cable, a shutter) shows whether it is
+ * broken or working. A haul's object is the thing carried, and goes where
+ * the carrier goes.
+ */
+export type PropKind =
+  | 'board'
+  | 'rack'
+  | 'projector'
+  | 'cable'
+  | 'adapter'
+  | 'chairs'
+  | 'coffee'
+  | 'keg'
+  | 'shutter'
+  | 'mic'
+  | 'scanner'
+  | 'polo';
+
+export interface Prop {
+  kind: PropKind;
+  /** Where it stands, metres. Absent is the centre of the activity's zone. */
+  x?: number;
+  y?: number;
+  /** How far above the floor it stands, metres: on a counter, on a bracket. */
+  z?: number;
+  /** Which way its front faces, radians from +x. Towards the camera by default. */
+  facing?: number;
 }
 
 /**

@@ -23,7 +23,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18) and judged good; the bunching fix is merged (#21) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#29). Three follow-ups are stacked and **not merged**: `entrance-doors` → `stair-swap` → `stair-treads`. One cinema-room improvement is noted for later |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#31), the front's glass doors, the storey swap and the longer grand flight included. One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
@@ -31,9 +31,9 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 38
+    "Done" : 39
     "In progress" : 2
-    "To do" : 13
+    "To do" : 12
 ```
 
 ---
@@ -79,6 +79,7 @@ pie showData
 | **Chapter I cats**: five at the start and one every 20 s up to 16, eight coats, a horde that follows Voxxy round walls and up the stairs and slows it, the dog sends them away | `more-cats`, on `main` | 28 Sep: done, on the author's word |
 | Attendees no longer bunch into every room's north-east corner | #21 `crowd-spread` | `npm run crowd` guards it: worst cell 3.6× the average |
 | **The venue remodelled zone by zone, from the author's plans** | #25 `reception-east`, #26 `stair-cores`, #27 `hall-threshold`, #28 `reception-centre`, #29 `hall-north-east` | 28 Sep, the author: "good enough for now". What changed:<ul><li>the hall flights are walled cores entered from the side;</li><li>the hall is a bay deeper, and the threshold has a landing with steps on three sides and no ramp;</li><li>two BOF rooms down three steps, and toilets in the north-east corner;</li><li>the reception island, five pillars and the free counter are on the column grid;</li><li>the grand flight runs wall to wall, with the corridor upstairs 5.4 m wider along its whole east side;</li><li>the hall's east side steps as drawn, and the polo pickup is an L-shaped counter</li></ul> |
+| Glass doors across the whole front; the storey swaps half way up a flight; one tread per riser; a 10.2 m grand flight of 34 steps | #30 `entrance-doors`, #31 `stair-treads` (with `stair-swap`) | 28 Sep |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
@@ -87,7 +88,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **Three venue follow-ups, stacked** | `entrance-doors` → `stair-swap` → `stair-treads` | Committed, **not pushed** | Push `stair-treads` (it carries the other two), open a PR, merge. Contents:<ul><li>every glazed bay of the front is a glass door;</li><li>a robot changes storey half way up a flight;</li><li>one tread per riser on every flight;</li><li>the grand flight is 10.2 m, 34 steps</li></ul> | Human |
+| **The objects the jobs are about** | `job-props` | Built and checked: every job has its object. A fix shows red, green or dark; a carried item rides in the robot's arms | The author plays it and says whether the objects read; then merge | Human looks · agent adjusts |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
@@ -115,7 +116,6 @@ pie showData
 | What | Owner | Notes |
 |---|---|---|
 | **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
-| **Show the object a robot-specific job is about** | Agent | When a job needs one robot, the THING should say why: a projector visibly two metres up in the booth, the cable behind the lectern, the adapter on the organisers' desk, the stack of chairs in the foyer, the keg, the shutter. The marker says whose job it is; the object should say why it is theirs. Props are `decor` in `kinepolis.ts` or drawn per activity |
 | **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
 
 ### Small, whenever there is a gap
@@ -160,8 +160,6 @@ gantt
     title Ghost Light, the last four days
     dateFormat YYYY-MM-DD
     axisFormat %a %d
-    section Merge
-    Merge the stacked venue branches  :active, m1, 2026-09-28, 1d
     section Human
     Play Chapter II and III           :active, h1, 2026-09-27, 1d
     Playtest with a stranger          :t1, 2026-09-29, 1d

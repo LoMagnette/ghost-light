@@ -197,6 +197,35 @@ for (const chapter of CHAPTERS) {
     }
   }
 
+  // The rooms the day uses, if the objective says which. A job in a room
+  // with no session in it is a job in a dark, empty room.
+  const rooms = chapter.objective.rooms;
+  if (rooms) {
+    for (const id of rooms) {
+      if (!KINEPOLIS.rooms.some((r) => r.id === id && r.kind === 'auditorium')) {
+        failures.push(`${chapter.id}: uses ${id}, which is not an auditorium`);
+      }
+    }
+    for (const activity of chapter.objective.activities) {
+      for (const zone of [activity.at, activity.kind === 'haul' ? activity.to : undefined]) {
+        if (!zone) continue;
+        const cx = zone.bounds.x + zone.bounds.w / 2;
+        const cy = zone.bounds.y + zone.bounds.h / 2;
+        const inside = KINEPOLIS.rooms.find(
+          (r) =>
+            r.floor === zone.floor &&
+            /^aud-\d+(-stage)?$/.test(r.id) &&
+            cx >= r.bounds.x && cx <= r.bounds.x + r.bounds.w &&
+            cy >= r.bounds.y && cy <= r.bounds.y + r.bounds.h,
+        );
+        const room = activity.room ?? inside?.id.replace(/-stage$/, '');
+        if (room && !rooms.includes(room)) {
+          failures.push(`${chapter.id}/${activity.id}: happens in ${room}, which has no session in this chapter`);
+        }
+      }
+    }
+  }
+
   const specs = chapter.cast.map((id) => ROBOTS[id]);
   const seen = new Set();
 

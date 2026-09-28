@@ -107,6 +107,8 @@ import {
   CUTAWAY_MAX,
   type CutawayUniforms,
 } from './Cutaway';
+import { buildProp, disposeProp, showCondition, type PropCondition, type PropView } from './Props';
+import type { PropKind } from '@/core/Activity';
 
 /**
  * Tallest an obstacle is DRAWN, in metres, whatever its real height.
@@ -692,6 +694,9 @@ export class BlockoutRenderer {
    */
   private readonly markerGroup = new Group();
   private readonly markerViews = new Map<string, MarkerView>();
+  /** The jobs' objects, by activity id. See `setProps`. */
+  private readonly propGroup = new Group();
+  private readonly propViews = new Map<string, PropView>();
   /**
    * Shared by every marker. The icons are the robots' silhouettes reduced to
    * one primitive each — Voxxy's round head, Droid's tall slab, Biggy's wide
@@ -857,6 +862,7 @@ export class BlockoutRenderer {
     }
     this.scene.add(this.markMesh);
     this.scene.add(this.markerGroup);
+    this.scene.add(this.propGroup);
 
     this.buildEnvelope();
     this.envelope.visible = false;
@@ -1622,6 +1628,75 @@ export class BlockoutRenderer {
     };
   }
 
+  /**
+   * The objects the jobs are about, where they are this frame.
+   *
+   * A carried item is parented to the robot carrying it rather than moved
+   * after it, so it bobs, leans and turns with the machine for nothing.
+   * Held in front, at a third of the robot's height: the chairs in Droid's
+   * arms, the keg against Biggy's chest.
+   */
+  setProps(props: readonly PropState[], floor: Level): void {
+    const seen = new Set<string>();
+    for (const prop of props) {
+      seen.add(prop.id);
+      let view = this.propViews.get(prop.id);
+      if (!view) {
+        view = buildProp(prop.kind, this.propViews.size * 1.37);
+        this.propGroup.add(view.fixture);
+        if (view.item) this.propGroup.add(view.item);
+        this.castAndReceive(view.fixture);
+        if (view.item) this.castAndReceive(view.item);
+        this.propViews.set(prop.id, view);
+      }
+      showCondition(view, prop.condition, this.clock, this.lastDt);
+
+      view.fixture.visible = prop.stand && prop.floor === floor;
+      view.fixture.position.set(prop.x, prop.y, prop.z);
+      view.fixture.rotation.z = prop.facing;
+
+      const item = view.item;
+      if (!item) continue;
+      const where = prop.item;
+      if (!where) {
+        item.visible = false;
+      } else if ('carrier' in where) {
+        const robot = this.robots.get(where.carrier);
+        if (!robot) {
+          item.visible = false;
+          continue;
+        }
+        if (item.parent !== robot.tilt) robot.tilt.add(item);
+        const spec = where.carrier.body.spec;
+        item.position.set(spec.radius + view.itemDepth / 2 + 0.02, 0, spec.height * 0.34);
+        item.rotation.z = 0;
+        item.visible = true;
+      } else {
+        if (item.parent !== this.propGroup) this.propGroup.add(item);
+        if ('slot' in where) {
+          // Along the stand, centred on it: slots 0, 1, 2 at -s, 0, +s.
+          const along = (where.slot - 1) * view.slotSpacing;
+          item.position.set(
+            prop.x - Math.sin(prop.facing) * along,
+            prop.y + Math.cos(prop.facing) * along,
+            prop.z + view.itemTop,
+          );
+          item.visible = prop.floor === floor;
+        } else {
+          item.position.set(where.x, where.y, where.z);
+          item.visible = where.floor === floor;
+        }
+        item.rotation.z = prop.facing;
+      }
+    }
+
+    for (const [id, view] of this.propViews) {
+      if (seen.has(id)) continue;
+      disposeProp(view);
+      this.propViews.delete(id);
+    }
+  }
+
   private dropMarker(id: string, view: MarkerView): void {
     view.group.removeFromParent();
     for (const m of view.materials) m.dispose();
@@ -2041,6 +2116,7 @@ export class BlockoutRenderer {
     // per mesh and they still have to be dropped here — no marker owns them.
     for (const geometry of Object.values(this.markerParts)) geometry.dispose();
     this.markerViews.clear();
+    this.propViews.clear();
   }
 
   // -- the building ---------------------------------------------------------
@@ -3198,6 +3274,34 @@ export interface ObjectiveMarker {
 }
 
 export type MarkerIcon = 'any' | 'voxxy' | 'droid' | 'biggy' | 'drop';
+
+/**
+ * One job's object, as the screen sees it this frame. See `render/Props.ts`.
+ *
+ * `x`, `y`, `z` and `facing` are where its stand is. The item, if it has
+ * one, is on that stand, somewhere else on the floor, or in a robot's arms.
+ */
+export interface PropState {
+  id: string;
+  kind: PropKind;
+  floor: Level;
+  x: number;
+  y: number;
+  z: number;
+  facing: number;
+  condition: PropCondition;
+  /**
+   * Draw the stand. Three adapters share one desk and two chair stacks one
+   * corner of the foyer, and only the first of each draws what they share.
+   */
+  stand: boolean;
+  item?:
+    | { carrier: Actor }
+    /** On the stand, in the `slot`th place along it. */
+    | { slot: number }
+    /** Put down somewhere, or delivered. */
+    | { x: number; y: number; z: number; floor: Level };
+}
 
 /** A zone's light rig: its lights, the storey they belong to, and how lit it is. */
 interface ZoneRig {

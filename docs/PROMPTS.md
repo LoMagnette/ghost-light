@@ -5304,6 +5304,124 @@ precast above, which carries the star, is unchanged. The band-end cut in
 - **Noted for later:** one cinema-room improvement, which the author hasn't
   described yet.
 
+> the stair treads is merged
+
+**Done:** `origin/main` has #30 (`entrance-doors`) and #31 (`stair-treads`,
+carrying `stair-swap`). `STATUS.md` moves them to done, and no venue work is
+left unmerged.
+
+### The objects the jobs are about
+
+> Can adapt the game so when the robot has to interact with an object you
+> can see the actual object
+
+This was the backlog row "show the object a robot-specific job is about".
+**Done** on `job-props`:
+- **What was there:** most job spots had nothing at all; only the polo counter
+  existed.
+- **Now:**
+  - an activity carries a `prop` (render only, never collided), drawn by
+    `render/Props.ts`, twelve kinds;
+  - a fix shows its state on an unlit lamp: red and blinking while broken,
+    green once fixed, dark if the room is lost; the shutter rolls up and the
+    plug goes back in;
+  - a haul's item sits on its stand and rides in the carrier's arms,
+    parented to the robot. It stays wherever it is put down or delivered.
+- **What the first frames got wrong, and what changed:**
+  - The boards hung on west walls, and the south-west camera looked at the
+    back of the wall. They are now floor-standing power cabinets.
+  - Room 8's rack stood inside the letters of `#DEVOXX`. It moved past the
+    last letter, and its tap zone moved with it.
+  - Every projector showed broken before any breakdown was due. States start
+    `open`, and the arrival dialogue holds the run still, so "not yet" is now
+    read from the chapter clock.
+  - The scanner went onto the keynote steward's activity because two zones
+    matched the text I replaced; moved to the badge job.
+  - The projector lens pointed sideways; it was turned to point out of the
+    front.
+- **Checked:** `typecheck`, `objectives`, `venue`, `traverse` and `shoot`
+  pass. Peeks were taken of every prop and of Voxxy carrying the coffee.
+
+> The interaction zone for those objective is really small making it harder
+> then it needs
+
+**Done** on `job-props`. The gates (radius, reach, payload) already decide
+who can do a job, so the zones only needed to be the right place, not a
+precise one:
+- **Pickup range:** 1.4 → 2.2 m, since the things now sit on a desk or
+  counter beside the spot.
+- **Mic cable:** 0.5 → 1.4 m.
+- **Adapter drop on the stage:** 1.0 → 2.2 m.
+- **Polo:** 1.2 → 2.0 m.
+- **Boards and Room 8 rack:** 2.6 → 3.4 m.
+- **Under a projector:** 1.9 m square → 1.9 × 4.0 m along the cross aisle.
+- **Stickers:** 0.6 → 1.0 m round a stand.
+
+`objectives`, `traverse`, `physics` and `shoot` pass.
+
+> I still have a hard time completing the projector task
+
+**Why it was still hard:** the door into each room's back aisle is at one end
+and the projector is in the middle. Droid, the only robot that can do it, had
+to drive about 5 m up a 2.5 m aisle and stop inside a 4 m stretch. It is the
+worst of the cast at stopping on a mark, and the aisle leaves it little room.
+
+**Done:** the zone is now the whole cross aisle (`crossAisle`, the same zone
+as attending a talk). Through the door and stopped for 3 s is enough; the
+reach gate still makes it Droid's.
+
+**Checked in the browser:** Droid driven in through Room 4's door from the
+corridor. The job completed about 4 s after stopping just inside the door,
+and the lens turned white.
+
+### Fewer rooms, longer Chapter II windows
+
+> So two thing the timer are sometime a bit too short on chapter 2 and devoxx
+> only use room 3,4,5,6,7,8,9,10 now a days. So we should limit at least to
+> these rooms and probably even two less for the java polis version
+
+**Done** on `job-props`:
+- **Rooms:** an objective can now name the rooms its day uses
+  (`Objective.rooms`); every other room stands dark and empty.
+  - Chapter III (Devoxx today) uses Rooms 3–10.
+  - Chapter II (JavaPolis) uses Rooms 3–8, two fewer.
+  - `npm run objectives` now fails any job in a room outside the list. It was
+    tested by taking Room 8 out, which failed as it should.
+- **Chapter II rewritten for its six rooms:** its jobs had been in Rooms 2–6,
+  and Room 2 is no longer used.
+  - The job helpers were written for west-side rooms only. They now mirror for
+    the east side (`fromScreen`, `fromBack`), because the venue lays out an
+    east room's lectern and table as a mirror image.
+  - Room 2's jobs moved to Rooms 3 and 4; Rooms 7 and 8 took three of the
+    others, so each of the six rooms has at least one breakdown.
+  - The HUD reads 6/6 running. The limit on lost rooms stays at three.
+  - Rod Johnson stood outside Room 2, so he moved to Room 6; his lines don't
+    name a room.
+  - Stephan's two "five rooms" lines now say six.
+- **Windows:** every Chapter II window is about half as long again:
+  - mic cable ~40 → ~55 s;
+  - projector ~40 → ~60 s;
+  - adapter ~32 → ~45 s;
+  - chairs 65–80 → 86–110 s.
+  The last ones close at 238 s, inside the 240 s day.
+- **Checked:** `objectives`, `traverse`, `crowd`, `venue` and `shoot` pass.
+  Peeks were taken in Rooms 7 and 8 of the mirrored projector and of the
+  mirrored lectern with its cable.
+
+> I think the timing is still a bit thin so maybe we could remove one or two
+> activities round. and let more time between them so we can chat with the
+> speakers
+
+**Done:** nine breakdowns instead of eleven.
+- **What went:** a spare adapter and a spare projector. Voxxy keeps three mic
+  cables and two adapters; Droid keeps three projectors and one chairs run.
+- **Spacing:** the rest are spread out. Voxxy has about a minute free after
+  the first cable, and Droid has gaps either side of the chairs run.
+- **One job per room at a time:** no two jobs in the same room overlap, so
+  losing one never fails another.
+- **Docs:** `SPEC.md` and `MECHANICS.md` updated.
+- **Checked:** `objectives` and `shoot` pass.
+
 ---
 
 ## Audio

@@ -11,7 +11,7 @@
  * second thing to keep true, and the first one to drift.
  */
 
-import type { Activity, Zone } from '@/core/Activity';
+import { zoneCentre, type Activity, type Zone } from '@/core/Activity';
 import type { Look } from '@/core/Crowd';
 import { roomName, type Objective } from '@/core/Objective';
 import { CROSS_AISLE, KINEPOLIS, POLO_DESK, RECEPTION_DESK } from '@/venue/kinepolis';
@@ -54,19 +54,19 @@ function crossAisle(id: string): Zone {
   };
 }
 
-/** The cross aisle behind the back row, where an auditorium's kit lives. */
+/**
+ * The cross aisle behind the back row, where an auditorium's kit lives.
+ *
+ * All of it, since 28 Sep. It was a 1.9 m square under the projector, then
+ * 4 m of the aisle, and the author still found the job hard: the door is at
+ * one end of the room, the projector in the middle, and Droid, the one robot
+ * that can do it, is the worst of the cast at stopping on a mark in a 2.5 m
+ * aisle. What makes the job Droid's is the reach gate. Where Droid parks in
+ * the aisle was never the question, so through the door and stopped is
+ * enough.
+ */
 function backOfHouse(id: string): Zone {
-  const room = KINEPOLIS.rooms.find((r) => r.id === id);
-  if (!room) throw new Error(`no such room: ${id}`);
-  const b = room.bounds;
-  // Rooms are entered from the corridor, which runs down the middle of the
-  // building at x = 0 — so the corridor side of a room is whichever end of it
-  // is nearer the centre line, and that is where you come in and where the
-  // rack stands.
-  const x = b.x < 0 ? b.x + b.w - CROSS_AISLE / 2 : b.x + CROSS_AISLE / 2;
-  // Narrower than the aisle it stands in, or the zone reaches into the back
-  // row and the marker ends up planted in the seating.
-  return spot(room.floor, x, b.y + b.h / 2, CROSS_AISLE - 0.6);
+  return crossAisle(id);
 }
 
 const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
@@ -74,6 +74,11 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
   if (!room) throw new Error(`no such room: ${id}`);
   return { floor: room.floor, bounds: room.bounds };
 };
+
+/** The coffee comes from the middle of the foyer. */
+const FOYER_CENTRE = zoneCentre(roomZone('foyer', 2.0));
+/** The middle of Room 5's stage, where the mic stands. */
+const MIC_AT = zoneCentre(roomZone('aud-5-stage', 0.4));
 
 /** The keynote room. Spots on its stage are taken from its screen end. */
 const ROOM_8 = roomBounds('aud-8').bounds;
@@ -99,14 +104,16 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-hall',
     label: 'Hall board',
-    at: spot(0, -21.8, -1.7, 2.6),
+    at: spot(0, -21.8, -1.7, 3.4),
+    prop: { kind: 'board', x: -21.0, y: -0.9 },
     reveal: { ...roomBounds('hall'), to: 0.42 },
   },
   {
     kind: 'tap',
     id: 'board-concourse',
     label: 'Concourse board',
-    at: spot(0, -11.0, -50.0, 2.6),
+    at: spot(0, -11.0, -50.0, 3.4),
+    prop: { kind: 'board', x: -10.2, y: -49.2 },
     reveal: { ...roomBounds('reception'), to: 0.5 },
   },
   /*
@@ -191,7 +198,12 @@ const SILENCE: Activity[] = [
     // whether you can slow a robot down on a slope.
     // From Room 8's screen end, so it goes where the room goes: the room
     // moved 5.4 m east when the corridor was widened (28 Sep).
-    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -31.0, 2.6),
+    //
+    // At the south end of the stage, just past the last letter of `#DEVOXX`,
+    // where the rack can stand against the screen wall without standing in
+    // the word.
+    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -35.6, 3.4),
+    prop: { kind: 'rack', x: ROOM_8.x + ROOM_8.w - 0.9, y: -37.3, facing: Math.PI },
     after: ['board-hall', 'board-concourse'],
     reveal: { ...roomBounds('aud-8'), to: 0.62 },
   },
@@ -237,16 +249,18 @@ export const SILENCE_OBJECTIVE: Objective = {
 };
 
 // ---------------------------------------------------------------------------
-// Chapter II — five rooms, draining
+// Chapter II — six rooms, draining
 // ---------------------------------------------------------------------------
 
 /*
  * `docs/MECHANICS.md` §5.2.
  *
- * Five rooms, the west side of the corridor, which is what "half the floor
- * in use" means in a building whose rooms face each other in pairs. Things
- * go wrong in them all day, and every thing that goes wrong is a question
- * about what shape of robot you have:
+ * Six rooms, 3 to 8: two fewer than the eight Devoxx runs sessions in
+ * today (the author, 28 Sep), for a younger conference. Four on the west
+ * side of the corridor and the two big ones across from them on the east.
+ * Until then it was five rooms, 2 to 6, all on the west. Things go wrong in
+ * them all day, and every thing that goes wrong is a question about what
+ * shape of robot you have:
  *
  *   the projector bulb    2 m up in the booth          REACH     Droid
  *   the mic cable         behind the lectern, 0.85 m   FIT       Voxxy
@@ -258,8 +272,28 @@ export const SILENCE_OBJECTIVE: Objective = {
  * start Droid on the long haul, TAB to Voxxy for the sprint, TAB back.
  */
 
+/*
+ * Which side a room is on, for the jobs laid out from its walls. West rooms
+ * (x < 0) have their screen on their west edge and their back wall on the
+ * corridor to the east; east rooms are the mirror. The venue lays the
+ * lectern and the table out the same way on both sides (`presenterDesk`).
+ */
+/** `d` metres into a room from its screen wall. */
+function fromScreen(b: Rect, d: number): number {
+  return b.x < 0 ? b.x + d : b.x + b.w - d;
+}
+/** `d` metres into a room from its back wall, the one on the corridor. */
+function fromBack(b: Rect, d: number): number {
+  return b.x < 0 ? b.x + b.w - d : b.x + d;
+}
+/** Facing away from the screen wall, into the room. */
+function awayFromScreen(b: Rect): number {
+  return b.x < 0 ? 0 : Math.PI;
+}
+
 /** A dead projector: 2 m up in the booth at the back of the room. */
 function projector(room: string, from: number, to: number): Activity {
+  const b = roomBounds(room).bounds;
   return {
     kind: 'dwell',
     id: `bulb-${room}-${from}`,
@@ -271,6 +305,14 @@ function projector(room: string, from: number, to: number): Activity {
     at: backOfHouse(room),
     gates: { reach: 2.0 },
     seconds: 3,
+    // On its bracket on the back wall, two metres up, aimed at the screen.
+    prop: {
+      kind: 'projector',
+      x: fromBack(b, 0.9),
+      y: b.y + b.h / 2,
+      z: PROJECTOR_HEIGHT,
+      facing: awayFromScreen(b) + Math.PI,
+    },
   };
 }
 
@@ -285,7 +327,6 @@ function projector(room: string, from: number, to: number): Activity {
  */
 function micCable(room: string, from: number, to: number): Activity {
   const b = roomBounds(room).bounds;
-  // West rooms only: the screen wall is the room's west edge.
   const lectern = b.y + b.h - LECTERN_FROM_NORTH - LECTERN_ALONG / 2;
   return {
     kind: 'tap',
@@ -293,8 +334,13 @@ function micCable(room: string, from: number, to: number): Activity {
     label: `${roomName(room)}: mic cable`,
     room,
     window: { from, to },
-    at: spot(1, b.x + WALL_FACE + SLOT_DEPTH / 2, lectern, 0.5),
+    // 1.4 m, not the 0.5 it was: the slot is still where the job is, but
+    // the gate is what keeps Droid out, and a zone smaller than Voxxy made
+    // the one robot it is for hunt for the centimetre.
+    at: spot(1, fromScreen(b, WALL_FACE + SLOT_DEPTH / 2), lectern, 1.4),
     gates: { maxRadius: 0.4 },
+    // The socket is in the screen wall, and the plug is on the floor.
+    prop: { kind: 'cable', x: fromScreen(b, WALL_FACE + 0.02), y: lectern, facing: awayFromScreen(b) },
   };
 }
 
@@ -317,9 +363,10 @@ function adapter(room: string, from: number, to: number): Activity {
     window: { from, to },
     at: ORGANISERS_DESK,
     mass: 0.5,
+    prop: ORGANISERS_TABLE,
     // On the stage in front of the presenter's table, which is where the
     // laptop is and where the person waiting for it is standing.
-    to: spot(1, b.x + PRESENTER_FROM_WALL, b.y + b.h - TABLE_CENTRE_FROM_NORTH, 1.0),
+    to: spot(1, fromScreen(b, PRESENTER_FROM_WALL), b.y + b.h - TABLE_CENTRE_FROM_NORTH, 2.2),
   };
 }
 
@@ -340,6 +387,7 @@ function chairs(room: string, from: number, to: number): Activity {
     window: { from, to },
     at: FOYER_STACK,
     mass: 40,
+    prop: { kind: 'chairs', x: -19.3, y: 50.6 },
     to: crossAisle(room),
   };
 }
@@ -351,6 +399,8 @@ function chairs(room: string, from: number, to: number): Activity {
  */
 /** The screen wall is 0.3 m thick, centred on the room's edge. */
 const WALL_FACE = 0.15;
+/** Where a projector hangs: two metres, the reach gate's own number. */
+const PROJECTOR_HEIGHT = 2.0;
 /** The slot behind the lectern, wall face to lectern back. */
 const SLOT_DEPTH = 0.8;
 /** How far the lectern starts in from the north wall, and how long it is. */
@@ -366,6 +416,8 @@ const TABLE_CENTRE_FROM_NORTH = 3.8;
  * go when something is missing, which at a conference this size is always.
  */
 const ORGANISERS_DESK = spot(1, 3.2, -40.0, 1.4);
+/** The desk itself, just east of where you stand at it, with the adapters on it. */
+const ORGANISERS_TABLE = { kind: 'adapter', x: 3.95, y: -40.0, facing: Math.PI } as const;
 /** The chairs nobody expected to need, stacked in the foyer. */
 const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
 
@@ -379,22 +431,35 @@ const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
  * and the other is somewhere else doing its own job.
  *
  * Windows are generous for the robot a job is FOR and tight for the other.
- * An adapter's thirty seconds is plenty for Voxxy from the desk and a gamble
- * for Droid; a chairs run gets over a minute because it is two lengths of
- * the building with forty kilos on.
+ * An adapter's forty-five seconds is plenty for Voxxy from the desk and a
+ * gamble for Droid; a chairs run gets nearly two minutes because it is two
+ * lengths of the building with forty kilos on.
+ *
+ * Every window is about half as long again as it was, since 28 Sep: the
+ * author found them too short in play. A mic cable went from 40 s to about
+ * 55, a projector from about 40 to about 60, an adapter from about 32 to
+ * about 45, and a chairs run from 65 to 80 s up to 110. The last ones close
+ * at 238, inside the four-minute day.
+ *
+ * Nine, not eleven, since the same day: the author still found it thin, and
+ * wanted time between the jobs to go and talk to the speakers. The corridor
+ * conversations are half the chapter, and a schedule with no gaps in it
+ * said they were not. A spare adapter and a spare projector went, and the
+ * rest are spread out. Voxxy has a minute free after the first mic cable
+ * (about 20 to 80 s), and Droid has from its first projector to the chairs
+ * and from the chairs to the next projector. Nothing overlaps within one
+ * room, so losing one job never takes another down with it.
  */
 const BREAKDOWNS: Activity[] = [
-  micCable('aud-6', 8, 48),
-  projector('aud-4', 15, 60),
-  chairs('aud-5', 40, 120),
-  adapter('aud-3', 55, 88),
-  micCable('aud-2', 95, 135),
-  projector('aud-6', 110, 150),
-  adapter('aud-4', 125, 157),
-  chairs('aud-3', 150, 215),
-  micCable('aud-5', 165, 200),
-  projector('aud-2', 185, 222),
-  adapter('aud-6', 198, 230),
+  micCable('aud-6', 10, 65),
+  projector('aud-4', 15, 75),
+  chairs('aud-5', 55, 165),
+  adapter('aud-8', 80, 125),
+  micCable('aud-3', 115, 170),
+  projector('aud-7', 140, 200),
+  adapter('aud-4', 160, 205),
+  projector('aud-6', 195, 238),
+  micCable('aud-5', 195, 238),
 ];
 
 /**
@@ -500,6 +565,8 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
   },
   line: 'Keep every room running',
   clock: 240,
+  // Two fewer than Devoxx uses now, for a younger conference. See `rooms`.
+  rooms: ['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8'],
   failLimit: 3,
   /*
    * Survive the day and the building folds again, forwards this time.
@@ -524,7 +591,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       at: STEPHAN_AT,
       lines: [
         'Maintenance. Good. Room 4 has been making a noise since nine and nobody will own up to hearing it.',
-        'You are going to spend today keeping five rooms alive. Before you do, let me tell you what the rooms are for.',
+        'You are going to spend today keeping six rooms alive. Before you do, let me tell you what the rooms are for.',
         'Every talk in this building is being filmed. All of it goes out afterwards, for nothing, to anyone.',
         'So if the talk were the reason to fly to Antwerp in December, nobody would fly to Antwerp in December.',
         'There are four people down that corridor with an hour to kill. THAT does not go out afterwards.',
@@ -584,7 +651,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         scale: 1.02,
       },
       [
-        'Two machines, five rooms, one of you. You have written this program before.',
+        'Two machines, six rooms, one of you. You have written this program before.',
         'And you already know where it goes wrong. It is never the doing. It is agreeing on what happened, and in what order.',
         'People have been reading that chapter all year and writing to me to say it cannot be right.',
         'Not one of them has been wrong in the same way twice, and I only ever find that out in a corridor.',
@@ -631,7 +698,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         'Then a man in Belgium puts everyone who read it inside one building for a week. I have learned more this morning than in the whole year I spent writing.',
         'Ask me the thing you have been arguing about at work. Genuinely. That is what I am standing here for.',
       ],
-      18.9,
+      // Outside Room 6, since 28 Sep: Room 2 has no session in the
+      // chapter's six rooms.
+      -51.0,
     ),
     /*
      * The way back.
@@ -690,6 +759,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
  * Twelve of the twenty-seven, and it was all of them until Chapter III was
  * judged too heavy. See `onTheRound`.
  */
+/** How far off a stand still counts as at it, metres. 0.6 meant touching it. */
+const STICKER_REACH = 1.0;
+
 function stickerSweep(): Activity[] {
   return KINEPOLIS.decor
     .filter((d) => d.material === 'booth')
@@ -703,10 +775,10 @@ function stickerSweep(): Activity[] {
       at: {
         floor: stand.floor,
         bounds: rect(
-          stand.bounds.x - 0.6,
-          stand.bounds.y - 0.6,
-          stand.bounds.w + 1.2,
-          stand.bounds.h + 1.2,
+          stand.bounds.x - STICKER_REACH,
+          stand.bounds.y - STICKER_REACH,
+          stand.bounds.w + STICKER_REACH * 2,
+          stand.bounds.h + STICKER_REACH * 2,
         ),
       },
     }));
@@ -748,6 +820,9 @@ function onTheRound(stand: { bounds: Rect }): boolean {
 export const CAPACITY_OBJECTIVE: Objective = {
   line: 'Do Devoxx. You cannot do all of it',
   clock: 360,
+  // The rooms Devoxx actually runs sessions in these days (the author, 28
+  // Sep). The other six stand dark even at capacity.
+  rooms: ['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8', 'aud-9', 'aud-10'],
   /*
    * Two robots in; three out. Biggy comes out of Droid.
    *
@@ -791,6 +866,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // aisle beside a blank wall.
       at: spot(RECEPTION_DESK.floor, RECEPTION_DESK.x, RECEPTION_DESK.y, 3.0),
       seconds: 2,
+      // The steward's scanner, on its post against the counter.
+      prop: { kind: 'scanner', x: RECEPTION_DESK.x + 1.1, y: RECEPTION_DESK.y + 0.8 },
     },
 
     /*
@@ -877,8 +954,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
       label: 'Pick up your polo',
       // Handed across a 1.5 m counter, so this is Droid's and nobody else's.
       // The public side of it: see POLO_DESK.
-      at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 1.2),
+      at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 2.0),
       gates: { reach: 2.0 },
+      prop: { kind: 'polo', x: POLO_DESK.counterX, y: POLO_DESK.y, z: POLO_DESK.counterTop, facing: Math.PI },
       seconds: 3,
     },
 
@@ -890,6 +968,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       to: { floor: 1, bounds: rect(-6.0, -34.0, 12.0, 6.0) },
       mass: 2,
       fragile: true,
+      prop: { kind: 'coffee', x: FOYER_CENTRE.x + 1.0, y: FOYER_CENTRE.y + 1.0 },
       // Biggy is excluded by the stairs long before it is excluded by this,
       // but a 430 kg machine carrying a tray of coffee is the wrong image
       // even where it can reach.
@@ -901,6 +980,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'shutter',
       label: 'Free the jammed shutter',
       at: spot(0, 20.0, 12.3, 3.2),
+      // In the hall's east wall, whose inner face is at x 22.02.
+      prop: { kind: 'shutter', x: 21.94, y: 12.3, facing: Math.PI },
       // 900 kg·m/s: Droid peaks at 777 and cannot, Biggy cruises at 1366 and
       // must still be doing two thirds of its top speed. A run-up, or nothing.
       momentum: 900,
@@ -912,6 +993,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       label: 'The keg, to the party stage',
       at: spot(0, 20.0, 15.8, 2.6),
       to: spot(0, -14.0, 10.3, 3.4),
+      prop: { kind: 'keg', x: 20.9, y: 16.3 },
       mass: 200,
       after: ['shutter'],
       window: { from: 0, to: 270 },
@@ -934,6 +1016,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // nothing to spare, which is the most Droid sentence in the game.
       at: roomZone('aud-5-stage', 0.4),
       gates: { reach: 2.0 },
+      prop: { kind: 'mic', x: MIC_AT.x, y: MIC_AT.y + 0.8 },
       window: { from: 60, to: 110 },
       seconds: 2,
     },

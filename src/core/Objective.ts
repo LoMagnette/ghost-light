@@ -44,6 +44,17 @@ export interface Objective {
    */
   failLimit?: number;
   /**
+   * The auditoria with a session in them. The rest stand empty, whatever
+   * the crowd density.
+   *
+   * On the objective because which rooms the day is using is part of what
+   * the chapter asks of the player: Devoxx today runs sessions in Rooms 3
+   * to 10, and JavaPolis two fewer. Absent, the screen fills rooms out to
+   * the crowd density. Every room an activity names must be in here, and
+   * `npm run objectives` checks it.
+   */
+  rooms?: string[];
+  /**
    * Where winning takes you, if not to the end card.
    *
    * On the objective and not on the chapter for the same reason `reveal`
@@ -151,8 +162,14 @@ export interface ObjectiveEvent {
   at: number;
 }
 
-/** How close you have to be to pick a thing up, metres. */
-const PICKUP_RANGE = 1.4;
+/**
+ * How close you have to be to pick a thing up, metres.
+ *
+ * 2.2, from 1.4 (28 Sep): the things are drawn now, on a desk or a counter
+ * beside the spot, and 1.4 from the middle of the spot had the player
+ * bumping the desk and still empty-handed.
+ */
+const PICKUP_RANGE = 2.2;
 
 /** Slow enough to count as standing still, m/s. */
 const STILL = 0.25;
