@@ -871,25 +871,57 @@ const GRAND_STAIR = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_LANDING, GRAND_WELL.
  * `access-main-stairs.png` is the south end of the auditorium level. The
  * corridor between Rooms 5 and 8 does not run on to the stairs. It opens into
  * a landing the full width of the corridor, and the flight starts from the
- * far side of it, in the east. The south-west corner is closed off by a wall
- * that runs east, turns through a quarter circle, and comes down to the
- * flight's west edge. So from the top step you see open floor ahead and a
- * curved wall on your left, not a corridor with a hole at the end.
+ * far side of it, in the east. West of the flight, the floor stops: the
+ * corner is open to the reception below, a direct view down into the level
+ * you came up from (the author, 28 Sep). Its edge runs east, turns through a
+ * quarter circle, and comes down to the flight's west edge. So from the top
+ * step you see open floor ahead and, on your left, the drop to the concourse.
  *
- * Measured off the plan relative to the stairhead: the wall's straight run is
+ * Measured off the plan relative to the stairhead: the edge's straight run is
  * 4.5 m north of the head, the curve is 2.5 m in radius, and it meets the
  * flight's west edge 2.0 m north of the head.
  */
 const TERRACE_WALL_PAST_HEAD = 4.5;
 const TERRACE_CURVE = 2.5;
 
-/** The corner the curved wall closes off: everything west of the flight, south of the wall. */
+/** The corner that is open to the floor below: west of the flight, south of the curved edge. */
 const TERRACE_BLOCK = rect(
   -CORRIDOR_HALF,
   SOUTH_END,
   GRAND_WEST + CORRIDOR_HALF,
   GRAND_STAIR.y + GRAND_STAIR.h + TERRACE_WALL_PAST_HEAD - SOUTH_END,
 );
+
+/**
+ * The opening beside the terrace — see `TERRACE_BLOCK` — as rectangles.
+ *
+ * The quarter circle is cut in bands, each set by the curve at its NORTH
+ * edge, so the steps stay just inside the true curve and the terrace keeps
+ * all of its floor. Inset by half a wall from Room 6's frontage and from the
+ * building's south wall, because a wall is drawn standing on the plate under
+ * it (see GRAND_WELL).
+ */
+const TERRACE_BANDS = 6;
+
+function terraceOpening(): Rect[] {
+  const b = TERRACE_BLOCK;
+  const west = b.x + WALL_THICKNESS / 2;
+  const south = b.y + WALL_THICKNESS / 2;
+  const top = b.y + b.h;
+  const band = TERRACE_CURVE / TERRACE_BANDS;
+  const east = b.x + b.w;
+  const holes = [rect(west, south, east - west, top - TERRACE_CURVE - south)];
+  for (let i = 0; i < TERRACE_BANDS; i += 1) {
+    const y = top - TERRACE_CURVE + i * band;
+    // Distance north of the curve's centre, at this band's north edge.
+    const dy = y + band - (top - TERRACE_CURVE);
+    const reach = Math.sqrt(Math.max(0, TERRACE_CURVE * TERRACE_CURVE - dy * dy));
+    holes.push(rect(west, y, east - TERRACE_CURVE + reach - west, band));
+  }
+  return holes;
+}
+
+const TERRACE_OPENING = terraceOpening();
 
 /**
  * Every flight that lands on the auditorium level.
@@ -920,8 +952,8 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   // door, at the south end of its frontage, opened straight onto that drop:
   // 0.9 m out is in the well and not on the stair, so the flight let it
   // through and Room 6 was a room with no way in (the author, 28 Sep).
-  // The block behind the terrace's curved wall is no more a way in than a well
-  // is. Room 6's south end stands against it.
+  // The open corner beside the terrace is no more a way in than a well is.
+  // Room 6's south end stands against it.
   return [...ARRIVALS, GRAND_WELL, TERRACE_BLOCK].some((flight) => rectContains(flight, x, y));
 }
 
@@ -2511,7 +2543,9 @@ for (const room of floor1Rooms) {
     .filter((l) => l.to === 1 && l.from !== l.to)
     // The grand flight's well is wider than the flight — see GRAND_WELL. Every
     // other flight fills its own hole exactly.
-    .map((l) => (l.id === 'grand-stair' ? GRAND_WELL : l.bounds));
+    .map((l) => (l.id === 'grand-stair' ? GRAND_WELL : l.bounds))
+    // And the open corner beside the terrace, which is a well with no stair in it.
+    .concat(TERRACE_OPENING);
 }
 
 /**
@@ -4173,30 +4207,53 @@ function grandStairHall(): Obstacle[] {
 }
 
 /**
- * The curved wall behind the terrace — see `TERRACE_BLOCK`.
+ * What goes round the opening: a balustrade on the edge, and below it the
+ * two far sides of the drop and the concourse floor at the bottom.
  *
- * Solid, the way the toilet block in the hall is: what is behind it is not
- * part of the game. It closes the corner west of the flight, which is also
- * the only thing keeping a robot out of the well on that side, since `voids`
- * is render-only. The quarter circle is cut in bands, each one set by the
- * curve at its NORTH edge. That keeps the steps just inside the true curve,
- * so the terrace keeps all of its floor.
+ * Only the auditorium level is ever drawn while you stand on it, so a hole
+ * in its floor shows nothing at all, a black pit rather than a view. What is
+ * drawn under it is the concourse's floor, 5 m down, and a skin on the north
+ * and east rims, which are the two the camera sees into. Same trick as the
+ * stairwells (see SHAFT_SKIN): decor, never collided.
+ *
+ * The balustrade IS collided. `voids` are render-only, and without it a
+ * robot walks straight out across the drop on floor that the simulation
+ * still thinks is there. Beside the flight itself the flight's own rail
+ * does that job; this covers the curve and the 2 m between the curve and
+ * the head of the stairs.
  */
-function terraceWall(): Obstacle[] {
-  const b = TERRACE_BLOCK;
-  const top = b.y + b.h;
-  const wall = (bounds: Rect): Obstacle => ({ floor: 1, bounds, height: WALL_HEIGHT });
-  const bands = 6;
-  const band = TERRACE_CURVE / bands;
-  const solids = [wall(rect(b.x, b.y, b.w, b.h - TERRACE_CURVE))];
-  for (let i = 0; i < bands; i += 1) {
-    const y = top - TERRACE_CURVE + i * band;
-    // Distance north of the curve's centre, at this band's north edge.
-    const dy = y + band - (top - TERRACE_CURVE);
-    const reach = Math.sqrt(Math.max(0, TERRACE_CURVE * TERRACE_CURVE - dy * dy));
-    solids.push(wall(rect(b.x, y, b.w - TERRACE_CURVE + reach, band)));
+function terraceEdge(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const drop = -(FLOOR_HEIGHT - CONCOURSE_LEVEL);
+  const half = RAIL_THICKNESS / 2;
+  const head = GRAND_STAIR.y + GRAND_STAIR.h;
+  const top = TERRACE_BLOCK.y + TERRACE_BLOCK.h;
+
+  // The rims the terrace meets: each band's north edge where the band above
+  // does not cover it, and each band's east edge. The full-width base is
+  // flush with the flight from the head south, and the flight's rail has it.
+  const edges: Rect[] = [];
+  const bands = TERRACE_OPENING.slice(1);
+  const base = TERRACE_OPENING[0];
+  edges.push(rect(base.x + base.w - half, head, RAIL_THICKNESS, top - TERRACE_CURVE - head));
+  for (let i = bands.length - 1; i >= 0; i -= 1) {
+    const band = bands[i];
+    const east = band.x + band.w;
+    edges.push(rect(east - half, band.y, RAIL_THICKNESS, band.h));
+    const above = i === bands.length - 1 ? band.x : bands[i + 1].x + bands[i + 1].w;
+    edges.push(
+      rect(Math.min(above, east) - half, band.y + band.h - half, Math.abs(east - above) + RAIL_THICKNESS, RAIL_THICKNESS),
+    );
   }
-  return solids;
+  for (const edge of edges) {
+    solids.push({ floor: 1, bounds: edge, height: RAIL_HEIGHT });
+    decor.push({ floor: 1, bounds: edge, base: drop, height: 0 });
+  }
+  for (const hole of TERRACE_OPENING) {
+    decor.push({ floor: 1, bounds: hole, base: drop - TREAD_SLAB, height: drop, material: 'floorBelow' });
+  }
+  return { solids, decor };
 }
 
 /**
@@ -4234,6 +4291,7 @@ const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 const FORECOURT_FIT = forecourtFitOut();
+const TERRACE_EDGE = terraceEdge();
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
@@ -4245,7 +4303,7 @@ export const KINEPOLIS: Venue = {
     ...STAIRS.solids,
     ...stairCores(),
     ...RAILS.solids,
-    ...terraceWall(),
+    ...TERRACE_EDGE.solids,
     ...receptionFitOut(),
     ...grandStairHall(),
     ...railBesideWells(FACADE.walls, staircases),
@@ -4259,6 +4317,7 @@ export const KINEPOLIS: Venue = {
     ...FACADE.decor,
     ...BOOTHS.decor,
     ...FORECOURT_FIT.decor,
+    ...TERRACE_EDGE.decor,
   ],
   links: staircases,
   extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],

@@ -2398,6 +2398,11 @@ export class BlockoutRenderer {
       // tells a band of setts from the asphalt either side of it.
       case 'paving':
         return shade(this.palette.floor, 1.5);
+      // The floor a storey down, a shade darker: it is further from the eye
+      // and further from the light, and flush with the plate round the
+      // opening it would read as a hole painted over.
+      case 'floorBelow':
+        return shade(this.palette.floor, 0.5);
       default:
         return this.palette.wall;
     }

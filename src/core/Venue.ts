@@ -201,7 +201,13 @@ export type Material =
   | 'glazing' // curtain wall: the glass front of the building
   | 'booth' // an exhibitor's stand on the hall floor
   /** Made ground outside: the setts band, the kerbs, the road markings. */
-  | 'paving';
+  | 'paving'
+  /**
+   * The storey below, seen down through an opening. Only one storey is drawn
+   * at a time, so the floor at the bottom of a drop is a piece of dressing
+   * on the storey above, and it has to look like floor rather than wall.
+   */
+  | 'floorBelow';
 
 /**
  * Dressing: DRAWN, never simulated.

@@ -468,12 +468,13 @@ scenario(
 
 /*
  * The terrace at the head of the flight (access-main-stairs.png): open floor
- * the width of the corridor, with the corner west of the flight closed off
- * by a curved wall. Walk south down the west side and the wall stops you;
- * nothing there drops into the well.
+ * the width of the corridor, and west of the flight the floor stops, open to
+ * the reception below, behind a curved balustrade. Walk south down the west
+ * side and the balustrade stops you. `voids` are render-only, so without it
+ * this robot would walk out over the drop on floor that is not drawn.
  */
 scenario(
-  'Voxxy is stopped by the curved wall beside the stairhead',
+  'Voxxy is stopped at the edge of the opening beside the stairhead',
   (r) => r.floor === 1 && r.z > -0.1 && r.y > GRAND.bounds.y + GRAND.bounds.h,
   () => drive('voxxy', { x: -5.0, y: GRAND_HEAD.y + 4 }, SOUTH, 6, 1),
 );
