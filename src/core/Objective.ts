@@ -358,7 +358,11 @@ export class ObjectiveRun {
     // A relative deadline: so many seconds from whatever unlocked this. It is
     // checked AFTER `after`, because it is counted from when the last of them
     // finished and before that there is nothing to count from.
-    if (a.within !== undefined && this.deadline(a) !== undefined) {
+    // A conversation that has started has been reached in time. Paging
+    // through what the dog says is not a race, and failing the chapter while
+    // the player is reading the line that saves it would be a cheat.
+    const underWay = a.kind === 'talk' && state.progress > 0;
+    if (a.within !== undefined && this.deadline(a) !== undefined && !underWay) {
       const deadline = this.deadline(a) as number;
       if (this.elapsed > deadline) {
         this.release(state);

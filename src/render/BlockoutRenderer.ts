@@ -271,7 +271,26 @@ const LOGO = 0xf2f0ea;
  */
 const DOG_COAT = 0x55565e;
 const DOG_BEARD = 0xa8a294;
-const CAT_FUR = 0xc2bcae;
+/**
+ * Cats' coats: body, head, paws and tail, so the patterned ones read as a
+ * pattern at a size where a cat is a handful of boxes. One is picked per cat
+ * from its own dice (`Person.tint`), so a horde is a mix, the way a
+ * building full of strays would be.
+ *
+ * Deliberately weighted to the light coats. Chapter I is played at 0.18
+ * light, and a black cat there is only a gap in the lamp's pool; one in seven
+ * is enough for it to be a surprise and not the norm.
+ */
+const CAT_SKINS: readonly { coat: number; head: number; paws: number; tail: number }[] = [
+  { coat: 0xc2bcae, head: 0xc2bcae, paws: 0xc2bcae, tail: 0xc2bcae }, // pale grey, the cat that was always here
+  { coat: 0xc9772f, head: 0xc9772f, paws: 0xe0a15e, tail: 0xa85f22 }, // ginger
+  { coat: 0x1f1e21, head: 0x1f1e21, paws: 0x1f1e21, tail: 0x1f1e21 }, // black
+  { coat: 0xe9e5dc, head: 0xe9e5dc, paws: 0xe9e5dc, tail: 0xe9e5dc }, // white
+  { coat: 0x807b73, head: 0x5f5b55, paws: 0x9a958d, tail: 0x5f5b55 }, // grey tabby
+  { coat: 0x232226, head: 0x232226, paws: 0xeeeae2, tail: 0x232226 }, // tuxedo: black, white socks
+  { coat: 0xdccbad, head: 0x4b3527, paws: 0x4b3527, tail: 0x4b3527 }, // Siamese: cream, dark points
+  { coat: 0xebe6dc, head: 0xc9772f, paws: 0xebe6dc, tail: 0x2a2729 }, // calico: white, ginger head, black tail
+];
 
 /** Boxes an animal costs. A dog is thirteen; the cat is ten. */
 const ANIMAL_PARTS = 14;
@@ -1077,15 +1096,16 @@ export class BlockoutRenderer {
      * already big; the cat is the one animal this camera cannot take
      * literally.
      */
-    part(0.21, 0.42, 0.45, 0.2, CAT_FUR);
-    part(0.18, 0.45, 0.21, 0.22, CAT_FUR, 0, -0.21);
+    const skin = CAT_SKINS[Math.floor(animal.tint * CAT_SKINS.length) % CAT_SKINS.length];
+    part(0.21, 0.42, 0.45, 0.2, skin.coat);
+    part(0.18, 0.45, 0.21, 0.22, skin.coat, 0, -0.21);
     for (const along of [0.165, -0.165]) {
-      for (const across of [0.075, -0.075]) part(0, 0.22, 0.075, 0.075, CAT_FUR, across, along);
+      for (const across of [0.075, -0.075]) part(0, 0.22, 0.075, 0.075, skin.paws, across, along);
     }
-    part(0.3, 0.5, 0.2, 0.2, CAT_FUR, 0, 0.315);
-    for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, CAT_FUR, across, 0.285);
+    part(0.3, 0.5, 0.2, 0.2, skin.head, 0, 0.315);
+    for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, skin.head, across, 0.285);
     // Up, and the tallest thing on it. At this size the tail IS the cat.
-    part(0.33, 0.75, 0.09, 0.09, CAT_FUR, 0, -0.33);
+    part(0.33, 0.75, 0.09, 0.09, skin.tail, 0, -0.33);
     return i;
   }
 

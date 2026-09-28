@@ -232,6 +232,8 @@ export class ChapterScreen implements Screen {
   private nextCatAt = 0;
   /** The cats are hunting, and arrive as a horde. See `driveSwarm`. */
   private hordeCalled = false;
+  /** The dog has spoken and the cats have gone. See `driveSwarm`. */
+  private catsCalledOff = false;
   /** The off-screen arrows, pooled. See `pointAt`. */
   private readonly arrows: { root: HTMLElement; pointer: HTMLElement; badge: HTMLElement; label: HTMLElement }[] = [];
   /** What the card last showed, so it is rebuilt only when it changes. */
@@ -1221,6 +1223,7 @@ export class ChapterScreen implements Screen {
     for (let i = 0; i < swarm.start; i += 1) this.crowd.spawnCat();
     this.nextCatAt = swarm.every;
     this.hordeCalled = false;
+    this.catsCalledOff = false;
     for (const actor of this.actors) actor.body.speedScale = 1;
   }
 
@@ -1239,8 +1242,21 @@ export class ChapterScreen implements Screen {
     const me = this.controlled;
     const body = me.body;
 
-    if (this.run.statusOf(swarm.callOff) === 'done') {
-      this.crowd.scatterCats();
+    /*
+     * The dog calls them off the moment it starts talking, not when it has
+     * finished: the first version waited for the last line, so the cats
+     * were still underfoot through the whole conversation and it never read
+     * as the dog's doing. Now they run while it speaks, and the toast says
+     * whose doing it was.
+     */
+    const off = this.run.states.find((s) => s.activity.id === swarm.callOff);
+    if (off && (off.status === 'done' || off.progress > 0)) {
+      if (!this.catsCalledOff) {
+        this.catsCalledOff = true;
+        this.crowd.scatterCats();
+        this.toast.textContent = 'The dog looks up. Every cat in the building runs.';
+        this.toastFor = 3.5;
+      }
       body.speedScale = 1;
       return;
     }

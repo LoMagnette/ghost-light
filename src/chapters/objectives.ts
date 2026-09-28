@@ -156,6 +156,8 @@ const SILENCE: Activity[] = [
     label: 'Find the dog',
     who: 'The dog',
     shape: 'dog',
+    // Reaching it is enough: it wakes, and the cats run while it does.
+    autoStart: true,
     // Deep enough into the hall that the timer pulls the player NORTH, which
     // is the direction the chapter wants them going anyway — and across the
     // threshold terrace, so the level change is learned under pressure.
