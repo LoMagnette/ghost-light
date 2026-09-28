@@ -88,75 +88,8 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
  * the route — hall, concourse, upstairs — rather than a sprint to the stage
  * by a player who happened to guess right.
  */
-/*
- * More cats, the longer you take. Chapter I, since 28 Sep.
- *
- * The first cat said it: every deck has one card in it that ends the game.
- * The deck keeps dealing. Once the first cat has been defused, another turns
- * up somewhere in the building — and then another, sooner each time, until
- * by three minutes in they overlap. Each one has to be reached within thirty
- * seconds of appearing, and reaching it lights its fuse: forty-five seconds
- * to get back to the dog. One visit to the dog puts out every fuse that is
- * burning. Miss either and the chapter is over.
- *
- * None of them blocks the end. Power the last board and the wormhole opens
- * whatever is ticking, so a player who knows the building meets two cats and
- * a player who is lost in it meets eight — which is the chapter being about
- * learning the building, said with cats.
- *
- * Where they turn up is chosen to send the player everywhere the chapter
- * does not: the toilets, the polo room, the foyer and the corridor upstairs,
- * Room 5, the far side of the hall. Each is somewhere Voxxy can reach and
- * get back to the dog from in the time, including the stairs.
- */
+/** Where the dog sleeps, and where every cat is called off from. */
 const DOG_AT = spot(0, -16.0, -18.0, 3.2);
-
-function ticking(n: number, place: string, at: Zone, delay: number, line: string): Activity[] {
-  return [
-    {
-      kind: 'talk',
-      id: `cat-${n}`,
-      label: `A cat, ${place}`,
-      who: 'The cat',
-      shape: 'cat',
-      at,
-      after: ['dog'],
-      delay,
-      // Thirty seconds from appearing, which is `within` counted from the same
-      // moment `delay` is.
-      within: delay + 30,
-      optional: true,
-      failsRound: true,
-      announce: 'Somewhere in the building, something starts ticking.',
-      lines: [line],
-    },
-    {
-      kind: 'talk',
-      id: `fuse-${n}`,
-      label: 'Back to the dog',
-      who: 'The dog',
-      shape: 'dog',
-      at: DOG_AT,
-      // The dog is already lying there, for the first cat.
-      alreadyHere: true,
-      after: [`cat-${n}`],
-      within: 45,
-      optional: true,
-      failsRound: true,
-      lines: ['It opens one eye. Somewhere, a cat stops ticking.'],
-    },
-  ];
-}
-
-const MORE_CATS: Activity[] = [
-  ...ticking(2, 'in the toilets', roomZone('toilet-corridor', 0.6), 40, 'Another card from the same deck. You know the rule.'),
-  ...ticking(3, 'in the polo room', roomZone('polo', 0.8), 80, 'You took your time. The deck noticed.'),
-  ...ticking(4, 'in the foyer upstairs', spot(1, -20.0, 50.0, 3.0), 110, 'Up all those stairs, and here I am. Forty-five seconds.'),
-  ...ticking(5, 'in the corridor upstairs', spot(1, 0.0, 20.0, 3.0), 135, 'There were always going to be more of us.'),
-  ...ticking(6, 'in Room 5', crossAisle('aud-5'), 155, 'Nobody has sat in these seats for years. Tick.'),
-  ...ticking(7, 'at the organisers\' desk', spot(1, 3.2, -40.0, 3.0), 170, 'The last one lied to you. I am the card that ends the game.'),
-  ...ticking(8, 'in the hall', spot(0, 14.0, -24.0, 3.0), 185, 'Still here? So are we.'),
-];
 
 const SILENCE: Activity[] = [
   {
@@ -194,6 +127,13 @@ const SILENCE: Activity[] = [
     label: 'The cat',
     who: 'The cat',
     shape: 'cat',
+    /*
+     * Whichever cat Voxxy reaches first, since 28 Sep. The cats are the
+     * swarm's (see `SILENCE_OBJECTIVE.swarm`), there is no one cat posted
+     * here, and the screen carries this conversation to the nearest of them
+     * until it starts. After it, no cat can be talked to: they follow.
+     */
+    alreadyHere: true,
     // In the concourse, out in the open east of the reception island. Early
     // enough on the route that a player meets it before they know the
     // building, which is when a talking cat is at its most unsettling.
@@ -202,7 +142,8 @@ const SILENCE: Activity[] = [
       'Do not run. I have been sitting on this a very long time and the mechanism is old.',
       'Every deck has one card in it that ends the game. In this building, that card is me.',
       'You have forty-five seconds. There is exactly one thing in here that defuses me.',
-      'It has four legs and a beard, and it is not fond of me. Go.',
+      'It has four legs and a beard, and it is not fond of us. Go.',
+      'And do not look behind you. We are all coming with you.',
     ],
   },
   {
@@ -225,7 +166,7 @@ const SILENCE: Activity[] = [
     failsRound: true,
     lines: [
       'It is enormous, and it has been asleep. It opens one eye.',
-      'Somewhere back in the concourse, something stops ticking.',
+      'Every cat in the building remembers, all at once, somewhere else it has to be.',
       'It goes back to sleep.',
     ],
   },
@@ -241,12 +182,23 @@ const SILENCE: Activity[] = [
     after: ['board-hall', 'board-concourse'],
     reveal: { ...roomBounds('aud-8'), to: 0.62 },
   },
-  ...MORE_CATS,
 ];
 
 export const SILENCE_OBJECTIVE: Objective = {
   line: 'Find the power',
   activities: SILENCE,
+  /*
+   * The deck keeps dealing. A cat at the start, and another every twenty
+   * seconds after, somewhere random in the public building, either storey.
+   * The first one Voxxy reaches says its piece and lights the forty-five
+   * seconds; from then on every cat follows Voxxy, and each one underfoot
+   * slows it down. The dog calls them all off and no more come.
+   *
+   * Sixteen at most: at one every twenty seconds that is five minutes of
+   * dawdling, and past it the building is a carpet of cats and the joke is
+   * over.
+   */
+  swarm: { every: 20, max: 16, wake: 'cat', callOff: 'dog' },
   /*
    * The last board powers Room 8, and the power has somewhere to go.
    *

@@ -94,6 +94,28 @@ const CELL = 1.5;
 /** Clearance a cell must have to be walkable, metres. Shoulder width. */
 const PERSON_RADIUS = 0.34;
 
+/*
+ * Chapter I's cats, since 28 Sep. See `spawnCat`.
+ *
+ * A cat idles at not much more than a stroll. Following, it is quicker than
+ * a walking person and a good deal slower than Voxxy flat out — so a robot
+ * that keeps moving leaves them behind, and one that stops is surrounded.
+ * That is the whole of the threat, and the numbers are the only place it
+ * lives.
+ */
+/** m/s, a cat with nowhere in particular to be. */
+const CAT_WANDER = 0.45;
+/** m/s, a cat that has seen Voxxy and wants to be where it is. */
+const CAT_CHASE = 3.0;
+/** m/s, a cat the dog has seen. */
+const CAT_FLEE = 4.5;
+/** Seconds a scattered cat runs before it is gone for good. */
+const CAT_FLEE_FOR = 3.5;
+/** How close to a robot a following cat settles, beyond the robot's own radius. */
+const CAT_SETTLE = 0.26;
+/** How close counts as underfoot, beyond the robot's radius. See `catsUnderfoot`. */
+const CAT_TOUCH = 0.42;
+
 /**
  * How many people are in the building at capacity.
  *
@@ -308,13 +330,7 @@ export interface Person {
   shape?: 'cat' | 'dog';
   /** Who they are, for the ones who are somebody. See `Look`. */
   look?: Look;
-  /** For a post: the activity that put them there. See `Post.activity`. */
-  activity?: string;
-  /**
-   * Not drawn. A post whose activity has not happened yet — a Chapter I cat
-   * that has not turned up — is in the crowd from the start, because the
-   * crowd is built once, and is simply not there to look at.
-   */
+  /** Gone, and not drawn: a cat the dog has chased off. See `Crowd.scatterCats`. */
   hidden?: boolean;
   /**
    * The room this person is in, for the ones who are in a room.
@@ -344,12 +360,12 @@ export interface Post {
   floor: Level;
   shape?: 'cat' | 'dog';
   look?: Look;
-  /** The activity that put them here, so the screen can hide them until it opens. */
-  activity?: string;
 }
 
 interface Mover extends Person {
   speed: number;
+  /** Seconds left running, for a cat the dog has scattered. */
+  fleeing?: number;
   /** Where they are walking to. */
   tx: number;
   ty: number;
@@ -385,6 +401,16 @@ export class Crowd {
   readonly seated: Person[] = [];
   /** Everyone on their feet. Moves; the renderer rewrites these each frame. */
   readonly movers: Person[] = [];
+  /** Chapter I's cats, in the order they arrived. See `spawnCat`. */
+  private readonly cats: Mover[] = [];
+  /**
+   * The cats' own dice, apart from the crowd's. The crowd is seeded so a
+   * room fills the same way every time; the cats are meant to turn up
+   * somewhere new every time, so the screen seeds these per run.
+   */
+  private catRandom = mulberry32(0xca7);
+  private catMode: 'wander' | 'follow' | 'flee' = 'wander';
+  private catTarget: { x: number; y: number; floor: Level; radius: number } | undefined;
 
   private readonly venue: Venue;
   private readonly walkers: Mover[] = [];
@@ -446,6 +472,10 @@ export class Crowd {
     this.separate();
 
     for (const mover of this.walkers) {
+      if (mover.shape === 'cat' && !mover.posted) {
+        this.stepCat(mover, dt);
+        continue;
+      }
       // An attendant does not walk and is not pushed about by `avoid`: being
       // in the way is the job. All it does is turn, which is the one piece of
       // body language this renderer can express and the whole difference
@@ -629,6 +659,184 @@ export class Crowd {
   // -- construction ---------------------------------------------------------
 
   /** Every cell of a storey a person could stand in. */
+  // -- Chapter I's cats --------------------------------------------------
+
+  /** The dice for where cats turn up. Call once per run, before the first. */
+  seedCats(seed: number): void {
+    this.catRandom = mulberry32(seed);
+  }
+
+  /**
+   * One more cat, somewhere in the public part of the building, either
+   * storey, anywhere a person could stand.
+   *
+   * On the crowd's own floor plan, so a cat can never appear inside a wall
+   * or a seat bank, and it is built here on demand because Chapter I has no
+   * crowd and so never built one. Weighted by storey area, so the big
+   * ground floor gets most of them.
+   */
+  spawnCat(): Person | undefined {
+    const plans = [0, 1].map((floor) => this.planOf(floor as Level));
+    const total = plans.reduce((n, p) => n + p.list.length, 0);
+    if (total === 0) return undefined;
+    let pick = Math.floor(this.catRandom() * total);
+    const plan = plans.find((p) => (pick -= p.list.length) < 0) ?? plans[0];
+    const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
+    const [gx, gy] = unpack(key);
+    const x = (gx + 0.5) * CELL;
+    const y = (gy + 0.5) * CELL;
+    const cat: Mover = {
+      x,
+      y,
+      z: groundAt(this.venue, plan.floor, x, y),
+      floor: plan.floor,
+      heading: this.catRandom() * Math.PI * 2,
+      tint: this.catRandom(),
+      speed: CAT_WANDER,
+      tx: x,
+      ty: y,
+      dx: 0,
+      dy: 0,
+      shape: 'cat',
+    };
+    this.cats.push(cat);
+    this.walkers.push(cat);
+    this.movers.push(cat);
+    return cat;
+  }
+
+  /** Every cat gone and the swarm asleep again, for a restarted round. */
+  clearCats(): void {
+    const gone = new Set<Mover>(this.cats);
+    this.cats.length = 0;
+    for (const list of [this.walkers, this.movers] as Person[][]) {
+      for (let i = list.length - 1; i >= 0; i -= 1) if (gone.has(list[i] as Mover)) list.splice(i, 1);
+    }
+    this.catMode = 'wander';
+    this.catTarget = undefined;
+  }
+
+  /** How many cats have turned up, scattered ones included. */
+  get catCount(): number {
+    return this.cats.length;
+  }
+
+  /** The cats still about, for the screen to find the nearest one. */
+  get liveCats(): readonly Person[] {
+    return this.cats.filter((c) => !c.hidden);
+  }
+
+  /**
+   * Every cat, from now on, wants to be where this robot is. Call every
+   * frame with where it is now; a cat on the other storey carries on
+   * wandering until the robot comes back to it.
+   */
+  followCats(x: number, y: number, floor: Level, radius: number): void {
+    if (this.catMode === 'flee') return;
+    this.catMode = 'follow';
+    this.catTarget = { x, y, floor, radius };
+  }
+
+  /** The dog has seen them. Every cat runs, and is gone for good. */
+  scatterCats(): void {
+    if (this.catMode === 'flee') return;
+    this.catMode = 'flee';
+    for (const cat of this.cats) {
+      const plan = this.planOf(cat.floor);
+      const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
+      const [gx, gy] = unpack(key);
+      cat.tx = (gx + 0.5) * CELL;
+      cat.ty = (gy + 0.5) * CELL;
+      cat.fleeing = CAT_FLEE_FOR * (0.7 + 0.6 * this.catRandom());
+    }
+  }
+
+  /** Following cats underfoot of a robot at this point. See `CAT_TOUCH`. */
+  catsUnderfoot(x: number, y: number, floor: Level, radius: number): number {
+    if (this.catMode !== 'follow') return 0;
+    let n = 0;
+    for (const cat of this.cats) {
+      if (cat.hidden || cat.floor !== floor) continue;
+      if (Math.hypot(cat.x - x, cat.y - y) <= radius + CAT_TOUCH) n += 1;
+    }
+    return n;
+  }
+
+  private stepCat(cat: Mover, dt: number): void {
+    if (cat.hidden) return;
+    const target = this.catTarget;
+    if (this.catMode === 'flee') {
+      cat.fleeing = (cat.fleeing ?? 0) - dt;
+      if (cat.fleeing <= 0) {
+        cat.hidden = true;
+        return;
+      }
+      this.stepToward(cat, cat.tx, cat.ty, CAT_FLEE, 0.2, dt);
+    } else if (this.catMode === 'follow' && target && target.floor === cat.floor) {
+      this.stepToward(cat, target.x, target.y, CAT_CHASE, target.radius + CAT_SETTLE, dt);
+    } else {
+      // Nowhere in particular: the same wander the crowd does, slower.
+      const d = Math.hypot(cat.tx - cat.x, cat.ty - cat.y);
+      if (d < 0.3) this.retarget(cat);
+      else this.stepToward(cat, cat.tx, cat.ty, CAT_WANDER, 0, dt);
+    }
+    cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
+  }
+
+  /**
+   * Move towards a point, around walls, on the floor plan.
+   *
+   * Straight at it while the next step is walkable; otherwise to whichever
+   * neighbouring cell is both walkable and nearest the point. Greedy rather
+   * than a path search, which is right for a cat: it goes the obvious way,
+   * gets stuck at the obvious corners, and a robot can use the building to
+   * lose it.
+   */
+  private stepToward(cat: Mover, x: number, y: number, speed: number, stop: number, dt: number): void {
+    const dx = x - cat.x;
+    const dy = y - cat.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= stop) return;
+    const plan = this.planOf(cat.floor);
+    const walkable = (px: number, py: number): boolean => plan.cells.has(pack(Math.floor(px / CELL), Math.floor(py / CELL)));
+    const step = Math.min(speed * dt, d - stop);
+    let ux = dx / d;
+    let uy = dy / d;
+    if (!walkable(cat.x + ux * step * 4, cat.y + uy * step * 4)) {
+      const cx = Math.floor(cat.x / CELL);
+      const cy = Math.floor(cat.y / CELL);
+      let best = Infinity;
+      for (let i = 0; i < 8; i += 1) {
+        const key = pack(cx + NEIGHBOURS[i * 2], cy + NEIGHBOURS[i * 2 + 1]);
+        if (!plan.cells.has(key)) continue;
+        const [gx, gy] = unpack(key);
+        const nx = (gx + 0.5) * CELL;
+        const ny = (gy + 0.5) * CELL;
+        const score = Math.hypot(x - nx, y - ny);
+        if (score < best) {
+          best = score;
+          const nd = Math.hypot(nx - cat.x, ny - cat.y) || 1;
+          ux = (nx - cat.x) / nd;
+          uy = (ny - cat.y) / nd;
+        }
+      }
+      if (best === Infinity) return;
+    }
+    cat.x += ux * step;
+    cat.y += uy * step;
+    cat.heading = Math.atan2(uy, ux);
+  }
+
+  /** A storey's floor plan, built the first time a chapter without a crowd asks. */
+  private planOf(floor: Level): Floorplan {
+    let plan = this.plans.get(floor);
+    if (!plan) {
+      plan = this.planFor(floor);
+      this.plans.set(floor, plan);
+    }
+    return plan;
+  }
+
   private planFor(floor: Level): Floorplan {
     const cells = new Set<number>();
     const solids = this.venue.obstacles.filter((o) => o.floor === floor && o.height > 0.3);
@@ -831,7 +1039,6 @@ export class Crowd {
         posted: true,
         shape: post.shape,
         look: post.look,
-        activity: post.activity,
       };
       this.walkers.push(mover);
       this.movers.push(mover);

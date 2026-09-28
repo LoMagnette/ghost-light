@@ -101,16 +101,6 @@ interface Common {
    */
   within?: number;
   /**
-   * Seconds to wait, after the last of `after` is done, before this exists.
-   *
-   * Chapter I's cats: a new one turns up so long after the first was
-   * defused, and nothing about it — no marker, no line on the card, no cat
-   * — is there before. `within`, when both are set, still counts from the
-   * same moment, so a cat that appears after 40 s and must be reached within
-   * 30 of appearing has `delay: 40, within: 70`. Needs `after`.
-   */
-  delay?: number;
-  /**
    * Missing this ends the round, failed.
    *
    * For the things that go off. A ticking cat nobody defused is not a
@@ -118,8 +108,6 @@ interface Common {
    * way Chapter II's three emptied rooms do.
    */
   failsRound?: boolean;
-  /** Said once, as a notification, the moment this becomes available. */
-  announce?: string;
   reveal?: Reveal;
   /**
    * Activities that are one thing to the player, many to the simulation.

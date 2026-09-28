@@ -19,6 +19,7 @@ import {
   type Activity,
   type Photo,
   type Reveal,
+  type Zone,
 } from './Activity';
 import type { RobotId } from './RobotSpec';
 import type { Actor } from './Sim';
@@ -56,6 +57,32 @@ export interface Objective {
    * `exit`: whatever one chapter sends through, the next one receives.
    */
   arrival?: Arrival;
+  /**
+   * Chapter I's cats, since 28 Sep: one every so often from the start, at
+   * random, up to a limit; carried by the objective because what they DO
+   * is decided by two of its activities. See `Swarm`.
+   */
+  swarm?: Swarm;
+}
+
+/**
+ * Cats, more and more of them, and the two conversations that decide them.
+ *
+ * The `wake` conversation is had with whichever cat the player reaches
+ * first — the screen carries it to the nearest cat until it starts (see
+ * `ObjectiveRun.relocate`) — and when it is over every cat in the building
+ * starts following the robot. `callOff` sends them all away and stops any
+ * more arriving. Everything else about them is the crowd's (`Crowd.spawnCat`).
+ */
+export interface Swarm {
+  /** Seconds between one cat and the next, from the start of the chapter. */
+  every: number;
+  /** The most there will ever be. */
+  max: number;
+  /** Activity id: had with the first cat reached; afterwards they follow. */
+  wake: string;
+  /** Activity id: done, and they scatter for good. */
+  callOff: string;
 }
 
 /**
@@ -322,15 +349,6 @@ export class ObjectiveRun {
     // A relative deadline: so many seconds from whatever unlocked this. It is
     // checked AFTER `after`, because it is counted from when the last of them
     // finished and before that there is nothing to count from.
-    // Not there yet: a cat that turns up a while after the last one.
-    if (a.delay !== undefined) {
-      const started = this.startedAt(a);
-      if (started === undefined || this.elapsed < started + a.delay) {
-        state.status = 'locked';
-        return;
-      }
-    }
-
     if (a.within !== undefined && this.deadline(a) !== undefined) {
       const deadline = this.deadline(a) as number;
       if (this.elapsed > deadline) {
@@ -344,7 +362,7 @@ export class ObjectiveRun {
 
     if (state.status === 'locked') {
       state.status = 'open';
-      if (a.announce !== undefined) this.say(a.announce);
+
       // Something just went wrong in a room. That is news, and it is the
       // only moment the player can be told it before the lights say so.
       if (a.room !== undefined) this.say(`Breakdown — ${a.label}`);
@@ -519,7 +537,7 @@ export class ObjectiveRun {
 
   /**
    * When the last of an activity's prerequisites finished, in chapter
-   * seconds: the moment `within` and `delay` both count from.
+   * seconds: the moment `within` counts from.
    */
   private startedAt(a: Activity): number | undefined {
     if (!a.after?.length) return undefined;
@@ -530,6 +548,27 @@ export class ObjectiveRun {
       started = Math.max(started, at);
     }
     return started;
+  }
+
+  /**
+   * Move an activity somewhere else, for an activity that happens wherever
+   * something is — the conversation with whichever cat is nearest. A copy,
+   * not a mutation: the objective is shared data and a restarted round must
+   * find it where it was written.
+   */
+  relocate(id: string, at: Zone): void {
+    const state = this.states.find((s) => s.activity.id === id);
+    if (!state) return;
+    state.activity = { ...state.activity, at };
+    const centre = zoneCentre(at);
+    state.x = centre.x;
+    state.y = centre.y;
+    state.floor = at.floor;
+  }
+
+  /** Where one activity stands in the round. */
+  statusOf(id: string): Status | undefined {
+    return this.states.find((s) => s.activity.id === id)?.status;
   }
 
   private isDone(id: string): boolean {

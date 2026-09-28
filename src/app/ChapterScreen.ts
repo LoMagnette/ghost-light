@@ -22,7 +22,7 @@ import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
-import { groundAt, roomAt, type Level } from '@/core/Venue';
+import { groundAt, rect, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import { BlockoutRenderer, shade, type MarkerIcon, type ObjectiveMarker } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
@@ -65,6 +65,12 @@ interface ScreenMarker extends ObjectiveMarker {
 
 /** The dialogue portrait's side, design pixels. Two lines of text and a name, and a little over. */
 const PORTRAIT = 92;
+
+/** How close to a cat counts as having reached it, metres across. */
+const CAT_TALK = 3.0;
+/** Top speed lost per cat underfoot, and the least a robot is ever held to. */
+const CAT_DRAG = 0.1;
+const CAT_SLOWEST = 0.4;
 
 /** Never more arrows than this. Past it the screen edge is a fence. */
 const ARROWS = 6;
@@ -217,6 +223,8 @@ export class ChapterScreen implements Screen {
   private typed = 0;
   private typingLine = '';
   private toast!: HTMLElement;
+  /** Chapter seconds at which the next cat arrives. See `driveSwarm`. */
+  private nextCatAt = 0;
   /** The off-screen arrows, pooled. See `pointAt`. */
   private readonly arrows: { root: HTMLElement; pointer: HTMLElement; badge: HTMLElement; label: HTMLElement }[] = [];
   /** What the card last showed, so it is rebuilt only when it changes. */
@@ -358,11 +366,11 @@ export class ChapterScreen implements Screen {
           floor: a.at.floor,
           shape: a.shape,
           look: a.look,
-          activity: a.id,
         };
       });
 
     this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter), posts);
+    this.startSwarm();
 
     // And the other thing a storey is baked with: what has settled on it in
     // the years since anybody swept. Full density or none — there is no era
@@ -511,6 +519,7 @@ export class ChapterScreen implements Screen {
         this.typed = this.typingLine.length;
         this.talkRequested = false;
       }
+      this.driveSwarm();
       this.run.update(dt, this.actors, this.dropRequested, this.talkRequested);
       this.consumeObjective();
       if (this.run.phase === 'ended') {
@@ -525,7 +534,6 @@ export class ChapterScreen implements Screen {
     this.dropRequested = false;
     this.talkRequested = false;
     this.showSessions(dt);
-    this.hideUnarrived();
     if (this.story) this.updateStory(dt, talkPressed);
     else this.updateTalk(dt);
 
@@ -621,6 +629,7 @@ export class ChapterScreen implements Screen {
     // in the renderer, the people who left in the crowd.
     this.blockout.refillSeats();
     this.crowd.reseat();
+    this.startSwarm();
     this.run = new ObjectiveRun(this.chapter.objective);
     this.endCard?.remove();
     this.endCard = undefined;
@@ -1131,8 +1140,6 @@ export class ChapterScreen implements Screen {
       // A breakdown that has not happened yet has no post. A grey marker on
       // a projector that is working is a spoiler for the next two minutes.
       if (activity.room !== undefined && status === 'locked') continue;
-      // Nor a cat that has not turned up. Its grey ring would say where.
-      if (activity.delay !== undefined && status === 'locked') continue;
 
       if (status === 'carried' && activity.kind === 'haul') {
         const centre = zoneCentre(activity.to);
@@ -1193,18 +1200,75 @@ export class ChapterScreen implements Screen {
   }
 
   /**
-   * Hide the people and animals whose activity has not happened yet.
-   *
-   * Only for things that ARRIVE — an activity with a `delay`. Everybody else
-   * posted by the objective stands there from the start, locked or not:
-   * Stephan is at his desk before you are allowed to go back to him.
+   * Chapter I's cats from the top: none left over from a last attempt, a
+   * fresh throw of the dice for where they turn up, and the first of them
+   * already in the building. Random per run on purpose — the crowd is seeded
+   * so a room always fills the same way, and cats are meant to be somewhere
+   * new every time. See `Swarm`.
    */
-  private hideUnarrived(): void {
-    for (const person of this.crowd.movers) {
-      if (person.activity === undefined) continue;
-      const state = this.run.states.find((s) => s.activity.id === person.activity);
-      person.hidden = state !== undefined && state.activity.delay !== undefined && state.status === 'locked';
+  private startSwarm(): void {
+    const swarm = this.chapter.objective.swarm;
+    if (!swarm) return;
+    this.crowd.clearCats();
+    this.crowd.seedCats(Math.floor(Math.random() * 0x7fffffff));
+    this.crowd.spawnCat();
+    this.nextCatAt = swarm.every;
+    for (const actor of this.actors) actor.body.speedScale = 1;
+  }
+
+  /**
+   * The cats, every frame, before the objective reads the robots.
+   *
+   * More of them on the clock until the dog calls them off. Until somebody
+   * has spoken to one, "the cat" is whichever is nearest the robot being
+   * driven — the conversation is carried to it, so the first cat reached is
+   * the one that talks. After that, all of them follow, and each one
+   * underfoot takes a tenth off the robot's top speed, down to `CAT_SLOWEST`.
+   */
+  private driveSwarm(): void {
+    const swarm = this.chapter.objective.swarm;
+    if (!swarm) return;
+    const me = this.controlled;
+    const body = me.body;
+
+    if (this.run.statusOf(swarm.callOff) === 'done') {
+      this.crowd.scatterCats();
+      body.speedScale = 1;
+      return;
     }
+
+    while (this.run.elapsed >= this.nextCatAt && this.crowd.catCount < swarm.max) {
+      this.crowd.spawnCat();
+      this.nextCatAt += swarm.every;
+    }
+
+    const wake = this.run.states.find((s) => s.activity.id === swarm.wake);
+    if (wake && wake.status !== 'done') {
+      // Only while nobody is mid-sentence: a cat that wanders a step while
+      // it is talking must not take the conversation with it.
+      if (wake.progress === 0) {
+        let nearest: { x: number; y: number } | undefined;
+        let best = Infinity;
+        for (const cat of this.crowd.liveCats) {
+          if (cat.floor !== me.floor) continue;
+          const d = Math.hypot(cat.x - body.x, cat.y - body.y);
+          if (d < best) {
+            best = d;
+            nearest = cat;
+          }
+        }
+        if (nearest) {
+          const half = CAT_TALK / 2;
+          this.run.relocate(swarm.wake, { floor: me.floor, bounds: rect(nearest.x - half, nearest.y - half, CAT_TALK, CAT_TALK) });
+        }
+      }
+    } else if (wake) {
+      this.crowd.followCats(body.x, body.y, me.floor, body.spec.radius);
+    }
+
+    const underfoot = this.crowd.catsUnderfoot(body.x, body.y, me.floor, body.spec.radius);
+    body.speedScale = Math.max(CAT_SLOWEST, 1 - CAT_DRAG * underfoot);
+    for (const actor of this.actors) if (actor !== me) actor.body.speedScale = 1;
   }
 
   /** Seconds until this is gone, for anything with a deadline that is open. */

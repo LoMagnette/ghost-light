@@ -173,30 +173,33 @@ kitten in the deck that ends it — the mechanic, not the wordmark, and no art
 or text is borrowed. It gives you **45 seconds to find the dog**, because a
 dog is the only thing that defuses a cat.
 
-**And the deck keeps dealing** (since 28 Sep, the author's choice between
-cats as atmosphere and cats as threats). After the first defuse, seven more
-cats turn up around the building, each sooner than the last (at 40, 80, 110,
-135, 155, 170 and 185 s), in the places the boards never send you: the
-toilets, the polo room, the foyer and corridor upstairs, Room 5, the organisers'
-desk and the far side of the hall. Each announces itself ("Somewhere in the
-building, something starts ticking"), and each has two clocks: **30 seconds
-to reach it**, and reaching it lights a **45-second fuse** back to the dog.
-One visit to the dog puts out every fuse that is burning. **Miss either
-clock and the chapter is over**, for the first cat as for the rest.
+**And the deck keeps dealing** (28 Sep, reworked the same day by the
+author). A cat is in the building from the start, and **another turns up
+every 20 seconds**, at a random walkable spot on either storey, up to
+sixteen. Random per run: the crowd is seeded so a room always fills the same
+way, and the cats are meant to be somewhere new every time.
 
-The boards stay untimed, and the cats are optional: powering the last board
-ends the chapter through the wormhole whatever is still ticking. So the
-chapter's clock is the player's own pace. Someone who learns the building
-meets two cats; someone lost in it meets eight, and has to run the whole
-building to live with them. A cat that has not arrived has no figure, no
-marker and no line on the card, so nothing gives away where the next one
-will be.
+- **The first cat Voxxy reaches is the one that talks.** The conversation is
+  carried to whichever cat is nearest until it starts. It lights the 45
+  seconds, as before, and after it no cat can be talked to.
+- **From then on every cat follows Voxxy**, at 3 m/s: quicker than a person,
+  much slower than Voxxy flat out. They chase greedily over the floor plan,
+  so they take the obvious way round and get caught on the obvious corners.
+  A cat on the other storey wanders until Voxxy comes back.
+- **Each cat underfoot takes a tenth off Voxxy's top speed**, down to 40%.
+  The speed limit drops and the excess bleeds off (`Body.speedScale`), so
+  running into them is wading, not a wall. Keep moving and you leave them
+  behind; stop and you are swamped.
+- **The dog calls them all off**: every cat runs and is gone, and no more
+  come. **Missing the 45 seconds ends the chapter.**
 
-Built from the existing vocabulary plus three fields on `Common`: `delay`
-(exists only so long after its `after`), `failsRound` (missing it ends the
-round) and `announce` (said when it opens). `npm run objectives` rejects a
-`delay` with nothing to count from and a cat whose deadline falls before it
-appears.
+The boards stay untimed. The chapter's clock is the player's own pace: the
+longer they take, the more cats the dog has to call off.
+
+Declared on the objective as `swarm` (`core/Objective.ts`): the interval,
+the limit, which conversation wakes them and which calls them off. The cats
+themselves are the crowd's (`Crowd.spawnCat`). `npm run objectives` checks
+that both conversations exist.
 
 **The ending.** Board three brings up the ghost light on the keynote stage,
 and the projector starts running a recording — **and the recording is

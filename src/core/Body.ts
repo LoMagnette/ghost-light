@@ -54,6 +54,9 @@ export interface DriveInput {
 
 export const NO_INPUT: DriveInput = { dirX: 0, dirY: 0, throttle: 0, braking: false };
 
+/** Fraction of the excess over a lowered top speed lost per second. See `Body.speedScale`. */
+const SCALED_BLEED = 3;
+
 export class Body {
   readonly spec: RobotSpec;
 
@@ -82,6 +85,16 @@ export class Body {
 
   /** Accumulated stride phase, 0..1. Drives footfall events and bob. */
   stridePhase = 0;
+  /**
+   * A fraction of top speed this body is held to, 0..1, set from outside
+   * the robot: Chapter I's cats underfoot. 1 is the machine's own limit and
+   * is what every chapter runs at otherwise.
+   *
+   * It lowers the speed the motor can reach and bleeds off anything above
+   * it at `SCALED_BLEED` a second, rather than clamping. Walking into a knot
+   * of cats is wading, not hitting a wall.
+   */
+  speedScale = 1;
 
   /** Set by the sim when a collision happened this step. Read by feedback. */
   lastImpactSpeed = 0;
@@ -171,7 +184,7 @@ export class Body {
       // rather than a hard clamp — clamping reads as a rev limiter, tapering
       // reads as a machine running out of torque.
       const forwardSpeed = this.vx * ux + this.vy * uy;
-      const headroom = Math.max(0, 1 - Math.max(0, forwardSpeed) / maxSpeed);
+      const headroom = Math.max(0, 1 - Math.max(0, forwardSpeed) / (maxSpeed * this.speedScale));
 
       // Driving into your own momentum IS braking — the wheels are pushing
       // backwards against the floor either way — so it cannot beat the brakes.
@@ -236,6 +249,15 @@ export class Body {
     // Integrate.
     this.vx += (fx / mass) * dt;
     this.vy += (fy / mass) * dt;
+    if (this.speedScale < 1) {
+      const cap = maxSpeed * this.speedScale;
+      const v = Math.hypot(this.vx, this.vy);
+      if (v > cap) {
+        const keep = Math.max(cap / v, 1 - SCALED_BLEED * dt);
+        this.vx *= keep;
+        this.vy *= keep;
+      }
+    }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 

@@ -168,7 +168,15 @@ for (const chapter of CHAPTERS) {
   // The wormhole. An exit to a chapter that does not exist is a Chapter I
   // that ends by crashing, and a split into a robot the next chapter does
   // not cast is a Droid that grows out of Voxxy and is then not there.
-  const { exit, arrival } = chapter.objective;
+  const { exit, arrival, swarm } = chapter.objective;
+  // The cats hang off two conversations; naming one that is not there is a
+  // swarm that never wakes, or never leaves.
+  if (swarm) {
+    for (const id of [swarm.wake, swarm.callOff]) {
+      if (!chapter.objective.activities.some((a) => a.id === id)) failures.push(`${chapter.id}: the swarm names ${id}, which is not an activity`);
+    }
+    if (!(swarm.every > 0) || !(swarm.max > 0)) failures.push(`${chapter.id}: the swarm needs a positive interval and limit`);
+  }
   if (exit && !CHAPTERS.some((c) => c.id === exit.to)) {
     failures.push(`${chapter.id}: exits to "${exit.to}", which is not a chapter`);
   }
@@ -221,15 +229,6 @@ for (const chapter of CHAPTERS) {
     // choice in the design.
     // A relative deadline counts from the last of `after`, so without one it
     // counts from nothing and silently never fires.
-    // A delay counts from the same moment a relative deadline does, so it
-    // needs something to count from, and a deadline that falls before the
-    // thing has even appeared is a cat that goes off before it turns up.
-    if (activity.delay !== undefined && (activity.after?.length ?? 0) === 0) {
-      failures.push(`${chapter.id}/${activity.id}: a \`delay\` with no \`after\` to count it from`);
-    }
-    if (activity.delay !== undefined && activity.within !== undefined && activity.within <= activity.delay) {
-      failures.push(`${chapter.id}/${activity.id}: its deadline (${activity.within}s) falls before it appears (${activity.delay}s)`);
-    }
     if (activity.within !== undefined && (activity.after?.length ?? 0) === 0) {
       failures.push(
         `${chapter.id}/${activity.id}: a \`within\` deadline with no \`after\` to count it from`,

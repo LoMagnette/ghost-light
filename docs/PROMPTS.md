@@ -4497,6 +4497,47 @@ including this task, the small items, the open decisions), dropped in the
 conflict resolution of a merge into `dialogue-portraits`. They are restored
 from the commit that wrote them.
 
+### Claude Opus — the cats, reworked: random, on a timer, and following
+
+**Prompt:**
+> So a few things the spaw point of the cat should be random. The number of
+> cat should slowly increase starting at the begining of the game (so on a
+> timer some like a new cat every 20 seconds) the first cat you interact
+> with will trigger the dialog then you cannot interact any more. but once
+> you've interacted with it all the cat will start trying to follow you.
+
+**Two questions before rebuilding**, because the brief left open what
+following cats DO and what becomes of the dog. The author chose cats that
+slow Voxxy down (no failure), and a dog that calls them all off.
+
+**Most of yesterday went.** The seven scheduled cats, `delay`, `announce`
+and the hide-until-arrived plumbing came out; `failsRound` stayed, for the
+dog. What replaced them is a `swarm` on the objective and the cats in the
+crowd, where following, avoiding walls and scattering belong.
+
+**What needed care.**
+1. "The first cat you interact with" means the conversation cannot live at
+   a zone written in data. `ObjectiveRun.relocate` moves it to the nearest
+   cat each frame until it starts. It copies rather than mutates, because
+   the objective is shared data and a restarted round must find it where it
+   was written.
+2. Random per run, but the crowd is seeded so rooms always fill the same
+   way. The cats get their own dice, seeded by the screen each run, so the
+   crowd stays deterministic.
+3. Chapter I has no crowd, so the floor plan the cats walk on had never
+   been built. It is built on demand now.
+4. The slowdown is a speed scale on `Body` that lowers the limit and bleeds
+   the excess off, rather than a clamp, so wading into cats is not hitting a
+   wall. `npm run physics` still passes, because it defaults to 1.
+
+**Tested in node against the real crowd:** eight cats on both storeys,
+elsewhere with another seed; three of four underfoot after 25 s of standing
+still (the fourth stuck on a corner, which is the greedy chase working as
+meant); none left after the dog.
+
+**And an `unpack` of mine duplicated one already in the file,** caught by
+the typecheck.
+
 ---
 
 ## Audio
