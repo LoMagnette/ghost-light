@@ -4538,6 +4538,39 @@ meant); none left after the dog.
 **And an `unpack` of mine duplicated one already in the file,** caught by
 the typecheck.
 
+### Claude Opus — ninety seconds, and a horde
+
+**Prompt:**
+> Can increase the timer for finding the dog but increase the feeling of cat
+> running after the robot to have a bit of zombie like experience
+
+**Iterations:** 1 build, two frame checks, and one recovery.
+
+**Zombie, taken apart into what a player can see.** A horde closes in from
+where you are not looking: once the cat has spoken, new cats come every 8 s
+from 12–22 m out, just past the lamp. It never moves as one: each cat
+lurches on its own phase, and a node test over half-second windows measured
+1.0 to 3.7 m/s with no two cats in step. It lunges when close. And in the
+dark it is eyes: two lit points per cat on a self-lit instanced mesh, which
+bloom on high. The dog gets 90 s instead of 45, and the cat says ninety.
+
+**The eyes were wrong first.** Real cat eyes at 2 by 4 cm came out one pixel
+at this camera, on the front of the head where a cat running away hides
+them. A frame showed nothing. They are 6.5 cm lit cubes on the head's
+top-front corner now, seen from above whichever way the cat faces, and the
+next frame had pink eyes closing in on Voxxy from two sides.
+
+**A file I zeroed, and got back.** To film a horde without having to walk
+into a random cat first, I made a throwaway build that hunts from the start,
+backing the screen file up with `cp`. On this mounted filesystem that copy
+came back as 94 KB of NUL bytes, the exact failure already written up in
+this log from an earlier session, and restoring from it zeroed the real file.
+Only the uncommitted horde edits were lost; they were re-applied from the
+session, the typecheck came back clean at the same size, and the work was
+committed before any more hacks. The throwaway build is now always restored
+with `git checkout`, from the commit. That lesson was already in here once;
+this is its second entry.
+
 ---
 
 ## Audio
