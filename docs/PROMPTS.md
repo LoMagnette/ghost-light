@@ -5287,6 +5287,23 @@ precast above, which carries the star, is unchanged. The band-end cut in
   head, and the curve is tightened from 2.5 m to 2.0 m so it still meets
   the flight.
 
+### Status update
+
+> So the venue is good enough for now. One improvement for later or the
+> theater room
+>
+> Can you update the status. btw the more cat is done.
+
+**Done:** `STATUS.md` brought up to date against `origin/main`:
+- **Moved to done:**
+  - the cats (`more-cats`);
+  - the crowd fix (#21), audio (#22), Room 6's door (#23) and the intro (#24);
+  - the venue zones (#25–#29), marked good enough for now.
+- **In progress:** the three stacked follow-ups, `entrance-doors` →
+  `stair-swap` → `stair-treads`, which are not merged.
+- **Noted for later:** one cinema-room improvement, which the author hasn't
+  described yet.
+
 ---
 
 ## Audio
