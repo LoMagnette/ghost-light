@@ -2316,8 +2316,9 @@ export class BlockoutRenderer {
    * The rule is simply "is this piece part of a flight", which is what
    * `linkId` says on both an Obstacle and a Decor.
    */
-  private datumFor(floor: Level, piece: { bounds: Rect; linkId?: string }): number {
+  private datumFor(floor: Level, piece: { bounds: Rect; linkId?: string; datum?: number }): number {
     if (piece.linkId) return 0;
+    if (piece.datum !== undefined) return piece.datum;
     const { bounds } = piece;
     return groundAt(this.venue, floor, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   }

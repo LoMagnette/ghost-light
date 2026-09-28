@@ -301,20 +301,20 @@ scenario(
   () => drive('voxxy', { x: LANDING.x + 2, y: THRESHOLD_TOP + 1.5 }, WEST, 6),
 );
 
-// The BOF rooms stand three risers over the concourse. The steps are inside
+// The BOF rooms sit three risers under the concourse. The steps are inside
 // each door, and the door is narrower than the steps.
 const BOF_STEPS = KINEPOLIS.links.find((l) => l.id === 'bof-2-steps');
 const BOF_DOOR_Y = BOF_STEPS.bounds.y + 1.0;
 
 scenario(
-  'Voxxy climbs the steps into BOF 2',
-  (r) => r.z > 1.7 && r.x > BOF_STEPS.bounds.x + BOF_STEPS.bounds.w,
+  'Voxxy walks down the steps into BOF 2',
+  (r) => r.z < 0.7 && r.x > BOF_STEPS.bounds.x + BOF_STEPS.bounds.w,
   () => drive('voxxy', { x: BOF_STEPS.bounds.x - 2, y: BOF_DOOR_Y }, EAST, 4),
 );
 
 scenario(
   'Biggy is stopped by the BOF steps',
-  (r) => r.z < 1.3 && r.x < BOF_STEPS.bounds.x + 0.3,
+  (r) => r.z > 1.1 && r.x < BOF_STEPS.bounds.x + 0.3,
   () => drive('biggy', { x: BOF_STEPS.bounds.x - 3, y: BOF_DOOR_Y }, EAST, 6),
 );
 

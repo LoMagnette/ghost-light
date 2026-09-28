@@ -745,10 +745,15 @@ for (const link of KINEPOLIS.links) {
 // simulation makes a robot stand on.
 
 /** What `BlockoutRenderer.datumFor` does. Keep the two in step. */
+// The renderer's rule, `datumFor` in BlockoutRenderer: a flight from the
+// storey datum, a piece that names its datum from that, anything else from
+// the plate under its centre.
 const datumFor = (piece) =>
   piece.linkId
     ? 0
-    : groundAt(KINEPOLIS, piece.floor, piece.bounds.x + piece.bounds.w / 2, piece.bounds.y + piece.bounds.h / 2);
+    : piece.datum !== undefined
+      ? piece.datum
+      : groundAt(KINEPOLIS, piece.floor, piece.bounds.x + piece.bounds.w / 2, piece.bounds.y + piece.bounds.h / 2);
 
 /**
  * A tread is a flat slab spanning one step and the simulation's surface is a

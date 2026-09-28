@@ -5049,6 +5049,20 @@ solid blocks from the ground up, so the plate and the top step shared a face
 and flickered where they met. Each plate now has its flight cut out
 (`voids`), the way a stairwell is cut out of the floor it arrives on.
 
+> the stairs goes down into the room not up
+
+**Done:**
+- **Steps flipped:** the steps now go down, and both rooms sit 0.54 m under
+  the reception.
+- **`Obstacle.datum`:** this is the plate a wall is measured from. The BOF
+  rooms are the first smaller room that is lower than what it faces, so
+  their wall onto the reception would have stood on their floor and been
+  cut off short. The wall builder now stands a wall between two levels on
+  the higher one and reaches `base` down to the lower one. The renderer and
+  `npm run venue` both read it.
+- **Tests:** the traverse scenario is now "Voxxy walks down the steps into
+  BOF 2".
+
 ---
 
 ## Audio

@@ -602,7 +602,7 @@ const TOILET_LOBBY_RECT = rect(
 const TOILET_BACK_PLATE = rect(EAST_WING_X, HALL.y - WALL_THICKNESS / 2, WOMENS.x - EAST_WING_X, WALL_THICKNESS);
 
 /**
- * The BOF rooms: two of them, south of the toilets' lobby, up three steps.
+ * The BOF rooms: two of them, south of the toilets' lobby, down three steps.
  *
  * Mapped off `bof-rooms.png` (the author, 28 Sep): the rooms share the
  * lobby's south wall and run to the front of the building, the full width
@@ -613,9 +613,9 @@ const TOILET_BACK_PLATE = rect(EAST_WING_X, HALL.y - WALL_THICKNESS / 2, WOMENS.
  * 1.9 m, in a bay in the concourse's east wall. Inside each door a flight
  * of small steps runs along the wall, wider than the door: the plan draws it
  * as three nested outlines over 1.1 m, 3.9 m either side of the pier. So
- * there are three risers of `RISER`, and the rooms stand 0.54 m over the
- * concourse. The plan does not say up or down. Up is the reading of
- * "small steps to get in", so it is up.
+ * there are three risers of `RISER`, and the rooms sit 0.54 m under the
+ * concourse. The plan does not say up or down. They were built going up
+ * for an hour, and the author says down (28 Sep).
  *
  * Biggy climbs nothing, so it never gets in, which it never needed to.
  * The front is the old BOF rooms' line, 0.4 m proud of the reception's
@@ -627,7 +627,7 @@ const BOF_SPLIT = (BOF_NORTH + BOF_FRONT) / 2;
 const BOF_STEPS = 3;
 const BOF_GOING = 0.35;
 const BOF_RISE = BOF_STEPS * RISER;
-const BOF_LEVEL = CONCOURSE_LEVEL + BOF_RISE;
+const BOF_LEVEL = CONCOURSE_LEVEL - BOF_RISE;
 /** From the pier to each end of a flight, and the door at the pier end. */
 const BOF_PIER = 0.4;
 const BOF_FLIGHT = 3.5;
@@ -645,14 +645,15 @@ const BOF_FLIGHTS = [
  *
  * A flight crossing a wall opens it for its whole width. These flights are
  * wider than their doors, so this closes the rest. The pier between the two
- * doors is the wall builder's own. Each piece stands on the room's plate, so
- * `base` takes it back down to the concourse it faces.
+ * doors is the wall builder's own. Each piece stands on the concourse, like
+ * the rest of the wall it is in. Its centre is over the room's plate, which is
+ * 0.54 m lower, hence the `datum`.
  */
 function bofDoorJambs(): Obstacle[] {
   const jamb = (y: number, h: number): Obstacle => ({
     floor: 0,
     bounds: rect(EAST_WING_X - WALL_THICKNESS / 2, y, WALL_THICKNESS, h),
-    base: -BOF_RISE,
+    datum: CONCOURSE_LEVEL,
     height: WALL_HEIGHT,
   });
   return [
@@ -668,10 +669,11 @@ const bofSteps: Link[] = BOF_FLIGHTS.map((bounds, i) => ({
   from: 0,
   to: 0,
   bounds,
-  base: CONCOURSE_LEVEL,
+  base: BOF_LEVEL,
   rise: BOF_RISE,
   axis: 'x',
-  ascending: true,
+  // Down as you go in, eastward.
+  ascending: false,
   riser: RISER,
 }));
 
@@ -2418,14 +2420,17 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
   const seen = new Set<string>();
 
   /*
-   * A wall between two levels goes down to the lower one.
+   * A wall between two levels is measured from the higher one and goes down
+   * to the lower one.
    *
    * The renderer stands a wall on the plate under its centre, and on a
-   * shared edge that is the smaller room's. That is fine while the smaller
-   * room is the lower one, or the same level. The BOF rooms are the first
-   * raised room smaller than what they face: their wall onto the reception
-   * stood on their own plate and floated 0.54 m over the concourse. So the
-   * wall's `base` takes it down to the lowest floor either side of it.
+   * shared edge that is the smaller room's. That is right while the smaller
+   * room is the higher one, which the concourse always was against the hall.
+   * The BOF rooms are the first smaller room that is LOWER than what it
+   * faces. Their wall onto the reception stood on their floor and was cut
+   * off 0.54 m under the reception's walls. So each wall is stood on the
+   * higher floor either side of it (`datum`), and `base` takes it down to
+   * the lower one.
    */
   const plateAt = (x: number, y: number, floor: Level): number | undefined => {
     let best: Room | undefined;
@@ -2436,14 +2441,21 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
     return best ? (best.elevation ?? 0) : undefined;
   };
   let wallFloor: Level = 0;
-  const reachDown = (b: Rect): { base?: number } => {
+  const reachDown = (b: Rect): { base?: number; datum?: number } => {
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
-    const datum = plateAt(cx, cy, wallFloor);
-    if (datum === undefined) return {};
-    const across = b.w < b.h ? [plateAt(cx - 0.3, cy, wallFloor), plateAt(cx + 0.3, cy, wallFloor)] : [plateAt(cx, cy - 0.3, wallFloor), plateAt(cx, cy + 0.3, wallFloor)];
-    const low = Math.min(datum, ...across.filter((e): e is number => e !== undefined));
-    return low < datum ? { base: low - datum } : {};
+    const under = plateAt(cx, cy, wallFloor);
+    if (under === undefined) return {};
+    const across = (b.w < b.h
+      ? [plateAt(cx - 0.3, cy, wallFloor), plateAt(cx + 0.3, cy, wallFloor)]
+      : [plateAt(cx, cy - 0.3, wallFloor), plateAt(cx, cy + 0.3, wallFloor)]
+    ).filter((e): e is number => e !== undefined);
+    const high = Math.max(under, ...across);
+    const low = Math.min(under, ...across);
+    return {
+      ...(high > under ? { datum: high } : {}),
+      ...(low < high ? { base: low - high } : {}),
+    };
   };
 
   /*
