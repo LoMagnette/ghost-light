@@ -89,14 +89,14 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
  * by a player who happened to guess right.
  */
 /** Where the dog sleeps, and where every cat is called off from. */
-const DOG_AT = spot(0, -16.0, -18.0, 3.2);
+const DOG_AT = spot(0, -16.0, -11.7, 3.2);
 
 const SILENCE: Activity[] = [
   {
     kind: 'tap',
     id: 'board-hall',
     label: 'Hall board',
-    at: spot(0, -21.8, -8.0, 2.6),
+    at: spot(0, -21.8, -1.7, 2.6),
     reveal: { ...roomBounds('hall'), to: 0.42 },
   },
   {
@@ -833,7 +833,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       look: { shirt: 0xa63b4e, hair: 0x2e2a26, scale: 1.02 },
       // On the hall floor among the stands, where a robot is already driving
       // past on the sticker sweep.
-      at: spot(0, 14.0, -24.0, 3.2),
+      at: spot(0, 14.0, -17.7, 3.2),
       lines: [
         'Careful with the coffee. It spills if you so much as brush a stand.',
         'Anything with weight in it changes how you stop, not how you start. Same motor, twice the distance.',
@@ -894,7 +894,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'shove',
       id: 'shutter',
       label: 'Free the jammed shutter',
-      at: spot(0, 24.0, 6.0, 3.2),
+      at: spot(0, 20.0, 12.3, 3.2),
       // 900 kg·m/s: Droid peaks at 777 and cannot, Biggy cruises at 1366 and
       // must still be doing two thirds of its top speed. A run-up, or nothing.
       momentum: 900,
@@ -904,8 +904,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       kind: 'haul',
       id: 'keg',
       label: 'The keg, to the party stage',
-      at: spot(0, 24.0, 9.5, 2.6),
-      to: spot(0, -14.0, 4.0, 3.4),
+      at: spot(0, 20.0, 15.8, 2.6),
+      to: spot(0, -14.0, 10.3, 3.4),
       mass: 200,
       after: ['shutter'],
       window: { from: 0, to: 270 },
@@ -981,7 +981,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // down: the booth ranks stop at x -6.0 and start again at 4.7, so this
       // is ten metres of clear floor and the one place in the hall a player
       // cannot fail to pass.
-      at: spot(0, -0.6, -26.0, 3.2),
+      at: spot(0, -0.6, -19.7, 3.2),
       lines: [
         'Robots. Finally, somebody who can hold still.',
         'I shoot these all over — Athens, London, Kraków. Different building, same room.',
@@ -1013,7 +1013,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
        * fifth of four would make the one picture the photographer is in look
        * like one more errand he sent you on.
        */
-      at: spot(0, -0.6, -26.0, 3.2),
+      at: spot(0, -0.6, -19.7, 3.2),
       /*
        * Voxxy's, BECAUSE it is small. He frames the selfie the way he frames
        * everything — himself, properly, chest up — and at 1.15 m beside a
@@ -1087,7 +1087,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       after: ['photographer'],
       // North end of the central aisle, where the booth field stops and the
       // hall opens out.
-      at: spot(0, -0.6, -13.5, 3.4),
+      at: spot(0, -0.6, -7.2, 3.4),
       // Biggy's, because it is the one robot the Room 8 frame shuts out, so
       // every robot gets a picture of its own. The gate that says so is
       // payload — only Biggy carries 100 kg — and it was argued as "Josh sits
@@ -1128,7 +1128,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
        * them. So the group photograph is not a place you go — it is a place
        * you have been assembling all day without noticing.
        */
-      at: spot(0, -2.0, 2.5, 5.0),
+      at: spot(0, -2.0, 8.8, 5.0),
       seconds: 3.5,
       everybody: true,
       photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam', file: 'group.jpeg' },

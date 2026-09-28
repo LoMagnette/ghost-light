@@ -438,7 +438,8 @@ const overlap = (a, b) =>
 const pillars = KINEPOLIS.obstacles.filter(
   (o) => o.floor === 0 && Math.abs(o.bounds.w - 0.7) < EPS && Math.abs(o.bounds.h - 0.7) < EPS,
 );
-check(pillars.length === 42, `expected 42 columns on the hall floor, found ${pillars.length}`);
+// 7 × 6 on the grid, and the 4 standing in the doorway to the concourse.
+check(pillars.length === 46, `expected 46 columns on the hall floor, found ${pillars.length}`);
 
 // One counter per stand, and inside the stand it belongs to. The counters
 // are the only thing on the hall floor made of the same stuff as the

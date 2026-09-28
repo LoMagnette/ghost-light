@@ -65,7 +65,11 @@ export function climbFraction(link: Link, x: number, y: number): number {
       link.axis === 'y'
         ? Math.min(x - b.x, b.x + b.w - x)
         : Math.min(y - b.y, b.y + b.h - y);
-    f = Math.min(f, across / link.wrap);
+    // In metres from the low end, not as a fraction of the run: the steps
+    // up the front are the same `wrap` deep as the ones up the sides, and the
+    // rest of the run is the landing at the top.
+    const run = link.axis === 'y' ? b.h : b.w;
+    f = Math.min(f * run, across) / link.wrap;
   }
 
   return f < 0 ? 0 : f > 1 ? 1 : f;

@@ -43,6 +43,7 @@ export type RoomKind =
   | 'foyer'
   | 'auditorium'
   | 'stage' // the flat plate at the bottom of an auditorium's rake
+  | 'landing' // a raised plate standing in the room around it, walled by nothing
   | 'stairs'
   | 'service'
   /**
@@ -81,6 +82,12 @@ export interface Room {
    * which is the one place a door cannot be.
    */
   doorSide?: 'low' | 'high';
+
+  /**
+   * Metres of wall between the door and the end of the frontage it is at.
+   * 1.2 unless something stands in the way — see `doorMarginFor`.
+   */
+  doorMargin?: number;
 
   /**
    * Height of this room's floor above its storey datum, in metres.
@@ -283,15 +290,17 @@ export interface Link {
    *
    * A staircase in a stairwell is a one-dimensional thing: it climbs along one
    * axis and its two sides are walls. A flight of shallow steps standing in
-   * the open is not — the threshold between the reception and the hall is
-   * 23 m wide and 3 m deep, and you walk up it from the front or from either
-   * flank, because there is nothing there to stop you. Modelled as a plain
-   * ramp along y it would be a 1.2 m cliff down both its sides.
+   * the open is not — the threshold between the reception and the hall is a
+   * landing 23 m wide with steps down its front and both ends, and you walk
+   * up it from any of the three, because there is nothing there to stop you.
+   * Modelled as a plain ramp along y it would be a 1.2 m cliff down both its
+   * sides.
    *
-   * So the surface climbs from each long side as well, reaching full height
-   * `wrap` metres in, and the height at a point is the LOWER of the two — the
-   * terrace you get by nesting one rectangle inside the next. See
-   * `Traversal.climbFraction`, which is the only place it is read.
+   * So the surface climbs from its low end AND each long side, reaching full
+   * height `wrap` metres in from each, and the height at a point is the
+   * LOWEST of the three — the terrace you get by nesting one rectangle inside
+   * the next. Anything more than `wrap` in from all three is at the top: the
+   * landing. See `Traversal.climbFraction`, which is the only place it is read.
    */
   wrap?: number;
 

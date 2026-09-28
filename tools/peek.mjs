@@ -14,7 +14,7 @@
  *
  * Usage, after `npm run build`:
  *
- *   node tools/peek.mjs '[["name", "?chapter=silence&at=-21.8,-8", ["KeyW"], 1.6]]'
+ *   node tools/peek.mjs '[["name", "?chapter=silence&at=-21.8,-1.7", ["KeyW"], 1.6]]'
  *                          ^ file    ^ query                        ^ held   ^ seconds
  *
  * PEEK_DIR sets where the PNGs land; it defaults to the system temp dir,

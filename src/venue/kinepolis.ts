@@ -27,8 +27,11 @@
  *   references/venue/maps/cinema-venue-devoxx.png   auditoriums, raw
  *   references/venue/maps/devoxx-rooms.jpg          auditoriums, annotated
  *
- * Origin (0, 0) is the centre of the two staircases, at the north end of the
- * exhibition hall — the one point both floors share. +x east, +y north, +z up.
+ * Origin (0, 0) is on the building's centre line, 18.3 m in from the hall's
+ * north wall. It was the centre of the two hall staircases until the hall was
+ * re-measured one bay deeper (28 Sep): the staircases went north with the
+ * wall and the column grid, and the origin stayed, because every coordinate
+ * on floor 1 is measured from it. +x east, +y north, +z up.
  * Floor 0 is the exhibition hall, floor 1 the auditorium level 6.2 m above.
  *
  * Deliberate simplifications, both documented rather than hidden:
@@ -86,51 +89,84 @@ const RAIL_THICKNESS = 0.12;
 // ---------------------------------------------------------------------------
 
 /**
- * The hall: 52.3 × 49.4 m, and very nearly all of it open floor.
+ * The hall: 52.3 × 55.7 m, and very nearly all of it open floor.
  *
- * Both dimensions come off `booth-map.png`, which is the same ground floor
- * drawn again with the Devoxx stand plan on it, and which scales itself: the
- * large stands are 24 m² and stack at a 175 px pitch, so 175 px is 6 m and
- * their 118 px width is 4.05 m — 4 × 6, exactly 24 m². At that scale the
- * building interior measures 52.3 m across, and the hall's south wall — the
- * line of doors into the reception concourse — sits 49.4 m down, carrying 91%
- * ink coverage where nothing else comes near 45%.
+ * The width comes off `booth-map.png`, which is the same ground floor drawn
+ * again with the Devoxx stand plan on it, and which scales itself: the large
+ * stands are 24 m² and stack at a 175 px pitch, so 175 px is 6 m and their
+ * 118 px width is 4.05 m — 4 × 6, exactly 24 m². At that scale the building
+ * interior measures 52.3 m across.
  *
- * 52.3 × 49.4 = 2584 m² of bounding box against 2411.41 m² of printed floor,
- * so only 172 m² is NOT hall. The previous pass cut away 500 m² and left an
- * L-shaped room that drove much smaller than its area suggested. Ceilings and
- * columns aside, this is now a clean rectangle you can cross.
+ * The depth is the COLUMN GRID's, and it used to be 49.4 m. That figure was
+ * the line with the most ink on it, which is the outer edge of the steps in
+ * front of the doors rather than the wall they stand against. Read off
+ * `hollywood-area.png` against the columns, the door wall is 10.1 m south of
+ * the last row of columns, not 3.8 m: one whole bay was missing, and the
+ * threshold steps — a 3 m landing and 2 m of steps — had been squeezed into
+ * the space left, as a shallow wedge (the author, 28 Sep: "they don't match
+ * the plan"). The south wall stays where it was, because the reception, the
+ * grand stair and all of floor 1 are registered to it, so the bay goes in at
+ * the north: the wall, the grid, the stair cores and everything standing
+ * among them moved 6.3 m north together.
  */
-const HALL = rect(-23.5, -37.4, 52.3, 49.4);
+const HALL = rect(-23.5, -37.4, 52.3, 55.7);
+
+/** The hall's north wall. Everything in the hall is laid out from it. */
+const HALL_NORTH = HALL.y + HALL.h;
 
 /** Printed on the plan. tools/venue.mjs holds the geometry to it. */
 export const HALL_AREA_M2 = 2411.41;
 
 /**
- * The 172 m² of the bounding box that is not exhibition floor.
+ * The Devoxx polo pickup: a room behind the hall's east wall where it steps in.
  *
- * Three pieces, and they have to stay small: the printed floor area is 93% of
- * the box, so anything more than this is stealing room the building has. The
- * budget is 21 + 78 + 72 = 171 m², which lands the floor at 2413 m² against a
- * printed 2411.41.
+ * `hollywood-area.png` draws it as a room of its own in the set-back, with a
+ * bank of doors onto the hall — not a box standing in the hall, which is what
+ * it had been. Declared up here because the set-back is cut round it.
  */
+const POLO = rect(21.9, HALL_NORTH - 19.9, 6.9, 6.6);
+
+/**
+ * The parts of the bounding box that are not exhibition floor.
+ *
+ * Every one of them is drawn on `hollywood-area.png`, and every one was cut
+ * smaller than the drawing while the hall was a bay too short, because the
+ * printed area was being met by a box that was missing 330 m² of its own:
+ *
+ *   - north-west, the toilets and the corridor in to them. 78 m².
+ *   - north-east, where the east wall steps in for the northern 26 m of the
+ *     hall, with the polo pickup behind it. 181 m², polo included. It was a
+ *     72 m² recess, which is the set-back with two-thirds of it left out.
+ *   - south-west, the curved cast concrete in the photographs, which ends in
+ *     a notch 3.5 m deep beside the threshold steps. 45 m².
+ *
+ * The stair cores and the columns are not floor either, and `HALL_FLOOR_M2`
+ * takes them off too.
+ */
+const SETBACK_DEPTH = 26.3;
+
 function hallCutaways(): Obstacle[] {
+  const setbackFoot = HALL_NORTH - SETBACK_DEPTH;
+  const east = HALL.x + HALL.w;
   const solid: Obstacle[] = [
-    // North-west: the toilets, and the corridor in to them. 78 m².
-    { floor: 0, bounds: rect(HALL.x, 6.0, 13.0, 6.0), height: 3.4 },
-    // East: a service recess off the hall, by the polo pickup. 72 m².
-    { floor: 0, bounds: rect(20.8, -6.0, 8.0, 9.0), height: 3.4 },
+    { floor: 0, bounds: rect(HALL.x, HALL_NORTH - 6.0, 13.0, 6.0), height: 3.4 },
+    // The set-back, either side of the polo room it holds.
+    { floor: 0, bounds: rect(POLO.x, setbackFoot, east - POLO.x, POLO.y - setbackFoot), height: 3.4 },
+    { floor: 0, bounds: rect(POLO.x, POLO.y + POLO.h, east - POLO.x, HALL_NORTH - POLO.y - POLO.h), height: 3.4 },
   ];
 
-  // South-west quarter-round — the curved cast concrete in the photographs.
-  // 21 m², the last of the 172. Bands are measured at their southern edge so
-  // the approximation stays outside the true curve rather than cutting in.
-  const radius = 10;
-  const bands = 8;
+  // South-west: the notch, running east to where the concourse begins, and
+  // the quarter-round standing on it. Bands are measured at their southern
+  // edge so the approximation stays outside the true curve rather than
+  // cutting in.
+  const notch = 3.5;
+  solid.push({ floor: 0, bounds: rect(HALL.x, HALL.y, RECEPTION.x - HALL.x, notch), height: 3.2 });
+  const radius = 6.8;
+  const bands = 6;
   const band = radius / bands;
-  const cy = HALL.y + radius;
+  const cy = HALL.y + notch + radius;
   for (let i = 0; i < bands; i += 1) {
-    const y = HALL.y + i * band;
+    const y = HALL.y + notch + i * band;
     const dy = y - cy;
     const width = radius - Math.sqrt(Math.max(0, radius * radius - dy * dy));
     if (width < 0.15) continue;
@@ -256,11 +292,13 @@ const BOOTH_GAP = 1.0;
 /**
  * South end of the booth field.
  *
- * As far south as the hall's curved south-west corner allows the west rank to
- * come: the curve is modelled in 1.25 m bands and the one below this reaches
- * 0.73 m in off the wall, which is into the back of a stand.
+ * Set from the north wall, like the grid the ranks stand on: between the last
+ * two rows of columns, which leaves the 10 m bay in front of the doors to the
+ * threshold steps and the people coming down them. The stands had been hard
+ * against the curved south-west corner, which was only possible while that
+ * bay was missing.
  */
-const BOOTH_SOUTH = -31.0;
+const BOOTH_SOUTH = HALL_NORTH - 43.0;
 
 /**
  * Stand sizes: 6 m² and 24 m², which is what the plan lets.
@@ -400,68 +438,98 @@ const CONCOURSE_LEVEL = 1.2;
  *
  * You come in at street level and the hall is 1.2 m below you, so this is the
  * first level change anybody meets and the one that has to read as an
- * ARRIVAL. It was a flight in a slot: 20 m wide, 2 m deep, cut into the
- * concourse plate, standing in a hole in the wall with a stub of balustrade
- * at each end. Wide enough, and it still read as a fire exit, because a
- * staircase in a hole is a way out of a room rather than a way into one.
+ * ARRIVAL. `stairs-exhibition-reception.png` — the author's crop of
+ * `hollywood-area.png` — draws it, and `exhibition-floor.jpg` agrees: the
+ * doors open onto a LANDING standing in the hall at concourse level, 3 m
+ * deep and as wide as the three bays between the columns the doors are hung
+ * between, and the steps go down from it on three sides, in a band 2 m deep
+ * that wraps round its north face and both ends.
  *
- * So it is a terrace instead, standing in the HALL. Shallow steps, each one
- * wider than the step above it, splaying out of the doorway into the room:
- * you walk down the front of it or off either flank, and from the hall floor
- * it is something you climb towards rather than a gap you find. The doorway
- * is the top step and nothing more, which is why the wall no longer needs a
- * balustrade in it — there is no gap left beside the flight to fall down.
+ * It had been a wedge splayed out of the doorway at 45 degrees with no
+ * landing at all, 3.15 m deep in total, because the hall was a bay short and
+ * 3.8 m was all there was between the doors and the first row of columns.
  *
- * Built in the hall on purpose. Fanning it back into the concourse gives the
- * same picture and a worse building: the steps beside the doorway would then
- * be within a robot's step of the concourse they are cut out of, and a
- * machine standing on the plate half a metre from the edge reads the flight
+ * Built in the hall on purpose, as it always was. Fanning it back into the
+ * concourse puts steps within a robot's step of the plate they are cut out
+ * of, and a machine standing half a metre from the edge reads the flight
  * under it and sinks into the floor it is standing on. Fanned DOWNWARDS every
  * one of those points is a metre above the hall floor beside it, far out of
  * reach, and the question never arises.
  */
 
-/** Tread depth, metres. Twice a staircase's, because this is not a staircase. */
-const THRESHOLD_GOING = 0.45;
-
-/**
- * How much wider each step is than the one above it, per side, in metres.
- *
- * The same as the going, so the terrace splays at 45 degrees in plan and its
- * corners are square. Anything else has to be justified by something, and
- * nothing here justifies it.
- */
-const THRESHOLD_SPLAY = 0.45;
-
 /** Steps in the flight. The rise divided by the building's riser, as always. */
 const THRESHOLD_STEPS = Math.round(CONCOURSE_LEVEL / RISER);
 
 /**
- * The terrace's footprint on the hall floor — the width the wall opening used
- * to be, which is as much of the hall as this is allowed to take.
+ * Tread depth, metres. The drawing's band is 2.0 m on its north face and
+ * 1.9 m at the ends; seven goings of 0.28 is 1.96, the same all round.
  */
-const HALL_STEPS = rect(-12.4, HALL.y, 23.2, THRESHOLD_STEPS * THRESHOLD_GOING);
+const THRESHOLD_GOING = 0.28;
 
-/** Metres of the width given over to climbing it sideways. See `Link.wrap`. */
-const THRESHOLD_WRAP = THRESHOLD_STEPS * THRESHOLD_SPLAY;
+/** Metres of steps round the landing. See `Link.wrap`. */
+const THRESHOLD_WRAP = THRESHOLD_STEPS * THRESHOLD_GOING;
 
-/** What is left of the width at the top: the doorway, and the top step. */
-const THRESHOLD_DOOR = HALL_STEPS.w - (THRESHOLD_STEPS - 1) * THRESHOLD_SPLAY * 2;
+/** The landing's depth off the door wall, metres. */
+const LANDING_DEPTH = 3.0;
 
 /**
- * Where the wall builder must leave a hole that no link accounts for.
+ * The landing: from the column the doors start at to the one they end at.
+ *
+ * A plate of its own at concourse height (see the `threshold` room), so the
+ * one machine that climbs no steps can still cross it from the doors to the
+ * ramp. It is the flight's top step as well, which is the same surface.
+ */
+const THRESHOLD_LANDING = rect(
+  HALL.x + COLUMN_X[1],
+  HALL.y,
+  COLUMN_X[4] - COLUMN_X[1],
+  LANDING_DEPTH,
+);
+
+/** The steps and the landing together: what the flight's surface covers. */
+const HALL_STEPS = rect(
+  THRESHOLD_LANDING.x - THRESHOLD_WRAP,
+  HALL.y,
+  THRESHOLD_LANDING.w + THRESHOLD_WRAP * 2,
+  LANDING_DEPTH + THRESHOLD_WRAP,
+);
+
+/**
+ * Where the wall builder must leave a hole that no link accounts for: the
+ * landing's width, which is the run of doors.
  *
  * A same-storey flight punches its own way through a wall, which covers every
- * other level change in the building. Not this one: a terrace meets the wall
- * across its whole 23 m and is only at door height for the middle 18, so
- * letting it cut its own hole opens the wall to the full span and leaves the
- * bottom steps running into open concourse. It says where instead.
+ * other level change in the building. Not this one: it meets the wall across
+ * its whole 23.5 m and is only at door height along the landing, so letting
+ * it cut its own hole opens the wall to the full span and leaves the ends of
+ * the steps running into open concourse. It says where instead.
  */
-const HALL_OPENING = rect(
-  HALL_STEPS.x + (THRESHOLD_STEPS - 1) * THRESHOLD_SPLAY,
-  HALL.y - 1,
-  THRESHOLD_DOOR,
-  2,
+const HALL_OPENING = rect(THRESHOLD_LANDING.x, HALL.y - 1, THRESHOLD_LANDING.w, 2);
+
+/**
+ * The columns standing in the door wall.
+ *
+ * On the plan every column line runs on into the wall between the hall and
+ * the concourse, and the doors are hung between them in pairs. In a wall
+ * they are hidden; in the opening they are what the doorway is divided by.
+ */
+const DOOR_WALL_COLUMNS = [1, 2, 3, 4].map((i) => HALL.x + COLUMN_X[i]);
+
+/**
+ * The box at the landing's west end.
+ *
+ * Both drawings have it, from the concourse's west wall to the landing, as
+ * deep as the landing: `hollywood-area.png` as a plain outline standing over
+ * the ends of the steps, `exhibition-floor.jpg` crossed through, which is how
+ * a plan draws a shaft or a void. Neither says what it is, so it is built as
+ * what both agree on — a solid thing the steps do not run through — at
+ * balustrade height over the landing.
+ */
+const THRESHOLD_BOX = rect(
+  RECEPTION.x,
+  HALL.y + WALL_THICKNESS / 2,
+  THRESHOLD_LANDING.x - RECEPTION.x,
+  LANDING_DEPTH - WALL_THICKNESS / 2,
 );
 
 /**
@@ -495,10 +563,7 @@ const HALL_OPENING = rect(
  *
  * West is the anchor rather than east because the west side is the wall the
  * marked-up plan actually points at — an interior wall, drawn, measurable —
- * where the east side is just wherever the building stops. It is also what
- * leaves the wheelchair ramp its ground: the ramp is a 12 m straight run
- * standing in for a switchback (see `RAMP`), it was invented, and an invented
- * object does not get to sit on a drawn one.
+ * where the east side is just wherever the building stops.
  */
 const TOILET_BLOCK_X = 16.93;
 const TOILET_STRIP = 1.77;
@@ -512,27 +577,26 @@ const TOILETS = rect(
 const TOILET_CORRIDOR = rect(TOILETS.x, TOILETS.y - 1.78, TOILETS.w, 1.78);
 
 /**
- * The wheelchair ramp from the concourse down into the hall.
+ * The wheelchair ramp, from the landing's east end down into the hall.
  *
- * Wide because it stands for a ramp nobody draws — see the note on the
- * reception's plate — and the width is what makes it comfortably drivable
- * rather than what the building has.
+ * `exhibition-floor.jpg` labels it "Wheelchair access" and draws it where it
+ * is: in the hall, along the door wall, starting from the landing and folding
+ * back once on itself. It had been a 5.5 m-wide run cut through the
+ * CONCOURSE with a doorway of its own in the wall, which was the hole the
+ * author found beside the steps (28 Sep). The real one needs no hole: you
+ * come through the doors onto the landing like everybody else, and turn east.
  *
- * It was 10 m across at x 11.5, and that put it under the toilets: this run
- * is invented and the toilet block is measured, so the ramp is the one that
- * moves. What is left for it is the 6.1 m between the east end of the
- * threshold terrace and the block's west wall, so it takes 5.5 m of that —
- * still four times Biggy's 1.44 m, which is all the width was ever for.
+ * Straight rather than folded, because a link is a rectangle and climbs one
+ * way. 12 m of run for 1.2 m of rise is the gradient it always had — the one
+ * that lets Biggy up empty and not with the keg — and it is as wide as the
+ * landing is deep, which is both legs of the drawn switchback side by side.
  */
-const RAMP = rect(11.0, -49.4, 5.5, 12.0);
-
-/** The gap it needs in the wall at the bottom. A ramp, not a ten-metre hole. */
-const RAMP_DOOR = 4.0;
-const RAMP_OPENING = rect(
-  RAMP.x + RAMP.w / 2 - RAMP_DOOR / 2,
-  HALL.y - 1,
-  RAMP_DOOR,
-  2,
+const RAMP_RUN = 12.0;
+const RAMP = rect(
+  THRESHOLD_LANDING.x + THRESHOLD_LANDING.w,
+  HALL.y + WALL_THICKNESS / 2,
+  RAMP_RUN,
+  LANDING_DEPTH - WALL_THICKNESS / 2,
 );
 
 /**
@@ -592,7 +656,6 @@ const ENTRANCE_X = RECEPTION.x + 0.7;
 
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
   { floor: 0, bounds: HALL_OPENING },
-  { floor: 0, bounds: RAMP_OPENING },
   // The doors themselves, and the only hole in this elevation. The curtain
   // wall east of them is WINDOW — see CURTAIN_WALLS — so this is the whole
   // of the way in and out of the building on foot.
@@ -601,6 +664,17 @@ const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
 
 const floor0Rooms: Room[] = [
   { id: 'hall', label: 'Exhibition Hall', kind: 'hall', floor: 0, bounds: HALL },
+  // After the hall, always: the wall builder asks "which room is on the far
+  // side of this edge" and takes the first answer, and the answer for the
+  // concourse's north wall has to be the hall.
+  {
+    id: 'threshold',
+    label: 'Exhibition Hall',
+    kind: 'landing',
+    floor: 0,
+    bounds: THRESHOLD_LANDING,
+    elevation: CONCOURSE_LEVEL,
+  },
   {
     id: 'reception',
     label: 'Reception',
@@ -637,7 +711,7 @@ const floor0Rooms: Room[] = [
    */
   { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
   { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
-  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: rect(20.8, -15.5, 8.0, 6.0) },
+  { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: POLO },
   {
     id: 'forecourt',
     label: 'Outside',
@@ -957,6 +1031,34 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   return [...ARRIVALS, GRAND_WELL, TERRACE_BLOCK].some((flight) => rectContains(flight, x, y));
 }
 
+/** Wall left between an auditorium's door and the end of its frontage. */
+const DOOR_MARGIN = 1.2;
+
+/**
+ * How far the door must slide toward the end of the frontage to clear a hall
+ * flight's stairwell, or DOOR_MARGIN when nothing is in the way.
+ *
+ * Rooms 3 and 10 have one: the flights stand against the corridor walls and
+ * take 11.2 m of a 14.8 m frontage, so the door the alternation gives them
+ * lands with a metre of it opening onto the well. `doorBlocked` looks at the
+ * door's middle and so does not see it. The building's answer is the one
+ * this takes — the door goes into the corner beside the stairhead.
+ */
+function doorMarginFor(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): number {
+  const x = side === -1 ? bounds.x + bounds.w + 0.9 : bounds.x - 0.9;
+  const end = doorSide === 'low' ? bounds.y : bounds.y + bounds.h;
+  let margin = DOOR_MARGIN;
+  for (const flight of [STAIR_WEST, STAIR_EAST]) {
+    if (x < flight.x || x > flight.x + flight.w) continue;
+    // Room between the room's end and the flight's near end, less a rail.
+    const room =
+      doorSide === 'low' ? flight.y - end : end - (flight.y + flight.h);
+    if (room < 0) continue;
+    margin = Math.min(margin, Math.max(0.1, room - RAIL_THICKNESS - DOOR_WIDTH));
+  }
+  return margin;
+}
+
 /**
  * Rooms the plan enters against the alternation.
  *
@@ -1047,6 +1149,7 @@ function auditoriums(): {
         floor: 1,
         bounds,
         doorSide,
+        doorMargin: doorMarginFor(bounds, side, doorSide),
         rake,
         voids: [dropped],
       });
@@ -2074,11 +2177,20 @@ const HALL_CUTAWAYS = hallCutaways();
  * really in it. This is the number that should match the 2411.41 m² printed on
  * the plan, and tools/venue.mjs checks that it does.
  *
+ * "Not really in it" includes the stair cores and the columns. A printed
+ * floor area is the floor, and neither is — the annotated plan leaves both
+ * cores unshaded — and at 176 m² together they are not a rounding error.
+ *
  * Assumes the cutaways do not overlap each other, which is true by
  * construction — keep it that way, or this silently under-counts.
  */
+const CORE_FOOTPRINT = (STAIR_WIDTH + WALL_THICKNESS * 2) * (STAIR_RUN + CORE_VESTIBULE + WALL_THICKNESS);
 export const HALL_FLOOR_M2 =
-  HALL.w * HALL.h - HALL_CUTAWAYS.reduce((sum, o) => sum + o.bounds.w * o.bounds.h, 0);
+  HALL.w * HALL.h -
+  HALL_CUTAWAYS.reduce((sum, o) => sum + o.bounds.w * o.bounds.h, 0) -
+  POLO.w * POLO.h -
+  CORE_FOOTPRINT * 2 -
+  COLUMN_X.length * COLUMN_Y.length * COLUMN_SIZE * COLUMN_SIZE;
 
 
 // ---------------------------------------------------------------------------
@@ -2148,7 +2260,10 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
     // around it already owns every wall it has, and letting it emit its own
     // put a second, shorter wall on top of each of them — identical in space,
     // different in extent, so the dedupe below could not see it.
-    if (room.kind === 'stage') continue;
+    //
+    // The threshold's landing is the same thing standing in the hall: its
+    // edges are the steps, the ramp and the box, never a wall.
+    if (room.kind === 'stage' || room.kind === 'landing') continue;
 
     const b = room.bounds;
     const edges = [
@@ -2230,8 +2345,13 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           // single doorway in the middle of the building and walled off the
           // thirteen doors the rooms had each opened for themselves.
           kind.push(0);
-        } else if (!mine && theirs) {
+        } else if (!mine && theirs && sameLevel) {
           kind.push(2); // room onto circulation — this one earns a door
+          // ...but only onto circulation at its own level. BOF 3 stands on
+          // the concourse, 1.2 m over the hall, and its north wall is the
+          // hall's south wall east of the ramp: it had punched a door in it
+          // that opened onto a drop, which neither plan draws (the author,
+          // 28 Sep: "a hole in the wall further on the side of the stairs").
         } else {
           kind.push(1); // a level change, or two rooms that do not connect
         }
@@ -2257,7 +2377,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
           // At one END of the frontage, not the middle. These rooms are fans:
           // the middle of the corridor wall is behind the seating, and the
           // doors are at the sides, alternating room by room.
-          const margin = 1.2;
+          const margin = room.doorMargin ?? DOOR_MARGIN;
           if ((room.doorSide ?? 'low') === 'low') {
             pieces.push([a, a + margin], [a + margin + DOOR_WIDTH, z]);
           } else {
@@ -2473,26 +2593,21 @@ const {
  * matters more now that Biggy cannot use any of them.
  */
 const receptionStairs: Link[] = [
-  // Concourse → hall, descending northward. ~23 m wide, the full opening.
-  { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER, wrap: THRESHOLD_WRAP },
   /**
-   * The ramp beside the steps, and Biggy's only way between the two levels.
+   * The ramp off the landing, and Biggy's only way between the two levels.
    *
-   * It has to climb NORTH–SOUTH, because that is the direction the levels
-   * change in. An earlier pass turned it east–west to make the gradient look
-   * realistic, which gave a beautiful 12% ramp running along a wall and
-   * connecting nothing — the traversal harness caught it by walking Biggy
-   * straight over the top and out of the building.
+   * Listed BEFORE the steps, and that order is load-bearing: the ramp's top
+   * end lies over the east end of the steps (see `RAMP`), and `linkAt` takes
+   * the first link it finds. Found second, the ramp would be a strip of steps
+   * as far as Biggy was concerned, which is to say a wall.
    *
-   * The plan shows 3.6 m of depth, which at 1.2 m of rise is a 33% ramp — and
-   * Biggy cannot climb 33%: 774 N of motor loses to 1333 N of gravity. A ramp
-   * it cannot use is not a ramp. The real one must therefore switch back,
-   * since 1:12 needs 14.4 m of run and no straight line of it exists here, so
-   * this is modelled with the 12 m of run the gradient requires rather than
-   * the 3.6 m of footprint the switchback folds into. A documented
-   * simplification of a thing the plan shows, not an invented feature.
+   * Climbs along x, because it runs along the door wall: you come off the
+   * landing and go east, down to the hall floor. It used to climb north–south
+   * through the concourse, back when the concourse was where it stood.
    */
-  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: RAMP, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: 0 },
+  { id: 'wheelchair-ramp', from: 0, to: 0, bounds: RAMP, base: 0, rise: CONCOURSE_LEVEL, axis: 'x', ascending: false, riser: 0 },
+  // Concourse → hall: the landing, and the steps down from it on three sides.
+  { id: 'hall-steps', from: 0, to: 0, bounds: HALL_STEPS, base: 0, rise: CONCOURSE_LEVEL, axis: 'y', ascending: false, riser: RISER, wrap: THRESHOLD_WRAP },
   /**
    * "∧ Rooms ∧" — the grand flight from the concourse to the auditoriums.
    *
@@ -2643,45 +2758,42 @@ function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
  * `treadsOf` cuts a flight into bands across its climb axis, which is right
  * for a staircase between two walls and wrong for one you can also walk up
  * from the side: the band at the top would be drawn the full width of the
- * flight and bury the six steps splaying out beneath it.
+ * flight and bury the steps wrapping round beneath it.
  *
  * So the bands are RINGS — each step is the frame left between its own
  * contour and the next one in — and a ring is three rectangles: the two
  * flanks and the nose. There is no fourth side, because the fourth side is
- * the wall the terrace climbs to meet.
+ * the wall the terrace climbs to meet. Whatever is left inside the top ring
+ * is the landing, and the landing is a floor (see the `threshold` room), not
+ * a tread: drawn as one, it would be solid to Biggy, which has to cross it.
  *
- * `i` counts DOWN from the top step at the wall, so step `i` is inset by the
- * steps still below it and is that many goings deep.
+ * The flanks stop `clear` short of the wall. On the one terrace there is,
+ * the box at the west end and the ramp at the east end stand there instead.
  */
-function terraceSteps(link: Link): Obstacle[] {
+function terraceSteps(link: Link, clear: number): Obstacle[] {
   const b = link.bounds;
   const steps = Math.round(link.rise / link.riser);
-  const going = b.h / steps;
-  const splay = (link.wrap ?? 0) / steps;
+  const going = (link.wrap ?? 0) / steps;
 
   const pieces: Obstacle[] = [];
-  for (let i = 0; i < steps; i += 1) {
-    const inset = (steps - 1 - i) * splay;
-    const depth = (i + 1) * going;
+  for (let k = 0; k < steps; k += 1) {
+    // Step k counts UP from the bottom one, and is inset k goings from every
+    // open side. Its depth, measured off the wall, is what the inset leaves.
+    const x0 = b.x + k * going;
+    const x1 = b.x + b.w - k * going;
+    const depth = b.h - k * going;
     // Solid to anything that cannot climb this flight, walkable to anything
     // that can — the same rule as every other tread in the building.
     const step = {
       floor: link.from,
-      height: (link.rise * (steps - i)) / steps,
+      height: (link.rise * (k + 1)) / steps,
       base: 0,
       linkId: link.id,
     };
-    pieces.push({ ...step, bounds: rect(b.x + inset, b.y, splay, depth) });
-    pieces.push({ ...step, bounds: rect(b.x + b.w - inset - splay, b.y, splay, depth) });
-    pieces.push({
-      ...step,
-      bounds: rect(
-        b.x + inset + splay,
-        b.y + depth - going,
-        b.w - (inset + splay) * 2,
-        going,
-      ),
-    });
+    const flank = depth - clear;
+    pieces.push({ ...step, bounds: rect(x0, b.y + clear, going, flank) });
+    pieces.push({ ...step, bounds: rect(x1 - going, b.y + clear, going, flank) });
+    pieces.push({ ...step, bounds: rect(x0 + going, b.y + depth - going, x1 - x0 - going * 2, going) });
   }
   return pieces;
 }
@@ -2732,21 +2844,38 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
      * which is the entire argument for the harness.
      */
     if (link.id === 'wheelchair-ramp') {
-      solid.push({
-        floor: link.from,
-        bounds: rect(RAMP_OPENING.x, link.bounds.y + link.bounds.h - 0.3, RAMP_DOOR, 0.6),
-        // A lip, not a wall: this is what a ramp meets a floor with. It is
-        // solid to a machine that may not use the ramp and invisible to one
-        // that may, which is the same rule as every staircase here.
-        height: 0.14,
-        linkId: link.id,
-      });
+      const b = link.bounds;
+      // A lip, not a wall: this is what a ramp meets a floor with. It is
+      // solid to a machine that may not use the ramp and invisible to one
+      // that may, which is the same rule as every staircase here. One at
+      // each end, since the landing is a floor at the top just as the hall
+      // is at the foot.
+      // The top one is flush with the landing, which is what it is a lip to.
+      const ends = [
+        { x: b.x + (link.ascending ? b.w : 0), height: link.rise },
+        { x: b.x + (link.ascending ? 0 : b.w), height: 0.14 },
+      ];
+      for (const end of ends) {
+        solid.push({ floor: link.from, bounds: rect(end.x - 0.3, b.y, 0.6, b.h), height: end.height, linkId: link.id });
+      }
+      // And a rail down its open side, stepping down with it, so the only
+      // way off it is at an end. The steps beside its top are 0.8 m below it.
+      const pieces = 6;
+      const piece = b.w / pieces;
+      for (let i = 0; i < pieces; i += 1) {
+        const high = link.rise * (1 - (i * piece) / b.w);
+        solid.push({
+          floor: link.from,
+          bounds: rect(b.x + i * piece, b.y + b.h, piece, RAIL_THICKNESS),
+          height: high + RAIL_HEIGHT,
+        });
+      }
       continue;
     }
 
     // A flight that also climbs from its flanks is not a run of bands.
     if (link.wrap) {
-      solid.push(...terraceSteps(link));
+      solid.push(...terraceSteps(link, LANDING_DEPTH));
       continue;
     }
 
@@ -4287,6 +4416,24 @@ function stairCores(): Obstacle[] {
   return walls;
 }
 
+/**
+ * The threshold's two solid pieces: the box at the landing's west end, and
+ * the columns standing in the doorway. See `THRESHOLD_BOX`, `DOOR_WALL_COLUMNS`.
+ */
+function thresholdFit(): Obstacle[] {
+  const pieces: Obstacle[] = [
+    { floor: 0, bounds: THRESHOLD_BOX, height: CONCOURSE_LEVEL + RAIL_HEIGHT },
+  ];
+  for (const x of DOOR_WALL_COLUMNS) {
+    pieces.push({
+      floor: 0,
+      bounds: rect(x - COLUMN_SIZE / 2, HALL.y - COLUMN_SIZE / 2, COLUMN_SIZE, COLUMN_SIZE),
+      height: FLOOR_CLEAR,
+    });
+  }
+  return pieces;
+}
+
 const BOOTHS = exhibitionBooths();
 const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
@@ -4302,6 +4449,7 @@ export const KINEPOLIS: Venue = {
     ...auditoriumSolids,
     ...STAIRS.solids,
     ...stairCores(),
+    ...thresholdFit(),
     ...RAILS.solids,
     ...TERRACE_EDGE.solids,
     ...receptionFitOut(),
@@ -4320,7 +4468,7 @@ export const KINEPOLIS: Venue = {
     ...TERRACE_EDGE.decor,
   ],
   links: staircases,
-  extents: [rect(HALL.x, -62, HALL.w + 13, 74), rect(-46, SOUTH_END, 92, 150)],
+  extents: [rect(HALL.x, -62, HALL.w + 13, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
 };
 
 /** Named spawn points, so chapters do not hard-code coordinates. */
@@ -4345,16 +4493,16 @@ export const SPAWNS = {
    */
   forecourt: { floor: 0 as const, x: -4, y: -72 },
   /** Where the concourse opens into the hall. */
-  // Between the two southernmost column rows, which sit at y -27.05 and
-  // -33.58, and now on the centre line of the main aisle: the cast lines up
-  // eastward from here and the east rank of stands begins at x 4.0.
-  hallEntrance: { floor: 0 as const, x: -1, y: -32.4 },
+  // Between the southernmost column row, at y -27.28, and the foot of the
+  // threshold steps at -32.44, on the centre line of the main aisle: the
+  // cast lines up eastward from here, clear of both.
+  hallEntrance: { floor: 0 as const, x: -1, y: -29.9 },
   /**
    * Centre of the hall, on the aisle midway between two rows of columns.
    *
    * A chapter lines its whole cast up east of this point, so what has to be
    * clear is the ROW, not the point. The column rows nearest here sit at
-   * y -20.87 and -27.05, so -24 is over 3 m from either and clears Biggy's
+   * y -14.57 and -20.75, so -17.7 is over 3 m from either and clears Biggy's
    * 0.72 m for any x along the row. It is also 3 m south of the staircases,
    * which stand in the middle of the hall — the cast used to spawn inside
    * one of them, and the collision solver threw it 340 km.
@@ -4364,7 +4512,7 @@ export const SPAWNS = {
    * and meets one every 9.2 m. That is the hall doing its job — but it means
    * a straight screen-axis run is never the fast way across.
    */
-  hallCentre: { floor: 0 as const, x: -2.6, y: -24 },
+  hallCentre: { floor: 0 as const, x: -2.6, y: -17.7 },
   /**
    * Just south of the west flight, below its TOP.
    *
@@ -4372,7 +4520,7 @@ export const SPAWNS = {
    * north from here and you meet it, which is what `npm run traverse` asserts.
    * The foot you can actually walk onto is at the far, northern end.
    */
-  stairFoot: { floor: 0 as const, x: -6.0, y: -9.6 },
+  stairFoot: { floor: 0 as const, x: -6.0, y: -3.3 },
   /**
    * The south end of the corridor, between Rooms 6 and 7.
    *
