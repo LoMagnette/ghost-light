@@ -427,7 +427,10 @@ for (const room of KINEPOLIS.rooms.filter((r) => r.kind === 'auditorium')) {
   const wall = west ? b.x + b.w : b.x;
   scenario(
     `Voxxy walks into ${room.label}`,
-    (r) => r.floor === 1 && (west ? r.x < wall - 1 : r.x > wall + 1),
+    // Inside the room's own walls, on its floor, and not fallen through
+    // anything: a robot that dropped into the well and was flung off down the
+    // building still reads as "west of the wall".
+    (r) => r.floor === 1 && (west ? r.x < wall - 1 : r.x > wall + 1) && r.y > b.y && r.y < b.y + b.h && r.z > -2,
     () => drive('voxxy', { x: west ? wall + 2.5 : wall - 2.5, y }, west ? WEST : EAST, 3, 1),
   );
 }
