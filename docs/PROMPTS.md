@@ -5217,6 +5217,27 @@ to the east corner. The small windows that were in the pier are gone. The
 precast above, which carries the star, is unchanged. The band-end cut in
 `glazeFacade` stays, but now falls on the entrance's edge.
 
+### The storey swaps half way up a flight
+
+> One mechanic that should be adapted when the robot climb the stairs and it
+> reach mid heigh it should swap level avoiding to long stairs visually
+
+**Done (branch `stair-swap`):**
+- **Swap at the middle:** `Sim.resolveSurfaces` moves a robot onto the upper
+  storey once it is past 55% of a flight, and back down below 45%. It used
+  to wait for the top or bottom step. Heights were already measured per
+  storey (`surfaceHeight` and `datumOf`), so the robot's z is re-expressed
+  from the new datum and nothing jumps.
+- **View follows:** the screen follows the robot's storey, so the view
+  swaps with it.
+- **Tests:**
+  - `traverse` measures peaks from the ground floor's datum (`above`),
+    because z is now storey-relative at the top of a climb.
+  - The grand flight's east-end drive is cut to 6 s: held for longer, it now
+    crosses the corridor and goes down the hall's east flight.
+  - New scenarios: still downstairs at 40% of the grand flight, upstairs at
+    60%, and in the top half it can't step off either side.
+
 ---
 
 ## Audio
