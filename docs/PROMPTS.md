@@ -1507,6 +1507,14 @@ The date and the city get a setting of their own, mono and spaced, and a
 large serif. About 50 s; any key still skips. Still unsaid, on purpose: why
 the humans are gone.
 
+**And it plays on its own:**
+> the intro should automatically played the first time you access the game
+
+No more "press any key" first. The catch is the browser's rule that a page
+makes no sound before a key or a click, so the first key while the words
+run turns the music on instead of skipping, and the hint says exactly that:
+"any key for sound · esc to skip". After that any key skips.
+
 Also caught here, and unrelated to the desk: `npm run shoot` was drawing 1217
 boxes a frame on the auditorium level and dropping one frame in five. The cull
 margin was 160 px, which sounds harmless and is an eighty percent increase in

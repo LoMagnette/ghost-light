@@ -6,11 +6,12 @@
  * backdrop — the empty hall, the one lamp drifting — IS the intro, and a
  * separate screen would build the building twice and cut between them.
  *
- * It opens on "press any key" and waits. Not for drama: the browser will not
- * make a sound until the page has had a key or a click, and the whole point
- * of the sequence is the Chapter I music under it. After that, any key skips
- * to the end, and the menu fades in once the words have gone. Seen once, it
- * is remembered, and I on the menu plays it again.
+ * It starts on its own (the author, 28 Sep: it should just play). But the
+ * browser will not make a sound until the page has had a key or a click, and
+ * the words are written to sit on Chapter I's music, so the FIRST key while
+ * it runs turns the sound on rather than skipping — the hint says so. After
+ * that any key skips, and ESC always does. The menu fades in once the words
+ * have gone. Seen once, it is remembered, and I on the menu plays it again.
  */
 
 import { INTRO_LINES, type IntroLine } from '@/chapters/intro';
@@ -45,18 +46,20 @@ export class Intro {
   private readonly root: HTMLElement;
   private readonly line: HTMLElement;
   private readonly hint: HTMLElement;
-  private stage: 'waiting' | 'lines' | 'closing' | 'done';
+  private stage: 'lines' | 'closing' | 'done' = 'lines';
+  /** No key yet: the next one is for sound, not for skipping. */
+  private silent: boolean;
   private index = 0;
   private t = 0;
 
   /**
-   * `waitForKey` false when sound is already unlocked — a replay from the
-   * menu — so there is nothing to wait for. `accent` is the last line's
+   * `silent` true when the page has had no key or click yet, so there is no
+   * sound, and the first press is spent on turning it on. `accent` is the last line's
    * colour: Chapter I's, which is the ghost light's.
    */
   constructor(
     ui: HTMLElement,
-    waitForKey: boolean,
+    silent: boolean,
     private readonly accent: string,
     private readonly onDone: () => void,
   ) {
@@ -92,20 +95,14 @@ export class Intro {
     this.root.append(this.line, this.hint);
     ui.append(this.root);
 
-    this.stage = waitForKey ? 'waiting' : 'lines';
-    this.hint.textContent = waitForKey ? 'PRESS ANY KEY' : 'ANY KEY TO SKIP';
+    this.silent = silent;
+    this.hint.textContent = silent ? 'ANY KEY FOR SOUND  ·  ESC TO SKIP' : 'ANY KEY TO SKIP';
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('pointerdown', this.onKey, true);
   }
 
   update(dt: number): void {
     this.t += dt;
-    if (this.stage === 'waiting') {
-      // A slow breath, so it reads as waiting rather than as stuck.
-      this.hint.style.opacity = String(0.45 + 0.4 * Math.sin(this.t * 2.2));
-      return;
-    }
-
     if (this.stage === 'lines') {
       const said = INTRO_LINES[this.index];
       const text = said.text;
@@ -160,14 +157,15 @@ export class Intro {
 
   private readonly onKey = (event: Event): void => {
     if (event instanceof KeyboardEvent && event.repeat) return;
-    if (this.stage === 'waiting') {
-      this.stage = 'lines';
-      this.t = 0;
-      this.hint.style.opacity = '0.6';
+    if (this.stage !== 'lines') return;
+    const escape = event instanceof KeyboardEvent && event.code === 'Escape';
+    if (this.silent && !escape) {
+      // This press unlocked the sound (see `installAudio`); it skips nothing.
+      this.silent = false;
       this.hint.textContent = 'ANY KEY TO SKIP';
-    } else if (this.stage === 'lines') {
-      this.close();
+      return;
     }
+    this.close();
   };
 
   /**
