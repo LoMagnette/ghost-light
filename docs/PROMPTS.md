@@ -5093,6 +5093,18 @@ and flickered where they met. Each plate now has its flight cut out
 - **Left out:** the "i" in a circle (a floor symbol), and the box with a
   scroll at the head of the flight, which isn't in the key.
 
+> we're almost there. There's a gap between a pillar and the wall see
+> @references/venue/maps/gap-desk.png. The pathway through the door near that
+> location is really short.
+
+**Done:** both came from the stair hall's west wall, which still followed the
+older reading and ran 0.5 m past the head of the flight. That left a 0.75 m
+gap beside the pillar at the flight's corner, and put the wall's end 0.7 m in
+front of the door behind the island. The wall now stops at the head and
+turns west to the pillar, as `reception-desk.png` draws it. The door opens
+onto the full 1.1 m down to the head. There is a new `traverse` scenario:
+"Voxxy walks out through the door behind the reception desk".
+
 ---
 
 ## Audio

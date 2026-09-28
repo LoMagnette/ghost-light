@@ -4387,8 +4387,12 @@ function receptionFitOut(): Obstacle[] {
  *
  * The two sides are NOT the same length, which is the detail worth keeping:
  *
- *   west  — stops 0.5 m past the head of the flight, where the information
- *           island takes the line over and carries it north.
+ *   west  — stops at the head of the flight and turns west to the pillar
+ *           there, which is where `reception-desk.png` ends it: the pillar
+ *           stands at the flight's corner. It ran on 0.5 m past the head
+ *           until 28 Sep, and that left a gap between it and the pillar, and
+ *           its end standing 0.7 m in front of the door behind the island
+ *           (the author: "the pathway through the door ... is really short").
  *   east  — runs 5.8 m past the head and then returns west to the pillar on
  *           column 4. A thin wall comes 2.9 m back down from that pillar.
  *
@@ -4407,8 +4411,6 @@ function receptionFitOut(): Obstacle[] {
  */
 const STAIR_HALL_HEIGHT = FLOOR_HEIGHT - CONCOURSE_LEVEL;
 
-/** How far the west wall runs past the head of the flight, metres. Measured. */
-const STAIR_HALL_WEST_PAST = 0.5;
 
 /** Clear depth inside the entrance elevation before the walls start, metres. */
 const STAIR_HALL_LOBBY = 3.3;
@@ -4421,15 +4423,21 @@ function grandStairHall(): Obstacle[] {
   const east = planX(887);
   const back = planY(128);
   const pillar = RECEPTION_PILLARS[2];
+  const corner = RECEPTION_PILLARS[3];
   const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: STAIR_HALL_HEIGHT });
 
   return [
+    wall(rect(GRAND_WELL.x - WALL_THICKNESS, foot, WALL_THICKNESS, head - foot)),
+    // ...and west along the head to the pillar at the flight's corner. The
+    // pillar is on the column grid and the flight is 1.05 m east of where the
+    // drawing has it, so this is the piece of the drawing's slot wall that
+    // the narrower flight left behind.
     wall(
       rect(
-        GRAND_WELL.x - WALL_THICKNESS,
-        foot,
-        WALL_THICKNESS,
-        head + STAIR_HALL_WEST_PAST - foot,
+        corner.x + COLUMN_SIZE / 2,
+        head - WALL_THICKNESS,
+        GRAND_WELL.x - (corner.x + COLUMN_SIZE / 2),
+        corner.y - COLUMN_SIZE / 2 - (head - WALL_THICKNESS),
       ),
     ),
     wall(rect(east, foot, WALL_THICKNESS, back - foot)),

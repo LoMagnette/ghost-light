@@ -501,6 +501,17 @@ scenario(
 );
 
 /*
+ * The door behind the information island (`reception-desk.png`): out of the
+ * staff floor behind the west desk, south towards the head of the flight.
+ * The stair hall's west wall used to end 0.7 m in front of it.
+ */
+scenario(
+  'Voxxy walks out through the door behind the reception desk',
+  (r) => r.y < GRAND.bounds.y + GRAND.bounds.h + 0.9,
+  () => drive('voxxy', { x: -2.58, y: GRAND.bounds.y + GRAND.bounds.h + 2.5 }, SOUTH, 4),
+);
+
+/*
  * The terrace at the head of the flight (access-main-stairs.png): open floor
  * the width of the corridor, and west of the flight the floor stops, open to
  * the reception below, behind a curved balustrade. Walk south down the west
