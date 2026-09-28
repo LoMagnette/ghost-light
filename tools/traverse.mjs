@@ -62,7 +62,7 @@ Module._resolveFilename = function (request, ...rest) {
 const { Body } = await import(pathToFileURL(join(out, 'core/Body.js')));
 const { Sim, makeActor, FIXED_DT } = await import(pathToFileURL(join(out, 'core/Sim.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
-const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET, sessionLimits } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
+const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET, sessionLimits, corridorTables } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
 const { FLOOR_HEIGHT } = await import(pathToFileURL(join(out, 'core/Venue.js')));
 const { climbFraction } = await import(pathToFileURL(join(out, 'core/Traversal.js')));
 rmSync(out, { recursive: true, force: true });
@@ -377,6 +377,7 @@ const DEVOXX_DAY = {
   obstacles: [
     ...KINEPOLIS.obstacles,
     ...sessionLimits(['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8', 'aud-9', 'aud-10']).solids,
+    ...corridorTables().solids,
   ],
 };
 const DRAPE_Y = 12.7;
@@ -392,6 +393,33 @@ scenario(
   'Voxxy is stopped by the rope either side of the gap',
   (r) => r.y < DRAPE_Y,
   () => drive('voxxy', { x: -3.0, y: DRAPE_Y - 2 }, NORTH, 3, 1, DEVOXX_DAY),
+);
+
+/*
+ * The long tables along the corridor walls between Rooms 5 and 6, and 7 and
+ * 8, leave every one of those doors clear: Droid, the widest robot upstairs,
+ * drives straight in from the middle of the corridor.
+ */
+const WEST_DOORS = { 'aud-5': -22.4, 'aud-6': -44.6 };
+const EAST_DOORS = { 'aud-8': -22.4, 'aud-7': -44.6 };
+for (const [room, y] of Object.entries(WEST_DOORS)) {
+  scenario(
+    `Droid drives into ${room} past the corridor tables`,
+    (r) => r.x < -8.0,
+    () => drive('droid', { x: 0.0, y }, WEST, 4, 1, DEVOXX_DAY),
+  );
+}
+for (const [room, y] of Object.entries(EAST_DOORS)) {
+  scenario(
+    `Droid drives into ${room} past the corridor tables`,
+    (r) => r.x > 13.5,
+    () => drive('droid', { x: 5.0, y }, EAST, 4, 1, DEVOXX_DAY),
+  );
+}
+scenario(
+  'Voxxy is stopped by a corridor table',
+  (r) => r.x > -4.4,
+  () => drive('voxxy', { x: -1.0, y: -33.0 }, WEST, 3, 1, DEVOXX_DAY),
 );
 
 scenario(

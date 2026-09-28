@@ -21,7 +21,7 @@ import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
-import { KINEPOLIS, sessionLimits, SPAWNS } from '@/venue/kinepolis';
+import { corridorTables, KINEPOLIS, sessionLimits, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, rect, roomAt, type Level, type Venue } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import {
@@ -348,14 +348,17 @@ export class ChapterScreen implements Screen {
      * the renderer, so what you see is what you bump into.
      */
     const listed = chapter.objective.rooms;
-    const limits = listed ? sessionLimits(listed) : undefined;
-    const venue: Venue = limits
-      ? {
-          ...KINEPOLIS,
-          obstacles: [...KINEPOLIS.obstacles, ...limits.solids],
-          decor: [...KINEPOLIS.decor, ...limits.decor],
-        }
-      : KINEPOLIS;
+    // And the long tables along the corridor walls: a day with sessions has
+    // somewhere to sit between them. An empty building has neither.
+    const dressing = listed ? [sessionLimits(listed), corridorTables()] : [];
+    const venue: Venue =
+      dressing.length > 0
+        ? {
+            ...KINEPOLIS,
+            obstacles: [...KINEPOLIS.obstacles, ...dressing.flatMap((d) => d.solids)],
+            decor: [...KINEPOLIS.decor, ...dressing.flatMap((d) => d.decor)],
+          }
+        : KINEPOLIS;
 
     this.sim = new Sim(venue);
 
