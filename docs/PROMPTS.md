@@ -4965,6 +4965,29 @@ other. The author: "Just keep the steps and forget about the ramp."
 - **Parked:** the BeJUG photograph was in BOF 1, so its spot is now at
   (20.0, -55.0), just inside the east wall. It goes back when BOF 1 does.
 
+### The toilets, in the top-right corner
+
+> Let's with the toilet they should on the top right corner. You can look at
+> this map to build them @references/venue/maps/toilet-reception.png
+>
+> there's some left over there
+
+**Done (branch `reception-east`):**
+- **Old block removed:** the toilets that stood inside the concourse's
+  north-east corner were the leftover. Their walls are gone.
+- **Rebuilt from the crop:** the toilets now sit in the building's north-east
+  corner, read at 0.079 m/px:
+  - a 1.77 m passage along the hall wall;
+  - the women's room, 5.34 m: basins on the west wall, four cubicles on the
+    east;
+  - the men's room, 3.93 m: two cubicles and two urinals on the west wall,
+    basins on the east;
+  - a 1.78 m lobby off reception, with both doors where the plan hangs them.
+- **Wall builder:** a room that sets `doorMargin` now gets its door even on a
+  short frontage. Without this the men's room had no wall on its lobby side.
+- **Not built:** the area under the "Toilets >" label (the plan doesn't say
+  what it is) and the 2.1 m service strip with the stair on the east edge.
+
 ---
 
 ## Audio

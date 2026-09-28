@@ -533,48 +533,128 @@ const THRESHOLD_BOX = rect(
 );
 
 /**
- * The toilets in the NORTH-EAST of the concourse, and the corridor to them.
+ * The toilets: the north-east corner of the building, east of the concourse.
  *
- * These had been sitting in the eastern service strip with the BOF rooms, on
- * the same 19.8 m frontage, because that is where `exhibition-floor.jpg` —
- * the annotated Devoxx plan — writes "Toilets >". The architect's drawing
- * disagrees, and it is the drawing that has walls on it: `hollywood-area.png`
- * puts the block INSIDE the concourse, in the corner between the hall's south
- * wall and the east elevation, 9.27 m of frontage and not 19.8.
+ * Mapped off `toilet-reception.png`, the author's crop of
+ * `exhibition-floor.jpg` (28 Sep: "they should be on the top right corner").
+ * That plan has the block where it writes "Toilets >": in the east wing,
+ * against the building's north-east corner, not inside the concourse, which
+ * is where `hollywood-area.png` had it and where it stood until now.
  *
- * The two are not equally good evidence about a wall. An annotation says a
- * room is somewhere; a drawn wall says where it is. So the block moves 9 m
- * west into the concourse, and the strip it leaves becomes a third BOF room —
- * which is the right answer to that conflict as well, because a BOF room is a
- * partition Devoxx puts up for a week and the toilets are building.
+ * Read at 0.079 m/px, the scale that gives the east wing its 19.8 m. Running
+ * north to south:
  *
- * MEASURED, and the depths come out almost exactly where the old guess had
- * them — 4.10 m of cubicles against 3.6, 1.78 m of corridor against 2.2. It
- * was only ever the frontage and the x that were wrong.
+ *   a passage along the hall wall          1.77 m
+ *   the two toilets                        4.10 m
+ *   the lobby you queue in, off reception  1.78 m
  *
- *   corridor along the hall wall   1.77 m   (red on the marked-up plan)
- *   the cubicles                   4.10 m
- *   the lobby you queue in         1.78 m
+ * The depths are the ones `hollywood-area.png` gave, and this plan agrees
+ * with them to a pixel or two. West to east it is:
+ *   - something under the "Toilets >" label, 8 m;
+ *   - the women's room, 5.34 m: basins on the west wall and four cubicles
+ *     on the east;
+ *   - the men's room, 3.93 m: two cubicles and two urinals on the west
+ *     wall, and basins on the east;
+ *   - a 2.1 m service strip on the building's edge, with a stair at its foot.
+ * The two rooms together are 9.27 m, the frontage `hollywood-area.png` gave.
  *
- * Anchored NORTH to the hall's south wall and WEST to x 16.93, both measured.
- * Its EAST side is the concourse's east wall, and that is the one line where
- * the drawing and this building disagree: 26.2 m against 22.7. So the block
- * ends where this concourse ends and comes out 5.8 m across instead of 9.3.
- *
- * West is the anchor rather than east because the west side is the wall the
- * marked-up plan actually points at — an interior wall, drawn, measurable —
- * where the east side is just wherever the building stops.
+ * The area under the label and the service strip are not built. Neither
+ * drawing says what the first one is. The second belongs to the BOF rooms,
+ * which are being rebuilt one at a time.
  */
-const TOILET_BLOCK_X = 16.93;
+const EAST_WING_X = RECEPTION.x + RECEPTION.w;
+const EAST_EDGE = 42.1;
+const SERVICE_STRIP = 2.1;
 const TOILET_STRIP = 1.77;
+const TOILET_DEPTH = 4.1;
+const TOILET_LOBBY = 1.78;
+const WOMENS_W = 5.34;
+const MENS_W = 3.93;
 
-const TOILETS = rect(
-  TOILET_BLOCK_X,
-  HALL.y - TOILET_STRIP - 4.1,
-  RECEPTION.x + RECEPTION.w - TOILET_BLOCK_X,
-  4.1,
+const TOILETS_NORTH = HALL.y - TOILET_STRIP;
+const TOILETS_SOUTH = TOILETS_NORTH - TOILET_DEPTH;
+const MENS = rect(EAST_EDGE - SERVICE_STRIP - MENS_W, TOILETS_SOUTH, MENS_W, TOILET_DEPTH);
+const WOMENS = rect(MENS.x - WOMENS_W, TOILETS_SOUTH, WOMENS_W, TOILET_DEPTH);
+const TOILET_PASSAGE = rect(EAST_WING_X, TOILETS_NORTH, EAST_EDGE - EAST_WING_X, TOILET_STRIP);
+const TOILET_LOBBY_RECT = rect(
+  EAST_WING_X,
+  TOILETS_SOUTH - TOILET_LOBBY,
+  MENS.x + MENS.w - EAST_WING_X,
+  TOILET_LOBBY,
 );
-const TOILET_CORRIDOR = rect(TOILETS.x, TOILETS.y - 1.78, TOILETS.w, 1.78);
+
+/**
+ * What is in the two rooms, from the plan.
+ *
+ * Each cubicle bank collides as one hidden block, because a robot does not go
+ * into a cubicle. What you see is the partitions, their fronts with a gap for
+ * each door, and a pan in each cubicle. Basins are a counter along their wall.
+ */
+function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const PARTITION = 2.0;
+  const THIN = 0.05;
+  const inset = WALL_THICKNESS / 2;
+
+  const counter = (x: number) =>
+    solids.push({
+      floor: 0,
+      bounds: rect(x, TOILETS_SOUTH + 0.4, 0.55, TOILET_DEPTH - 0.6),
+            height: 0.85,
+      material: 'desk',
+    });
+
+  // A bank of `n` cubicles stacked north to south, `deep` across, with the
+  // fronts facing `front` (-1 west, 1 east) and the pans against the far wall.
+  const cubicles = (x: number, deep: number, north: number, n: number, pitch: number, front: -1 | 1) => {
+    const y0 = north - n * pitch;
+    solids.push({
+      floor: 0,
+      bounds: rect(x, y0, deep, n * pitch),
+            height: PARTITION,
+      hidden: true,
+    });
+    const faceX = front === -1 ? x : x + deep - THIN;
+    const backX = front === -1 ? x + deep - 0.6 : x + 0.15;
+    for (let i = 0; i <= n; i += 1) {
+      decor.push({
+        floor: 0,
+        bounds: rect(x, y0 + i * pitch - THIN / 2, deep, THIN),
+                height: PARTITION,
+        material: 'structure',
+      });
+    }
+    for (let i = 0; i < n; i += 1) {
+      const c = y0 + i * pitch;
+      const stile = (pitch - 0.7) / 2;
+      decor.push(
+        { floor: 0, bounds: rect(faceX, c, THIN, stile), height: PARTITION, material: 'structure' },
+        { floor: 0, bounds: rect(faceX, c + pitch - stile, THIN, stile), height: PARTITION, material: 'structure' },
+        { floor: 0, bounds: rect(backX, c + pitch / 2 - 0.2, 0.45, 0.4), height: 0.45, material: 'desk' },
+      );
+    }
+  };
+
+  // Women's: basins west, four cubicles east, opening west.
+  counter(WOMENS.x + inset);
+  cubicles(WOMENS.x + 3.04, WOMENS_W - 3.04 - inset, TOILETS_NORTH - inset, 4, (TOILET_DEPTH - 2 * inset) / 4, -1);
+
+  // Men's: two cubicles in the north-west corner, opening east; two urinals
+  // on the west wall south of them; basins on the east wall.
+  cubicles(MENS.x + inset, 1.35, TOILETS_NORTH - inset, 2, 0.93, 1);
+  for (const y of [TOILETS_SOUTH + 0.9, TOILETS_SOUTH + 1.7]) {
+    solids.push({
+      floor: 0,
+      bounds: rect(MENS.x + inset, y, 0.35, 0.4),
+            height: 0.65,
+      material: 'desk',
+    });
+  }
+  counter(MENS.x + MENS.w - inset - 0.55);
+
+  return { solids, decor };
+}
 
 /*
  * No wheelchair ramp. `exhibition-floor.jpg` labels one off the landing's
@@ -677,19 +757,21 @@ const floor0Rooms: Room[] = [
      */
   },
   /*
-   * No rooms east of the concourse, for now. BOF 1, 2 and 3 stood here, and
-   * the author is rebuilding that side one room at a time (28 Sep), so the
-   * concourse's east wall is the building's edge until they come back.
-   */
-  /*
-   * The toilets, in the concourse's north-east corner — see `TOILETS` for why
-   * they are there and not out in the service strip with the BOF rooms.
+   * East of the concourse: the toilets, and the passage and lobby to them.
+   * See `WOMENS` for the drawing. BOF 1, 2 and 3 stood south of them and the
+   * author is rebuilding that side one room at a time (28 Sep), so the rest
+   * of the east wing is the building's edge until they come back.
    *
-   * Modelled because that corner of the concourse was 400 m² of nothing, and
-   * because a building people believe in has the dull rooms in it.
+   * The passage is `service` rather than circulation so the wall builder
+   * gives the toilets no door onto it. It opens off reception at its west
+   * end, which is all the plan asks of it.
    */
-  { id: 'toilet-corridor', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_CORRIDOR, elevation: CONCOURSE_LEVEL },
-  { id: 'toilets', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILETS, elevation: CONCOURSE_LEVEL },
+  { id: 'toilet-passage', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILET_PASSAGE, elevation: CONCOURSE_LEVEL },
+  { id: 'toilet-lobby', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_LOBBY_RECT, elevation: CONCOURSE_LEVEL },
+  // The doors are where the plan hangs them: the women's at the west end of
+  // its frontage, the men's at the east end.
+  { id: 'toilets-women', label: 'Toilets', kind: 'service', floor: 0, bounds: WOMENS, elevation: CONCOURSE_LEVEL, doorSide: 'low', doorMargin: 0.5 },
+  { id: 'toilets-men', label: 'Toilets', kind: 'service', floor: 0, bounds: MENS, elevation: CONCOURSE_LEVEL, doorSide: 'high', doorMargin: 0.7 },
   { id: 'polo', label: 'Devoxx Polo Pickup', kind: 'service', floor: 0, bounds: POLO },
   {
     id: 'forecourt',
@@ -2350,7 +2432,11 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
         i = j;
 
         const pieces: [number, number][] = [];
-        if (doored && z - a > DOOR_WIDTH * 1.6) {
+        // A room that says where its door goes is trusted to have room for
+        // it: the men's toilet is 3.9 m across and the plan still hangs a
+        // door in it, where the default rule would have opened the whole side.
+        const shortest = room.doorMargin !== undefined ? room.doorMargin + DOOR_WIDTH + 0.2 : DOOR_WIDTH * 1.6;
+        if (doored && z - a > shortest) {
           // At one END of the frontage, not the middle. These rooms are fans:
           // the middle of the corridor wall is behind the seating, and the
           // doors are at the sides, alternating room by room.
@@ -4357,6 +4443,7 @@ const STAIRS = stairMass(staircases);
 const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 const FORECOURT_FIT = forecourtFitOut();
 const TERRACE_EDGE = terraceEdge();
+const TOILET_FIT = toiletFitOut();
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
@@ -4374,6 +4461,7 @@ export const KINEPOLIS: Venue = {
     ...grandStairHall(),
     ...railBesideWells(FACADE.walls, staircases),
     ...FORECOURT_FIT.solids,
+    ...TOILET_FIT.solids,
   ],
   decor: [
     ...auditoriumDecor,
@@ -4384,9 +4472,10 @@ export const KINEPOLIS: Venue = {
     ...BOOTHS.decor,
     ...FORECOURT_FIT.decor,
     ...TERRACE_EDGE.decor,
+    ...TOILET_FIT.decor,
   ],
   links: staircases,
-  extents: [rect(HALL.x, -62, HALL.w + 13, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
+  extents: [rect(HALL.x, -62, EAST_EDGE + 1 - HALL.x, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
 };
 
 /** Named spawn points, so chapters do not hard-code coordinates. */
