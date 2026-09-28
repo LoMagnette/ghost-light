@@ -228,9 +228,9 @@ export type Material =
    * on the storey above, and it has to look like floor rather than wall.
    */
   | 'floorBelow'
-  /** The black fabric of a pipe-and-drape barrier, and its steel posts. */
-  | 'drape'
-  | 'drapePost';
+  /** A queue stanchion's polished post, and the rope slung between two. */
+  | 'stanchion'
+  | 'rope';
 
 /**
  * Dressing: DRAWN, never simulated.

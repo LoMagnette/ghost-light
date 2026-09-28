@@ -342,14 +342,19 @@ export class ChapterScreen implements Screen {
     playAmbience(`ambience-${chapter.id}`);
 
     /*
-     * The building as this chapter's day has it: the venue, plus the drape
-     * Devoxx hangs across the corridor where its rooms stop (see
+     * The building as this chapter's day has it: the venue, plus the stanchions
+     * Devoxx puts across the corridor where its rooms stop (see
      * `sessionLimits`). The same one goes to the simulation, the crowd and
      * the renderer, so what you see is what you bump into.
      */
     const listed = chapter.objective.rooms;
-    const venue: Venue = listed
-      ? { ...KINEPOLIS, obstacles: [...KINEPOLIS.obstacles, ...sessionLimits(listed)] }
+    const limits = listed ? sessionLimits(listed) : undefined;
+    const venue: Venue = limits
+      ? {
+          ...KINEPOLIS,
+          obstacles: [...KINEPOLIS.obstacles, ...limits.solids],
+          decor: [...KINEPOLIS.decor, ...limits.decor],
+        }
       : KINEPOLIS;
 
     this.sim = new Sim(venue);

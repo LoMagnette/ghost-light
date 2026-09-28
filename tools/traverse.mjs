@@ -369,27 +369,27 @@ scenario(
 );
 
 /*
- * The drape across the corridor where Devoxx's rooms stop, from Chapter
+ * The stanchions across the corridor where Devoxx's rooms stop, from Chapter
  * III's day (Rooms 3 to 10): open in the middle, solid either side.
  */
 const DEVOXX_DAY = {
   ...KINEPOLIS,
   obstacles: [
     ...KINEPOLIS.obstacles,
-    ...sessionLimits(['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8', 'aud-9', 'aud-10']),
+    ...sessionLimits(['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8', 'aud-9', 'aud-10']).solids,
   ],
 };
 const DRAPE_Y = 12.7;
 const CORRIDOR_MIDDLE = 2.7;
 
 scenario(
-  'Droid drives north through the gap in the session drape',
+  'Droid drives north through the gap in the stanchions',
   (r) => r.y > DRAPE_Y + 3,
   () => drive('droid', { x: CORRIDOR_MIDDLE, y: DRAPE_Y - 4 }, NORTH, 3, 1, DEVOXX_DAY),
 );
 
 scenario(
-  'Voxxy is stopped by the drape either side of the gap',
+  'Voxxy is stopped by the rope either side of the gap',
   (r) => r.y < DRAPE_Y,
   () => drive('voxxy', { x: -3.0, y: DRAPE_Y - 2 }, NORTH, 3, 1, DEVOXX_DAY),
 );

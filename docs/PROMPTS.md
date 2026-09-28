@@ -5446,6 +5446,19 @@ and the lens turned white.
   - `objectives`, `venue`, `crowd`, `physics` and `shoot` pass.
   - Peeks were taken in Chapters II and III.
 
+> That's not bad but's more like some small picket with a rope linking them
+> toghether
+
+**Done:** the drape became queue stanchions.
+- **Posts:** polished steel, about a metre tall on a weighted foot, 1.8 m
+  apart.
+- **Rope:** red, slung between each pair; three pieces per bay, the middle
+  one lower, so it sags.
+- **Collision:** one hidden bar at rope height along each run, so nothing
+  slips between two posts. The 3 m opening in the middle is unchanged.
+- **Checked:** `traverse` (through the gap, stopped beside it), `objectives`,
+  `venue`, `crowd` and `shoot` pass. Peeks were taken in Chapters II and III.
+
 ---
 
 ## Audio
