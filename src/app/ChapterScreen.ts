@@ -225,6 +225,8 @@ export class ChapterScreen implements Screen {
   private toast!: HTMLElement;
   /** Chapter seconds at which the next cat arrives. See `driveSwarm`. */
   private nextCatAt = 0;
+  /** The cats are hunting, and arrive as a horde. See `driveSwarm`. */
+  private hordeCalled = false;
   /** The off-screen arrows, pooled. See `pointAt`. */
   private readonly arrows: { root: HTMLElement; pointer: HTMLElement; badge: HTMLElement; label: HTMLElement }[] = [];
   /** What the card last showed, so it is rebuilt only when it changes. */
@@ -1213,6 +1215,7 @@ export class ChapterScreen implements Screen {
     this.crowd.seedCats(Math.floor(Math.random() * 0x7fffffff));
     this.crowd.spawnCat();
     this.nextCatAt = swarm.every;
+    this.hordeCalled = false;
     for (const actor of this.actors) actor.body.speedScale = 1;
   }
 
@@ -1237,12 +1240,29 @@ export class ChapterScreen implements Screen {
       return;
     }
 
-    while (this.run.elapsed >= this.nextCatAt && this.crowd.catCount < swarm.max) {
-      this.crowd.spawnCat();
-      this.nextCatAt += swarm.every;
+    const wake = this.run.states.find((s) => s.activity.id === swarm.wake);
+    const hunting = wake?.status === 'done';
+
+    /*
+     * Before the cat has spoken, cats turn up anywhere, one every so often.
+     * After, they are a HORDE: quicker, more of them, and out of the dark
+     * just past the lamp — never in the middle of the building where
+     * nobody is. The switch resets the clock, so the first of the horde is
+     * a beat after the conversation ends, not whenever the old timer was.
+     */
+    const horde = hunting ? swarm.horde : undefined;
+    if (horde && !this.hordeCalled) {
+      this.hordeCalled = true;
+      this.nextCatAt = this.run.elapsed + horde.every;
+    }
+    const every = horde?.every ?? swarm.every;
+    const max = horde?.max ?? swarm.max;
+    while (this.run.elapsed >= this.nextCatAt && this.crowd.catCount < max) {
+      if (horde) this.crowd.spawnCatNear(body.x, body.y, me.floor, horde.from, horde.to);
+      else this.crowd.spawnCat();
+      this.nextCatAt += every;
     }
 
-    const wake = this.run.states.find((s) => s.activity.id === swarm.wake);
     if (wake && wake.status !== 'done') {
       // Only while nobody is mid-sentence: a cat that wanders a step while
       // it is talking must not take the conversation with it.

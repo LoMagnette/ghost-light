@@ -105,8 +105,19 @@ const PERSON_RADIUS = 0.34;
  */
 /** m/s, a cat with nowhere in particular to be. */
 const CAT_WANDER = 0.45;
-/** m/s, a cat that has seen Voxxy and wants to be where it is. */
-const CAT_CHASE = 3.0;
+/**
+ * m/s, a cat that has seen Voxxy and wants to be where it is — at the top of
+ * a lurch. See `lurchOf`: a hunting cat does not glide at a speed, it surges
+ * and stalls on a rhythm of its own, which averages about three quarters of
+ * this, and then it lunges from close range.
+ */
+const CAT_CHASE = 3.4;
+/** Surges per second for a hunting cat: about one, which is a shamble rather than a scamper. */
+const CAT_LURCH_RATE = 1.1;
+/** Within this of its robot, metres, a cat stops lurching and lunges. */
+const CAT_LUNGE_FROM = 3.0;
+/** m/s, the lunge. Quicker than Voxxy slowed by four cats. */
+const CAT_LUNGE = 4.2;
 /** m/s, a cat the dog has seen. */
 const CAT_FLEE = 4.5;
 /** Seconds a scattered cat runs before it is gone for good. */
@@ -330,6 +341,8 @@ export interface Person {
   shape?: 'cat' | 'dog';
   /** Who they are, for the ones who are somebody. See `Look`. */
   look?: Look;
+  /** A cat that is after a robot on its own storey. The renderer lights its eyes. */
+  hunting?: boolean;
   /** Gone, and not drawn: a cat the dog has chased off. See `Crowd.scatterCats`. */
   hidden?: boolean;
   /**
@@ -366,6 +379,8 @@ interface Mover extends Person {
   speed: number;
   /** Seconds left running, for a cat the dog has scattered. */
   fleeing?: number;
+  /** Where this cat is in its own lurch, so a horde does not surge in step. */
+  lurch?: number;
   /** Where they are walking to. */
   tx: number;
   ty: number;
@@ -410,6 +425,8 @@ export class Crowd {
    */
   private catRandom = mulberry32(0xca7);
   private catMode: 'wander' | 'follow' | 'flee' = 'wander';
+  /** Seconds the cats have been about, for their lurch. */
+  private catClock = 0;
   private catTarget: { x: number; y: number; floor: Level; radius: number } | undefined;
 
   private readonly venue: Venue;
@@ -470,6 +487,7 @@ export class Crowd {
 
   private step(dt: number, actors: readonly Actor[]): void {
     this.separate();
+    if (this.cats.length > 0) this.catClock += dt;
 
     for (const mover of this.walkers) {
       if (mover.shape === 'cat' && !mover.posted) {
@@ -698,10 +716,38 @@ export class Crowd {
       dx: 0,
       dy: 0,
       shape: 'cat',
+      lurch: this.catRandom() * Math.PI * 2,
     };
     this.cats.push(cat);
     this.walkers.push(cat);
     this.movers.push(cat);
+    return cat;
+  }
+
+  /**
+   * One more cat, somewhere between `from` and `to` metres from a point on
+   * one storey — just beyond the lamp, where it can be heard and not seen.
+   * Falls back to anywhere at all if nowhere on that storey is that far.
+   * This is how the horde closes in once it is hunting.
+   */
+  spawnCatNear(x: number, y: number, floor: Level, from: number, to: number): Person | undefined {
+    const plan = this.planOf(floor);
+    const ring = plan.list.filter((key) => {
+      const [gx, gy] = unpack(key);
+      const d = Math.hypot((gx + 0.5) * CELL - x, (gy + 0.5) * CELL - y);
+      return d >= from && d <= to;
+    });
+    if (ring.length === 0) return this.spawnCat();
+    const cat = this.spawnCat();
+    if (!cat) return undefined;
+    const [gx, gy] = unpack(ring[Math.floor(this.catRandom() * ring.length)]);
+    cat.x = (gx + 0.5) * CELL;
+    cat.y = (gy + 0.5) * CELL;
+    cat.floor = floor;
+    cat.z = groundAt(this.venue, floor, cat.x, cat.y);
+    const mover = cat as Mover;
+    mover.tx = cat.x;
+    mover.ty = cat.y;
     return cat;
   }
 
@@ -742,6 +788,7 @@ export class Crowd {
     if (this.catMode === 'flee') return;
     this.catMode = 'flee';
     for (const cat of this.cats) {
+      cat.hunting = false;
       const plan = this.planOf(cat.floor);
       const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
       const [gx, gy] = unpack(key);
@@ -765,6 +812,7 @@ export class Crowd {
   private stepCat(cat: Mover, dt: number): void {
     if (cat.hidden) return;
     const target = this.catTarget;
+    cat.hunting = this.catMode === 'follow' && target !== undefined && target.floor === cat.floor;
     if (this.catMode === 'flee') {
       cat.fleeing = (cat.fleeing ?? 0) - dt;
       if (cat.fleeing <= 0) {
@@ -773,7 +821,9 @@ export class Crowd {
       }
       this.stepToward(cat, cat.tx, cat.ty, CAT_FLEE, 0.2, dt);
     } else if (this.catMode === 'follow' && target && target.floor === cat.floor) {
-      this.stepToward(cat, target.x, target.y, CAT_CHASE, target.radius + CAT_SETTLE, dt);
+      const d = Math.hypot(target.x - cat.x, target.y - cat.y);
+      const speed = d < CAT_LUNGE_FROM ? CAT_LUNGE : CAT_CHASE * this.lurchOf(cat);
+      this.stepToward(cat, target.x, target.y, speed, target.radius + CAT_SETTLE, dt);
     } else {
       // Nowhere in particular: the same wander the crowd does, slower.
       const d = Math.hypot(cat.tx - cat.x, cat.ty - cat.y);
@@ -781,6 +831,20 @@ export class Crowd {
       else this.stepToward(cat, cat.tx, cat.ty, CAT_WANDER, 0, dt);
     }
     cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
+  }
+
+  /**
+   * How much of `CAT_CHASE` a hunting cat has in it right now, 0.35..1.45.
+   *
+   * A surge and a stall, on the cat's own phase: the sine's positive half is
+   * a lurch forward, sharpened so it arrives suddenly, and the negative half
+   * is a floor of a third of the speed — never quite stopped. It is what
+   * makes a line of cats behind a robot read as a horde rather than a
+   * convoy: nothing in it moves at the same speed as the thing beside it.
+   */
+  private lurchOf(cat: Mover): number {
+    const wave = Math.sin(this.catClock * CAT_LURCH_RATE * Math.PI * 2 + (cat.lurch ?? 0));
+    return 0.35 + 1.1 * Math.max(0, wave) ** 0.6;
   }
 
   /**

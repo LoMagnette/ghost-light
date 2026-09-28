@@ -141,7 +141,7 @@ const SILENCE: Activity[] = [
     lines: [
       'Do not run. I have been sitting on this a very long time and the mechanism is old.',
       'Every deck has one card in it that ends the game. In this building, that card is me.',
-      'You have forty-five seconds. There is exactly one thing in here that defuses me.',
+      'You have ninety seconds. There is exactly one thing in here that defuses me.',
       'It has four legs and a beard, and it is not fond of us. Go.',
       'And do not look behind you. We are all coming with you.',
     ],
@@ -157,12 +157,13 @@ const SILENCE: Activity[] = [
     // threshold terrace, so the level change is learned under pressure.
     at: DOG_AT,
     after: ['cat'],
-    // The threat. Forty-five seconds from meeting the cat, and since 28 Sep
-    // running it out ends the chapter: the author chose cats that are real
-    // threats, and a cat that says "forty-five seconds" and then does not
-    // mean it is a worse joke than a cat that does. This first one is also
-    // the lesson — every cat after it plays by the same rule.
-    within: 45,
+    // The threat: from meeting the cat, this long to find the dog, and
+    // running it out ends the chapter. A cat that names a number and does not
+    // mean it is a worse joke than a cat that does. Ninety seconds, and it
+    // was forty-five until the cats started following: the author gave the
+    // player more time and a horde to spend it getting through, which is a
+    // better bargain than a short clock and an empty building.
+    within: 90,
     failsRound: true,
     lines: [
       'It is enormous, and it has been asleep. It opens one eye.',
@@ -190,7 +191,7 @@ export const SILENCE_OBJECTIVE: Objective = {
   /*
    * The deck keeps dealing. A cat at the start, and another every twenty
    * seconds after, somewhere random in the public building, either storey.
-   * The first one Voxxy reaches says its piece and lights the forty-five
+   * The first one Voxxy reaches says its piece and lights the ninety
    * seconds; from then on every cat follows Voxxy, and each one underfoot
    * slows it down. The dog calls them all off and no more come.
    *
@@ -198,7 +199,17 @@ export const SILENCE_OBJECTIVE: Objective = {
    * dawdling, and past it the building is a carpet of cats and the joke is
    * over.
    */
-  swarm: { every: 20, max: 16, wake: 'cat', callOff: 'dog' },
+  swarm: {
+    every: 20,
+    max: 16,
+    wake: 'cat',
+    callOff: 'dog',
+    // Hunting: one every eight seconds, up to thirty in all, twelve to
+    // twenty-two metres out — just past Voxxy's lamp, which reaches about
+    // eleven. They are heard about before they are seen, and they come
+    // from wherever Voxxy is not looking.
+    horde: { every: 8, max: 30, from: 12, to: 22 },
+  },
   /*
    * The last board powers Room 8, and the power has somewhere to go.
    *

@@ -314,6 +314,8 @@ function tone(x: number, y: number, z: number): number {
   return n - Math.floor(n);
 }
 
+/** Lit eyes at most: two for each of the most cats a horde can be. */
+const MAX_EYES = 80;
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
 /**
@@ -738,6 +740,9 @@ export class BlockoutRenderer {
   private readonly seated = new Map<Level, SeatedStorey>();
   private readonly moverMesh: InstancedMesh;
   private readonly moverHeads: InstancedMesh;
+  private readonly eyeMesh: InstancedMesh;
+  /** Eyes written this frame. Reset in `placeMovers`. */
+  private eyes = 0;
 
   constructor(
     camera: OrthographicCamera,
@@ -871,6 +876,21 @@ export class BlockoutRenderer {
     this.scene.add(this.moverHeads);
     this.castAndReceive(this.moverMesh);
     this.castAndReceive(this.moverHeads);
+
+    /*
+     * Eyes, for a hunting cat: two lit points in the chapter's accent.
+     *
+     * Unlit on purpose, and a separate mesh because of it — the crowd's
+     * material is lit, and Chapter I is played at 0.18 light, where a cat
+     * is a dark shape on a dark floor. What a player sees behind Voxxy is
+     * therefore not cats: it is pairs of eyes, closing in, blooming on high
+     * quality. That is the whole of the horror, and it is two boxes a cat.
+     */
+    this.eyeMesh = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial({ color: 0xffffff }), MAX_EYES);
+    this.eyeMesh.count = 0;
+    this.eyeMesh.frustumCulled = false;
+    this.eyeMesh.setColorAt(0, SCRATCH_COLOUR.set(0xffffff));
+    this.scene.add(this.eyeMesh);
   }
 
   /** Trousers, clothing and head for one person, in this era's colours. */
@@ -1086,13 +1106,36 @@ export class BlockoutRenderer {
     for (const across of [0.068, -0.068]) part(0.48, 0.57, 0.075, 0.06, CAT_FUR, across, 0.285);
     // Up, and the tallest thing on it. At this size the tail IS the cat.
     part(0.33, 0.75, 0.09, 0.09, CAT_FUR, 0, -0.33);
+    // Hunting: the eyes, on the face of the head, just proud of it.
+    if (animal.hunting) {
+      for (const across of [0.052, -0.052]) this.placeEye(animal, 0.42, across, 0.418);
+    }
     return i;
+  }
+
+  /** One lit eye on a hunting cat, in its own frame. See `eyeMesh`. */
+  private placeEye(animal: Person, height: number, across: number, along: number): void {
+    if (this.eyes >= MAX_EYES) return;
+    const c = Math.cos(animal.heading);
+    const sn = Math.sin(animal.heading);
+    SCRATCH.position.set(
+      animal.x + c * along - sn * across,
+      animal.y + sn * along + c * across,
+      animal.z + height,
+    );
+    SCRATCH.scale.set(0.02, 0.045, 0.035);
+    SCRATCH.rotation.set(0, 0, animal.heading);
+    SCRATCH.updateMatrix();
+    this.eyeMesh.setMatrixAt(this.eyes, SCRATCH.matrix);
+    this.eyeMesh.setColorAt(this.eyes, SCRATCH_COLOUR.set(this.palette.accent));
+    this.eyes += 1;
   }
 
   /** Put the standing crowd where it is this frame. Visible storey only. */
   private placeMovers(floor: Level): void {
     let i = 0;
     let h = 0;
+    this.eyes = 0;
     for (const person of this.crowd.movers) {
       if (person.hidden) continue;
       if (person.floor !== floor || h + PERSON_BLOBS > MAX_MOVERS * PERSON_BLOBS) continue;
@@ -1215,6 +1258,10 @@ export class BlockoutRenderer {
     this.moverHeads.count = h;
     this.moverHeads.instanceMatrix.needsUpdate = true;
     if (this.moverHeads.instanceColor) this.moverHeads.instanceColor.needsUpdate = true;
+
+    this.eyeMesh.count = this.eyes;
+    this.eyeMesh.instanceMatrix.needsUpdate = true;
+    if (this.eyeMesh.instanceColor) this.eyeMesh.instanceColor.needsUpdate = true;
   }
 
   /**

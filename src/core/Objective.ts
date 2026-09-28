@@ -83,6 +83,13 @@ export interface Swarm {
   wake: string;
   /** Activity id: done, and they scatter for good. */
   callOff: string;
+  /**
+   * Once they are hunting: how often another comes, how many there may be
+   * in all, and how far from the robot it turns up, metres — out past the
+   * lamp, so the horde closes in from the dark. Absent, they keep arriving
+   * as before.
+   */
+  horde?: { every: number; max: number; from: number; to: number };
 }
 
 /**
