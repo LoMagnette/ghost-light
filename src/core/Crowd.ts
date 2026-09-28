@@ -1215,8 +1215,12 @@ export class Crowd {
       ...this.venue.links.filter((l) => l.from === floor && l.to === floor).map((l) => l.bounds),
     ];
     for (const b of areas) {
-      for (let gx = Math.ceil(b.x / CAT_CELL); gx < Math.floor((b.x + b.w) / CAT_CELL); gx += 1) {
-        for (let gy = Math.ceil(b.y / CAT_CELL); gy < Math.floor((b.y + b.h) / CAT_CELL); gy += 1) {
+      // Every cell the area TOUCHES, and its centre decides. Stepping only
+      // over cells wholly inside each area skipped the one that straddles
+      // two rooms' shared edge, which sealed every room off from the next
+      // with a one-cell gap no cat could cross.
+      for (let gx = Math.floor(b.x / CAT_CELL); gx <= Math.floor((b.x + b.w) / CAT_CELL); gx += 1) {
+        for (let gy = Math.floor(b.y / CAT_CELL); gy <= Math.floor((b.y + b.h) / CAT_CELL); gy += 1) {
           const x = (gx + 0.5) * CAT_CELL;
           const y = (gy + 0.5) * CAT_CELL;
           if (!rectContains(b, x, y)) continue;
