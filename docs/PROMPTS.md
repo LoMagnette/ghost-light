@@ -4720,6 +4720,12 @@ tune carries into Chapter I without restarting, Chapter II crossfades, and
 mute survives a reload. The tones were deleted, not committed. Whether it
 SOUNDS right is the author's call.
 
+**The tracks.** The author made the three with Suno and dropped them in as
+`.mp3`: *forgotten technology* (Chapter I), *Tech Conference Groove*
+(Chapter II), *Conference Groove* (Chapter III), all created 28 Sep. Each
+decodes to about 75 s and plays in its chapter; the loop seams are
+measured in `docs/AUDIO.md`.
+
 ---
 
 ## Audio

@@ -99,6 +99,19 @@ same track carries from the menu into Chapter I without restarting, Chapter
 II crossfades to its own, and mute survives a reload. Not yet built:
 everything synthesised, and the Chapter III tension layer.
 
+**The three tracks, 28 Sep.** Supplied by the author as `.mp3`, made with
+Suno (the files' own tags say so):
+
+| File | Title | Length | At the loop |
+|---|---|---|---|
+| `music-silence.mp3` | *forgotten technology* | 75.2 s | fades out over about 2 s and back in over 2 s: a breath every 75 s, which suits the chapter |
+| `music-javapolis.mp3` | *Tech Conference Groove* | 74.9 s | near seamless |
+| `music-capacity.mp3` | *Conference Groove* | 75.1 s | drops for its last second: a short dip every 75 s |
+
+Measured by decoding each in a browser and reading the level second by
+second across the end and the start. Mixed loud (about −16 dBFS), so the
+music bus sits at 0.55.
+
 ## How it will work
 
 - One audio module owning a Web Audio context, with a music bus, an
