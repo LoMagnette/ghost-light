@@ -976,6 +976,35 @@ export const KEYNOTE_SEATS_TODAY = 694;
  */
 const CORRIDOR_HALF = 7.15;
 
+/**
+ * Where the grand flight's EAST edge is: the stair hall's east wall.
+ *
+ * `reception-desk.png` draws the flight wall to wall, 15.9 m, and that wall
+ * is on its x 887. The flight had stopped 5.25 m short of it, at the
+ * corridor's east wall, and the concourse beside it was flat floor. The
+ * author wants it to run to the wall and the hallway upstairs to widen to
+ * take it: the whole hallway, not just in front of Room 7 (28 Sep). So the
+ * corridor's east wall, and every room on that side, stands `EAST_BAY`
+ * further east. See `CORRIDOR_EAST`.
+ */
+const GRAND_EAST = planX(887);
+
+/**
+ * How much wider the corridor is on its east side than the 14.3 m it was
+ * measured at: the grand flight's overrun. The east wall is centred on the
+ * line the stair hall's east wall stands on downstairs.
+ */
+const EAST_BAY = GRAND_EAST + WALL_THICKNESS / 2 - CORRIDOR_HALF;
+
+/**
+ * The corridor's east wall, and the frontage of every room on that side.
+ *
+ * The hall's east flight moved with it and stands against it, as it always
+ * stood against the corridor's east wall (`STAIR_EAST`). Its core in the hall
+ * below moved with it too (the author, 28 Sep).
+ */
+const CORRIDOR_EAST = CORRIDOR_HALF + EAST_BAY;
+
 /** South end of the southernmost pair of auditoriums. */
 const SOUTH_END = -60;
 
@@ -1032,7 +1061,7 @@ const STAIR_WIDTH = 2.3;
 const STAIR_FOOT_Y = HALL.y + HALL.h - COLUMN_Y[1] + STAIR_RUN;
 
 const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
-const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
+const STAIR_EAST = rect(CORRIDOR_EAST - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
  * The box each hall flight starts in, metres.
@@ -1071,34 +1100,6 @@ export const CORE_DOOR_SET = 0.5;
  */
 const GRAND_WEST = -2.4;
 
-/**
- * Where the grand flight's EAST edge is: the stair hall's east wall.
- *
- * `reception-desk.png` draws the flight wall to wall, 15.9 m, and that wall
- * is on its x 887. The flight had stopped 5.25 m short of it, at the
- * corridor's east wall, and the concourse beside it was flat floor. The
- * author wants it to run to the wall and the hallway upstairs to widen to
- * take it: the whole hallway, not just in front of Room 7 (28 Sep). So the
- * corridor's east wall, and every room on that side, stands `EAST_BAY`
- * further east. See `CORRIDOR_EAST`.
- */
-const GRAND_EAST = planX(887);
-
-/**
- * How much wider the corridor is on its east side than the 14.3 m it was
- * measured at: the grand flight's overrun. The east wall is centred on the
- * line the stair hall's east wall stands on downstairs.
- */
-const EAST_BAY = GRAND_EAST + WALL_THICKNESS / 2 - CORRIDOR_HALF;
-
-/**
- * The corridor's east wall, and the frontage of every room on that side.
- *
- * The hall's east flight stays where it was, against the old line
- * (`STAIR_EAST`). It is placed by the hall under it, not by this wall, and
- * it still lands inside the corridor.
- */
-const CORRIDOR_EAST = CORRIDOR_HALF + EAST_BAY;
 
 /**
  * The grand flight's pitch: the building's riser on a 0.26 m going.

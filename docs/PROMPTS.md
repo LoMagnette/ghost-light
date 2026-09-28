@@ -5139,6 +5139,14 @@ author: "You should widen the stair and widden the hallway upstairs".
   literals, so they are now taken from Room 8's screen end and move with
   the room.
 
+> so widening the stair the hall way move the back stair case should still be
+> agaist the wall like previously
+
+**Done:** the hall's east flight is placed against `CORRIDOR_EAST` now, not
+the old 14.3 m line, so it arrives against the corridor's east wall as
+before. Its walled core in the hall moved 5.4 m east with it. It stands
+clear of the column lines and of every stand, and all the checks pass.
+
 ---
 
 ## Audio
