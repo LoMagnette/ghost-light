@@ -151,8 +151,14 @@ export interface ObjectiveEvent {
   at: number;
 }
 
-/** How close you have to be to pick a thing up, metres. */
-const PICKUP_RANGE = 1.4;
+/**
+ * How close you have to be to pick a thing up, metres.
+ *
+ * 2.2, from 1.4 (28 Sep): the things are drawn now, on a desk or a counter
+ * beside the spot, and 1.4 from the middle of the spot had the player
+ * bumping the desk and still empty-handed.
+ */
+const PICKUP_RANGE = 2.2;
 
 /** Slow enough to count as standing still, m/s. */
 const STILL = 0.25;

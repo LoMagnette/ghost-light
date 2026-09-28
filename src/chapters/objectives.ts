@@ -65,8 +65,11 @@ function backOfHouse(id: string): Zone {
   // rack stands.
   const x = b.x < 0 ? b.x + b.w - CROSS_AISLE / 2 : b.x + CROSS_AISLE / 2;
   // Narrower than the aisle it stands in, or the zone reaches into the back
-  // row and the marker ends up planted in the seating.
-  return spot(room.floor, x, b.y + b.h / 2, CROSS_AISLE - 0.6);
+  // row and the marker ends up planted in the seating. Long along it, though
+  // (28 Sep): a 1.9 m square under a projector was a spot to park on to the
+  // centimetre, and the aisle is the place, not a point in it.
+  const w = CROSS_AISLE - 0.6;
+  return { floor: room.floor, bounds: rect(x - w / 2, b.y + b.h / 2 - BACK_OF_HOUSE_LENGTH / 2, w, BACK_OF_HOUSE_LENGTH) };
 }
 
 const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
@@ -79,6 +82,9 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
 const FOYER_CENTRE = zoneCentre(roomZone('foyer', 2.0));
 /** The middle of Room 5's stage, where the mic stands. */
 const MIC_AT = zoneCentre(roomZone('aud-5-stage', 0.4));
+
+/** How much of the cross aisle under a projector counts as under it, metres. */
+const BACK_OF_HOUSE_LENGTH = 4.0;
 
 /** The keynote room. Spots on its stage are taken from its screen end. */
 const ROOM_8 = roomBounds('aud-8').bounds;
@@ -104,7 +110,7 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-hall',
     label: 'Hall board',
-    at: spot(0, -21.8, -1.7, 2.6),
+    at: spot(0, -21.8, -1.7, 3.4),
     prop: { kind: 'board', x: -21.0, y: -0.9 },
     reveal: { ...roomBounds('hall'), to: 0.42 },
   },
@@ -112,7 +118,7 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-concourse',
     label: 'Concourse board',
-    at: spot(0, -11.0, -50.0, 2.6),
+    at: spot(0, -11.0, -50.0, 3.4),
     prop: { kind: 'board', x: -10.2, y: -49.2 },
     reveal: { ...roomBounds('reception'), to: 0.5 },
   },
@@ -202,7 +208,7 @@ const SILENCE: Activity[] = [
     // At the south end of the stage, just past the last letter of `#DEVOXX`,
     // where the rack can stand against the screen wall without standing in
     // the word.
-    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -35.6, 2.6),
+    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -35.6, 3.4),
     prop: { kind: 'rack', x: ROOM_8.x + ROOM_8.w - 0.9, y: -37.3, facing: Math.PI },
     after: ['board-hall', 'board-concourse'],
     reveal: { ...roomBounds('aud-8'), to: 0.62 },
@@ -308,7 +314,10 @@ function micCable(room: string, from: number, to: number): Activity {
     label: `${roomName(room)}: mic cable`,
     room,
     window: { from, to },
-    at: spot(1, b.x + WALL_FACE + SLOT_DEPTH / 2, lectern, 0.5),
+    // 1.4 m, not the 0.5 it was: the slot is still where the job is, but
+    // the gate is what keeps Droid out, and a zone smaller than Voxxy made
+    // the one robot it is for hunt for the centimetre.
+    at: spot(1, b.x + WALL_FACE + SLOT_DEPTH / 2, lectern, 1.4),
     gates: { maxRadius: 0.4 },
     // The socket is in the screen wall, and the plug is on the floor.
     prop: { kind: 'cable', x: b.x + WALL_FACE + 0.02, y: lectern, facing: 0 },
@@ -337,7 +346,7 @@ function adapter(room: string, from: number, to: number): Activity {
     prop: ORGANISERS_TABLE,
     // On the stage in front of the presenter's table, which is where the
     // laptop is and where the person waiting for it is standing.
-    to: spot(1, b.x + PRESENTER_FROM_WALL, b.y + b.h - TABLE_CENTRE_FROM_NORTH, 1.0),
+    to: spot(1, b.x + PRESENTER_FROM_WALL, b.y + b.h - TABLE_CENTRE_FROM_NORTH, 2.2),
   };
 }
 
@@ -713,6 +722,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
  * Twelve of the twenty-seven, and it was all of them until Chapter III was
  * judged too heavy. See `onTheRound`.
  */
+/** How far off a stand still counts as at it, metres. 0.6 meant touching it. */
+const STICKER_REACH = 1.0;
+
 function stickerSweep(): Activity[] {
   return KINEPOLIS.decor
     .filter((d) => d.material === 'booth')
@@ -726,10 +738,10 @@ function stickerSweep(): Activity[] {
       at: {
         floor: stand.floor,
         bounds: rect(
-          stand.bounds.x - 0.6,
-          stand.bounds.y - 0.6,
-          stand.bounds.w + 1.2,
-          stand.bounds.h + 1.2,
+          stand.bounds.x - STICKER_REACH,
+          stand.bounds.y - STICKER_REACH,
+          stand.bounds.w + STICKER_REACH * 2,
+          stand.bounds.h + STICKER_REACH * 2,
         ),
       },
     }));
@@ -902,7 +914,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       label: 'Pick up your polo',
       // Handed across a 1.5 m counter, so this is Droid's and nobody else's.
       // The public side of it: see POLO_DESK.
-      at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 1.2),
+      at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 2.0),
       gates: { reach: 2.0 },
       prop: { kind: 'polo', x: POLO_DESK.counterX, y: POLO_DESK.y, z: POLO_DESK.counterTop, facing: Math.PI },
       seconds: 3,

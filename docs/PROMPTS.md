@@ -5342,6 +5342,23 @@ This was the backlog row "show the object a robot-specific job is about".
 - **Checked:** `typecheck`, `objectives`, `venue`, `traverse` and `shoot`
   pass. Peeks were taken of every prop and of Voxxy carrying the coffee.
 
+> The interaction zone for those objective is really small making it harder
+> then it needs
+
+**Done** on `job-props`. The gates (radius, reach, payload) already decide
+who can do a job, so the zones only needed to be the right place, not a
+precise one:
+- **Pickup range:** 1.4 → 2.2 m, since the things now sit on a desk or
+  counter beside the spot.
+- **Mic cable:** 0.5 → 1.4 m.
+- **Adapter drop on the stage:** 1.0 → 2.2 m.
+- **Polo:** 1.2 → 2.0 m.
+- **Boards and Room 8 rack:** 2.6 → 3.4 m.
+- **Under a projector:** 1.9 m square → 1.9 × 4.0 m along the cross aisle.
+- **Stickers:** 0.6 → 1.0 m round a stand.
+
+`objectives`, `traverse`, `physics` and `shoot` pass.
+
 ---
 
 ## Audio
