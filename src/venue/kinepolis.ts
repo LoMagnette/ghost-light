@@ -894,7 +894,12 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   // West rooms (side -1) face the corridor across their east edge, east rooms
   // across their west one.
   const x = side === -1 ? bounds.x + bounds.w + 0.9 : bounds.x - 0.9;
-  return ARRIVALS.some((flight) => rectContains(flight, x, y));
+  // The grand flight is tested by its WELL, not its treads. The 1.5 m either
+  // side of it is open to the reception below (see GRAND_WELL), and Room 6's
+  // door, at the south end of its frontage, opened straight onto that drop:
+  // 0.9 m out is in the well and not on the stair, so the flight let it
+  // through and Room 6 was a room with no way in (the author, 28 Sep).
+  return [...ARRIVALS, GRAND_WELL].some((flight) => rectContains(flight, x, y));
 }
 
 /**
