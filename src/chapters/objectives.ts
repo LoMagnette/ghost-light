@@ -54,22 +54,19 @@ function crossAisle(id: string): Zone {
   };
 }
 
-/** The cross aisle behind the back row, where an auditorium's kit lives. */
+/**
+ * The cross aisle behind the back row, where an auditorium's kit lives.
+ *
+ * All of it, since 28 Sep. It was a 1.9 m square under the projector, then
+ * 4 m of the aisle, and the author still found the job hard: the door is at
+ * one end of the room, the projector in the middle, and Droid, the one robot
+ * that can do it, is the worst of the cast at stopping on a mark in a 2.5 m
+ * aisle. What makes the job Droid's is the reach gate. Where Droid parks in
+ * the aisle was never the question, so through the door and stopped is
+ * enough.
+ */
 function backOfHouse(id: string): Zone {
-  const room = KINEPOLIS.rooms.find((r) => r.id === id);
-  if (!room) throw new Error(`no such room: ${id}`);
-  const b = room.bounds;
-  // Rooms are entered from the corridor, which runs down the middle of the
-  // building at x = 0 — so the corridor side of a room is whichever end of it
-  // is nearer the centre line, and that is where you come in and where the
-  // rack stands.
-  const x = b.x < 0 ? b.x + b.w - CROSS_AISLE / 2 : b.x + CROSS_AISLE / 2;
-  // Narrower than the aisle it stands in, or the zone reaches into the back
-  // row and the marker ends up planted in the seating. Long along it, though
-  // (28 Sep): a 1.9 m square under a projector was a spot to park on to the
-  // centimetre, and the aisle is the place, not a point in it.
-  const w = CROSS_AISLE - 0.6;
-  return { floor: room.floor, bounds: rect(x - w / 2, b.y + b.h / 2 - BACK_OF_HOUSE_LENGTH / 2, w, BACK_OF_HOUSE_LENGTH) };
+  return crossAisle(id);
 }
 
 const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
@@ -82,9 +79,6 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
 const FOYER_CENTRE = zoneCentre(roomZone('foyer', 2.0));
 /** The middle of Room 5's stage, where the mic stands. */
 const MIC_AT = zoneCentre(roomZone('aud-5-stage', 0.4));
-
-/** How much of the cross aisle under a projector counts as under it, metres. */
-const BACK_OF_HOUSE_LENGTH = 4.0;
 
 /** The keynote room. Spots on its stage are taken from its screen end. */
 const ROOM_8 = roomBounds('aud-8').bounds;

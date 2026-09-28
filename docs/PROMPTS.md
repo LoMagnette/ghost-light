@@ -5359,6 +5359,21 @@ precise one:
 
 `objectives`, `traverse`, `physics` and `shoot` pass.
 
+> I still have a hard time completing the projector task
+
+**Why it was still hard:** the door into each room's back aisle is at one end
+and the projector is in the middle. Droid, the only robot that can do it, had
+to drive about 5 m up a 2.5 m aisle and stop inside a 4 m stretch. It is the
+worst of the cast at stopping on a mark, and the aisle leaves it little room.
+
+**Done:** the zone is now the whole cross aisle (`crossAisle`, the same zone
+as attending a talk). Through the door and stopped for 3 s is enough; the
+reach gate still makes it Droid's.
+
+**Checked in the browser:** Droid driven in through Room 4's door from the
+corridor. The job completed about 4 s after stopping just inside the door,
+and the lens turned white.
+
 ---
 
 ## Audio
