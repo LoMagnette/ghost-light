@@ -67,6 +67,11 @@ held. `shoot` drives a fixed tour and is the regression check; almost every
 visual question is instead about one particular square metre of a 126 m
 building, and this answers those in a single build.
 
+**`peek` does not build.** It serves whatever is in `dist/`, so run
+`npm run build` (or `shoot`) first, every time. Forgetting cost a whole
+afternoon on 28 Sep: a dozen frames of the stair cores and the grand-stair
+terrace were of the build before, and the new walls looked invisible.
+
 Seven query parameters exist for looking at the game rather than playing it,
 and none is reachable from inside it:
 

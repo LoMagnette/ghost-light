@@ -4864,6 +4864,36 @@ inside the counter that had moved, so the cat now sits north of it.
 of the flight's west half, so that start point moved east. A new scenario
 walks into the curved wall.
 
+### Claude Opus — the corner by the stairhead is open, not a room
+
+**Prompt:**
+> the area with some blue (I've updated the image) it supposed to be empty,
+> it's a direct view on the level down.
+
+The author scribbled over the corner behind the curve on
+`access-main-stairs.png`. I had built it as a solid block. It is a hole in
+the floor looking down into the reception, with the curve as its edge.
+
+**Built:** a banded hole in the corridor's floor plate, with a balustrade
+along the edge that robots collide with. Only one storey is drawn at a time,
+so the concourse floor 5 m down is drawn under the hole as dressing, with a
+new `floorBelow` material, and skins on the two rims the camera can see.
+
+**Wrong by me, twice:**
+- **Stale frames:** I spent a round checking frames of the previous build,
+  because `npm run peek` serves `dist/` and does not rebuild. A pale block
+  that was really the old solid corner sent me hunting a renderer bug that
+  did not exist. `CLAUDE.md` now says it in bold.
+- **The cp trap:** I backed up `kinepolis.ts` with `cp` on the direct-mode
+  mount, which this project's notes warn against. The file and the copy both
+  came back as zeros. Everything committed was safe: I restored from git and
+  replayed the edits, then committed before experimenting again.
+
+**Found on the way:** the public crowd walked over every stairwell on the
+auditorium level. Its grid is rooms minus solids, a hole is render-only,
+and treads upstairs hang below the plate, so nothing kept people off.
+Room holes are now out of the grid.
+
 ---
 
 ## Audio
