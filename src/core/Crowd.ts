@@ -122,10 +122,13 @@ const CAT_LUNGE = 4.2;
 const CAT_FLEE = 4.5;
 /** Seconds a scattered cat runs before it is gone for good. */
 const CAT_FLEE_FOR = 3.5;
+/** The cats' floor plan: cell size, and how far a cell's centre keeps from anything solid. See `catPlanOf`. */
+const CAT_CELL = 0.75;
+const CAT_CLEAR = 0.2;
 /** m/s up or down a staircase, for a cat. Stairs slow a cat less than a robot. */
 const CAT_CLIMB = 2.2;
 /** Seconds between rebuilds of the way to the robot, at most. See `routeField`. */
-const ROUTE_EVERY = 0.2;
+const ROUTE_EVERY = 0.5;
 /** How close to a robot a following cat settles, beyond the robot's own radius. */
 const CAT_SETTLE = 0.26;
 /** How close counts as underfoot, beyond the robot's radius. See `catsUnderfoot`. */
@@ -457,9 +460,18 @@ export class Crowd {
    * the robot by `routeField` and shared by every cat, so thirty cats cost
    * one search, not thirty.
    */
-  private route = new Map<number, number>();
+  private dist = new Int32Array(0);
   private routeFrom = -1;
   private routeAge = Infinity;
+  /**
+   * Both storeys' cat plans as one graph, built once: every cell an index,
+   * its neighbours and its staircases as a flat list. The route is a
+   * breadth-first search over it into `dist`, which is what makes rebuilding
+   * it for thirty cats cheap enough to do twice a second.
+   */
+  private graph: { index: Map<number, number>; start: Int32Array; edges: Int32Array; queue: Int32Array } | undefined;
+  /** The cats' own floor plans, by storey. See `catPlanOf`. */
+  private readonly catPlans = new Map<Level, Floorplan>();
   /** The staircases, found once. See `portals`. */
   private stairs: Portal[] | undefined;
 
@@ -728,15 +740,15 @@ export class Crowd {
    * ground floor gets most of them.
    */
   spawnCat(): Person | undefined {
-    const plans = [0, 1].map((floor) => this.planOf(floor as Level));
+    const plans = [0, 1].map((floor) => this.catPlanOf(floor as Level));
     const total = plans.reduce((n, p) => n + p.list.length, 0);
     if (total === 0) return undefined;
     let pick = Math.floor(this.catRandom() * total);
     const plan = plans.find((p) => (pick -= p.list.length) < 0) ?? plans[0];
     const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
     const [gx, gy] = unpack(key);
-    const x = (gx + 0.5) * CELL;
-    const y = (gy + 0.5) * CELL;
+    const x = (gx + 0.5) * CAT_CELL;
+    const y = (gy + 0.5) * CAT_CELL;
     const cat: Mover = {
       x,
       y,
@@ -765,18 +777,18 @@ export class Crowd {
    * This is how the horde closes in once it is hunting.
    */
   spawnCatNear(x: number, y: number, floor: Level, from: number, to: number): Person | undefined {
-    const plan = this.planOf(floor);
+    const plan = this.catPlanOf(floor);
     const ring = plan.list.filter((key) => {
       const [gx, gy] = unpack(key);
-      const d = Math.hypot((gx + 0.5) * CELL - x, (gy + 0.5) * CELL - y);
+      const d = Math.hypot((gx + 0.5) * CAT_CELL - x, (gy + 0.5) * CAT_CELL - y);
       return d >= from && d <= to;
     });
     if (ring.length === 0) return this.spawnCat();
     const cat = this.spawnCat();
     if (!cat) return undefined;
     const [gx, gy] = unpack(ring[Math.floor(this.catRandom() * ring.length)]);
-    cat.x = (gx + 0.5) * CELL;
-    cat.y = (gy + 0.5) * CELL;
+    cat.x = (gx + 0.5) * CAT_CELL;
+    cat.y = (gy + 0.5) * CAT_CELL;
     cat.floor = floor;
     cat.z = groundAt(this.venue, floor, cat.x, cat.y);
     const mover = cat as Mover;
@@ -822,11 +834,11 @@ export class Crowd {
     if (this.catMode === 'flee') return;
     this.catMode = 'flee';
     for (const cat of this.cats) {
-      const plan = this.planOf(cat.floor);
+      const plan = this.catPlanOf(cat.floor);
       const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
       const [gx, gy] = unpack(key);
-      cat.tx = (gx + 0.5) * CELL;
-      cat.ty = (gy + 0.5) * CELL;
+      cat.tx = (gx + 0.5) * CAT_CELL;
+      cat.ty = (gy + 0.5) * CAT_CELL;
       cat.fleeing = CAT_FLEE_FOR * (0.7 + 0.6 * this.catRandom());
     }
   }
@@ -863,7 +875,7 @@ export class Crowd {
     } else {
       // Nowhere in particular: the same wander the crowd does, slower.
       const d = Math.hypot(cat.tx - cat.x, cat.ty - cat.y);
-      if (d < 0.3) this.retarget(cat);
+      if (d < 0.3) this.wanderCat(cat);
       else this.stepToward(cat, cat.tx, cat.ty, CAT_WANDER, 0, dt);
     }
     cat.z = groundAt(this.venue, cat.floor, cat.x, cat.y);
@@ -882,11 +894,11 @@ export class Crowd {
    */
   private stepFollow(cat: Mover, target: { x: number; y: number; floor: Level; radius: number }, dt: number): void {
     this.routeField(target, dt);
-    const plan = this.planOf(cat.floor);
-    let key = pack(Math.floor(cat.x / CELL), Math.floor(cat.y / CELL));
+    const plan = this.catPlanOf(cat.floor);
+    let key = pack(Math.floor(cat.x / CAT_CELL), Math.floor(cat.y / CAT_CELL));
     // Pushed off the plan by the others: carry on from the nearest cell that is on it.
     if (!plan.cells.has(key)) key = this.nearestCell(plan, cat.x, cat.y) ?? key;
-    const here = this.route.get(nodeOf(cat.floor, key));
+    const here = this.distOf(cat.floor, key);
     const d = Math.hypot(target.x - cat.x, target.y - cat.y);
 
     if (cat.floor === target.floor && (here === undefined || here <= 2 || d < CAT_LUNGE_FROM)) {
@@ -909,17 +921,17 @@ export class Crowd {
       if (!plan.cells.has(n)) continue;
       // No cutting a corner a cat would have to walk through a wall to cut.
       if (ox !== 0 && oy !== 0 && (!plan.cells.has(pack(cx + ox, cy)) || !plan.cells.has(pack(cx, cy + oy)))) continue;
-      const cost = this.route.get(nodeOf(cat.floor, n));
+      const cost = this.distOf(cat.floor, n);
       if (cost !== undefined && cost < best) {
         best = cost;
-        next = { x: (cx + ox + 0.5) * CELL, y: (cy + oy + 0.5) * CELL };
+        next = { x: (cx + ox + 0.5) * CAT_CELL, y: (cy + oy + 0.5) * CAT_CELL };
         portal = undefined;
       }
     }
     for (const p of this.portals()) {
       for (const [a, b] of [[p.from, p.to], [p.to, p.from]] as const) {
         if (a.floor !== cat.floor || a.key !== key) continue;
-        const cost = this.route.get(nodeOf(b.floor, b.key));
+        const cost = this.distOf(b.floor, b.key);
         if (cost !== undefined && cost < best) {
           best = cost;
           portal = p;
@@ -943,54 +955,89 @@ export class Crowd {
 
   /**
    * Build the route outward from the robot, when it has moved to a new cell
-   * or the old route is stale: a breadth-first search over both storeys'
-   * floor plans, eight ways round each cell and both ways up each staircase.
+   * or the old route is stale: a breadth-first search over `catGraph`, eight
+   * ways round each cell and both ways up each staircase.
    */
   private routeField(target: { x: number; y: number; floor: Level }, dt: number): void {
     this.routeAge += dt;
-    const plan = this.planOf(target.floor);
-    let key = pack(Math.floor(target.x / CELL), Math.floor(target.y / CELL));
-    // A robot somewhere the plan does not reach — a stage, a flight of
-    // stairs — is routed to from the nearest cell that is on it.
+    const plan = this.catPlanOf(target.floor);
+    let key = pack(Math.floor(target.x / CAT_CELL), Math.floor(target.y / CAT_CELL));
+    // A robot somewhere the plan does not reach — a flight of stairs — is
+    // routed to from the nearest cell that is on it.
     if (!plan.cells.has(key)) key = this.nearestCell(plan, target.x, target.y) ?? key;
-    const origin = nodeOf(target.floor, key);
+    const graph = this.catGraph();
+    const origin = graph.index.get(nodeOf(target.floor, key));
+    if (origin === undefined) return;
     if (origin === this.routeFrom && this.routeAge < ROUTE_EVERY) return;
     this.routeFrom = origin;
     this.routeAge = 0;
 
-    const route = new Map<number, number>([[origin, 0]]);
-    const queue: number[] = [origin];
-    const portals = this.portals();
-    for (let head = 0; head < queue.length; head += 1) {
-      const node = queue[head];
-      const cost = route.get(node) as number;
-      const floor = floorOfNode(node);
-      const cell = cellOfNode(node);
-      const cells = this.planOf(floor).cells;
-      const [cx, cy] = unpack(cell);
-      for (let i = 0; i < 8; i += 1) {
-        const ox = NEIGHBOURS[i * 2];
-        const oy = NEIGHBOURS[i * 2 + 1];
-        const n = pack(cx + ox, cy + oy);
-        if (!cells.has(n)) continue;
-        if (ox !== 0 && oy !== 0 && (!cells.has(pack(cx + ox, cy)) || !cells.has(pack(cx, cy + oy)))) continue;
-        const nn = nodeOf(floor, n);
-        if (route.has(nn)) continue;
-        route.set(nn, cost + 1);
-        queue.push(nn);
-      }
-      for (const p of portals) {
-        for (const [a, b] of [[p.from, p.to], [p.to, p.from]] as const) {
-          if (a.floor !== floor || a.key !== cell) continue;
-          const nn = nodeOf(b.floor, b.key);
-          if (route.has(nn)) continue;
-          // A flight is a long walk, and the route should know it.
-          route.set(nn, cost + 6);
-          queue.push(nn);
-        }
+    const dist = this.dist;
+    dist.fill(-1);
+    const queue = graph.queue;
+    let head = 0;
+    let tail = 0;
+    dist[origin] = 0;
+    queue[tail++] = origin;
+    while (head < tail) {
+      const at = queue[head++];
+      const next = dist[at] + 1;
+      for (let e = graph.start[at]; e < graph.start[at + 1]; e += 1) {
+        const n = graph.edges[e];
+        if (dist[n] >= 0) continue;
+        dist[n] = next;
+        queue[tail++] = n;
       }
     }
-    this.route = route;
+  }
+
+  /** Cells from the robot, by the route, or undefined where it does not reach. */
+  private distOf(floor: Level, key: number): number | undefined {
+    const i = this.catGraph().index.get(nodeOf(floor, key));
+    if (i === undefined) return undefined;
+    const d = this.dist[i];
+    return d < 0 ? undefined : d;
+  }
+
+  private catGraph(): NonNullable<Crowd['graph']> {
+    if (this.graph) return this.graph;
+    const keys: number[] = [];
+    const index = new Map<number, number>();
+    for (const floor of [0, 1] as Level[]) {
+      for (const key of this.catPlanOf(floor).list) {
+        index.set(nodeOf(floor, key), keys.length);
+        keys.push(nodeOf(floor, key));
+      }
+    }
+    const lists: number[][] = keys.map(() => []);
+    for (let i = 0; i < keys.length; i += 1) {
+      const floor = floorOfNode(keys[i]);
+      const cells = this.catPlanOf(floor).cells;
+      const [cx, cy] = unpack(cellOfNode(keys[i]));
+      for (let k = 0; k < 8; k += 1) {
+        const ox = NEIGHBOURS[k * 2];
+        const oy = NEIGHBOURS[k * 2 + 1];
+        const n = pack(cx + ox, cy + oy);
+        if (!cells.has(n)) continue;
+        // No cutting a corner a cat would have to walk through a wall to cut.
+        if (ox !== 0 && oy !== 0 && (!cells.has(pack(cx + ox, cy)) || !cells.has(pack(cx, cy + oy)))) continue;
+        lists[i].push(index.get(nodeOf(floor, n)) as number);
+      }
+    }
+    for (const p of this.portals()) {
+      const a = index.get(nodeOf(p.from.floor, p.from.key));
+      const b = index.get(nodeOf(p.to.floor, p.to.key));
+      if (a === undefined || b === undefined) continue;
+      lists[a].push(b);
+      lists[b].push(a);
+    }
+    const start = new Int32Array(keys.length + 1);
+    for (let i = 0; i < keys.length; i += 1) start[i + 1] = start[i] + lists[i].length;
+    const edges = new Int32Array(start[keys.length]);
+    lists.forEach((list, i) => edges.set(list, start[i]));
+    this.graph = { index, start, edges, queue: new Int32Array(keys.length) };
+    this.dist = new Int32Array(keys.length).fill(-1);
+    return this.graph;
   }
 
   /**
@@ -1013,8 +1060,8 @@ export class Crowd {
       const [foot, top] = link.ascending ? [lo - 0.9, hi + 0.9] : [hi + 0.9, lo - 0.9];
       const f = along(foot);
       const t = along(top);
-      const footKey = this.nearestCell(this.planOf(link.from), f.x, f.y);
-      const topKey = this.nearestCell(this.planOf(link.to), t.x, t.y);
+      const footKey = this.nearestCell(this.catPlanOf(link.from), f.x, f.y);
+      const topKey = this.nearestCell(this.catPlanOf(link.to), t.x, t.y);
       if (footKey === undefined || topKey === undefined) continue;
       out.push({
         from: { floor: link.from, key: footKey, ...f },
@@ -1027,15 +1074,15 @@ export class Crowd {
 
   /** The walkable cell nearest a point, within a few cells, if there is one. */
   private nearestCell(plan: Floorplan, x: number, y: number): number | undefined {
-    const cx = Math.floor(x / CELL);
-    const cy = Math.floor(y / CELL);
+    const cx = Math.floor(x / CAT_CELL);
+    const cy = Math.floor(y / CAT_CELL);
     let best: number | undefined;
     let bestD = Infinity;
     for (let ox = -3; ox <= 3; ox += 1) {
       for (let oy = -3; oy <= 3; oy += 1) {
         const k = pack(cx + ox, cy + oy);
         if (!plan.cells.has(k)) continue;
-        const d = Math.hypot((cx + ox + 0.5) * CELL - x, (cy + oy + 0.5) * CELL - y);
+        const d = Math.hypot((cx + ox + 0.5) * CAT_CELL - x, (cy + oy + 0.5) * CAT_CELL - y);
         if (d < bestD) {
           bestD = d;
           best = k;
@@ -1110,21 +1157,21 @@ export class Crowd {
     const dy = y - cat.y;
     const d = Math.hypot(dx, dy);
     if (d <= stop) return;
-    const plan = this.planOf(cat.floor);
-    const walkable = (px: number, py: number): boolean => plan.cells.has(pack(Math.floor(px / CELL), Math.floor(py / CELL)));
+    const plan = this.catPlanOf(cat.floor);
+    const walkable = (px: number, py: number): boolean => plan.cells.has(pack(Math.floor(px / CAT_CELL), Math.floor(py / CAT_CELL)));
     const step = Math.min(speed * dt, d - stop);
     let ux = dx / d;
     let uy = dy / d;
     if (!walkable(cat.x + ux * step * 4, cat.y + uy * step * 4)) {
-      const cx = Math.floor(cat.x / CELL);
-      const cy = Math.floor(cat.y / CELL);
+      const cx = Math.floor(cat.x / CAT_CELL);
+      const cy = Math.floor(cat.y / CAT_CELL);
       let best = Infinity;
       for (let i = 0; i < 8; i += 1) {
         const key = pack(cx + NEIGHBOURS[i * 2], cy + NEIGHBOURS[i * 2 + 1]);
         if (!plan.cells.has(key)) continue;
         const [gx, gy] = unpack(key);
-        const nx = (gx + 0.5) * CELL;
-        const ny = (gy + 0.5) * CELL;
+        const nx = (gx + 0.5) * CAT_CELL;
+        const ny = (gy + 0.5) * CAT_CELL;
         const score = Math.hypot(x - nx, y - ny);
         if (score < best) {
           best = score;
@@ -1140,14 +1187,62 @@ export class Crowd {
     cat.heading = Math.atan2(uy, ux);
   }
 
-  /** A storey's floor plan, built the first time a chapter without a crowd asks. */
-  private planOf(floor: Level): Floorplan {
-    let plan = this.plans.get(floor);
-    if (!plan) {
-      plan = this.planFor(floor);
-      this.plans.set(floor, plan);
+  /**
+   * The cats' own floor plan of a storey, built the first time it is needed.
+   *
+   * Not the crowd's. That one is for people milling about the public rooms:
+   * 1.5 m cells kept well clear of anything solid, and only the hall, the
+   * concourses and the corridors. Measured against it, a cat could not get
+   * from the hall to reception (the terrace steps and the ramp are not in
+   * it) nor from the corridor into the foyer (the doorway falls between two
+   * cells), and a quarter of the building was an island. This one is finer
+   * (0.75 m), keeps only 0.2 m clear of anything solid — tight enough that
+   * a 1.2 m door always has a cell centre in it — covers every room, and
+   * walks over the steps and ramps that join one part of a storey to
+   * another.
+   */
+  private catPlanOf(floor: Level): Floorplan {
+    let plan = this.catPlans.get(floor);
+    if (plan) return plan;
+    const cells = new Set<number>();
+    const solids = this.venue.obstacles.filter((o) => o.floor === floor && o.height > 0.3);
+    // Everywhere a robot can stand: every room on the storey and every step
+    // or ramp that stays on it, minus whatever is solid. Built from rooms by
+    // kind, the first version left the hall, reception, the forecourt and
+    // the foyer as four islands; this is the building a robot sees.
+    const areas = [
+      ...this.venue.rooms.filter((r) => r.floor === floor).map((r) => r.bounds),
+      ...this.venue.links.filter((l) => l.from === floor && l.to === floor).map((l) => l.bounds),
+    ];
+    for (const b of areas) {
+      for (let gx = Math.ceil(b.x / CAT_CELL); gx < Math.floor((b.x + b.w) / CAT_CELL); gx += 1) {
+        for (let gy = Math.ceil(b.y / CAT_CELL); gy < Math.floor((b.y + b.h) / CAT_CELL); gy += 1) {
+          const x = (gx + 0.5) * CAT_CELL;
+          const y = (gy + 0.5) * CAT_CELL;
+          if (!rectContains(b, x, y)) continue;
+          if (solids.some((o) => overlaps(o.bounds, x, y, CAT_CLEAR))) continue;
+          cells.add(pack(gx, gy));
+        }
+      }
     }
+    plan = { floor, cells, list: [...cells] };
+    this.catPlans.set(floor, plan);
     return plan;
+  }
+
+  /** A wandering cat's next stop: a random walkable cell a few metres off. */
+  private wanderCat(cat: Mover): void {
+    const plan = this.catPlanOf(cat.floor);
+    const cx = Math.floor(cat.x / CAT_CELL);
+    const cy = Math.floor(cat.y / CAT_CELL);
+    for (let tries = 0; tries < 12; tries += 1) {
+      const k = pack(cx + Math.round((this.catRandom() - 0.5) * 8), cy + Math.round((this.catRandom() - 0.5) * 8));
+      if (!plan.cells.has(k)) continue;
+      const [gx, gy] = unpack(k);
+      cat.tx = (gx + 0.5) * CAT_CELL;
+      cat.ty = (gy + 0.5) * CAT_CELL;
+      return;
+    }
   }
 
   private planFor(floor: Level): Floorplan {
