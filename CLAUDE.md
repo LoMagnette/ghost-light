@@ -59,7 +59,7 @@ npm run crowd       # walk a full crowd for ten minutes; fail if people pile up
 npm run venue -- --svg   # draw both floors as a plan, to hold against the real one
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on
-npm run peek -- '[["name","?chapter=silence&at=-21.8,-8",["KeyW"],1.6]]'
+npm run peek -- '[["name","?chapter=silence&at=-21.8,-1.7",["KeyW"],1.6]]'
 ```
 
 `npm run peek` is `shoot`'s opposite: one frame of anywhere, with any keys

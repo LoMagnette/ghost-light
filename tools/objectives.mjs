@@ -12,8 +12,9 @@
  *   1. it is inside a room, on the storey it claims;
  *   2. its centre is not inside a solid;
  *   3. at least one robot in that chapter's cast passes its gates;
- *   4. that robot can actually REACH the storey it is on — which, for Biggy,
- *      means storey 0 and nothing else;
+ *   4. that robot can actually REACH the level it is on — which, for Biggy,
+ *      means the hall floor and nothing else: there is no ramp, so even the
+ *      concourse 1.2 m up is out of reach;
  *   5. a haul's drop zone gets all of the above too, and its mass has to be
  *      liftable by a robot that can stand in both places.
  *
@@ -73,11 +74,17 @@ rmSync(out, { recursive: true, force: true });
 
 const RISER = 0.18;
 
-/** Which storeys this machine can stand on, given the building's stairs. */
-function storeysFor(spec) {
-  // Every route to floor 1 is a flight of 0.18 m risers; the ramp only joins
-  // the two levels of floor 0. So this is the stair rule, asked once.
-  return spec.maxStepRise >= RISER ? [0, 1] : [0];
+/**
+ * Can this machine get to a zone, from the hall floor every chapter with it
+ * in the cast starts on?
+ *
+ * Every level change in the building is a flight of 0.18 m risers — there is
+ * no ramp — so a machine that climbs them goes anywhere, and one that does not
+ * stays on the level it started on: storey 0, at the hall's own height.
+ */
+function reaches(spec, zone, room) {
+  if (spec.maxStepRise >= RISER) return true;
+  return zone.floor === 0 && (room?.elevation ?? 0) === 0;
 }
 
 function roomAt(floor, x, y) {
@@ -121,7 +128,7 @@ function checkPlace(chapter, activity, what, zone, specs) {
   const able = specs.filter(
     (spec) =>
       admits(activity, spec) &&
-      storeysFor(spec).includes(zone.floor) &&
+      reaches(spec, zone, room) &&
       // A shove is gated by momentum rather than by a `gates` clause, so
       // `admits` cannot see it. Peak momentum is the generous reading — the
       // real cruise figure is a few percent under — and if even that misses
@@ -137,7 +144,7 @@ function checkPlace(chapter, activity, what, zone, specs) {
 
   if (able.length === 0) {
     failures.push(
-      `${chapter.id}/${activity.id}: ${what} can be done by nobody in the cast — gates exclude everyone who can reach storey ${zone.floor}`,
+      `${chapter.id}/${activity.id}: ${what} can be done by nobody in the cast — gates exclude everyone who can get there`,
     );
     note = note || 'NOBODY';
   } else {

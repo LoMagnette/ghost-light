@@ -4894,6 +4894,63 @@ auditorium level. Its grid is rooms minus solids, a hole is render-only,
 and treads upstairs hang below the plate, so nothing kept people off.
 Room holes are now out of the grid.
 
+### 28 Sep — The steps between the reception and the hall
+
+> next element is the stairs between the reception and the exibition hall.
+> They don't match the plan and there's a hole in the wall further on the
+> side of the stairs. Can you try to map this zone based on the
+> @references/venue/maps/stairs-exhibition-reception.png
+
+**Found:** measured against the column grid, the hall was one bay short. The
+door wall is 10.1 m south of the last row of columns, not 3.8 m, so the real
+threshold could not fit. The real one is a 3 m landing with 2 m of steps
+round three sides. I asked; the author chose to deepen the hall. It grew
+6.3 m at the north, so the reception, the grand stair and floor 1 are
+untouched. The grid, the stair cores, the stands and every hall activity
+moved with the north wall.
+
+**Built (`hall-threshold`):**
+- **The threshold:** a landing between the door columns, with 7 steps round
+  it and a solid box at its west end, as both plans draw. The 4 columns now
+  stand in the doorway.
+- **The ramp:** it runs off the landing's east end along the door wall,
+  where `exhibition-floor.jpg` labels "Wheelchair access". It no longer cuts
+  through the concourse. That doorway was one of two holes. The other was a
+  door from BOF 3, which stands 1.2 m up, onto the hall floor. Now no door
+  opens onto a different level.
+- **The rest of the hall:** redrawn from `hollywood-area.png` so the printed
+  floor area still checks. That means the north-east set-back with the polo
+  room in it, and the south-west notch under the curve. The stair cores and
+  the columns now count as not-floor.
+- **Floor 1:** Rooms 3 and 10 had their doors in front of the moved
+  stairwells. The door now slides into the corner beside the stairhead.
+
+**Known disagreement:** the floor-1 plan puts the hall flights' arrival
+beside Rooms 4 and 9. With the deeper hall they land beside Rooms 3 and 10.
+The two drawings disagree by about 7 m, and the author chose the ground
+floor's.
+
+### 28 Sep — The double wall on the right of the steps
+
+> there's still an issue. on the right side of this stairs instead of having
+> the stairs it self theres some kind of double wall.
+
+**Found:** the "double wall" was the wheelchair ramp. The ramp surface had
+never been drawn: the old ramp ran under the reception floor, so nothing
+showed it was missing. What you could see was its 2.4 m balustrade standing
+beside the door wall. I asked whether that end should be steps like the
+other. The author: "Just keep the steps and forget about the ramp."
+
+**Done:**
+- **Ramp removed:** the east end of the threshold is steps down to the wall.
+- **Biggy:** it climbs nothing, so it now never leaves the hall floor.
+  `npm run objectives` now holds Biggy's jobs to the hall level, not just
+  storey 0, and `venue` no longer demands a ramp.
+- **Nothing lost:** the keg's delivery was already in the hall, so no
+  chapter changed.
+- **Dialogue:** the stand crew's line about the ramp now says Biggy does not
+  do steps.
+
 ---
 
 ## Audio

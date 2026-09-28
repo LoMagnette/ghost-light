@@ -242,11 +242,11 @@ export function loadedMass(spec: RobotSpec, payload = 0): number {
  * does not care which part of it is cargo, so a laden robot re-derives the
  * limit from the same formula the literals came from.
  *
- * This is not an abstract nicety. The building's only ramp is 1.2 m over 12 m
- * — a 10% gradient against Biggy's 0.11, cleared EMPTY by one percentage
- * point. With the 200 kg keg aboard the limit falls to 0.075 and Biggy cannot
- * get up it at all, which is why anything heavy stays on the exhibition floor.
- * See `docs/MECHANICS.md` §5.3 and the assertion in `npm run traverse`.
+ * The building has no ramp any more (the threshold is steps at both ends,
+ * 28 Sep), so today this only decides a slope nobody drives. It is kept
+ * because the rule is right: the wheelchair ramp the building had until then
+ * was 10% against Biggy's 0.11, cleared EMPTY by one point, and with the
+ * 200 kg keg the limit fell to 0.075. See `docs/MECHANICS.md` §5.3.
  */
 export function maxSlopeLoaded(spec: RobotSpec, payload = 0): number {
   if (payload <= 0) return spec.maxSlope;
