@@ -544,12 +544,14 @@ const THRESHOLD_BOX = rect(
  * Read at 0.079 m/px, the scale that gives the east wing its 19.8 m. Running
  * north to south:
  *
- *   a passage along the hall wall          1.77 m
- *   the two toilets                        4.10 m
+ *   the two toilets                        5.87 m, back to the hall wall
  *   the lobby you queue in, off reception  1.78 m
  *
- * The depths are the ones `hollywood-area.png` gave, and this plan agrees
- * with them to a pixel or two. West to east it is:
+ * The plan draws a 1.77 m passage between the toilets and the hall wall.
+ * It stood here for an hour, and it made two walls at the back of the
+ * block, one behind the other. The author wants a single wall, so the
+ * toilets run back to the hall wall and take the passage's depth (28 Sep).
+ * West to east it is:
  *   - something under the "Toilets >" label, 8 m;
  *   - the women's room, 5.34 m: basins on the west wall and four cubicles
  *     on the east;
@@ -565,17 +567,17 @@ const THRESHOLD_BOX = rect(
 const EAST_WING_X = RECEPTION.x + RECEPTION.w;
 const EAST_EDGE = 42.1;
 const SERVICE_STRIP = 2.1;
-const TOILET_STRIP = 1.77;
-const TOILET_DEPTH = 4.1;
+const TOILET_DEPTH = 1.77 + 4.1;
 const TOILET_LOBBY = 1.78;
 const WOMENS_W = 5.34;
 const MENS_W = 3.93;
 
-const TOILETS_NORTH = HALL.y - TOILET_STRIP;
+const TOILETS_NORTH = HALL.y;
 const TOILETS_SOUTH = TOILETS_NORTH - TOILET_DEPTH;
+// Where the plan's fittings stop: they fill the 4.1 m it drew the rooms as.
+const FITTED_NORTH = TOILETS_SOUTH + 4.1;
 const MENS = rect(EAST_EDGE - SERVICE_STRIP - MENS_W, TOILETS_SOUTH, MENS_W, TOILET_DEPTH);
 const WOMENS = rect(MENS.x - WOMENS_W, TOILETS_SOUTH, WOMENS_W, TOILET_DEPTH);
-const TOILET_PASSAGE = rect(EAST_WING_X, TOILETS_NORTH, EAST_EDGE - EAST_WING_X, TOILET_STRIP);
 const TOILET_LOBBY_RECT = rect(
   EAST_WING_X,
   TOILETS_SOUTH - TOILET_LOBBY,
@@ -600,7 +602,7 @@ function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   const counter = (x: number) =>
     solids.push({
       floor: 0,
-      bounds: rect(x, TOILETS_SOUTH + 0.4, 0.55, TOILET_DEPTH - 0.6),
+      bounds: rect(x, TOILETS_SOUTH + 0.4, 0.55, FITTED_NORTH - TOILETS_SOUTH - 0.6),
             height: 0.85,
       material: 'desk',
     });
@@ -638,11 +640,11 @@ function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
 
   // Women's: basins west, four cubicles east, opening west.
   counter(WOMENS.x + inset);
-  cubicles(WOMENS.x + 3.04, WOMENS_W - 3.04 - inset, TOILETS_NORTH - inset, 4, (TOILET_DEPTH - 2 * inset) / 4, -1);
+  cubicles(WOMENS.x + 3.04, WOMENS_W - 3.04 - inset, FITTED_NORTH - inset, 4, (FITTED_NORTH - TOILETS_SOUTH - 2 * inset) / 4, -1);
 
   // Men's: two cubicles in the north-west corner, opening east; two urinals
   // on the west wall south of them; basins on the east wall.
-  cubicles(MENS.x + inset, 1.35, TOILETS_NORTH - inset, 2, 0.93, 1);
+  cubicles(MENS.x + inset, 1.35, FITTED_NORTH - inset, 2, 0.93, 1);
   for (const y of [TOILETS_SOUTH + 0.9, TOILETS_SOUTH + 1.7]) {
     solids.push({
       floor: 0,
@@ -757,16 +759,11 @@ const floor0Rooms: Room[] = [
      */
   },
   /*
-   * East of the concourse: the toilets, and the passage and lobby to them.
+   * East of the concourse: the toilets, and the lobby to them.
    * See `WOMENS` for the drawing. BOF 1, 2 and 3 stood south of them and the
    * author is rebuilding that side one room at a time (28 Sep), so the rest
    * of the east wing is the building's edge until they come back.
-   *
-   * The passage is `service` rather than circulation so the wall builder
-   * gives the toilets no door onto it. It opens off reception at its west
-   * end, which is all the plan asks of it.
    */
-  { id: 'toilet-passage', label: 'Toilets', kind: 'service', floor: 0, bounds: TOILET_PASSAGE, elevation: CONCOURSE_LEVEL },
   { id: 'toilet-lobby', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_LOBBY_RECT, elevation: CONCOURSE_LEVEL },
   // The doors are where the plan hangs them: the women's at the west end of
   // its frontage, the men's at the east end.

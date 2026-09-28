@@ -4988,6 +4988,13 @@ other. The author: "Just keep the steps and forget about the ramp."
 - **Not built:** the area under the "Toilets >" label (the plan doesn't say
   what it is) and the 2.1 m service strip with the stair on the east edge.
 
+> the toilet are almost good just the wall in the back should one with the one behind
+
+**Done:** the passage along the hall wall is gone. It put a second wall
+behind the toilets' back wall. The toilets now run back to the hall-wall
+line, 5.87 m deep, so there is one wall. The fittings stay where the plan
+draws them, in the southern 4.1 m.
+
 ---
 
 ## Audio
