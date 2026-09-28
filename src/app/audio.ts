@@ -84,6 +84,11 @@ export function installAudio(): void {
   });
 }
 
+/** Whether the page has had its first key or click, so sound can play. */
+export function audioUnlocked(): boolean {
+  return context !== undefined;
+}
+
 /** Whether sound is off. Remembered per browser, like the graphics switch. */
 export function isMuted(): boolean {
   return muted;
