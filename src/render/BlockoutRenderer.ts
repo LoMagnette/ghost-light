@@ -2486,6 +2486,8 @@ export class BlockoutRenderer {
         return 0xb9bec4;
       case 'rope':
         return 0xa3222e;
+      case 'chair':
+        return shade(this.palette.desk, 0.55);
       default:
         return this.palette.wall;
     }

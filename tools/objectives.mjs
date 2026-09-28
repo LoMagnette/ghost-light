@@ -67,7 +67,7 @@ Module._resolveFilename = function (request, ...rest) {
 };
 
 const { CHAPTERS } = await import(pathToFileURL(join(out, 'chapters/registry.js')));
-const { KINEPOLIS } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
+const { KINEPOLIS, sessionLimits, corridorTables } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
 const { admits, zoneCentre } = await import(pathToFileURL(join(out, 'core/Activity.js')));
 rmSync(out, { recursive: true, force: true });
@@ -103,9 +103,16 @@ function roomAt(floor, x, y) {
   return best;
 }
 
+/**
+ * The furniture a chapter's day adds to the building: the stanchions where
+ * its rooms stop and the corridor tables. `ChapterScreen` adds the same, so
+ * a job placed under a table fails here and not in play.
+ */
+let dayObstacles = [];
+
 function solidsAt(floor, x, y, radius) {
   const hits = [];
-  for (const o of KINEPOLIS.obstacles) {
+  for (const o of [...KINEPOLIS.obstacles, ...dayObstacles]) {
     if (o.floor !== floor) continue;
     // A tread is not an obstruction to whoever may climb it, and a kerb under
     // 0.2 m is something Voxxy steps over. Neither should fail a placement.
@@ -140,6 +147,12 @@ function checkPlace(chapter, activity, what, zone, specs) {
   if (!room) {
     failures.push(`${chapter.id}/${activity.id}: ${what} is not inside any room on storey ${zone.floor}`);
     note = 'NO ROOM';
+  } else if (room.voids?.some((v) => centre.x > v.x && centre.x < v.x + v.w && centre.y > v.y && centre.y < v.y + v.h)) {
+    // A hole in the plate: the open well beside the grand stair, a stair
+    // core. It is inside the room and there is no floor. Rod Johnson stood
+    // on one for an afternoon (28 Sep).
+    failures.push(`${chapter.id}/${activity.id}: ${what} is over a hole in the floor of ${room.id}`);
+    note = note || 'OVER A HOLE';
   }
 
   if (able.length === 0) {
@@ -172,6 +185,8 @@ function checkPlace(chapter, activity, what, zone, specs) {
 }
 
 for (const chapter of CHAPTERS) {
+  const listed = chapter.objective.rooms;
+  dayObstacles = listed ? [...sessionLimits(listed).solids, ...corridorTables().solids] : [];
   // The wormhole. An exit to a chapter that does not exist is a Chapter I
   // that ends by crashing, and a split into a robot the next chapter does
   // not cast is a Droid that grows out of Voxxy and is then not there.

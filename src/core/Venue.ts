@@ -230,7 +230,12 @@ export type Material =
   | 'floorBelow'
   /** A queue stanchion's polished post, and the rope slung between two. */
   | 'stanchion'
-  | 'rope';
+  | 'rope'
+  /**
+   * A folding chair at a corridor table. Not `seat`, which is what the crowd
+   * counts and sits people in.
+   */
+  | 'chair';
 
 /**
  * Dressing: DRAWN, never simulated.

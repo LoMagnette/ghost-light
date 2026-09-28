@@ -497,6 +497,9 @@ const BREAKDOWNS: Activity[] = [
  * the player went and said hello — but the chapter is asking a real question
  * now, and both answers are defensible.
  */
+/** How far into the corridor the speakers stand, x. */
+const SPEAKER_X = -3.4;
+
 function speaker(
   id: string,
   who: string,
@@ -512,7 +515,10 @@ function speaker(
     look,
     // The corridor's west side, outside the room they are on in. Not the
     // south end: floor 1 has no floor there, it has the grand stairwell.
-    at: spot(1, -4.0, y, 3.2),
+    // 3.4 m in from the west wall, not 4.0: the long tables along it
+    // between Rooms 5 and 6 take two metres, and a speaker stands in the
+    // corridor, not at a table.
+    at: spot(1, SPEAKER_X, y, 3.2),
     group: 'the speakers',
     optional: true,
     after: ['met-stephan'],
@@ -698,9 +704,10 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         'Then a man in Belgium puts everyone who read it inside one building for a week. I have learned more this morning than in the whole year I spent writing.',
         'Ask me the thing you have been arguing about at work. Genuinely. That is what I am standing here for.',
       ],
-      // Outside Room 6, since 28 Sep: Room 2 has no session in the
-      // chapter's six rooms.
-      -51.0,
+      // Outside Room 6's door, since 28 Sep: Room 2 has no session in the
+      // chapter's six rooms. The door is at the north end of the room, and
+      // Room 6's middle is the open well beside the grand stair.
+      -44.6,
     ),
     /*
      * The way back.

@@ -4806,6 +4806,119 @@ export function sessionLimits(inUse: readonly string[]): { solids: Obstacle[]; d
   return { solids, decor };
 }
 
+/**
+ * The long tables Devoxx lines the corridor with: against the wall between
+ * Rooms 5 and 6 on the west, and between 7 and 8 on the east, with chairs
+ * down both sides. They start two metres past one room's door and stop two
+ * metres short of the next, so both doorways stay clear (the author, 28 Sep).
+ *
+ * Found from the doors, not typed: each side's run is the stretch of wall
+ * between the two rooms' doorways, less the two metres at each end. The
+ * rooms' `doorSide` puts Room 6's and Room 7's doors at their north ends and
+ * Room 5's and 8's at theirs, so the run is most of Room 5's and 8's back wall.
+ *
+ * One hidden block collides for each run, table and chairs together, as the
+ * seat banks do: a robot does not weave between chair legs, and the thing you
+ * see is the furniture in `decor`.
+ */
+export function corridorTables(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const corridor = floor1Rooms.find((r) => r.id === 'corridor');
+  if (!corridor) return { solids, decor };
+  const c = corridor.bounds;
+
+  for (const [south, north, side] of [
+    ['aud-6', 'aud-5', -1],
+    ['aud-7', 'aud-8', 1],
+  ] as const) {
+    const lower = doorAlong(south, side);
+    const upper = doorAlong(north, side);
+    if (!lower || !upper) continue;
+    const y0 = lower.to + TABLE_CLEAR;
+    const y1 = upper.from - TABLE_CLEAR;
+    if (y1 - y0 < CORRIDOR_TABLE) continue;
+
+    // Out from the wall face: a chair, the table, a chair.
+    const wall = side === -1 ? c.x : c.x + c.w;
+    const out = (d0: number, d1: number): [number, number] =>
+      side === -1 ? [wall + d0, d1 - d0] : [wall - d1, d1 - d0];
+    const [fx, fw] = out(0.05, TABLE_FOOTPRINT);
+    solids.push({ floor: 1, bounds: rect(fx, y0, fw, y1 - y0), height: 0.9, hidden: true });
+
+    const tables = Math.floor((y1 - y0) / CORRIDOR_TABLE);
+    const spare = (y1 - y0 - tables * CORRIDOR_TABLE) / 2;
+    const [tx, tw] = out(CHAIR_ROW, CHAIR_ROW + TABLE_DEEP);
+    for (let i = 0; i < tables; i += 1) {
+      const ty = y0 + spare + i * CORRIDOR_TABLE;
+      // Butted end to end with a hairline between, so a run of them reads
+      // as tables and not as one bar.
+      decor.push({ floor: 1, bounds: rect(tx, ty + 0.01, tw, CORRIDOR_TABLE - 0.02), base: 0.71, height: 0.75, material: 'desk' });
+      for (const ly of [ty + 0.08, ty + CORRIDOR_TABLE - 0.12]) {
+        decor.push({ floor: 1, bounds: rect(tx + 0.06, ly, tw - 0.12, 0.04), height: 0.71, material: 'desk' });
+      }
+      // Three chairs a side to a table.
+      for (let k = 0; k < 3; k += 1) {
+        const cy = ty + (CORRIDOR_TABLE / 3) * (k + 0.5);
+        for (const [d0, facing] of [
+          [0.1, 1],
+          [CHAIR_ROW + TABLE_DEEP + 0.05, -1],
+        ] as const) {
+          const [sx, sw] = out(d0, d0 + CHAIR);
+          decor.push({ floor: 1, bounds: rect(sx, cy - CHAIR / 2, sw, CHAIR), base: 0.42, height: 0.46, material: 'chair' });
+          // The back is on the side away from the table.
+          const back = facing === 1 ? d0 : d0 + CHAIR - 0.05;
+          const [bx, bw] = out(back, back + 0.05);
+          decor.push({ floor: 1, bounds: rect(bx, cy - CHAIR / 2, bw, CHAIR), base: 0.46, height: 0.86, material: 'chair' });
+          decor.push({ floor: 1, bounds: rect(sx + sw / 2 - 0.02, cy - 0.02, 0.04, 0.04), height: 0.42, material: 'stanchion' });
+        }
+      }
+    }
+  }
+  return { solids, decor };
+}
+
+/**
+ * Where a room's corridor doorway is, along y: the gap in the wall builder's
+ * wall on the corridor side. `side` -1 is a west room, whose corridor wall is
+ * its east edge.
+ */
+function doorAlong(id: string, side: -1 | 1): { from: number; to: number } | undefined {
+  const room = floor1Rooms.find((r) => r.id === id);
+  if (!room) return undefined;
+  const b = room.bounds;
+  const x = side === -1 ? b.x + b.w : b.x;
+  const pieces = WALLS.walls
+    .filter(
+      (w) =>
+        w.floor === 1 &&
+        Math.abs(w.bounds.x + w.bounds.w / 2 - x) < 0.2 &&
+        w.bounds.w < 0.5 &&
+        w.bounds.y < b.y + b.h - 0.01 &&
+        w.bounds.y + w.bounds.h > b.y + 0.01,
+    )
+    .map((w) => ({ from: Math.max(w.bounds.y, b.y), to: Math.min(w.bounds.y + w.bounds.h, b.y + b.h) }))
+    .sort((p, q) => p.from - q.from);
+  // The first gap between one piece of wall and the next.
+  let at = b.y;
+  for (const piece of pieces) {
+    if (piece.from - at > 1.0) return { from: at, to: piece.from };
+    at = Math.max(at, piece.to);
+  }
+  return b.y + b.h - at > 1.0 ? { from: at, to: b.y + b.h } : undefined;
+}
+
+/** Doorway to the first table, and last table to the next doorway, metres. */
+const TABLE_CLEAR = 2.0;
+/** One trestle table, end to end, and how deep it is. */
+const CORRIDOR_TABLE = 1.8;
+const TABLE_DEEP = 0.75;
+/** A chair, square, and the strip a row of them takes from the wall. */
+const CHAIR = 0.44;
+const CHAIR_ROW = 0.62;
+/** Wall to the back of the outer chairs, metres. */
+const TABLE_FOOTPRINT = CHAIR_ROW + TABLE_DEEP + CHAIR_ROW;
+
 /** The opening left in the middle of a session line, metres. Two people abreast, or Droid with room. */
 const SESSION_GAP = 3.0;
 /** A queue stanchion: about a metre tall, a post, a weighted foot. */

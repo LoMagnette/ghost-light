@@ -5459,6 +5459,38 @@ and the lens turned white.
 - **Checked:** `traverse` (through the gap, stopped beside it), `objectives`,
   `venue`, `crowd` and `shoot` pass. Peeks were taken in Chapters II and III.
 
+### Corridor tables
+
+> there's usually long tables place, with chair on both side along the wall
+> between room 7 and 8 and 6 and 5. after 2m after exit of each room leaving
+> the entrance free
+
+**Done** on `corridor-tables`, stacked on `session-drape`:
+- **Where:** `corridorTables()` finds the doorways in the wall builder's
+  walls, rather than taking typed numbers, and lays trestle tables end to end
+  from 2 m past one door to 2 m short of the next. That's 15.6 m on each
+  side, y −41.3 to −25.7.
+- **Look:** three chairs a side per table, one row against the wall and one
+  on the corridor side.
+- **Collision:** one hidden block per run, as the seat banks have. The
+  furniture itself is decor.
+- **Chapters:** in any chapter whose day names its rooms (II and III), not in
+  the empty building.
+- **Found on the way:** Rod Johnson, moved "outside Room 6" last round, was
+  standing over the open well beside the grand stair.
+  - He is now at Room 6's door.
+  - `npm run objectives` now fails any activity over a hole in the floor;
+    tested by putting him back.
+  - The harness also counts the day's furniture as solid.
+  - The speakers stand at x −3.4, not −4.0, clear of the tables.
+- **Checked:**
+  - `traverse`: Droid drives into Rooms 5, 6, 7 and 8 past the tables, and
+    Voxxy is stopped by one.
+  - `objectives`, `venue`, `crowd` and `shoot` pass.
+- **Visibility:** the west run sits behind its own wall from the south-west
+  camera and only shows through the cutaway, like anything against a west
+  wall.
+
 ---
 
 ## Audio
