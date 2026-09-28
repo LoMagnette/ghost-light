@@ -119,20 +119,42 @@ export interface Exit {
 }
 
 /**
- * Arriving in a chapter: one robot in, and one more of it than went in.
+ * Arriving in a chapter: by wormhole, or on foot off the ship.
+ *
+ * A union, like `Exit`, so the first chapter's way in did not have to be a
+ * flag on the other two's.
+ */
+export type Arrival = Split | Landing;
+
+/**
+ * One robot in, and one more of it than went in.
  *
  * The cast grows by a robot a chapter, and until this it simply WAS bigger
  * when the next chapter loaded. `split` makes the new robot a consequence
  * rather than a casting decision: the wormhole pulls one machine through
  * and something in it comes out the other side as a body of its own.
  */
-export interface Arrival {
+export interface Split {
   kind: 'split';
   /** The robot that comes through. Must be in the chapter's cast. */
   from: RobotId;
   /** The robot that comes out of it. Must be in the cast too. */
   into: RobotId;
   /** Said once they are both standing, one box at a time. */
+  lines: { who: RobotId; text: string }[];
+}
+
+/**
+ * Chapter I: off the ship the title sequence brings down, and standing on the
+ * forecourt looking at the building before going in.
+ *
+ * No wormhole and no whiteout, just the robot outside and what it says to
+ * itself, one box at a time. The chapter starts at the forecourt rather than
+ * in the hall because of it: a robot that has just landed has not been
+ * inside yet.
+ */
+export interface Landing {
+  kind: 'landing';
   lines: { who: RobotId; text: string }[];
 }
 

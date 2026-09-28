@@ -5517,6 +5517,26 @@ the corridor tables, and the pie chart and chapter rows are updated.
 **Done:** the balance row moved to Done in `STATUS.md`, and both chapters
 are ✅ at a glance. The stranger playtest is still ahead.
 
+> I would like to give a small image of each character we interact with how
+> can I provide that. Also I would like to move the spawn point for chapter I
+> outside the conference center. And at the begining of chapter I voxxy have a
+> short monologue a bout the situation
+
+**Done** on `chapter-one-landing`:
+- **Portraits** already work: a square picture of about 256 × 256 dropped in
+  `src/portraits/`, named after the speaker (`stephan-janssen.jpeg`), shows
+  up in the dialogue box. Voxxy is added to the list in its README.
+- **A new kind of arrival, `landing`**, next to the wormhole's `split`: no
+  whiteout, the forecourt is seen for 1.2 s, then the lines page on E. A
+  chapter that lands starts on the forecourt (`SPAWNS.forecourt`) rather
+  than in the hall.
+- **Voxxy's four lines**: Antwerp and the temple, as the scriptures said; no
+  lights and no voices; one light still drawing power, deep inside; the
+  front is glass doors, in we go. Nothing about why the building is empty.
+- **Checked:** `objectives`, `traverse`, `physics`, `crowd`, `venue` and
+  `shoot` pass; a browser run showed the lines over the forecourt and Voxxy
+  driving off after them.
+
 ---
 
 ## Audio

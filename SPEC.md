@@ -82,7 +82,9 @@ Same building. Same engine. Three rulesets.
 - **Control:** `direct` — WASD, one robot
 - **Crowd density:** 0.0
 - **Light:** 0.18 — the red LED step lighting in the auditoriums is still running
-- **Starts on:** the exhibition floor
+- **Starts on:** the forecourt, outside the front doors, just down off the ship.
+  Voxxy says four lines to itself about what it sees and what it came for,
+  then the player drives (the author, 28 Sep)
 - **Objective:** find the power
 - **Mechanic:** three distribution boards, each raising the light in one zone.
   The building assembles itself around the player. No clock, no failure. See

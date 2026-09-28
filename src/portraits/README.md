@@ -11,6 +11,7 @@ or `.webp`. It is cropped to fill the frame, so keep the face in the middle.
 
 | Speaker | Where | File |
 |---|---|---|
+| Voxxy | Chapter I, the opening on the forecourt | `voxxy.jpeg` |
 | The cat | Chapter I | `the-cat.jpeg` |
 | The dog | Chapter I | `the-dog.jpeg` |
 | Stephan Janssen | Chapter II, the host | `stephan-janssen.jpeg` |

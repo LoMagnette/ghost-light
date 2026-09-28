@@ -33,7 +33,7 @@ import {
 } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
-import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
+import { ObjectiveRun, roomName, type ActivityState, type Exit, type Landing, type Split } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
@@ -167,6 +167,8 @@ const ARRIVE_FADE = 1.0;
 const ARRIVE_LAND = 1.75;
 const ARRIVE_SPLIT_AT = 2.5;
 const ARRIVE_SPLIT = 1.3;
+/** Chapter I: how long the forecourt is seen before Voxxy speaks, seconds. */
+const LANDING_PAUSE = 1.2;
 /** How far above the floor the arrival opens, metres. Under any ceiling. */
 const ARRIVE_HEIGHT = 3.2;
 /**
@@ -184,7 +186,8 @@ const WORMHOLE_COLOUR = CHAPTER_ONE.palette.accent;
 /** A story beat in progress. While there is one, nobody is driving. */
 type Story =
   | { kind: 'departure'; t: number; exit: Exit; holes: Hole[]; left: boolean }
-  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: Set<Actor>; shimmered?: boolean };
+  | { kind: 'arrival'; t: number; arrival: Split; line: number; landed: Set<Actor>; shimmered?: boolean }
+  | { kind: 'landing'; t: number; arrival: Landing; line: number };
 
 /** Where a robot went through, which is where it stood when the floor opened. */
 interface Hole {
@@ -494,7 +497,9 @@ export class ChapterScreen implements Screen {
       zIndex: '9',
     });
     game.ui.append(this.whiteout);
-    if (chapter.objective.arrival) this.arrive(chapter.objective.arrival);
+    const arrival = chapter.objective.arrival;
+    if (arrival?.kind === 'split') this.arrive(arrival);
+    else if (arrival?.kind === 'landing') this.story = { kind: 'landing', t: 0, arrival, line: -1 };
     // `?exit` opens the way out at once, for looking at the wormhole without
     // playing a chapter to the end first. Like `?at`, unreachable in play.
     // Only for the chapter `?chapter` named: the query outlives the screen,
@@ -718,7 +723,7 @@ export class ChapterScreen implements Screen {
   }
 
   /** Start a chapter out of the white, with robots about to fall into it. */
-  private arrive(arrival: Arrival): void {
+  private arrive(arrival: Split): void {
     this.story = { kind: 'arrival', t: 0, arrival, line: -1, landed: new Set() };
     this.whiteout.style.opacity = '1';
     this.openWormholes(this.actors.length);
@@ -741,7 +746,33 @@ export class ChapterScreen implements Screen {
     this.talkPrompt.textContent = '';
     story.t += dt;
     if (story.kind === 'departure') this.playDeparture(story, dt);
+    else if (story.kind === 'landing') this.playLanding(story, dt, pressed);
     else this.playArrival(story, dt, pressed);
+  }
+
+  /**
+   * Chapter I's opening: Voxxy on the forecourt, talking to itself.
+   *
+   * A beat of the building first, so the first thing seen is where the robot
+   * is and not a text box; a press skips it. Then the lines, paged like any
+   * conversation, and the chapter starts when the last is paged past.
+   */
+  private playLanding(story: Extract<Story, { kind: 'landing' }>, dt: number, pressed: boolean): void {
+    if (story.line < 0) {
+      if (story.t < LANDING_PAUSE && !pressed) return;
+      story.line = 0;
+      pressed = false;
+    }
+    if (pressed) {
+      if (this.typed < this.typingLine.length) this.typed = this.typingLine.length;
+      else story.line += 1;
+    }
+    const { lines } = story.arrival;
+    if (story.line >= lines.length) {
+      this.endStory();
+      return;
+    }
+    this.sayStory(lines[story.line], story.line < lines.length - 1, dt);
   }
 
   /**
@@ -2450,7 +2481,13 @@ function roomsInUse(chapter: Chapter): string[] {
  * more expensive than a query parameter.
  */
 function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
-  const spawn = chapter.startFloor === 0 ? SPAWNS.hallCentre : SPAWNS.corridorSouth;
+  // Off the ship, a chapter starts outside: see `Landing`.
+  const spawn =
+    chapter.objective.arrival?.kind === 'landing'
+      ? SPAWNS.forecourt
+      : chapter.startFloor === 0
+        ? SPAWNS.hallCentre
+        : SPAWNS.corridorSouth;
   const at = new URLSearchParams(window.location.search).get('at');
   if (!at) return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
 

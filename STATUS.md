@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 0
+    "In progress" : 1
     "To do" : 12
 ```
 
@@ -92,7 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| _Nothing in flight._ | | | | |
+| **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
 > the host, or set the token once:
