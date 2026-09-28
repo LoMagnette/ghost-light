@@ -3356,7 +3356,28 @@ function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; dec
   const kept: Obstacle[] = [];
   const decor: Decor[] = [];
 
+  /*
+   * A run that starts outside a band and ends inside it is cut at the band's
+   * end first. The wall builder merges the front into one run from the
+   * entrance to the east corner, and the whole of it was glazed off its
+   * centre, so the precast pier between the doors and the glass came out as
+   * glass doors under a precast storey.
+   */
+  const pieces: Obstacle[] = [];
   for (const wall of walls) {
+    const b = wall.bounds;
+    const band = CURTAIN_WALLS.find(
+      (c) => c.floor === wall.floor && b.w >= b.h && c.bounds.w >= c.bounds.h &&
+        b.y + b.h / 2 >= c.bounds.y && b.y + b.h / 2 <= c.bounds.y + c.bounds.h &&
+        b.x < c.bounds.x && b.x + b.w > c.bounds.x,
+    );
+    if (!band) { pieces.push(wall); continue; }
+    const cut = band.bounds.x;
+    pieces.push({ ...wall, bounds: rect(b.x, b.y, cut - b.x, b.h) });
+    pieces.push({ ...wall, bounds: rect(cut, b.y, b.x + b.w - cut, b.h) });
+  }
+
+  for (const wall of pieces) {
     const b = wall.bounds;
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
@@ -3868,20 +3889,18 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
    * The entrance, made to read as one.
    *
    * WALL_OPENINGS takes the wall away so a robot can drive through, which
-   * leaves a nine-metre hole in a wall of glass and nothing to say it is a
-   * door. The photograph has a bank of leaves under a head, with a canopy
-   * over the lot. All drawn and none of it collided — the way through has
-   * to stay a way through.
+   * leaves a hole in the precast and nothing to say it is a door. So the
+   * doors are drawn into it below.
    */
-  const doorHead = 2.6;
   /*
-   * Just OUTSIDE the line, not across it.
+   * The signage's plane: just OUTSIDE the wall line, not across it.
    *
    * `npm run venue` asks that every piece of dressing sit wholly inside one
    * room, which is how it catches furniture straddling a wall. The first
    * pass put the door leaves on the boundary itself, half in the reception
-   * and half on the forecourt, and got fifty-eight complaints for it. They
-   * belong to the forecourt: it is the side you see them from.
+   * and half on the forecourt, and got fifty-eight complaints for it. The
+   * letters and the star belong to the forecourt: it is the side you see
+   * them from.
    */
   const doorY = RECEPTION.y - 0.34;
 
@@ -3889,39 +3908,44 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   // the photograph shows. Same plane, so it is put in from the same datum.
   decor.push(...frontElevation());
 
-  // The head over the doors, and the glazing above it carried across.
+  /*
+   * The bank of doors itself, built the way every other bay of the front is
+   * (see `glazeFacade`): frames on the wall line down to the floor, a head
+   * at `DOOR_HEAD` on the inside face, glass above it. It had its own
+   * five-leaf frame standing 0.34 m proud of the wall, which read as a
+   * different door from the rest of the front once the rest became doors
+   * too (the author, 28 Sep: "the doors on the left are still a bit
+   * weird"). The frames are collided here as there; the leaves between them
+   * are the way in.
+   */
+  const face = RECEPTION.y;
+  const bays = Math.max(1, Math.round(ENTRANCE_WIDTH / MULLION_PITCH));
+  for (let i = 0; i <= bays; i += 1) {
+    const post = rect(
+      ENTRANCE_X + (i * (ENTRANCE_WIDTH - MULLION_WIDTH)) / bays,
+      face - WALL_THICKNESS / 2,
+      MULLION_WIDTH,
+      WALL_THICKNESS,
+    );
+    decor.push({ floor: 0, bounds: post, height: WALL_HEIGHT, exterior: true });
+    solids.push({ floor: 0, bounds: post, height: WALL_HEIGHT, hidden: true });
+  }
   decor.push({
     floor: 0,
-    bounds: rect(ENTRANCE_X, doorY, ENTRANCE_WIDTH, 0.16),
-    base: doorHead,
-    height: doorHead + 0.22,
+    bounds: rect(ENTRANCE_X, face + PANE_THICKNESS / 2, ENTRANCE_WIDTH, PANE_THICKNESS),
+    base: DOOR_HEAD - 0.2,
+    height: DOOR_HEAD,
     material: 'structure',
     exterior: true,
   });
   decor.push({
     floor: 0,
-    bounds: rect(ENTRANCE_X, doorY + 0.04, ENTRANCE_WIDTH, PANE_THICKNESS),
-    base: doorHead + 0.22,
+    bounds: rect(ENTRANCE_X, face - PANE_THICKNESS / 2, ENTRANCE_WIDTH, PANE_THICKNESS),
+    base: DOOR_HEAD,
     height: WALL_HEIGHT,
     material: 'glazing',
     exterior: true,
   });
-
-  // The leaves. Five stiles across the opening: the frame you walk between.
-  const leaves = 5;
-  for (let i = 0; i <= leaves; i += 1) {
-    decor.push({
-      floor: 0,
-      bounds: rect(
-        ENTRANCE_X + (i * (ENTRANCE_WIDTH - MULLION_WIDTH)) / leaves,
-        doorY,
-        MULLION_WIDTH,
-        0.16,
-      ),
-      height: doorHead,
-      material: 'structure',
-    });
-  }
 
   /*
    * No canopy, and no floodlights.

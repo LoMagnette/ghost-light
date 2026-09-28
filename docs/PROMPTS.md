@@ -5194,6 +5194,20 @@ clear of the column lines and of every stand, and all the checks pass.
 - **Tests:** a new `traverse` scenario, "Biggy drives in off the forecourt
   through the glass doors".
 
+> the doors on the left are still a bit weird
+
+**Done:**
+- **Entrance bank rebuilt like the rest:** the bank in the west corner kept
+  its own frame: five leaves on a 1.09 m pitch, standing 0.34 m proud of the
+  wall, which robots drove through. It is now built like every other bay:
+  frames on the wall line down to the floor (collided), the same head at
+  `DOOR_HEAD` and glass above it.
+- **Precast pier solid again:** the wall builder merges the front into one
+  run from the entrance to the east corner, and the whole run was glazed off
+  its centre. So the precast pier between the entrance and the glass had
+  become glass doors under a precast storey. `glazeFacade` now cuts a run at
+  the band's end first, and the pier is solid again with its small windows.
+
 ---
 
 ## Audio
