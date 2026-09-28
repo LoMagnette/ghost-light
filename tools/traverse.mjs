@@ -438,6 +438,9 @@ scenario(
 const GRAND = KINEPOLIS.links.find((l) => l.id === 'grand-stair');
 const CONCOURSE_LEVEL = KINEPOLIS.rooms.find((r) => r.id === 'reception').elevation;
 const GRAND_HEAD = { x: 0, y: GRAND.bounds.y + GRAND.bounds.h + APPROACH };
+// The same distance off the head, downstairs, but in the east half: the
+// reception island stands in front of the flight's west half on floor 0.
+const GRAND_UNDER = { x: GRAND.bounds.x + GRAND.bounds.w - APPROACH, y: GRAND_HEAD.y };
 
 scenario(
   'Voxxy walks down the grand flight to the concourse',
@@ -460,7 +463,19 @@ scenario(
 scenario(
   'Voxxy walks in under the grand stair',
   (r) => Math.abs(r.z - CONCOURSE_LEVEL) < 0.1 && r.y < GRAND.bounds.y + GRAND.bounds.h - 2,
-  () => drive('voxxy', GRAND_HEAD, SOUTH, 6),
+  () => drive('voxxy', GRAND_UNDER, SOUTH, 6),
+);
+
+/*
+ * The terrace at the head of the flight (access-main-stairs.png): open floor
+ * the width of the corridor, with the corner west of the flight closed off
+ * by a curved wall. Walk south down the west side and the wall stops you;
+ * nothing there drops into the well.
+ */
+scenario(
+  'Voxxy is stopped by the curved wall beside the stairhead',
+  (r) => r.floor === 1 && r.z > -0.1 && r.y > GRAND.bounds.y + GRAND.bounds.h,
+  () => drive('voxxy', { x: -5.0, y: GRAND_HEAD.y + 4 }, SOUTH, 6, 1),
 );
 
 scenario(

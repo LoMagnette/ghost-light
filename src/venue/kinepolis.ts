@@ -792,72 +792,45 @@ export const CORE_DOOR = 1.8;
 export const CORE_DOOR_SET = 0.5;
 
 /**
- * How much corridor is left at each side of the grand flight, metres.
+ * Where the grand flight's WEST edge is, metres from the building's centre line.
  *
- * It used to be none: the flight was the full 14.3 m width of the corridor it
- * delivers you to, so its stairwell crossed the corridor wall to wall and the
- * south end of the auditorium level simply stopped there. A flight that wide
- * is not a staircase in a corridor, it IS the corridor.
+ * The flight is not centred on the corridor, and both plans say so. On
+ * `cinema-venue-devoxx.png` its treads run from 2.4 m west of the centre line
+ * to past the corridor's east wall, under the strip in front of Room 7; on
+ * `hollywood-area.png` it is the same distance east of the hall flights' own
+ * centre. It had been centred with a 1.5 m gap down each side, and the author
+ * walked up it (28 Sep): the stair "is not aligned".
  *
- * 1.5 m each side is a way past it and, at the top, something to put a
- * balustrade on — which is the other half of why the flight narrows. Measured
- * clear of both, it comes out at 1.35 m: Voxxy passes at 0.68 m across and
- * Droid at 0.92, and Biggy does not at 1.44. That is the right answer for a
- * machine that could not use the stairs it would be squeezing past anyway.
+ * Room 7 abuts the corridor in this model, so the flight stops at the
+ * corridor's east wall rather than running on under the room: 9.55 m of the
+ * plan's 12.25, all of it lost off the east side.
  */
-const GRAND_SIDE = 1.5;
+const GRAND_WEST = -2.4;
 
 /**
- * The grand flight is not an ordinary staircase, and does not use the
- * building's stair.
+ * The grand flight's pitch: the building's riser on a 0.26 m going.
  *
- * `RISER`/`GOING` is the fire stair that appears fourteen times in here: 0.18
- * over 0.30, a 31 degree flight you climb because you have to. At that pitch
- * the 5.0 m out of the concourse takes 8.4 m of run, and 8.4 m under a
- * fourteen-metre width is not a grand flight — it is a wide fire stair, and it
- * read as one: short, steep and stubby with the whole concourse in front of
- * it.
+ * It had a ceremonial 0.15 over 0.36 of its own, which takes 11.9 m of run —
+ * and there are not 11.9 m of run here. Both plans draw a SHORT flight: about
+ * 6 m deep on the ground floor, with a landing halfway, and 7.5 m from its
+ * head to the south wall upstairs. The run it took came out of the one thing
+ * upstairs the author missed, the terrace in front of the stairhead
+ * (`access-main-stairs.png`): at 11.9 m the head was 4.7 m from Rooms 5 and
+ * 8, where the plan has it 10.4 m off them.
  *
- * So this one gets a ceremonial pitch of its own: a 0.15 m riser on a 0.36 m
- * going, 23 degrees, which is what a flight built to be walked DOWN in a crowd
- * measures. 5.0 m then takes 33 risers and 11.9 m of run — half again as deep,
- * and the difference between a stair in a room and a stair that is the room.
- *
- * Shallower is safe for the cast in both directions: Droid's `maxStepRise` is
- * the building's 0.18 and this is under it, so everything that could climb the
- * flight still can, and Biggy's is 0, so the one machine that could not still
- * cannot. `npm run traverse` asserts both.
+ * At 0.18 over 0.26 the 5.0 m takes 28 risers and 7.3 m, which puts the head
+ * 9.3 m off the rooms. Steeper than the old pitch and still a staircase —
+ * `npm run venue` holds every flight to a 0.25 m going — and 0.18 is exactly
+ * Droid's `maxStepRise`, the same as every other flight in the building, so
+ * the cast climbs it as before and Biggy still cannot.
  */
-/**
- * Tread depth on the grand flight, metres — how much floor each step takes.
- *
- * A flight's depth is not a free choice: it is the rise divided by the riser,
- * times the going. The grand flight had been TYPED IN at 5.6 m deep for a
- * 5.0 m rise, which is 28 steps of 20 cm — an 89% gradient and a tread you
- * cannot get a foot on — because the plans carry no scale bar accurate enough
- * to argue with arithmetic. So it is derived, and it has been derived twice:
- * once at the building's 0.18/0.30, and now here.
- */
-const GRAND_RISER = 0.15;
-const GRAND_GOING = 0.36;
+const GRAND_RISER = RISER;
+const GRAND_GOING = 0.26;
 
 /** Risers in the grand flight, and the run they need. */
 const GRAND_STEPS = Math.round((FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_RISER);
 const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
 
-/**
- * The WELL — the hole the grand flight comes up through — which is the full
- * width of the corridor, and a different rectangle from the flight in it.
- *
- * The corridor's floor stops dead at the head of the stairs, right across, and
- * what carries on south is the staircase alone with a balustrade down each
- * side. The 1.5 m either side of it is not a landing: it is the well, open to
- * the reception five metres below.
- *
- * Making it the flight's own rectangle left those two strips as floor — a
- * pair of 8.4 m ledges running down the sides of a stairwell to a dead end
- * against the south wall, which is not a thing buildings have.
- */
 /**
  * Clear concourse at the FOOT of the flight, inside the well.
  *
@@ -873,22 +846,49 @@ const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
  */
 const GRAND_LANDING = 1.2;
 
+/**
+ * The WELL — the hole the grand flight comes up through. Exactly as wide as
+ * the flight: walled on the west by the block round the curve, and on the
+ * east by the corridor's own wall, so there is no drop beside the flight to
+ * rail off.
+ */
 const GRAND_WELL = rect(
-  -CORRIDOR_HALF,
+  GRAND_WEST,
   // The INNER FACE of the south wall, not its centreline. A wall is drawn
   // standing on the plate under it, and a well taken right to SOUTH_END leaves
   // the building's own end wall with no plate at all — 14.3 m of it hanging
   // over the reception, which `npm run venue` reports the moment you try it.
   SOUTH_END + WALL_THICKNESS / 2,
-  CORRIDOR_HALF * 2,
+  CORRIDOR_HALF - GRAND_WEST,
   GRAND_RUN + GRAND_LANDING,
 );
 
-const GRAND_STAIR = rect(
-  GRAND_WELL.x + GRAND_SIDE,
-  GRAND_WELL.y + GRAND_LANDING,
-  GRAND_WELL.w - GRAND_SIDE * 2,
-  GRAND_RUN,
+const GRAND_STAIR = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_LANDING, GRAND_WELL.w, GRAND_RUN);
+
+/**
+ * The terrace: what you arrive on at the top of the grand flight.
+ *
+ * `access-main-stairs.png` is the south end of the auditorium level. The
+ * corridor between Rooms 5 and 8 does not run on to the stairs. It opens into
+ * a landing the full width of the corridor, and the flight starts from the
+ * far side of it, in the east. The south-west corner is closed off by a wall
+ * that runs east, turns through a quarter circle, and comes down to the
+ * flight's west edge. So from the top step you see open floor ahead and a
+ * curved wall on your left, not a corridor with a hole at the end.
+ *
+ * Measured off the plan relative to the stairhead: the wall's straight run is
+ * 4.5 m north of the head, the curve is 2.5 m in radius, and it meets the
+ * flight's west edge 2.0 m north of the head.
+ */
+const TERRACE_WALL_PAST_HEAD = 4.5;
+const TERRACE_CURVE = 2.5;
+
+/** The corner the curved wall closes off: everything west of the flight, south of the wall. */
+const TERRACE_BLOCK = rect(
+  -CORRIDOR_HALF,
+  SOUTH_END,
+  GRAND_WEST + CORRIDOR_HALF,
+  GRAND_STAIR.y + GRAND_STAIR.h + TERRACE_WALL_PAST_HEAD - SOUTH_END,
 );
 
 /**
@@ -920,7 +920,9 @@ function doorBlocked(bounds: Rect, side: -1 | 1, doorSide: 'low' | 'high'): bool
   // door, at the south end of its frontage, opened straight onto that drop:
   // 0.9 m out is in the well and not on the stair, so the flight let it
   // through and Room 6 was a room with no way in (the author, 28 Sep).
-  return [...ARRIVALS, GRAND_WELL].some((flight) => rectContains(flight, x, y));
+  // The block behind the terrace's curved wall is no more a way in than a well
+  // is. Room 6's south end stands against it.
+  return [...ARRIVALS, GRAND_WELL, TERRACE_BLOCK].some((flight) => rectContains(flight, x, y));
 }
 
 /**
@@ -3987,10 +3989,9 @@ const OFFICE_DOOR = 1.0;
  * island. 6.3 × 0.65 m on the plan, 1.4 m clear of the island's east face.
  *
  * STANDS FURTHER NORTH THAN DRAWN, and this is the second deliberate move off
- * the plan. The drawing has it 1.6 m off the head of its flight, which is a
- * flight 6.0 m deep with a landing halfway up; this building's is 8.4 m deep
- * and lands in a 14.3 m well that Chapter III drives three robots through, so
- * 1.6 m of clearance is a counter across the mouth of a staircase. 3.4 m
+ * the plan. The drawing has it 1.6 m off the head of its flight, and that
+ * flight is one Chapter III drives three robots up, so 1.6 m of clearance is
+ * a counter across the mouth of a staircase. 3.4 m
  * leaves the 2.2 m approach `npm run traverse` walks in under the soffit —
  * which it does from this exact centre line — and still reads as the same
  * counter standing in the same place beside the island.
@@ -4126,13 +4127,11 @@ function receptionFitOut(): Obstacle[] {
  *
  * Both stop short of the entrance elevation by the LOBBY the plan leaves —
  * 80 px, 3.3 m — rather than running down to the foot of the flight. On the
- * drawing those are the same line, because its flight is 6.0 m deep and ends
- * 3.3 m inside the doors. This one is 11.9 m, for the reason `GRAND_GOING`
- * gives, so a wall taken to its foot arrives level with the east jamb of the
- * entrance and the cast cannot line up inside its own front door —
- * `npm run venue` says so in as many words. The lobby is the half of that
- * pair a player uses, so the lobby wins and the bottom three steps splay out
- * of the slot, which is what the bottom of a broad flight does anyway.
+ * drawing those are the same line, because its flight ends 3.3 m inside the
+ * doors. This one keeps a 1.2 m landing at its foot (see `GRAND_LANDING`), so
+ * a wall taken to its foot would close in on the entrance. The lobby is the
+ * part a player uses, so the lobby wins, and the bottom steps come out past
+ * the ends of the walls, as the foot of a broad flight does anyway.
  */
 const STAIR_HALL_HEIGHT = FLOOR_HEIGHT - CONCOURSE_LEVEL;
 
@@ -4174,23 +4173,30 @@ function grandStairHall(): Obstacle[] {
 }
 
 /**
- * The balustrade across the head of the grand well, either side of the flight.
+ * The curved wall behind the terrace — see `TERRACE_BLOCK`.
  *
- * The floor stops right across the corridor at the head of the stairs, so the
- * 1.5 m beyond each side of the flight is an edge like any other and wants
- * something along it. It is also the only thing keeping a robot out of the
- * well: `voids` is render-only, so without this a machine walking south down
- * the side of the corridor finds the floor still there in the simulation and
- * strolls out over a five-metre drop.
+ * Solid, the way the toilet block in the hall is: what is behind it is not
+ * part of the game. It closes the corner west of the flight, which is also
+ * the only thing keeping a robot out of the well on that side, since `voids`
+ * is render-only. The quarter circle is cut in bands, each one set by the
+ * curve at its NORTH edge. That keeps the steps just inside the true curve,
+ * so the terrace keeps all of its floor.
  */
-function grandWellHeadRails(): Obstacle[] {
-  const head = GRAND_WELL.y + GRAND_WELL.h;
-  const half = RAIL_THICKNESS / 2;
-  return [GRAND_WELL.x, GRAND_STAIR.x + GRAND_STAIR.w].map((x) => ({
-    floor: 1,
-    bounds: rect(x, head - half, GRAND_SIDE, RAIL_THICKNESS),
-    height: RAIL_HEIGHT,
-  }));
+function terraceWall(): Obstacle[] {
+  const b = TERRACE_BLOCK;
+  const top = b.y + b.h;
+  const wall = (bounds: Rect): Obstacle => ({ floor: 1, bounds, height: WALL_HEIGHT });
+  const bands = 6;
+  const band = TERRACE_CURVE / bands;
+  const solids = [wall(rect(b.x, b.y, b.w, b.h - TERRACE_CURVE))];
+  for (let i = 0; i < bands; i += 1) {
+    const y = top - TERRACE_CURVE + i * band;
+    // Distance north of the curve's centre, at this band's north edge.
+    const dy = y + band - (top - TERRACE_CURVE);
+    const reach = Math.sqrt(Math.max(0, TERRACE_CURVE * TERRACE_CURVE - dy * dy));
+    solids.push(wall(rect(b.x, y, b.w - TERRACE_CURVE + reach, band)));
+  }
+  return solids;
 }
 
 /**
@@ -4239,7 +4245,7 @@ export const KINEPOLIS: Venue = {
     ...STAIRS.solids,
     ...stairCores(),
     ...RAILS.solids,
-    ...grandWellHeadRails(),
+    ...terraceWall(),
     ...receptionFitOut(),
     ...grandStairHall(),
     ...railBesideWells(FACADE.walls, staircases),
@@ -4313,7 +4319,8 @@ export const SPAWNS = {
    *
    * North of the grand stairwell, and it has had to move north twice now for
    * the same reason: the well reached y -51.1, then -46.8 when the flight was
-   * given its ceremonial pitch and grew 3.5 m. Both times this point was left
+   * given its ceremonial pitch and grew 3.5 m (it is back at -51.4 since the
+   * terrace, 28 Sep, so this now stands on it). Both times this point was left
    * inside it, and a chapter that starts here would drop its whole cast down
    * the stairs before the player touched a key. `npm run venue` catches it,
    * which is the only reason it is not still there.

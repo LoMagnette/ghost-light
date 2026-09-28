@@ -138,10 +138,11 @@ const SILENCE: Activity[] = [
      */
     alreadyHere: true,
     autoStart: true,
-    // In the concourse, out in the open east of the reception island. Early
-    // enough on the route that a player meets it before they know the
+    // In the concourse, out in the open north of the free counter east of the
+    // reception island (moved 28 Sep, when the grand flight moved east and
+    // took the island and the counter with it). Early enough on the route that a player meets it before they know the
     // building, which is when a talking cat is at its most unsettling.
-    at: spot(0, 2.5, -44.5, 3.0),
+    at: spot(0, 7.8, -44.5, 3.0),
     lines: [
       'Do not run. I have been sitting on this a very long time and the mechanism is old.',
       'Every deck has one card in it that ends the game. In this building, that card is me.',
