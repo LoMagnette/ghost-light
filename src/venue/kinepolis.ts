@@ -853,6 +853,17 @@ const GLAZING_START = -2.0;
 const ENTRANCE_WIDTH = 5.6;
 const ENTRANCE_X = RECEPTION.x + 0.7;
 
+/**
+ * Where the ground floor's run of glass doors starts: right against the
+ * entrance bank, so doors run unbroken from there to the east corner.
+ *
+ * Not `GLAZING_START`, which is the upper storey's glass. On the ground
+ * floor the pier between the entrance and that line was built as precast
+ * with a row of small windows, and the author says it is all glass doors
+ * (28 Sep). The precast carries on above, and holds the star.
+ */
+const DOOR_RUN_START = ENTRANCE_X + ENTRANCE_WIDTH;
+
 const WALL_OPENINGS: { floor: Level; bounds: Rect }[] = [
   { floor: 0, bounds: HALL_OPENING },
   // The doors themselves, and the only hole in this elevation. The curtain
@@ -3271,6 +3282,9 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
    * any of them (28 Sep). So each bay is a doorway between two mullions,
    * under a head at `DOOR_HEAD`, with glass above it. The mullions are the
    * only part that collides. See `glazeFacade`.
+   *
+   * It starts at the entrance bank, not at the upper storey's glass: the
+   * pier between the two is glass doors as well. See `DOOR_RUN_START`.
    */
   /*
    * NOT the whole frontage.
@@ -3283,7 +3297,7 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
    */
   {
     floor: 0,
-    bounds: rect(GLAZING_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - GLAZING_START, 1.2),
+    bounds: rect(DOOR_RUN_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - DOOR_RUN_START, 1.2),
     kind: 'door',
   },
   /*
@@ -4036,32 +4050,10 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   }
 
   /*
-   * The row of small windows in that precast, at pavement level.
-   *
-   * They used to run the whole flank — eight of them — because the flank
-   * was blank for its whole length. The entrance takes the west end of it
-   * now, so what is left is the pier between the doors and the glazing,
-   * and they fill that. Fewer, and still the thing that stops the precast
-   * being a hoarding.
+   * No row of small windows in the precast any more: the pier they were in
+   * is glass doors, the whole of it (the author, 28 Sep: "it supposed to be
+   * all glass"). See `DOOR_RUN_START`.
    */
-  const pier = GLAZING_START - (ENTRANCE_X + ENTRANCE_WIDTH);
-  const lights = Math.max(1, Math.floor(pier / 1.7));
-  for (let i = 0; i < lights; i += 1) {
-    decor.push({
-      floor: 0,
-      // Proud of the wall face, not inside it. At doorY + 0.2 they sat
-      // within the wall's own 0.3 m thickness and were simply buried.
-      bounds: rect(
-        ENTRANCE_X + ENTRANCE_WIDTH + (pier - lights * 1.7) / 2 + 0.28 + i * 1.7,
-        doorY + 0.04,
-        1.15,
-        PANE_THICKNESS,
-      ),
-      base: 0.9,
-      height: 2.4,
-      material: 'glazing',
-    });
-  }
 
   /*
    * The neighbour across the way — the shed in the right of the photograph.

@@ -5208,6 +5208,15 @@ clear of the column lines and of every stand, and all the checks pass.
   become glass doors under a precast storey. `glazeFacade` now cuts a run at
   the band's end first, and the pier is solid again with its small windows.
 
+> Why two door became solid it supposed to be all glass
+
+**Done:** my mistake. I kept that pier solid on an earlier note that the
+photograph shows precast there. The ground floor's run of glass doors now
+starts right at the entrance bank (`DOOR_RUN_START`), so doors run unbroken
+to the east corner. The small windows that were in the pier are gone. The
+precast above, which carries the star, is unchanged. The band-end cut in
+`glazeFacade` stays, but now falls on the entrance's edge.
+
 ---
 
 ## Audio
