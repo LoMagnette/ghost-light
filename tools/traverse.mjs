@@ -468,7 +468,6 @@ const CONCOURSE_LEVEL = KINEPOLIS.rooms.find((r) => r.id === 'reception').elevat
 const GRAND_HEAD = { x: 0, y: GRAND.bounds.y + GRAND.bounds.h + APPROACH };
 // The same distance off the head, downstairs, but in the east half: the
 // reception island stands in front of the flight's west half on floor 0.
-const GRAND_UNDER = { x: GRAND.bounds.x + GRAND.bounds.w - APPROACH, y: GRAND_HEAD.y };
 
 scenario(
   'Voxxy walks down the grand flight to the concourse',
@@ -483,15 +482,44 @@ scenario(
 /*
  * The space under the grand flight.
  *
- * Its upper half is a soffit with nothing under it, so a robot walks in from
- * the head of the stairs, stays on the concourse, and stops where the mass
- * comes back down to meet the floor. With the flight solid all the way, it is
- * stopped at the first tread instead and never gets in.
+ * Its upper half is a soffit with nothing under it, so a robot walks in
+ * under it, stays on the concourse, and stops where the mass comes back down
+ * to meet the floor. With the flight solid all the way, it is stopped at the
+ * first tread instead and never gets in.
+ *
+ * In from the head, through the gap between the island and the free
+ * counter. It came in at the flight's east end until 28 Sep, when the
+ * counter went back to where `reception-desk.png` draws it, 1.6 m off the
+ * head and right across that line. The flight's east side is railed, so the
+ * way in is from the north.
  */
+const GRAND_UNDER = { x: 1.0, y: GRAND.bounds.y + GRAND.bounds.h + APPROACH };
 scenario(
   'Voxxy walks in under the grand stair',
   (r) => Math.abs(r.z - CONCOURSE_LEVEL) < 0.1 && r.y < GRAND.bounds.y + GRAND.bounds.h - 2,
   () => drive('voxxy', GRAND_UNDER, SOUTH, 6),
+);
+
+/*
+ * The grand flight runs wall to wall now (`GRAND_EAST`), and its east part
+ * comes up into the widened corridor, where Room 7's frontage used to be.
+ * Up that part, from the concourse.
+ */
+scenario(
+  'Voxxy climbs the east end of the grand flight into the corridor',
+  (r) => r.floor === 1 && r.x > 7.3,
+  () => drive('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.5, y: GRAND.bounds.y - 0.6 }, NORTH, 14),
+);
+
+/*
+ * The door behind the information island (`reception-desk.png`): out of the
+ * staff floor behind the west desk, south towards the head of the flight.
+ * The stair hall's west wall used to end 0.7 m in front of it.
+ */
+scenario(
+  'Voxxy walks out through the door behind the reception desk',
+  (r) => r.y < GRAND.bounds.y + GRAND.bounds.h + 0.9,
+  () => drive('voxxy', { x: -2.58, y: GRAND.bounds.y + GRAND.bounds.h + 2.5 }, SOUTH, 4),
 );
 
 /*

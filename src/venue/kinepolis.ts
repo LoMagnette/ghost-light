@@ -516,6 +516,15 @@ const HALL_OPENING = rect(THRESHOLD_LANDING.x, HALL.y - 1, THRESHOLD_LANDING.w, 
 const DOOR_WALL_COLUMNS = [1, 2, 3, 4].map((i) => HALL.x + COLUMN_X[i]);
 
 /**
+ * Metres per pixel of `reception-desk.png`, the author's crop of the
+ * reception, and x on it in metres. The drawing's pillars stand on these
+ * columns' lines: column 2 is x 109 on it, column 4 x 730. The reception's
+ * fit-out and the grand flight's east edge are both read off it.
+ */
+const DESK_PLAN_SCALE = (DOOR_WALL_COLUMNS[3] - DOOR_WALL_COLUMNS[1]) / (730 - 109);
+const planX = (px: number) => DOOR_WALL_COLUMNS[1] + (px - 109) * DESK_PLAN_SCALE;
+
+/**
  * The box at the landing's west end.
  *
  * Both drawings have it, from the concourse's west wall to the landing, as
@@ -960,8 +969,41 @@ export const KEYNOTE_ROOM = 8;
 /** Seats Devoxx actually sells in Room 8 today, against 746 on the 2012 plan. */
 export const KEYNOTE_SEATS_TODAY = 694;
 
-/** Half of the measured 14.3 m corridor. A concourse, not a passage. */
+/**
+ * The corridor's WEST half: half of the measured 14.3 m, which is where its
+ * west wall and the hall's flights still stand. Its east wall is further out
+ * than the other half, at `CORRIDOR_EAST`.
+ */
 const CORRIDOR_HALF = 7.15;
+
+/**
+ * Where the grand flight's EAST edge is: the stair hall's east wall.
+ *
+ * `reception-desk.png` draws the flight wall to wall, 15.9 m, and that wall
+ * is on its x 887. The flight had stopped 5.25 m short of it, at the
+ * corridor's east wall, and the concourse beside it was flat floor. The
+ * author wants it to run to the wall and the hallway upstairs to widen to
+ * take it: the whole hallway, not just in front of Room 7 (28 Sep). So the
+ * corridor's east wall, and every room on that side, stands `EAST_BAY`
+ * further east. See `CORRIDOR_EAST`.
+ */
+const GRAND_EAST = planX(887);
+
+/**
+ * How much wider the corridor is on its east side than the 14.3 m it was
+ * measured at: the grand flight's overrun. The east wall is centred on the
+ * line the stair hall's east wall stands on downstairs.
+ */
+const EAST_BAY = GRAND_EAST + WALL_THICKNESS / 2 - CORRIDOR_HALF;
+
+/**
+ * The corridor's east wall, and the frontage of every room on that side.
+ *
+ * The hall's east flight moved with it and stands against it, as it always
+ * stood against the corridor's east wall (`STAIR_EAST`). Its core in the hall
+ * below moved with it too (the author, 28 Sep).
+ */
+const CORRIDOR_EAST = CORRIDOR_HALF + EAST_BAY;
 
 /** South end of the southernmost pair of auditoriums. */
 const SOUTH_END = -60;
@@ -1019,7 +1061,7 @@ const STAIR_WIDTH = 2.3;
 const STAIR_FOOT_Y = HALL.y + HALL.h - COLUMN_Y[1] + STAIR_RUN;
 
 const STAIR_WEST = rect(-CORRIDOR_HALF, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
-const STAIR_EAST = rect(CORRIDOR_HALF - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
+const STAIR_EAST = rect(CORRIDOR_EAST - STAIR_WIDTH, STAIR_FOOT_Y - STAIR_RUN, STAIR_WIDTH, STAIR_RUN);
 
 /**
  * The box each hall flight starts in, metres.
@@ -1052,11 +1094,12 @@ export const CORE_DOOR_SET = 0.5;
  * centre. It had been centred with a 1.5 m gap down each side, and the author
  * walked up it (28 Sep): the stair "is not aligned".
  *
- * Room 7 abuts the corridor in this model, so the flight stops at the
- * corridor's east wall rather than running on under the room: 9.55 m of the
- * plan's 12.25, all of it lost off the east side.
+ * It stopped at the corridor's east wall, 9.55 m wide, because Room 7
+ * abutted the corridor. Now it runs wall to wall in its stair hall: see
+ * `GRAND_EAST`.
  */
 const GRAND_WEST = -2.4;
+
 
 /**
  * The grand flight's pitch: the building's riser on a 0.26 m going.
@@ -1100,7 +1143,7 @@ const GRAND_LANDING = 1.2;
 /**
  * The WELL — the hole the grand flight comes up through. Exactly as wide as
  * the flight: walled on the west by the block round the curve, and on the
- * east by the corridor's own wall, so there is no drop beside the flight to
+ * east by the corridor's east wall, so there is no drop beside the flight to
  * rail off.
  */
 const GRAND_WELL = rect(
@@ -1110,7 +1153,7 @@ const GRAND_WELL = rect(
   // the building's own end wall with no plate at all — 14.3 m of it hanging
   // over the reception, which `npm run venue` reports the moment you try it.
   SOUTH_END + WALL_THICKNESS / 2,
-  CORRIDOR_HALF - GRAND_WEST,
+  GRAND_EAST - GRAND_WEST,
   GRAND_RUN + GRAND_LANDING,
 );
 
@@ -1265,7 +1308,7 @@ function auditoriums(): {
   const place = (list: Auditorium[], side: -1 | 1, gapAfter = 0): number => {
     let y = SOUTH_END;
     for (const aud of list) {
-      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_HALF;
+      const x = side === -1 ? -CORRIDOR_HALF - aud.depth : CORRIDOR_EAST;
       const bounds = rect(x, y, aud.depth, aud.frontage);
 
       /**
@@ -1401,7 +1444,7 @@ function auditoriums(): {
     label: 'Central Corridor',
     kind: 'corridor',
     floor: 1,
-    bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF * 2, northEnd - SOUTH_END),
+    bounds: rect(-CORRIDOR_HALF, SOUTH_END, CORRIDOR_HALF + CORRIDOR_EAST, northEnd - SOUTH_END),
   });
 
   // The curved concession foyer, north-west past Room 1 — the arc of counters
@@ -3220,7 +3263,7 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
    */
   {
     floor: 1,
-    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF * 2 + 1, 1.2),
+    bounds: rect(-CORRIDOR_HALF - 0.5, SOUTH_END - 0.6, CORRIDOR_HALF + CORRIDOR_EAST + 1, 1.2),
     kind: 'window',
   },
 ];
@@ -4226,109 +4269,83 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
 }
 
 /**
- * The information island, the office inside it, and the free-standing counter.
+ * The centre of the reception: the information island, its pillars, and the
+ * free-standing counter.
  *
- * The concourse was a bare plate with a staircase in it: 830 m² of the
- * building's front door with nothing in it to recognise. `hollywood-area.png`
- * draws the fit-out that belongs there, immediately north of the head of the
- * grand flight: a square information island on the west side — the plan puts
- * the circled "i" inside it — and a single long counter standing free to the
- * east of it, with a 1.4 m gap between the two.
+ * Mapped off `reception-desk.png`, the author's crop of `hollywood-area.png`
+ * (28 Sep), at 0.0208 m/px. Three things agree on that scale: the pillars'
+ * 6.5 m pitch, the island's 5.6 m, and the flight's 15.9 m. The author's key
+ * to it is:
+ *   - the thick outlines are desks, about 1.5 m high;
+ *   - the thin ones are real walls;
+ *   - there are five pillars.
  *
- * MEASURED off that drawing at 0.0408 m/px, the scale the reception band
- * gives (23.0 m of concourse over 564 px), which is the same scale that
- * reproduces the "15.7 m wide, 5.6 m deep" grand flight recorded above. The
- * island comes out 5.6 × 5.5 m and the free counter 6.3 m long.
+ * PLACED ON THE COLUMN GRID. The pillars stand on the hall's own column lines
+ * (`exhibition-floor.jpg` shows them in line with the columns in the door
+ * wall): the island's two at column 2, the pair by the counter at column 3,
+ * and the one at the stair hall's return at column 4. So x comes from the
+ * grid, and y from the head of the grand flight, which is the line along
+ * the bottom of the crop.
  *
- * The one deliberate move off the drawing is in x: the plan's flight is
- * 15.9 m wide against this building's 14.3 m well, so the whole fit-out is
- * anchored to the WELL'S WEST EDGE rather than to its own surveyed x. That
- * keeps the 6.3 m aisle up the west side of the concourse that the entrance
- * doors are placed against — see ENTRANCE_X, which reads that aisle as the
- * route a player takes — and moves everything 1.6 m east of where the
- * drawing has it, which nothing else in the building can see.
+ * That puts everything where the drawing has it, the flight included: it
+ * runs to the stair hall's east wall (see `GRAND_EAST`). Its west edge is
+ * the one thing off the drawing, 1.05 m east of it, because it is fixed by
+ * the corridor upstairs (see `GRAND_WEST`).
  *
- * Two heights and the difference between them is the point. The office is a
- * room and its walls are 3.2 m; every counter run is 1.4 m, which you see
- * over from anywhere in the concourse. A counter drawn at wall height is a
- * room, and this is not a room — it is a desk you walk up to.
+ * Reading the island, north to south:
+ *   - a desk along the north, turning south down the east side;
+ *   - a desk down the west side, with a pillar in the corner between the two;
+ *   - an inner L-shaped desk, whose end is joined to the east leg by a short
+ *     box of wall, and a wall runs on east from that box;
+ *   - a wall along the south, with the door behind the west desk. It is
+ *     tied to the pillar at the head of the flight.
+ * Inside is the staff floor behind the desks. The drawing's "i" in a circle
+ * is a symbol on the floor, not a thing standing on it.
  */
 
 /**
- * Height of anything you are meant to see over. Never above 1.4 m.
+ * Height of the desks. 1.5 m, the author's figure for the thick outlines.
  *
- * 1.4 m exactly, which is what the counters on the plan are: chest height on
- * Droid, over Voxxy's head, and still under the 1.6 m eye line the cutaway
- * assumes. It was 1.1 m — a guess — until the drawing settled it.
+ * Chest height on Droid, over Voxxy's head, and still under the 1.6 m eye
+ * line the cutaway assumes, so you see over every desk in the concourse. It
+ * was 1.4 m, off an older reading of the drawing.
  */
-const COUNTER_HEIGHT = 1.4;
+const COUNTER_HEIGHT = 1.5;
 
-/** How deep a counter top is, metres. A desk, not a wall. */
-const COUNTER_DEPTH = 0.65;
+/** The thin walls: 6 px on the drawing. */
+const THIN_WALL = 0.15;
+
+/** A point on `reception-desk.png`, in metres: the flight's head is y 407 there. See `planX`. */
+const planY = (py: number) => GRAND_WELL.y + GRAND_WELL.h + (407 - py) * DESK_PLAN_SCALE;
+
+/** A rectangle on the drawing, corners in pixels. */
+const planRect = (x0: number, y0: number, x1: number, y1: number): Rect =>
+  rect(planX(x0), planY(y1), planX(x1) - planX(x0), planY(y0) - planY(y1));
+
+/** The island's outline: west desk to east leg, north desk to south wall. */
+const ISLAND = planRect(85, 78, 360, 348);
+
+/** The free counter, east of the island and 1.6 m off the head of the flight. */
+const FREE_COUNTER = planRect(430, 303, 743, 330);
 
 /**
- * The information island, north-west of the stairhead.
+ * The five pillars: column line and the drawing's y for each.
  *
- * 1.2 m clear of the well's head, which is what the plan leaves: you come up
- * the flight and the island is the first thing in front of you, not something
- * you arrive inside.
+ * Exported so the venue check can count them.
  */
-const ISLAND = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_WELL.h + 1.2, 5.6, 5.5);
+export const RECEPTION_PILLARS = [
+  { x: DOOR_WALL_COLUMNS[1], y: planY(130) },
+  { x: DOOR_WALL_COLUMNS[2], y: planY(130) },
+  { x: DOOR_WALL_COLUMNS[3], y: planY(130) },
+  // These two by their south face, 0.08 m off the head, not their centre:
+  // a 0.7 m pillar centred where the drawing's smaller one is overhangs the
+  // top step.
+  { x: DOOR_WALL_COLUMNS[1], y: planY(404) + COLUMN_SIZE / 2 },
+  { x: DOOR_WALL_COLUMNS[2], y: planY(404) + COLUMN_SIZE / 2 },
+];
 
 /**
- * The west run is the deep one — it is the desk you are served at, and the
- * plan draws it a metre across where the other two runs are half that.
- */
-const ISLAND_DESK_DEPTH = 1.1;
-
-/** How much of the island's east face is counter; the rest of it is office. */
-const ISLAND_EAST_RUN = 2.85;
-
-/** The staff way in, off the island's south-west corner, metres. */
-const ISLAND_DOOR = 1.0;
-
-/** How far the office's north wall stands off the island's south face. */
-const OFFICE_DEPTH = 1.85;
-
-/**
- * The jog in the office's back wall, and where it is.
- *
- * The plan does not draw that wall straight: it runs 1.95 m east of the
- * office's own west side, steps 0.55 m SOUTH, and carries on — finishing
- * 0.3 m past the island's east face, as a stub standing in the concourse.
- * This was drawn straight on the first pass and called a detail too small to
- * see, which was wrong twice over: it is the shape that tells you the office
- * is a room somebody works in rather than a box, and the stub is the only
- * thing on the island that reaches out into the floor around it.
- */
-const OFFICE_STEP = 0.55;
-const OFFICE_STEP_AT = 2.1 + 1.95;
-const OFFICE_STUB = 0.3;
-
-/** The office's own doorway, at the north end of its west wall, metres. */
-const OFFICE_DOOR = 1.0;
-
-/**
- * The counter standing free in the middle of the concourse, east of the
- * island. 6.3 × 0.65 m on the plan, 1.4 m clear of the island's east face.
- *
- * STANDS FURTHER NORTH THAN DRAWN, and this is the second deliberate move off
- * the plan. The drawing has it 1.6 m off the head of its flight, and that
- * flight is one Chapter III drives three robots up, so 1.6 m of clearance is
- * a counter across the mouth of a staircase. 3.4 m
- * leaves the 2.2 m approach `npm run traverse` walks in under the soffit —
- * which it does from this exact centre line — and still reads as the same
- * counter standing in the same place beside the island.
- */
-const FREE_COUNTER = rect(
-  ISLAND.x + ISLAND.w + 1.45,
-  GRAND_WELL.y + GRAND_WELL.h + 3.4,
-  6.3,
-  COUNTER_DEPTH,
-);
-
-/**
- * Where you are served: the aisle in front of the island's west counter.
+ * Where you are served: the aisle in front of the island's west desk.
  *
  * Exported because a chapter that wants "the reception desk" must not keep a
  * pair of numbers for it. This point has drifted twice in two passes — once
@@ -4343,84 +4360,48 @@ const FREE_COUNTER = rect(
 export const RECEPTION_DESK = {
   floor: 0 as const,
   x: ISLAND.x - 1.65,
-  y: ISLAND.y + (ISLAND.h - COUNTER_DEPTH) / 2,
+  y: planY(243),
 };
 
 function receptionFitOut(): Obstacle[] {
-  const counter = (bounds: Rect): Obstacle => ({
-    floor: 0,
-    bounds,
-    height: COUNTER_HEIGHT,
-    material: 'desk',
-  });
+  const desk = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: COUNTER_HEIGHT, material: 'desk' });
   const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: WALL_HEIGHT });
+  // A thin wall along a line on the drawing, centred on it.
+  const across = (x0: number, x1: number, py: number) =>
+    wall(rect(planX(x0), planY(py) - THIN_WALL / 2, planX(x1) - planX(x0), THIN_WALL));
+  const down = (px: number, y0: number, y1: number) =>
+    wall(rect(planX(px) - THIN_WALL / 2, planY(y1), THIN_WALL, planY(y0) - planY(y1)));
 
   return [
-    // The three counter runs the public stands at — north, west, and the
-    // northern half of the east face. All marked on the plan as one height.
-    counter(rect(ISLAND.x, ISLAND.y + ISLAND.h - COUNTER_DEPTH, ISLAND.w, COUNTER_DEPTH)),
-    counter(rect(ISLAND.x, ISLAND.y, ISLAND_DESK_DEPTH, ISLAND.h - COUNTER_DEPTH)),
-    counter(
-      rect(
-        ISLAND.x + ISLAND.w - COUNTER_DEPTH + 0.1,
-        ISLAND.y + ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
-        COUNTER_DEPTH - 0.1,
-        ISLAND_EAST_RUN,
-      ),
-    ),
-    counter(FREE_COUNTER),
+    // The desks.
+    desk(planRect(85, 78, 360, 115)), // north
+    desk(planRect(323, 115, 360, 233)), // down the east side
+    desk(planRect(85, 148, 122, 338)), // west
+    desk(planRect(213, 237, 308, 271)), // the inner L, across
+    desk(planRect(213, 271, 247, 338)), // the inner L, down
+    desk(FREE_COUNTER),
 
-    // The office inside the island: the south and east sides, which are the
-    // two the public never stands at, plus its own north wall. The way in is
-    // the gap at the south-west corner — closed on all four sides it is a box
-    // nobody can be inside, which is a strange thing to build.
-    wall(
-      rect(
-        ISLAND.x + ISLAND_DESK_DEPTH + ISLAND_DOOR,
-        ISLAND.y,
-        ISLAND.w - ISLAND_DESK_DEPTH - ISLAND_DOOR,
-        WALL_THICKNESS,
-      ),
-    ),
-    wall(
-      rect(
-        ISLAND.x + ISLAND.w - WALL_THICKNESS,
-        ISLAND.y,
-        WALL_THICKNESS,
-        ISLAND.h - COUNTER_DEPTH - ISLAND_EAST_RUN,
-      ),
-    ),
-    // The office's west side, with the doorway at its north end: the staff
-    // come in through the island's south wall, up the metre of floor behind
-    // the west counter, and into the office from there. The way in used to be
-    // a gap in the north wall, which had to be cut out of the very run the
-    // plan draws stepped.
-    wall(
-      rect(
-        ISLAND.x + 2.1,
-        ISLAND.y,
-        WALL_THICKNESS,
-        OFFICE_DEPTH + WALL_THICKNESS - OFFICE_DOOR,
-      ),
-    ),
-    // The back wall, stepped: west leg, the step itself, then the east leg
-    // running out past the island's face.
-    wall(rect(ISLAND.x + 2.1, ISLAND.y + OFFICE_DEPTH, OFFICE_STEP_AT - 2.1, WALL_THICKNESS)),
-    wall(
-      rect(
-        ISLAND.x + OFFICE_STEP_AT,
-        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
-        WALL_THICKNESS,
-        OFFICE_STEP + WALL_THICKNESS,
-      ),
-    ),
-    wall(
-      rect(
-        ISLAND.x + OFFICE_STEP_AT,
-        ISLAND.y + OFFICE_DEPTH - OFFICE_STEP,
-        ISLAND.w - OFFICE_STEP_AT + OFFICE_STUB,
-        WALL_THICKNESS,
-      ),
+    // The box of wall between the inner desk's end and the east leg, and the
+    // wall running on east from it.
+    down(310, 240, 271),
+    across(310, 354, 241),
+    down(354, 241, 268),
+    across(354, 424, 268),
+
+    // The south wall and the door behind the west desk (x 143 to 192 on the
+    // drawing), then its return down to the pillar at the head of the flight.
+    across(93, 143, 346),
+    across(192, 247, 346),
+    down(96, 346, 381),
+
+    // The pillars. Structure, so no material: they take the wall colour, as
+    // the hall's columns do.
+    ...RECEPTION_PILLARS.map(
+      (p): Obstacle => ({
+        floor: 0,
+        bounds: rect(p.x - COLUMN_SIZE / 2, p.y - COLUMN_SIZE / 2, COLUMN_SIZE, COLUMN_SIZE),
+        height: FLOOR_CLEAR,
+      }),
     ),
   ];
 }
@@ -4444,10 +4425,18 @@ function receptionFitOut(): Obstacle[] {
  *
  * The two sides are NOT the same length, which is the detail worth keeping:
  *
- *   west  — stops 0.5 m past the head of the flight, where the information
- *           island takes the line over and carries it north.
- *   east  — runs 5.7 m past the head and then returns 3.6 m west, closing
- *           the concourse's south-east corner.
+ *   west  — stops at the head of the flight and turns west to the pillar
+ *           there, which is where `reception-desk.png` ends it: the pillar
+ *           stands at the flight's corner. It ran on 0.5 m past the head
+ *           until 28 Sep, and that left a gap between it and the pillar, and
+ *           its end standing 0.7 m in front of the door behind the island
+ *           (the author: "the pathway through the door ... is really short").
+ *   east  — runs 5.8 m past the head and then returns west to the pillar on
+ *           column 4. A thin wall comes 2.9 m back down from that pillar.
+ *
+ * The east side is placed off `reception-desk.png` on the column grid, not
+ * on the well: see `RECEPTION_PILLARS`. The flight runs to it: see
+ * `GRAND_EAST`.
  *
  * Both stop short of the entrance elevation by the LOBBY the plan leaves —
  * 80 px, 3.3 m — rather than running down to the foot of the flight. On the
@@ -4459,12 +4448,6 @@ function receptionFitOut(): Obstacle[] {
  */
 const STAIR_HALL_HEIGHT = FLOOR_HEIGHT - CONCOURSE_LEVEL;
 
-/** How far each wall runs past the head of the flight, metres. Measured. */
-const STAIR_HALL_WEST_PAST = 0.5;
-const STAIR_HALL_EAST_PAST = 5.7;
-
-/** The return at the north end of the east wall, metres. Measured. */
-const STAIR_HALL_RETURN = 3.6;
 
 /** Clear depth inside the entrance elevation before the walls start, metres. */
 const STAIR_HALL_LOBBY = 3.3;
@@ -4472,27 +4455,40 @@ const STAIR_HALL_LOBBY = 3.3;
 function grandStairHall(): Obstacle[] {
   const foot = RECEPTION.y + STAIR_HALL_LOBBY;
   const head = GRAND_WELL.y + GRAND_WELL.h;
-  const east = GRAND_WELL.x + GRAND_WELL.w;
+  // Off the drawing: the east wall's inner face, the return's line, and the
+  // east face of the pillar the return stops at.
+  const east = planX(887);
+  const back = planY(128);
+  const pillar = RECEPTION_PILLARS[2];
+  const corner = RECEPTION_PILLARS[3];
   const wall = (bounds: Rect): Obstacle => ({ floor: 0, bounds, height: STAIR_HALL_HEIGHT });
 
   return [
+    wall(rect(GRAND_WELL.x - WALL_THICKNESS, foot, WALL_THICKNESS, head - foot)),
+    // ...and west along the head to the pillar at the flight's corner. The
+    // pillar is on the column grid and the flight is 1.05 m east of where the
+    // drawing has it, so this is the piece of the drawing's slot wall that
+    // the narrower flight left behind.
     wall(
       rect(
-        GRAND_WELL.x - WALL_THICKNESS,
-        foot,
-        WALL_THICKNESS,
-        head + STAIR_HALL_WEST_PAST - foot,
+        corner.x + COLUMN_SIZE / 2,
+        head - WALL_THICKNESS,
+        GRAND_WELL.x - (corner.x + COLUMN_SIZE / 2),
+        corner.y - COLUMN_SIZE / 2 - (head - WALL_THICKNESS),
       ),
     ),
-    wall(rect(east, foot, WALL_THICKNESS, head + STAIR_HALL_EAST_PAST - foot)),
+    wall(rect(east, foot, WALL_THICKNESS, back - foot)),
     wall(
       rect(
-        east - STAIR_HALL_RETURN,
-        head + STAIR_HALL_EAST_PAST - WALL_THICKNESS,
-        STAIR_HALL_RETURN + WALL_THICKNESS,
+        pillar.x + COLUMN_SIZE / 2,
+        back - WALL_THICKNESS,
+        east + WALL_THICKNESS - (pillar.x + COLUMN_SIZE / 2),
         WALL_THICKNESS,
       ),
     ),
+    // The thin wall down from the pillar, with its stub turning west.
+    wall(rect(planX(739) - THIN_WALL / 2, planY(268), THIN_WALL, pillar.y - COLUMN_SIZE / 2 - planY(268))),
+    wall(rect(planX(717), planY(268), planX(742) - planX(717), THIN_WALL)),
   ];
 }
 

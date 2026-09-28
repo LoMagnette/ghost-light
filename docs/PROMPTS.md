@@ -5063,6 +5063,90 @@ and flickered where they met. Each plate now has its flight cut out
 - **Tests:** the traverse scenario is now "Voxxy walks down the steps into
   BOF 2".
 
+### The centre of the reception
+
+> Great we are done with this part. The next one will be the hardest I think.
+> It the center of the reception since it has a bunch of wall a desk on one
+> side. and a door behind the desk. Thickest wall on the map are in reallity a
+> desk with an average height of 1,5m. there's multiple pillar. You will see 5
+> of them. then thin wall are in reallity real walls. here's the map
+> @references/venue/maps/reception-desk.png
+
+**Done (branch `reception-centre`):**
+- **Scale:** 0.0208 m/px. Three things agree on it: the pillars' 6.5 m
+  pitch, the island's 5.6 m and the flight's 15.9 m.
+- **Placed on the column grid:** `exhibition-floor.jpg` shows the five
+  pillars in line with the hall's door-wall columns (columns 2, 3 and 4), so
+  x comes from the grid and y from the head of the grand flight.
+- **Desks (1.5 m):** the north desk turning down the east side, the west
+  desk with a pillar in the corner, the inner L desk, and the free counter.
+  The counter is back where the drawing has it, 1.6 m off the head.
+- **Walls (thin):** the box between the inner desk and the east leg, the
+  wall running east from it, and the south wall with the door behind the
+  west desk, tied to the pillar at the head.
+- **Stair hall east side:** the east wall, the return to the column-4 pillar
+  and the thin wall down from it are now on their drawn line. The drawing's
+  flight is 15.9 m wide and this one is 9.55 (Room 7 upstairs cuts it off),
+  so there is flat concourse between the flight and that wall.
+- **Checks:** `venue` now counts 51 columns. The under-the-stair traverse
+  scenario comes in between the island and the counter.
+- **Left out:** the "i" in a circle (a floor symbol), and the box with a
+  scroll at the head of the flight, which isn't in the key.
+
+> we're almost there. There's a gap between a pillar and the wall see
+> @references/venue/maps/gap-desk.png. The pathway through the door near that
+> location is really short.
+
+**Done:** both came from the stair hall's west wall, which still followed the
+older reading and ran 0.5 m past the head of the flight. That left a 0.75 m
+gap beside the pillar at the flight's corner, and put the wall's end 0.7 m in
+front of the door behind the island. The wall now stops at the head and
+turns west to the pillar, as `reception-desk.png` draws it. The door opens
+onto the full 1.1 m down to the head. There is a new `traverse` scenario:
+"Voxxy walks out through the door behind the reception desk".
+
+> for this part. Since we've update the area the staircase on the other side
+> need to be updated since it should form one wall to the other.
+
+Asked what happens upstairs, where Room 7 stood over the extra width. The
+author: "You should widen the stair and widden the hallway upstairs".
+
+**Done:**
+- **Wider flight:** the grand flight runs wall to wall, 14.8 m, to the stair
+  hall's east wall on `reception-desk.png`'s line (`GRAND_EAST`). It was
+  9.55 m.
+- **Wider hallway:** upstairs, Room 7 stands 5.4 m further east, whole, with
+  its seats, rake and door unchanged (`EAST_BAY`). The corridor has a bay
+  in front of it that the flight's east part comes up into.
+- **Wall rule:** an auditorium gets no door in an end wall facing a
+  corridor. Room 8's end wall faces the new bay and had punched a door into
+  the side of its rake. Room 1's door off the foyer is unchanged; a wall
+  diff confirmed nothing else moved.
+- **Tests:** a new `traverse` scenario, "Voxxy climbs the east end of the
+  grand flight into the corridor bay".
+
+> You should havr widdent the full hallway not just on the leve of room 7
+
+**Done:**
+- **Whole corridor widened:** the corridor is 5.4 m wider on its east side
+  along its whole length (`CORRIDOR_EAST`). Every room on that side, 7 to
+  14, stands that much further east, each unchanged. The Room 7 bay is gone.
+- **Hall's east flight:** it stays on its old line and still lands inside
+  the corridor.
+- **Wall rule:** the rule about auditorium end-wall doors is reverted. With
+  Room 7 and Room 8 moving together, nothing needs it.
+- **Room 8 spots:** the amplifier rack and the letters photograph were
+  literals, so they are now taken from Room 8's screen end and move with
+  the room.
+
+> so widening the stair the hall way move the back stair case should still be
+> agaist the wall like previously
+
+**Done:** the hall's east flight is placed against `CORRIDOR_EAST` now, not
+the old 14.3 m line, so it arrives against the corridor's east wall as
+before. Its walled core in the hall moved 5.4 m east with it. It stands
+clear of the column lines and of every stand, and all the checks pass.
+
 ---
 
 ## Audio
