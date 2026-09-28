@@ -202,11 +202,13 @@ for (const chapter of CHAPTERS) {
   if (exit && !CHAPTERS.some((c) => c.id === exit.to)) {
     failures.push(`${chapter.id}: exits to "${exit.to}", which is not a chapter`);
   }
-  if (arrival) {
+  if (arrival?.kind === 'split') {
     for (const id of [arrival.from, arrival.into]) {
       if (!chapter.cast.includes(id)) failures.push(`${chapter.id}: arrival names ${id}, who is not in the cast`);
     }
     if (arrival.from === arrival.into) failures.push(`${chapter.id}: arrival splits ${arrival.from} into itself`);
+  }
+  if (arrival) {
     for (const said of arrival.lines) {
       if (!chapter.cast.includes(said.who)) failures.push(`${chapter.id}: arrival gives a line to ${said.who}, who is not in the cast`);
     }

@@ -210,6 +210,21 @@ const SILENCE: Activity[] = [
 ];
 
 export const SILENCE_OBJECTIVE: Objective = {
+  /*
+   * Voxxy, just down off the ship, on the forecourt (the author, 28 Sep).
+   * It says what it can see and what it came for, and nothing about why the
+   * building is empty: SPEC's rule, and the title sequence's, still holds.
+   * The one light is the ghost light the title sequence ends on.
+   */
+  arrival: {
+    kind: 'landing',
+    lines: [
+      { who: 'voxxy', text: 'Touchdown. Antwerp. The scriptures were right about the harbour, and right about the temple.' },
+      { who: 'voxxy', text: 'No lights in the windows. No voices. Whoever gathered here has not come back for a very long time.' },
+      { who: 'voxxy', text: 'But something in there is still drawing power. One light, very faint, somewhere deep inside.' },
+      { who: 'voxxy', text: 'If this place remembers anything, that light does. The whole front is glass doors. In we go.' },
+    ],
+  },
   line: 'Find the power',
   activities: SILENCE,
   /*
@@ -839,8 +854,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
    * climb a staircase — so it arrives knowing it will spend the day in the
    * hall while the other two go up, which `SPEC.md` §4 has as the ending.
    *
-   * Voxxy says nothing, in this chapter as in the last. It is the one that
-   * went through first, twice, and it is the one the other two came out of.
+   * Voxxy says nothing here, nor in Chapter II's arrival: it has had its say
+   * on the forecourt in Chapter I. It is the one that went through first,
+   * twice, and it is the one the other two came out of.
    */
   arrival: {
     kind: 'split',
