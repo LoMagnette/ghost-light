@@ -655,12 +655,12 @@ for (const room of auditoria) {
 }
 
 // --- every link must actually join the two places it claims to join --------
-// Two staircases out of the hall, the grand flight out of the concourse, plus
-// the steps down from the concourse into the hall. Four flights, plus one
-// rake per auditorium.
+// Two staircases out of the hall, the grand flight out of the concourse, the
+// steps down from the concourse into the hall, and the steps up into each of
+// the two BOF rooms. Six flights, plus one rake per auditorium.
 check(
-  KINEPOLIS.links.length === 4 + auditoria.length,
-  `expected ${4 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
+  KINEPOLIS.links.length === 6 + auditoria.length,
+  `expected ${6 + auditoria.length} links, found ${KINEPOLIS.links.length}`,
 );
 for (const link of KINEPOLIS.links) {
   for (const floor of new Set([link.from, link.to])) {

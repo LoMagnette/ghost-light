@@ -5019,6 +5019,29 @@ concourse's east wall to the women's room. That puts the whole back line on
 the concourse datum, as the wall between the hall and the reception already
 is.
 
+### The BOF rooms
+
+> So the next part goes next to the wall next to the corridor that goes to the
+> toilet. It should share the coridor wall and extends until the front wall to
+> give you a width idea. It too separate room with small steps to get in. You
+> can you at the map here @references/venue/maps/bof-rooms.png
+
+**Done:**
+- **Two rooms, from `bof-rooms.png`:** BOF 1 (front) and BOF 2 (north), split
+  by the plan's partition. They share the toilet lobby's south wall and run
+  to the old BOF front line, across the whole east wing.
+- **Doors:** each has a ~2 m door off the reception, at the pier between the
+  two.
+- **Steps:** three small risers up inside each door, 3.5 m wide along the
+  wall as the plan draws them. The rooms stand 0.54 m over the concourse.
+  The plan doesn't say up or down, so I read "small steps to get in" as up.
+- **Wall rule:** a wall between two levels now reaches down to the lower
+  floor. Without it, the rooms' wall onto the reception floated 0.54 m over
+  the concourse.
+- **BeJUG photograph:** back in BOF 1 at (32.2, -57.0).
+- **Tests:** three new `traverse` scenarios. Voxxy climbs in, Biggy is
+  stopped at the foot, and the wall beside the door holds.
+
 ---
 
 ## Audio

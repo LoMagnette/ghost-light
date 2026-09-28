@@ -602,6 +602,80 @@ const TOILET_LOBBY_RECT = rect(
 const TOILET_BACK_PLATE = rect(EAST_WING_X, HALL.y - WALL_THICKNESS / 2, WOMENS.x - EAST_WING_X, WALL_THICKNESS);
 
 /**
+ * The BOF rooms: two of them, south of the toilets' lobby, up three steps.
+ *
+ * Mapped off `bof-rooms.png` (the author, 28 Sep): the rooms share the
+ * lobby's south wall and run to the front of the building, the full width
+ * of the east wing. A partition, the dashed line on the plan, splits them
+ * into two separate rooms at the pier between their doors.
+ *
+ * Each room is entered from the reception through a pair of doors, about
+ * 1.9 m, in a bay in the concourse's east wall. Inside each door a flight
+ * of small steps runs along the wall, wider than the door: the plan draws it
+ * as three nested outlines over 1.1 m, 3.9 m either side of the pier. So
+ * there are three risers of `RISER`, and the rooms stand 0.54 m over the
+ * concourse. The plan does not say up or down. Up is the reading of
+ * "small steps to get in", so it is up.
+ *
+ * Biggy climbs nothing, so it never gets in, which it never needed to.
+ * The front is the old BOF rooms' line, 0.4 m proud of the reception's
+ * glass, which the curtain wall is built to leave alone.
+ */
+const BOF_NORTH = TOILETS_SOUTH - TOILET_LOBBY;
+const BOF_FRONT = -60.8;
+const BOF_SPLIT = (BOF_NORTH + BOF_FRONT) / 2;
+const BOF_STEPS = 3;
+const BOF_GOING = 0.35;
+const BOF_RISE = BOF_STEPS * RISER;
+const BOF_LEVEL = CONCOURSE_LEVEL + BOF_RISE;
+/** From the pier to each end of a flight, and the door at the pier end. */
+const BOF_PIER = 0.4;
+const BOF_FLIGHT = 3.5;
+const BOF_DOOR = 2.0;
+
+const BOF_NORTH_ROOM = rect(EAST_WING_X, BOF_SPLIT, EAST_EDGE - EAST_WING_X, BOF_NORTH - BOF_SPLIT);
+const BOF_SOUTH_ROOM = rect(EAST_WING_X, BOF_FRONT, EAST_EDGE - EAST_WING_X, BOF_SPLIT - BOF_FRONT);
+const BOF_FLIGHTS = [
+  rect(EAST_WING_X, BOF_SPLIT + BOF_PIER, BOF_STEPS * BOF_GOING, BOF_FLIGHT),
+  rect(EAST_WING_X, BOF_SPLIT - BOF_PIER - BOF_FLIGHT, BOF_STEPS * BOF_GOING, BOF_FLIGHT),
+];
+
+/**
+ * The wall either side of each BOF door.
+ *
+ * A flight crossing a wall opens it for its whole width. These flights are
+ * wider than their doors, so this closes the rest. The pier between the two
+ * doors is the wall builder's own. Each piece stands on the room's plate, so
+ * `base` takes it back down to the concourse it faces.
+ */
+function bofDoorJambs(): Obstacle[] {
+  const jamb = (y: number, h: number): Obstacle => ({
+    floor: 0,
+    bounds: rect(EAST_WING_X - WALL_THICKNESS / 2, y, WALL_THICKNESS, h),
+    base: -BOF_RISE,
+    height: WALL_HEIGHT,
+  });
+  return [
+    // North room: the door at the pier end, the jamb at the far end.
+    jamb(BOF_SPLIT + BOF_PIER + BOF_DOOR, BOF_FLIGHT - BOF_DOOR),
+    // South room: the same, mirrored.
+    jamb(BOF_SPLIT - BOF_PIER - BOF_FLIGHT, BOF_FLIGHT - BOF_DOOR),
+  ];
+}
+
+const bofSteps: Link[] = BOF_FLIGHTS.map((bounds, i) => ({
+  id: i === 0 ? 'bof-2-steps' : 'bof-1-steps',
+  from: 0,
+  to: 0,
+  bounds,
+  base: CONCOURSE_LEVEL,
+  rise: BOF_RISE,
+  axis: 'x',
+  ascending: true,
+  riser: RISER,
+}));
+
+/**
  * What is in the two rooms, from the plan.
  *
  * Each cubicle bank collides as one hidden block, because a robot does not go
@@ -798,6 +872,9 @@ const floor0Rooms: Room[] = [
    * author is rebuilding that side one room at a time (28 Sep), so the rest
    * of the east wing is the building's edge until they come back.
    */
+  // South first, as they always were: BOF 1 is the one on the front.
+  { id: 'bof-1', label: 'BOF 1', kind: 'service', floor: 0, bounds: BOF_SOUTH_ROOM, elevation: BOF_LEVEL },
+  { id: 'bof-2', label: 'BOF 2', kind: 'service', floor: 0, bounds: BOF_NORTH_ROOM, elevation: BOF_LEVEL },
   { id: 'toilet-back-wall', label: 'Toilets', kind: 'landing', floor: 0, bounds: TOILET_BACK_PLATE, elevation: CONCOURSE_LEVEL },
   { id: 'toilet-lobby', label: 'Toilets', kind: 'corridor', floor: 0, bounds: TOILET_LOBBY_RECT, elevation: CONCOURSE_LEVEL },
   // The doors are where the plan hangs them: the women's at the west end of
@@ -2336,6 +2413,35 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
   const seen = new Set<string>();
 
   /*
+   * A wall between two levels goes down to the lower one.
+   *
+   * The renderer stands a wall on the plate under its centre, and on a
+   * shared edge that is the smaller room's. That is fine while the smaller
+   * room is the lower one, or the same level. The BOF rooms are the first
+   * raised room smaller than what they face: their wall onto the reception
+   * stood on their own plate and floated 0.54 m over the concourse. So the
+   * wall's `base` takes it down to the lowest floor either side of it.
+   */
+  const plateAt = (x: number, y: number, floor: Level): number | undefined => {
+    let best: Room | undefined;
+    for (const r of all) {
+      if (r.floor !== floor || r.kind === 'outside' || !rectContains(r.bounds, x, y)) continue;
+      if (!best || r.bounds.w * r.bounds.h < best.bounds.w * best.bounds.h) best = r;
+    }
+    return best ? (best.elevation ?? 0) : undefined;
+  };
+  let wallFloor: Level = 0;
+  const reachDown = (b: Rect): { base?: number } => {
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    const datum = plateAt(cx, cy, wallFloor);
+    if (datum === undefined) return {};
+    const across = b.w < b.h ? [plateAt(cx - 0.3, cy, wallFloor), plateAt(cx + 0.3, cy, wallFloor)] : [plateAt(cx, cy - 0.3, wallFloor), plateAt(cx, cy + 0.3, wallFloor)];
+    const low = Math.min(datum, ...across.filter((e): e is number => e !== undefined));
+    return low < datum ? { base: low - datum } : {};
+  };
+
+  /*
    * Outside is not a room with walls; it is the absence of them.
    *
    * The forecourt has to BE a room, because everything the simulation knows
@@ -2359,6 +2465,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
     if (room.kind === 'stage' || room.kind === 'landing') continue;
 
     const b = room.bounds;
+    wallFloor = room.floor;
     const edges = [
       { horizontal: true, at: b.y, from: b.x, to: b.x + b.w, outward: -1 },
       { horizontal: true, at: b.y + b.h, from: b.x, to: b.x + b.w, outward: 1 },
@@ -2531,7 +2638,7 @@ function derivedWalls(all: Room[], links: Link[]): { walls: Obstacle[]; decor: D
               runsAlong(bounds, edge.horizontal, l.bounds),
           );
           if (!rake) {
-            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT, exterior: envelope });
+            walls.push({ floor: room.floor, bounds, height: WALL_HEIGHT, exterior: envelope, ...reachDown(bounds) });
             continue;
           }
 
@@ -2719,6 +2826,7 @@ const staircases: Link[] = [
   { id: 'stair-west', from: 0, to: 1, bounds: STAIR_WEST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   { id: 'stair-east', from: 0, to: 1, bounds: STAIR_EAST, base: 0, rise: FLOOR_HEIGHT, axis: 'y', ascending: false, riser: RISER },
   ...receptionStairs,
+  ...bofSteps,
   // Fourteen more, one per auditorium. A rake is a staircase; it was only ever
   // drawn as scenery because nothing could express a floor that goes down.
   ...auditoriumRakes,
@@ -4494,6 +4602,7 @@ export const KINEPOLIS: Venue = {
     ...railBesideWells(FACADE.walls, staircases),
     ...FORECOURT_FIT.solids,
     ...TOILET_FIT.solids,
+    ...bofDoorJambs(),
   ],
   decor: [
     ...auditoriumDecor,
