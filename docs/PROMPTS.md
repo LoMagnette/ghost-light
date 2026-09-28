@@ -4594,6 +4594,47 @@ nothing at 2 m, the first line on arrival, done after paging.
 the 3 m version "fired on a cat Voxxy was only driving past", which reads as
 something observed. It was a prediction, and it says "would" now.
 
+### Claude Opus — cats that can find you: stairs, walls, and five to begin with
+
+**Prompt:**
+> So that's better but I think we can spawn like 5 cats at the begining.
+> There's some issue regarding the path the can have to take to follow the
+> robbot they cannot pass the stairs and are not able to avoid obstacle
+
+**Iterations:** four, each measured the same way: twelve cats scattered
+over the building, a robot standing somewhere, and a count of how many are
+within 3 m of it at 30, 60 and 90 s.
+
+**1. A route, not a heading.** The greedy step was replaced by a flow field:
+one breadth-first search outward from the robot over both storeys, shared by
+every cat. Each staircase is a portal from a cell off its foot to one off
+its top, and a cat on it climbs, rising with the flight and changing storey
+halfway. Result: cats took the stairs, but the reception chase got none, and
+only 6 of 12 reached the corridor.
+
+**2. Measuring the failure, not guessing.** The stuck cats' route cost was
+UNREACHABLE, so the plan was the problem. Splitting it into connected regions
+showed the hall, reception, forecourt and foyer as islands. The crowd's floor
+plan was built for people milling about the public rooms (coarse cells, big
+clearance, no steps or ramps), so cats got their own: 0.75 m cells, 0.2 m
+clearance, every room and every same-storey link.
+
+**3. Still in pieces, and too slow.** 19 regions, and about 5.8 ms a frame,
+because a Map-based search ran every 0.2 s. The search moved to a flat graph
+over typed arrays (0.07 ms a frame). The islands took reading one row of
+cells across the corridor-foyer line, which has no wall on it: the cell
+straddling the two rooms' shared edge was missing. My loop visited only cells
+wholly inside each room, so every shared edge was a one-cell moat. Visiting
+every cell a room touches made the building one region (17,397 of 17,400).
+
+**Result:** 12 of 12 within a minute in all four chases (corridor, hall,
+reception desk, foyer), with 3 to 10 of them changing storey. Five cats now
+start in the building.
+
+**The first try at the doc update failed on a text match**, since MECHANICS
+had been reworded a round earlier, and nothing was written. It was re-read
+and redone rather than forced.
+
 ---
 
 ## Audio

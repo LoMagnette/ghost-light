@@ -174,7 +174,7 @@ or text is borrowed. It gives you **45 seconds to find the dog**, because a
 dog is the only thing that defuses a cat.
 
 **And the deck keeps dealing** (28 Sep, reworked the same day by the
-author). A cat is in the building from the start, and **another turns up
+author). **Five cats are in the building from the start**, and **another turns up
 every 20 seconds**, at a random walkable spot on either storey, up to
 sixteen. Random per run: the crowd is seeded so a room always fills the same
 way, and the cats are meant to be somewhere new every time.
@@ -191,9 +191,12 @@ way, and the cats are meant to be somewhere new every time.
   stalling between about 1 and 3.7 m/s and never in step with the cat beside
   it, and lunges at 4.2 m/s from within 3 m. They are still ordinary cats to
   look at (a glowing-eyed version was tried and taken out: the author wants
-  overwhelming, not zombie). They chase greedily over the floor plan, so they take the obvious way round and
-  get caught on the obvious corners. A cat on the other storey wanders until
-  Voxxy comes back.
+  overwhelming, not zombie). **They find their way**: round walls, through
+  doors, and up and down all three staircases. A route is built outward
+  from Voxxy over the whole building (both storeys, the stairs the only way
+  between them) and every cat walks it downhill. Measured: twelve cats
+  scattered over the building all reach Voxxy within a minute, wherever it
+  stands.
 - **Each cat underfoot takes a tenth off Voxxy's top speed**, down to 40%.
   The speed limit drops and the excess bleeds off (`Body.speedScale`), so
   running into them is wading, not a wall. Keep moving and you leave them
