@@ -41,6 +41,7 @@ import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCam
 import { playAmbience, playMusic } from './audio';
 import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
+import type { TouchControls } from '@/input/Touch';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
 import { abandoned, type Chapter } from '@/chapters/Chapter';
@@ -210,6 +211,9 @@ export class ChapterScreen implements Screen {
   private sim!: Sim;
   private blockout!: BlockoutRenderer;
   private controller!: KeyboardController;
+  /** Played by touch: the prompts name the buttons, not the keys. */
+  private touch = false;
+  private touchPad: TouchControls | undefined;
 
   private actors: Actor[] = [];
   private controlled!: Actor;
@@ -547,9 +551,15 @@ export class ChapterScreen implements Screen {
     (['Digit1', 'Digit2', 'Digit3'] as const).forEach((code, index) => {
       game.keyboard.on(code, () => this.takeControl(index));
     });
+
+    game.touch?.show({ crew: chapter.controlMode === 'switch' });
+    this.touch = game.touch !== undefined;
+    this.touchPad = game.touch;
   }
 
   update(dt: number): void {
+    // Last frame's box, or a story beat: the controls step aside for both.
+    this.touchPad?.setTalking(this.story !== undefined || this.talkBox.style.display !== 'none');
     const over = this.run.phase === 'ended';
 
     // Hands off once the round is over: the end card is up, and a robot still
@@ -1832,6 +1842,7 @@ export class ChapterScreen implements Screen {
       font: `17px ${SANS}`,
       color: css(chapter.palette.text),
     });
+    this.hud.classList.add('touch-zoom');
     game.ui.append(this.hud);
 
     this.clockText = label(28, 70, {
@@ -1839,6 +1850,7 @@ export class ChapterScreen implements Screen {
       color: css(chapter.palette.accent),
       letterSpacing: '0.06em',
     });
+    this.clockText.classList.add('touch-zoom');
     game.ui.append(this.clockText);
 
     // The card. Top right, monospaced, and deliberately plain: it is a list
@@ -1860,12 +1872,14 @@ export class ChapterScreen implements Screen {
       borderRadius: '4px',
       backdropFilter: 'blur(3px)',
     });
+    this.cardText.classList.add('touch-zoom');
     game.ui.append(this.cardText);
 
     this.toast = label(28, VIEW_HEIGHT - 72, {
       font: `15px ${SANS}`,
       color: css(chapter.palette.accent),
     });
+    this.toast.classList.add('touch-grow');
     game.ui.append(this.toast);
 
     /*
@@ -1908,9 +1922,12 @@ export class ChapterScreen implements Screen {
       'ESC menu',
     ].join('   ');
 
-    game.ui.append(
-      label(28, VIEW_HEIGHT - 40, { font: `12px ${MONO}`, color: '#4c5357' }, keys),
-    );
+    // On a phone the buttons say what they do, and the keys are not there.
+    if (!game.touch) {
+      game.ui.append(
+        label(28, VIEW_HEIGHT - 40, { font: `12px ${MONO}`, color: '#4c5357' }, keys),
+      );
+    }
 
     /*
      * The dialogue box.
@@ -1994,6 +2011,11 @@ export class ChapterScreen implements Screen {
     const words = el('div', { flex: '1 1 auto', minWidth: '0' });
     words.append(this.talkWho, this.talkText, this.talkMore);
     this.talkBox.append(this.talkPortrait, words);
+    // A tap on the box pages it, as E does: on a phone, where the eye is.
+    this.talkBox.addEventListener('pointerdown', () => {
+      this.talkRequested = true;
+    });
+    this.talkBox.classList.add('touch-talk');
     game.ui.append(this.talkBox);
 
     this.talkPrompt = label(28, VIEW_HEIGHT - 80, {
@@ -2098,7 +2120,7 @@ export class ChapterScreen implements Screen {
     // that opens because you drove past is a box that interrupts you.
     if (shown === 0) {
       this.talkBox.style.display = 'none';
-      this.talkPrompt.textContent = `E    Talk to ${activity.who}`;
+      this.talkPrompt.textContent = `${this.touch ? 'TALK' : 'E'}    Talk to ${activity.who}`;
       this.typingLine = '';
       this.typed = 0;
       return;

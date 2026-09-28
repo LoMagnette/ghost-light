@@ -12,6 +12,8 @@
  * throw in a private window, and the game must not care.
  */
 
+import { isTouch } from '@/input/Touch';
+
 export type Quality = 'high' | 'low';
 
 const KEY = 'ghost-light:quality';
@@ -20,10 +22,14 @@ export function quality(): Quality {
   const query = new URLSearchParams(window.location.search);
   if (query.has('low')) return 'low';
   if (query.has('high')) return 'high';
+  // A phone starts on low, since shadows and the grade are what cost fill
+  // rate, and a phone has the least of it. Choosing high still sticks.
+  const fallback: Quality = isTouch() ? 'low' : 'high';
   try {
-    return window.localStorage.getItem(KEY) === 'low' ? 'low' : 'high';
+    const stored = window.localStorage.getItem(KEY);
+    return stored === 'low' || stored === 'high' ? stored : fallback;
   } catch {
-    return 'high';
+    return fallback;
   }
 }
 

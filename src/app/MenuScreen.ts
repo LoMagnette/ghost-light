@@ -31,7 +31,7 @@ import type { Game, Screen } from './Game';
 import type { Routes } from './Routes';
 import { el, MONO, SANS, SERIF } from './dom';
 import { currentQuality, setQuality } from './quality';
-import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic } from './audio';
+import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic, toggleMuted } from './audio';
 import { Intro, introWanted } from './Intro';
 
 const CARD_WIDTH = 300;
@@ -137,11 +137,22 @@ export class MenuScreen implements Screen {
       this.layer.append(card);
     });
 
+    // On a phone the three settings are tapped, not keyed, so they are named
+    // without their keys, and drawn bigger than half size.
+    const touch = game.touch !== undefined;
+    const key = (k: string): string => (touch ? '' : `${k}   `);
+    const tappable = (node: HTMLElement, onTap: () => void): HTMLElement => {
+      node.addEventListener('click', onTap);
+      node.style.cursor = 'pointer';
+      node.classList.add('touch-grow-centre');
+      return node;
+    };
+
     this.layer.append(
       centred(
         VIEW_HEIGHT - 78,
         { font: `13px ${MONO}`, color: '#5b6266' },
-        'ARROWS or MOUSE to choose     ENTER or CLICK to begin',
+        touch ? 'TAP a chapter to begin' : 'ARROWS or MOUSE to choose     ENTER or CLICK to begin',
       ),
       centred(
         VIEW_HEIGHT - 52,
@@ -157,31 +168,34 @@ export class MenuScreen implements Screen {
      * finds the game slow would reach for it.
      */
     const graphics = centred(VIEW_HEIGHT - 128, { font: `12px ${MONO}`, color: '#6f777c' }, '');
+    const toggleGraphics = (): void => {
+      setQuality(currentQuality() === 'high' ? 'low' : 'high');
+      game.applyQuality();
+      showGraphics();
+    };
     const showGraphics = (): void => {
-      graphics.textContent = `G   graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
+      graphics.textContent = `${key('G')}graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
     };
     showGraphics();
-    this.layer.append(graphics);
+    this.layer.append(tappable(graphics, toggleGraphics));
     const sound = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
     const showSound = (): void => {
-      sound.textContent = `M   sound: ${isMuted() ? 'off' : 'on'}`;
+      sound.textContent = `${key('M')}sound: ${isMuted() ? 'off' : 'on'}`;
     };
     showSound();
-    this.layer.append(sound);
+    this.layer.append(tappable(sound, toggleMuted));
     this.stopListening = onMuteChange(showSound);
 
     this.layer.append(
-      centred(VIEW_HEIGHT - 146, { font: `12px ${MONO}`, color: '#6f777c' }, 'I   intro'),
+      tappable(centred(VIEW_HEIGHT - 146, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('I')}intro`), () =>
+        this.playIntro(game),
+      ),
     );
 
     // Bound only once the intro has gone, and rebound after a replay. Keys
     // pressed while the words are up belong to the intro.
     this.bindKeys = (): void => {
-      game.keyboard.on('KeyG', () => {
-        setQuality(currentQuality() === 'high' ? 'low' : 'high');
-        game.applyQuality();
-        showGraphics();
-      });
+      game.keyboard.on('KeyG', toggleGraphics);
 
       game.keyboard.on('ArrowLeft', () => this.move(-1));
       game.keyboard.on('ArrowRight', () => this.move(1));

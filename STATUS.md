@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 1
+    "In progress" : 2
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **Plays on a phone** | `touch-controls`, on `chapter-one-landing` | Stick, buttons, tap to page dialogue, bigger text, rotate message, low graphics by default. Checked in a headless phone-sized browser only | The author plays it on a real phone (frame rate, thumbs), then push and merge | Human tests · agent fixes |
 | **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from

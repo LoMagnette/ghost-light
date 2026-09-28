@@ -5537,6 +5537,42 @@ are ✅ at a glance. The stranger playtest is still ahead.
   `shoot` pass; a browser run showed the lines over the forecourt and Voxxy
   driving off after them.
 
+> How hard would it be to make to game work on mobile phone
+
+**Answered:** about a day for a basic version, the risk being performance
+nobody can measure from the sandbox. What already worked: the menu and the
+intro take taps, the first tap unlocks sound, and movement already takes an
+analogue throttle.
+
+> Let's do it
+
+**Done** on `touch-controls`:
+- **The controls** (`src/input/Touch.ts`), in real screen pixels outside the
+  scaled 1280 × 720 stage, so they are thumb-sized on a phone:
+  - a floating stick in the left 42 % of the screen, which writes an
+    analogue `Keyboard.stick`;
+  - TALK, BRAKE (held), and in Chapters II and III DROP and ROBOT, bottom
+    right; RESET, SOUND and MENU small at the top.
+  - Every button presses or holds a key code, so the chapters needed no new
+    bindings.
+- **Dialogue**: a tap on the box pages it, and the stick and buttons step
+  aside while a box or a story beat is up, because the box has to be big to
+  be read and sits where both thumbs are.
+- **Readable at half size**: the dialogue box, the heading, the clock and the
+  job list are drawn bigger on touch; the key hints are hidden and the menu
+  says TAP and makes intro, graphics and sound tappable.
+- **The phone itself**: upright shows "Turn your phone sideways to play"; no
+  page zoom, scroll or text selection; the first tap asks for full screen
+  (Android; iPhones refuse); phones start on low graphics.
+- **By hand, after the first browser run**: the ROBOT and DROP buttons stayed
+  up over the dialogue box, because their own `visibility: visible` beat the
+  hidden parent. They are shown and hidden with `display` now.
+- **Checked** in a headless browser as a touch phone at 844 × 390: Chapter I's
+  opening paged by taps, the stick drove Voxxy, Chapter II's arrival paged a
+  line per tap; upright showed the message. Desktop `shoot`, `objectives`,
+  `traverse` and `physics` pass. **Not checked**: a real phone, for frame
+  rate and feel.
+
 ---
 
 ## Audio

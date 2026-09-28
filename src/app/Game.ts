@@ -15,6 +15,8 @@ import { currentQuality } from './quality';
 import { Mood, type Grade } from '@/render/Mood';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@/config';
 import { Keyboard } from '@/input/Keyboard';
+import { isTouch, TouchControls } from '@/input/Touch';
+import { toggleMuted } from './audio';
 
 /**
  * One screen of the game: the menu, or a chapter.
@@ -40,6 +42,8 @@ const MAX_FRAME = 0.25;
 export class Game {
   readonly renderer: WebGLRenderer;
   readonly keyboard = new Keyboard();
+  /** On a phone or tablet, the stick and buttons. A chapter puts them up. */
+  readonly touch: TouchControls | undefined = isTouch() ? new TouchControls(this.keyboard, toggleMuted) : undefined;
   /** DOM layer over the canvas. Screens add their UI here and clean it up. */
   readonly ui: HTMLElement;
 
@@ -65,6 +69,22 @@ export class Game {
 
     this.resize();
     window.addEventListener('resize', this.resize);
+
+    if (this.touch) {
+      // Styles that only a touch screen wants: see index.html.
+      document.documentElement.classList.add('touch');
+      // The browser's own bars take a third of a phone held sideways. Ask
+      // for the whole screen on the first tap, which is the only time a
+      // browser allows it; iPhones say no, and that is fine.
+      const full = (): void => {
+        window.removeEventListener('pointerup', full, true);
+        const root = document.documentElement;
+        if (!document.fullscreenElement && root.requestFullscreen) {
+          root.requestFullscreen({ navigationUI: 'hide' }).catch(() => undefined);
+        }
+      };
+      window.addEventListener('pointerup', full, true);
+    }
   }
 
   /**
@@ -93,6 +113,7 @@ export class Game {
     // firing on the menu is the sort of thing that survives three test runs
     // and then happens in front of a judge.
     this.keyboard.clearBindings();
+    this.touch?.hide();
     this.ui.replaceChildren();
     this.screen = next;
     next.mount(this);

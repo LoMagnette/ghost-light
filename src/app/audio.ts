@@ -209,6 +209,11 @@ function load(name: string): Promise<AudioBuffer | undefined> {
   return pending;
 }
 
+/** Sound on or off, as M does: the touch SOUND button. */
+export function toggleMuted(): void {
+  setMuted(!muted);
+}
+
 function setMuted(next: boolean): void {
   muted = next;
   try {

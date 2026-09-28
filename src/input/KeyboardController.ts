@@ -30,6 +30,9 @@ const RIGHT_Y = -Math.cos(ISO_AZIMUTH);
 const UP_X = Math.cos(ISO_AZIMUTH);
 const UP_Y = Math.sin(ISO_AZIMUTH);
 
+/** How far the touch stick has to move before it drives, as a fraction of its reach. */
+const STICK_DEAD = 0.15;
+
 export class KeyboardController {
   constructor(private readonly keys: Keyboard) {}
 
@@ -41,8 +44,20 @@ export class KeyboardController {
     const right = this.keys.isDown('KeyD', 'ArrowRight');
 
     // Screen axes, then rotate into the isometric world basis.
-    const screenX = (right ? 1 : 0) - (left ? 1 : 0);
-    const screenY = (down ? 1 : 0) - (up ? 1 : 0);
+    let screenX = (right ? 1 : 0) - (left ? 1 : 0);
+    let screenY = (down ? 1 : 0) - (up ? 1 : 0);
+    let throttle = 1;
+
+    // The touch stick, when no key says otherwise. Same screen axes, and
+    // how far it is pushed is the throttle, past a small dead zone so a
+    // resting thumb does not creep the robot about.
+    const { stick } = this.keys;
+    const pushed = Math.hypot(stick.x, stick.y);
+    if (screenX === 0 && screenY === 0 && pushed > STICK_DEAD) {
+      screenX = stick.x / pushed;
+      screenY = stick.y / pushed;
+      throttle = Math.min(1, (pushed - STICK_DEAD) / (1 - STICK_DEAD));
+    }
 
     if (screenX === 0 && screenY === 0) {
       out.dirX = 0;
@@ -59,7 +74,7 @@ export class KeyboardController {
       const mag = Math.hypot(wx, wy);
       out.dirX = wx / mag;
       out.dirY = wy / mag;
-      out.throttle = 1;
+      out.throttle = throttle;
     }
 
     out.braking = this.keys.isDown('ShiftLeft', 'ShiftRight');
