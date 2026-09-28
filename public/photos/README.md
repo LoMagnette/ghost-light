@@ -26,7 +26,7 @@ player did not bring. Shoot them that way.
 |---|---|---|---|
 | `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.jpeg` |
 | `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.jpeg` |
-| `photo-josh` | **Biggy**, with Josh sitting on it | Exhibition hall — Josh Long, riding Biggy | `josh-long.jpeg` |
+| `photo-josh` | **Biggy**, shaking hands with Josh | Exhibition hall — Josh Long shakes hands with Biggy | `josh-long.jpeg` |
 | `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.jpeg` |
 
 The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs

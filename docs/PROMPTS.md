@@ -4654,6 +4654,26 @@ weighted to light coats because Chapter I's dark swallows a black cat.
 Checked in a throwaway build with sixty cats (restored from git afterwards,
 not from a copy): black, ginger and pale in one frame.
 
+### Claude Opus — the last two prints
+
+**Prompt:**
+> I've just added the two missing pictures for the photograph mission
+
+**The picture is the authority.** `josh-long.jpeg` shows a handshake, not
+Josh riding Biggy, so the caption, Dimitris's line and the README changed
+to match it, and so did the comment on the `carry` gate. The gate still
+picks Biggy, but its stated reason had been "Josh sits on it".
+
+**One frame for four prints.** `group.jpeg` came in 16:9 against the 3:2 of
+the others, so prints are now shown cropped to fill a fixed 340 by 226
+rather than at their own aspect. Checked by rendering the four prints as the
+game frames them: the group keeps Venkat and all three robots.
+
+**A slip of mine, owned.** `group.jpeg` had already gone into a docs commit
+of mine: the author dropped it in the folder and my `git add -A` took it
+without my noticing. It was the intended file, but I should have looked at
+what I was committing. This commit stages by name.
+
 ---
 
 ## Audio

@@ -22,7 +22,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), menu and HUD (#11) |
 | Robot models | 🔄 | Rebuilt against the sheets; `robot-models` pushed, **not merged** |
 | Attendees | 🔄 | Legs, hands, hair, lanyards; `attendees` partly pushed, **not merged** |
-| Shot-list photographs | 🔄 | **2 of 4** in the game: Room 8, BeJUG |
+| Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
 | Audio | ⬜ | Planned in `docs/AUDIO.md`; nothing playing yet |
 | Playtest | ⬜ | Nobody has played II or III end to end |

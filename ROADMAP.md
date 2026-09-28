@@ -160,7 +160,7 @@ the palettes stay guesses until the files are on disk.
 9. **Playtest with a stranger.** Someone who has never seen it, while you stay
    completely silent. Write down every hesitation. This is the 15 playability
    points and it is the step people skip.
-10. **Provide the four shot-list photographs.** **Two of four in, 25 Sep:** `room-8.jpeg` and `bejug-banner.jpeg` are wired; `josh-long.jpeg` and `group.jpeg` still show the placeholder. Chapter III is complete
+10. **Provide the four shot-list photographs.** **All four in, 28 Sep.** Chapter III is complete
    without them: each frame shows a PHOTO TO COME placeholder until its file
    exists. Drop them in `public/photos/` as 3:2 JPEGs, 1020 × 680, quality
    ~82, then say so and the agent wires the `file` lines and checks each
@@ -171,8 +171,8 @@ the palettes stay guesses until the files are on disk.
    |---|---|---|
    | ~~Room 8, in front of `#DEVOXX`~~ ✅ | **Droid** | `room-8.jpeg` |
    | ~~BOF 1, the BeJUG banner~~ ✅ | **Voxxy** | `bejug-banner.jpeg` |
-   | Exhibition hall, Josh Long riding it | **Biggy** | `josh-long.jpeg` |
-   | Exhibition hall, with Venkat Subramaniam | **all three** | `group.jpeg` |
+   | ~~Exhibition hall, Josh Long shaking hands with it~~ ✅ | **Biggy** | `josh-long.jpeg` |
+   | ~~Exhibition hall, with Venkat Subramaniam~~ ✅ | **all three** | `group.jpeg` |
 
    The selfie with Dimitris needs nothing; the game renders it. **Ask Josh,
    Venkat and Dimitris first** — `public/` ships in an MIT-licensed public

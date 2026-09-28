@@ -923,7 +923,10 @@ export class ChapterScreen implements Screen {
       // `BASE_URL` rather than a leading slash: Pages serves this from a
       // subdirectory, and a root-absolute src is the classic way to have a
       // build that works locally and 404s in front of a judge.
-      const img = el('img', { display: 'block', width: `${PRINT_WIDTH}px`, height: 'auto' });
+      // Every print at the same 3:2, cropped to fill rather than letterboxed:
+      // the group photograph came in 16:9, and a frame that changes size
+      // between shots reads as a different kind of thing each time.
+      const img = el('img', { display: 'block', width: `${PRINT_WIDTH}px`, height: `${PRINT_HEIGHT}px`, objectFit: 'cover' });
       (img as HTMLImageElement).src = `${import.meta.env.BASE_URL}photos/${photo.file}`;
       (img as HTMLImageElement).alt = photo.caption;
       frame.append(img);

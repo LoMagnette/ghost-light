@@ -987,7 +987,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
         'Four frames and I have your whole day, and I know who I want in each.',
         'Droid at the letters in Room 8 — you are the only one taller than they are.',
         'Voxxy under the old BeJUG banner, in the BOF room off reception.',
-        'Josh in the hall, sitting on Biggy. Then all three of you together, and I want Venkat in that one.',
+        'Josh in the hall, shaking hands with Biggy. Then all three of you together, and I want Venkat in that one.',
         'Stand still when you get there. That is the entire job, and you would be amazed.',
         'But first, one of us. Voxxy, come here — a photographer is in none of his own pictures.',
         'Hold still. I will frame it. I always frame it.',
@@ -1087,13 +1087,14 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // North end of the central aisle, where the booth field stops and the
       // hall opens out.
       at: spot(0, -0.6, -13.5, 3.4),
-      // Biggy's, because Josh sits on it. A person is freight to exactly one
-      // machine in the cast — Droid's 90 kg is a crate of shirts, not a man
-      // with a margin — and it is the one robot the Room 8 frame shuts out,
-      // so every robot gets a picture of its own.
+      // Biggy's, because it is the one robot the Room 8 frame shuts out, so
+      // every robot gets a picture of its own. The gate that says so is
+      // payload — only Biggy carries 100 kg — and it was argued as "Josh sits
+      // on it" until the photograph arrived showing a handshake instead. The
+      // print is the authority on what happened in it.
       gates: { carry: 100 },
       seconds: 2.5,
-      photo: { caption: 'Exhibition hall — Josh Long, riding Biggy' },
+      photo: { caption: 'Exhibition hall — Josh Long shakes hands with Biggy', file: 'josh-long.jpeg' },
     },
     {
       kind: 'dwell',
@@ -1129,7 +1130,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       at: spot(0, -2.0, 2.5, 5.0),
       seconds: 3.5,
       everybody: true,
-      photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam' },
+      photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam', file: 'group.jpeg' },
     },
   ],
 };
