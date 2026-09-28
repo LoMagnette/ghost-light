@@ -3263,18 +3263,14 @@ function stairMass(links: Link[]): { solids: Obstacle[]; decor: Decor[] } {
  */
 const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] = [
   /*
-   * The glazed sweep east of the precast — WINDOW, not door.
+   * The glazed sweep east of the precast: DOORS, every bay of it.
    *
-   * It was `door` on the reading that "windows that can be opened as a
-   * door" is the building's own description of its front, and so every
-   * panel of 26 m of curtain wall came down to a 0.2 m kick rail. That is
-   * a shopfront. The photograph has a solid base under the glass along the
-   * whole run and leaves only at the entrance, which is also what
-   * `exhibition-floor.jpg` draws: plain mullion ticks over most of the
-   * frontage and door swings only where you go in.
-   *
-   * The difference is one number — GLAZING_SILL against DOOR_KICK — and it
-   * is the difference between a wall of windows and a wall of doors.
+   * It was `window`, on the photograph's solid base under the glass, and a
+   * robot could only get in at the bank of doors in the west corner. The
+   * author says the bays are glass doors and you can come in through almost
+   * any of them (28 Sep). So each bay is a doorway between two mullions,
+   * under a head at `DOOR_HEAD`, with glass above it. The mullions are the
+   * only part that collides. See `glazeFacade`.
    */
   /*
    * NOT the whole frontage.
@@ -3288,7 +3284,7 @@ const CURTAIN_WALLS: { floor: Level; bounds: Rect; kind: 'window' | 'door' }[] =
   {
     floor: 0,
     bounds: rect(GLAZING_START, RECEPTION.y - 0.6, RECEPTION.x + RECEPTION.w + 1 - GLAZING_START, 1.2),
-    kind: 'window',
+    kind: 'door',
   },
   /*
    * The same elevation a storey up, over the entrance and facing the head of
@@ -3337,16 +3333,12 @@ const MULLION_WIDTH = 0.14;
  */
 const TRANSOM_PITCH = 1.1;
 
+
 /**
- * The bottom rail of a glazed door, metres.
- *
- * Half a spandrel, and that difference is the point: a window sits on a
- * solid base you cannot walk through and a door comes down to the floor. A
- * push rail across the bank at hand height was tried first and is not worth
- * having — three pixels at this zoom, and the float check was right to call
- * a 36 m bar held up by nothing but mullions a wall hanging in the air.
+ * The head of a glazed door, metres: the same as the entrance bank's, so the
+ * whole ground floor of the front is one line of doors. Glass above it.
  */
-const DOOR_KICK = 0.2;
+const DOOR_HEAD = 2.6;
 
 /** Thickness of the glass itself. Thin, so it reads as a plane. */
 const PANE_THICKNESS = 0.08;
@@ -3393,9 +3385,9 @@ function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; dec
      * see the entrance in WALL_OPENINGS, which stops the wall being built
      * across it in the first place.
      */
-    kept.push({ ...wall, hidden: true });
-
     const door = glazing.kind === 'door';
+    // A run of doors collides only at its mullions: see the loop below.
+    if (!door) kept.push({ ...wall, hidden: true });
     const along = b.w >= b.h; // which way the run lies
     const run = along ? b.w : b.h;
     // A window stands on a solid spandrel; a door comes down to its own
@@ -3416,12 +3408,14 @@ function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; dec
     };
     const inward = probe(1) ? 1 : -1;
 
-    const foot = door ? DOOR_KICK : GLAZING_SILL;
+    // Where the glass starts: on the sill for a window, over the head for a
+    // door, which is open below it.
+    const foot = door ? DOOR_HEAD : GLAZING_SILL;
     // The wall goes hidden and these take over drawing it, so they inherit
     // its place on the envelope with it — otherwise the one elevation the
     // player walks out to look at is the one left out of the elevation.
     const skin = wall.exterior;
-    decor.push({ floor: wall.floor, bounds: b, height: foot, exterior: skin });
+    if (!door) decor.push({ floor: wall.floor, bounds: b, height: foot, exterior: skin });
 
     decor.push({
       floor: wall.floor,
@@ -3439,13 +3433,23 @@ function glazeFacade(walls: Obstacle[], rooms: Room[]): { walls: Obstacle[]; dec
     const bays = Math.max(1, Math.round(run / MULLION_PITCH));
     for (let i = 0; i <= bays; i += 1) {
       const at = (i * (run - MULLION_WIDTH)) / bays;
+      const post = along ? rect(b.x + at, b.y, MULLION_WIDTH, b.h) : rect(b.x, b.y + at, b.w, MULLION_WIDTH);
+      // A door's frame comes down to the floor, and it is what you steer
+      // between.
+      decor.push({ floor: wall.floor, bounds: post, base: door ? 0 : foot, height: wall.height, exterior: skin });
+      if (door) kept.push({ floor: wall.floor, bounds: post, height: wall.height, hidden: true });
+    }
+
+    // The head over a run of doors: the bar the glass above stands on.
+    if (door) {
       decor.push({
         floor: wall.floor,
         bounds: along
-          ? rect(b.x + at, b.y, MULLION_WIDTH, b.h)
-          : rect(b.x, b.y + at, b.w, MULLION_WIDTH),
-        base: foot,
-        height: wall.height,
+          ? rect(b.x, cy + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.w, PANE_THICKNESS)
+          : rect(cx + inward * PANE_THICKNESS - PANE_THICKNESS / 2, b.y, PANE_THICKNESS, b.h),
+        base: DOOR_HEAD - 0.2,
+        height: DOOR_HEAD,
+        material: 'structure',
         exterior: skin,
       });
     }
@@ -3920,40 +3924,13 @@ function forecourtFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   }
 
   /*
-   * The floodlights over the doors. There is NO canopy.
+   * No canopy, and no floodlights.
    *
-   * There was, and it was wrong twice over. The first one projected 3.3 m
-   * and read as a porte-cochère — from the forecourt it hid the doors, the
-   * head and the bottom of the sign under a slab of concrete. Cutting it to
-   * a 1.5 m hood made it a better-proportioned thing that the building still
-   * does not have: the photograph runs glass from the pavement to the head
-   * straight past the entrance, with nothing over it but a pair of lamps on
-   * brackets. An unbroken sheet of glass IS the entrance here, and the
-   * canopy was the model inventing a cue the building does not need.
-   *
-   * The lamps stay. They are the one thing in the photograph that says this
-   * elevation is lit at night, and they sit where it puts them — bracketed
-   * off the mullions just over the door head, looking down at the leaves.
+   * The canopy read as a porte-cochère and the photograph has none: it runs
+   * glass from the pavement to the head straight past the entrance. The two
+   * lamps bracketed over the leaves came out as black boxes hanging in the
+   * doorway (the author, 28 Sep: "some artifact"), so they went too.
    */
-  for (const at of [0.3, 0.7]) {
-    decor.push({
-      floor: 0,
-      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.17, doorY - 0.28, 0.34, 0.26),
-      base: doorHead + 0.52,
-      height: doorHead + 0.78,
-      material: 'signPlate',
-      exterior: true,
-    });
-    // The bracket back to the glass, so a lamp is held by something.
-    decor.push({
-      floor: 0,
-      bounds: rect(ENTRANCE_X + ENTRANCE_WIDTH * at - 0.04, doorY - 0.04, 0.08, 0.26),
-      base: doorHead + 0.68,
-      height: doorHead + 0.76,
-      material: 'signPlate',
-      exterior: true,
-    });
-  }
 
   /*
    * The name on the building.

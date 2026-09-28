@@ -5174,6 +5174,26 @@ clear of the column lines and of every stand, and all the checks pass.
   - the plan's thin line round the counter (not in the key);
   - the two doors into the back rooms, which aren't built.
 
+### The glass front is doors
+
+> So now we need to take a look at the entrance because you should be able to
+> enter from almost every windows since there actually glass doors and there's
+> some artifact at the moment in them
+
+**Done (branch `entrance-doors`):**
+- **Every glazed bay is a door:** the ground floor of the glazed front,
+  from the precast pier to the east corner, is a run of doors. Each bay is
+  a doorway between two mullions, under a head at 2.6 m (`DOOR_HEAD`, the
+  entrance bank's) with glass above. Only the mullions collide. It was a
+  solid wall drawn as windows, and the only way in was the bank in the west
+  corner.
+- **Artifacts:** the two floodlights over the entrance were black boxes
+  hanging in the doorway. They are removed. The 0.2 m kick rail
+  (`DOOR_KICK`) is gone with the window base.
+- **Upstairs:** the first floor's glass stays windows.
+- **Tests:** a new `traverse` scenario, "Biggy drives in off the forecourt
+  through the glass doors".
+
 ---
 
 ## Audio
