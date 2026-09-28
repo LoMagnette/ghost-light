@@ -21,7 +21,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Objective markers | ✅ | Beacons per robot (#15), off-screen arrows and focus on `main` |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), menu and HUD (#11) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
-| Attendees | 🔄 | Models merged (#17, #18) and judged good; **they bunch up** in some areas of the map |
+| Attendees | 🔄 | Models merged (#17, #18) and judged good; the bunching is fixed on `crowd-spread`, **not merged** |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
 | Audio | ⬜ | Planned in `docs/AUDIO.md`; nothing playing yet |
@@ -46,7 +46,7 @@ pie showData
 | Physics: 120 Hz fixed step, real mass, payload adds mass | — | `npm run physics` keeps the three robots distinct |
 | Venue: the Kinepolis in metres, both floors, raked rooms | — | `npm run venue`, `npm run traverse` |
 | Three chapters as data, one gameplay screen | — | |
-| Verification harnesses | — | `shoot`, `peek`, `physics`, `venue`, `traverse`, `objectives` |
+| Verification harnesses | — | `shoot`, `peek`, `physics`, `venue`, `traverse`, `objectives`, `crowd` |
 | Library change | #1 `lib-change` | |
 | Interior design | #2 `interior-design` | |
 | Game intro and NPCs | #3 `introducing-game-and-npc` | |
@@ -99,7 +99,7 @@ pie showData
 | **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
 | Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
 | **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
-| **Attendees bunch up in some areas of the map** | Agent · human names the worst spots | Mon 28 Sep | Reported 28 Sep: the new models are good, but people cluster together and make a mess in places. Likely where many walkers share a destination or a doorway and the personal-space push (`separate` in `src/core/Crowd.ts`) is too weak to spread them. Fix: find the hot spots, then spread destinations and strengthen the separation, checked with a headless crowd heatmap |
+| 🔄 **Attendees bunch up in some areas of the map** | Agent | Mon 28 Sep | **Fixed 28 Sep on `crowd-spread`, not merged.** A bug in how walkers pick their next step pushed everyone north-east, so every room emptied into its top-right corner (37× the average in the reception). Also fixed: people following walls, and a pocket in the reception desk nobody could leave. `npm run crowd` now guards it: worst cell 3.6× average. Needs a look in the game |
 | Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | Planned 27 Sep in `docs/AUDIO.md`, with the list of files and their names |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |

@@ -687,8 +687,28 @@ export class Crowd {
     const cx = Math.floor(mover.x / CELL);
     const cy = Math.floor(mover.y / CELL);
 
+    // The way they were walking, held apart from the choice. Until 28 Sep
+    // the loop below wrote each new favourite into `dx`/`dy` as it went, so
+    // every later neighbour was judged against the EARLIER CANDIDATE rather
+    // than the heading. East is listed first, so east always won the first
+    // look, and the crowd drifted north-east until everybody on their feet
+    // was packed into the top-right corner of every room. `npm run crowd`
+    // measured it at thirty-seven times the average in the reception.
+    let hx = mover.dx;
+    let hy = mover.dy;
+    // And a wall bounces them. Without this the nearest thing to straight on,
+    // at a wall, is ALONG it, so a walker who met one followed it for good
+    // and the edges of every room carried a queue while the middle emptied.
+    if ((hx !== 0 || hy !== 0) && !plan.cells.has(pack(cx + hx, cy + hy))) {
+      hx = 0;
+      hy = 0;
+    }
+    const heading = Math.hypot(hx, hy) || 1;
+
     let bestKey = -1;
     let bestWeight = -1;
+    let bestX = 0;
+    let bestY = 0;
     for (let i = 0; i < 8; i += 1) {
       const ox = NEIGHBOURS[i * 2];
       const oy = NEIGHBOURS[i * 2 + 1];
@@ -696,16 +716,19 @@ export class Crowd {
       if (!plan.cells.has(key)) continue;
 
       // Momentum, plus a little noise. Walking on is three times as likely as
-      // turning, which is the difference between a crowd and a mosh pit.
-      const alignment = ox * mover.dx + oy * mover.dy;
+      // turning, which is the difference between a crowd and a mosh pit. A
+      // cosine, so a diagonal is not twice as persuasive as a straight line.
+      const alignment = (ox * hx + oy * hy) / (heading * Math.hypot(ox, oy));
       const weight = (1 + alignment) ** 2 + this.random() * 1.4;
       if (weight > bestWeight) {
         bestWeight = weight;
         bestKey = key;
-        mover.dx = ox;
-        mover.dy = oy;
+        bestX = ox;
+        bestY = oy;
       }
     }
+    mover.dx = bestX;
+    mover.dy = bestY;
 
     if (bestKey < 0) {
       // Boxed in — usually a robot has shoved them against a wall. Fall back
@@ -1274,6 +1297,15 @@ export class Crowd {
       }
     }
 
+    // Islands out. A pocket walled in on every side — the inside of the
+    // reception desk is one — is a place nobody can walk into, but a robot's
+    // shove can put somebody there, and then it is a place nobody can walk
+    // OUT of either. `npm run crowd` found the desk holding eleven times its
+    // share, which was people pacing two cells for the rest of the chapter.
+    for (const island of islands(cells)) {
+      if (island.length < ISLAND) for (const key of island) cells.delete(key);
+    }
+
     return { floor, cells, list: [...cells] };
   }
 
@@ -1558,6 +1590,32 @@ function floorOfNode(node: number): Level {
 }
 function cellOfNode(node: number): number {
   return node % 8_000_000;
+}
+
+/** The fewest cells a stretch of floor needs before people walk it. See `planFor`. */
+const ISLAND = 24;
+
+/** A floor plan's cells, as the groups that can be walked between. */
+function islands(cells: ReadonlySet<number>): number[][] {
+  const seen = new Set<number>();
+  const groups: number[][] = [];
+  for (const start of cells) {
+    if (seen.has(start)) continue;
+    const group = [start];
+    seen.add(start);
+    for (let i = 0; i < group.length; i += 1) {
+      const [gx, gy] = unpack(group[i]);
+      for (let n = 0; n < 8; n += 1) {
+        const key = pack(gx + NEIGHBOURS[n * 2], gy + NEIGHBOURS[n * 2 + 1]);
+        if (cells.has(key) && !seen.has(key)) {
+          seen.add(key);
+          group.push(key);
+        }
+      }
+    }
+    groups.push(group);
+  }
+  return groups;
 }
 
 /** Grid coordinates into one number. Offset so negatives pack cleanly. */

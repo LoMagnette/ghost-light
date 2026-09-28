@@ -15,6 +15,7 @@
     "venue": "node tools/venue.mjs",
     "traverse": "node tools/traverse.mjs",
     "objectives": "node tools/objectives.mjs",
+    "crowd": "node tools/crowd.mjs",
     "peek": "node tools/peek.mjs"
   },
   "dependencies": {
