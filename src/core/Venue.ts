@@ -227,7 +227,10 @@ export type Material =
    * at a time, so the floor at the bottom of a drop is a piece of dressing
    * on the storey above, and it has to look like floor rather than wall.
    */
-  | 'floorBelow';
+  | 'floorBelow'
+  /** The black fabric of a pipe-and-drape barrier, and its steel posts. */
+  | 'drape'
+  | 'drapePost';
 
 /**
  * Dressing: DRAWN, never simulated.

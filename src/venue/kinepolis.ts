@@ -4710,6 +4710,80 @@ export const KINEPOLIS: Venue = {
   extents: [rect(HALL.x, -62, EAST_EDGE + 1 - HALL.x, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
 };
 
+/**
+ * The line Devoxx draws across the upstairs corridor where the rooms in use
+ * stop.
+ *
+ * Rooms 1, 2 and 11 to 14 have no sessions these days, and the conference
+ * marks where its part of the corridor ends: a run of black drape from each
+ * wall towards the middle, with the middle left open so you can still walk
+ * through. Built from whichever rooms a chapter's day uses, not typed. Across
+ * the corridor at the far edge of the northernmost room in use, and at the
+ * near edge of the southernmost if any unused room lies beyond it. With every
+ * room in use there is no line at all.
+ *
+ * Drape rather than a wall: it collides, because a line you can drive
+ * through is not a line, but it is 2.4 m of fabric on posts, not structure.
+ */
+export function sessionLimits(inUse: readonly string[]): Obstacle[] {
+  const corridor = floor1Rooms.find((r) => r.id === 'corridor');
+  if (!corridor) return [];
+  const auditoria = floor1Rooms.filter((r) => r.kind === 'auditorium');
+  const used = auditoria.filter((r) => inUse.includes(r.id));
+  const unused = auditoria.filter((r) => !inUse.includes(r.id));
+  if (used.length === 0 || unused.length === 0) return [];
+
+  const north = Math.max(...used.map((r) => r.bounds.y + r.bounds.h));
+  const south = Math.min(...used.map((r) => r.bounds.y));
+  const lines = [
+    ...(unused.some((r) => r.bounds.y >= north - 0.01) ? [north] : []),
+    ...(unused.some((r) => r.bounds.y + r.bounds.h <= south + 0.01) ? [south] : []),
+  ];
+
+  const c = corridor.bounds;
+  const middle = c.x + c.w / 2;
+  const out: Obstacle[] = [];
+  for (const y of lines) {
+    for (const [from, to] of [
+      [c.x, middle - SESSION_GAP / 2],
+      [middle + SESSION_GAP / 2, c.x + c.w],
+    ]) {
+      out.push({
+        floor: 1,
+        bounds: rect(from, y - DRAPE_THICKNESS / 2, to - from, DRAPE_THICKNESS),
+        height: DRAPE_HEIGHT,
+        material: 'drape',
+      });
+      // A post every couple of metres and one at each end: the uprights
+      // are what make a length of fabric read as a barrier.
+      const posts = Math.max(1, Math.round((to - from) / DRAPE_BAY));
+      for (let i = 0; i <= posts; i += 1) {
+        const x = from + ((to - from) * i) / posts;
+        out.push({
+          floor: 1,
+          bounds: rect(
+            Math.min(Math.max(x - DRAPE_POST / 2, from), to - DRAPE_POST),
+            y - DRAPE_POST / 2,
+            DRAPE_POST,
+            DRAPE_POST,
+          ),
+          height: DRAPE_HEIGHT + 0.1,
+          material: 'drapePost',
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** The opening left in the middle of a session line, metres. Two people abreast, or Droid with room. */
+const SESSION_GAP = 3.0;
+const DRAPE_HEIGHT = 2.4;
+const DRAPE_THICKNESS = 0.12;
+const DRAPE_POST = 0.08;
+/** Post spacing along a drape, metres. */
+const DRAPE_BAY = 2.4;
+
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
   /**

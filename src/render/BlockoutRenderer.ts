@@ -2480,6 +2480,12 @@ export class BlockoutRenderer {
       // opening it would read as a hole painted over.
       case 'floorBelow':
         return shade(this.palette.floor, 0.5);
+      // Event drape is black whatever the era: it is the one thing in the
+      // corridor that is there to be ignored, and it is.
+      case 'drape':
+        return 0x1d1e22;
+      case 'drapePost':
+        return 0x8d9298;
       default:
         return this.palette.wall;
     }
