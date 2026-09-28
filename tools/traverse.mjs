@@ -62,7 +62,7 @@ Module._resolveFilename = function (request, ...rest) {
 const { Body } = await import(pathToFileURL(join(out, 'core/Body.js')));
 const { Sim, makeActor, FIXED_DT } = await import(pathToFileURL(join(out, 'core/Sim.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
-const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
+const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET, sessionLimits } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
 const { FLOOR_HEIGHT } = await import(pathToFileURL(join(out, 'core/Venue.js')));
 const { climbFraction } = await import(pathToFileURL(join(out, 'core/Traversal.js')));
 rmSync(out, { recursive: true, force: true });
@@ -77,8 +77,8 @@ rmSync(out, { recursive: true, force: true });
 const above = (actor) => actor.body.z + actor.floor * FLOOR_HEIGHT;
 
 /** Drive one robot from a point in a fixed world direction, and report where it stopped. */
-function drive(robotId, from, dir, seconds, floor = 0) {
-  const sim = new Sim(KINEPOLIS);
+function drive(robotId, from, dir, seconds, floor = 0, venue = KINEPOLIS) {
+  const sim = new Sim(venue);
   const body = new Body(ROBOTS[robotId], from.x, from.y);
   const actor = makeActor(body, floor);
   sim.add(actor);
@@ -366,6 +366,32 @@ scenario(
   'Voxxy cannot get into BOF 2 past the door, through the jamb',
   (r) => r.x < BOF_STEPS.bounds.x,
   () => drive('voxxy', { x: BOF_STEPS.bounds.x - 2, y: BOF_STEPS.bounds.y + BOF_STEPS.bounds.h - 0.6 }, EAST, 4),
+);
+
+/*
+ * The stanchions across the corridor where Devoxx's rooms stop, from Chapter
+ * III's day (Rooms 3 to 10): open in the middle, solid either side.
+ */
+const DEVOXX_DAY = {
+  ...KINEPOLIS,
+  obstacles: [
+    ...KINEPOLIS.obstacles,
+    ...sessionLimits(['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8', 'aud-9', 'aud-10']).solids,
+  ],
+};
+const DRAPE_Y = 12.7;
+const CORRIDOR_MIDDLE = 2.7;
+
+scenario(
+  'Droid drives north through the gap in the stanchions',
+  (r) => r.y > DRAPE_Y + 3,
+  () => drive('droid', { x: CORRIDOR_MIDDLE, y: DRAPE_Y - 4 }, NORTH, 3, 1, DEVOXX_DAY),
+);
+
+scenario(
+  'Voxxy is stopped by the rope either side of the gap',
+  (r) => r.y < DRAPE_Y,
+  () => drive('voxxy', { x: -3.0, y: DRAPE_Y - 2 }, NORTH, 3, 1, DEVOXX_DAY),
 );
 
 scenario(

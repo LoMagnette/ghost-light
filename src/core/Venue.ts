@@ -227,7 +227,10 @@ export type Material =
    * at a time, so the floor at the bottom of a drop is a piece of dressing
    * on the storey above, and it has to look like floor rather than wall.
    */
-  | 'floorBelow';
+  | 'floorBelow'
+  /** A queue stanchion's polished post, and the rope slung between two. */
+  | 'stanchion'
+  | 'rope';
 
 /**
  * Dressing: DRAWN, never simulated.

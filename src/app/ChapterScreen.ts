@@ -21,8 +21,8 @@ import { Vector3, type OrthographicCamera, type Scene, type WebGLRenderer } from
 import { Body } from '@/core/Body';
 import { makeActor, Sim, type Actor } from '@/core/Sim';
 import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
-import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
-import { groundAt, rect, roomAt, type Level } from '@/core/Venue';
+import { KINEPOLIS, sessionLimits, SPAWNS } from '@/venue/kinepolis';
+import { groundAt, rect, roomAt, type Level, type Venue } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
 import {
   BlockoutRenderer,
@@ -341,7 +341,23 @@ export class ChapterScreen implements Screen {
     playMusic(`music-${chapter.id}`);
     playAmbience(`ambience-${chapter.id}`);
 
-    this.sim = new Sim(KINEPOLIS);
+    /*
+     * The building as this chapter's day has it: the venue, plus the stanchions
+     * Devoxx puts across the corridor where its rooms stop (see
+     * `sessionLimits`). The same one goes to the simulation, the crowd and
+     * the renderer, so what you see is what you bump into.
+     */
+    const listed = chapter.objective.rooms;
+    const limits = listed ? sessionLimits(listed) : undefined;
+    const venue: Venue = limits
+      ? {
+          ...KINEPOLIS,
+          obstacles: [...KINEPOLIS.obstacles, ...limits.solids],
+          decor: [...KINEPOLIS.decor, ...limits.decor],
+        }
+      : KINEPOLIS;
+
+    this.sim = new Sim(venue);
 
     const spawn = startPoint(chapter);
     this.floor = spawn.floor;
@@ -403,7 +419,7 @@ export class ChapterScreen implements Screen {
         };
       });
 
-    this.crowd = new Crowd(KINEPOLIS, chapter.crowdDensity, roomsInUse(chapter), posts);
+    this.crowd = new Crowd(venue, chapter.crowdDensity, roomsInUse(chapter), posts);
     this.startSwarm();
 
     // And the other thing a storey is baked with: what has settled on it in
@@ -414,7 +430,7 @@ export class ChapterScreen implements Screen {
 
     this.blockout = new BlockoutRenderer(
       this.isoCamera,
-      KINEPOLIS,
+      venue,
       chapter.palette,
       chapter.lightLevel,
       this.crowd,

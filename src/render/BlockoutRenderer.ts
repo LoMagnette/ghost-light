@@ -2480,6 +2480,12 @@ export class BlockoutRenderer {
       // opening it would read as a hole painted over.
       case 'floorBelow':
         return shade(this.palette.floor, 0.5);
+      // Polished steel and a red rope whatever the era: the same stanchions
+      // have been queueing people at cinemas since before this one was built.
+      case 'stanchion':
+        return 0xb9bec4;
+      case 'rope':
+        return 0xa3222e;
       default:
         return this.palette.wall;
     }

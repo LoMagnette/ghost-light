@@ -4710,6 +4710,115 @@ export const KINEPOLIS: Venue = {
   extents: [rect(HALL.x, -62, EAST_EDGE + 1 - HALL.x, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
 };
 
+/**
+ * The line Devoxx draws across the upstairs corridor where the rooms in use
+ * stop.
+ *
+ * Rooms 1, 2 and 11 to 14 have no sessions these days, and the conference
+ * marks where its part of the corridor ends with a row of stanchions, short
+ * posts with a rope slung between them, from each wall towards the middle.
+ * The middle is left open so you can still walk through. Built from whichever
+ * rooms a chapter's day uses, not typed. Across the corridor at the far edge
+ * of the northernmost room in use, and at the near edge of the southernmost
+ * if any unused room lies beyond it. With every room in use there is no line
+ * at all.
+ *
+ * It collides, because a line you can drive through is not a line. The
+ * collision is one hidden bar along each run, the height of the rope: a rope
+ * is too thin to stop anything drawn at its real size, and a robot slipping
+ * between two posts is exactly what the line is there to prevent.
+ */
+export function sessionLimits(inUse: readonly string[]): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  const corridor = floor1Rooms.find((r) => r.id === 'corridor');
+  if (!corridor) return { solids, decor };
+  const auditoria = floor1Rooms.filter((r) => r.kind === 'auditorium');
+  const used = auditoria.filter((r) => inUse.includes(r.id));
+  const unused = auditoria.filter((r) => !inUse.includes(r.id));
+  if (used.length === 0 || unused.length === 0) return { solids, decor };
+
+  const north = Math.max(...used.map((r) => r.bounds.y + r.bounds.h));
+  const south = Math.min(...used.map((r) => r.bounds.y));
+  const lines = [
+    ...(unused.some((r) => r.bounds.y >= north - 0.01) ? [north] : []),
+    ...(unused.some((r) => r.bounds.y + r.bounds.h <= south + 0.01) ? [south] : []),
+  ];
+
+  const c = corridor.bounds;
+  const middle = c.x + c.w / 2;
+  const post = (x: number, y: number): void => {
+    solids.push({
+      floor: 1,
+      bounds: rect(x - STANCHION_POST / 2, y - STANCHION_POST / 2, STANCHION_POST, STANCHION_POST),
+      height: STANCHION_HEIGHT,
+      material: 'stanchion',
+    });
+    // The weighted foot and the cap: without them it is a stick.
+    decor.push({
+      floor: 1,
+      bounds: rect(x - STANCHION_FOOT / 2, y - STANCHION_FOOT / 2, STANCHION_FOOT, STANCHION_FOOT),
+      height: 0.04,
+      material: 'stanchion',
+    });
+    decor.push({
+      floor: 1,
+      bounds: rect(x - 0.05, y - 0.05, 0.1, 0.1),
+      base: STANCHION_HEIGHT,
+      height: STANCHION_HEIGHT + 0.05,
+      material: 'stanchion',
+    });
+  };
+
+  for (const y of lines) {
+    for (const [from, to] of [
+      // Off the wall by a hand: a stanchion stands on the floor, not in the wall.
+      [c.x + 0.25, middle - SESSION_GAP / 2],
+      [middle + SESSION_GAP / 2, c.x + c.w - 0.25],
+    ]) {
+      solids.push({
+        floor: 1,
+        bounds: rect(from, y - 0.1, to - from, 0.2),
+        height: ROPE_HEIGHT + 0.1,
+        hidden: true,
+      });
+      const bays = Math.max(1, Math.round((to - from) / STANCHION_BAY));
+      for (let i = 0; i <= bays; i += 1) post(from + ((to - from) * i) / bays, y);
+      for (let i = 0; i < bays; i += 1) {
+        const x0 = from + ((to - from) * i) / bays;
+        const x1 = from + ((to - from) * (i + 1)) / bays;
+        // Slung, not strung: each bay is three pieces, the middle one lower,
+        // which is as much of a curve as a box can draw.
+        const third = (x1 - x0) / 3;
+        for (let k = 0; k < 3; k += 1) {
+          const drop = k === 1 ? ROPE_SAG : ROPE_SAG / 2;
+          decor.push({
+            floor: 1,
+            bounds: rect(x0 + k * third, y - ROPE / 2, third, ROPE),
+            base: ROPE_HEIGHT - drop,
+            height: ROPE_HEIGHT - drop + ROPE,
+            material: 'rope',
+          });
+        }
+      }
+    }
+  }
+  return { solids, decor };
+}
+
+/** The opening left in the middle of a session line, metres. Two people abreast, or Droid with room. */
+const SESSION_GAP = 3.0;
+/** A queue stanchion: about a metre tall, a post, a weighted foot. */
+const STANCHION_HEIGHT = 0.98;
+const STANCHION_POST = 0.06;
+const STANCHION_FOOT = 0.32;
+/** Post spacing along the line, metres: what one length of rope spans. */
+const STANCHION_BAY = 1.8;
+/** Where the rope hooks on, how thick it is, and how far it hangs at its lowest. */
+const ROPE_HEIGHT = 0.9;
+const ROPE = 0.04;
+const ROPE_SAG = 0.12;
+
 /** Named spawn points, so chapters do not hard-code coordinates. */
 export const SPAWNS = {
   /**

@@ -5422,6 +5422,43 @@ and the lens turned white.
 - **Docs:** `SPEC.md` and `MECHANICS.md` updated.
 - **Checked:** `objectives` and `shoot` pass.
 
+### The session drape
+
+> Ok new stuff I just realize that usually at devoxx there's on both side of
+> the hall to mark the limit of the room used for the conference you can
+> still pass in the middle but there's a clear limit can you add it
+
+**Done** on `session-drape`, stacked on `job-props`:
+- **What it is:** black pipe-and-drape on posts, 2.4 m high, across the
+  upstairs corridor at the far edge of the northernmost room in use (y 12.7,
+  between Rooms 3/10 and 2/11). It runs from each wall towards the middle and
+  leaves 3 m open, so you can walk through.
+- **Where it comes from:** `sessionLimits(rooms)` in the venue builds it from
+  the rooms the objective says the day uses. There's a line at the south end
+  too if an unused room lies beyond it, and none at all when every room is in
+  use. Chapter I has no list, so it gets no drape.
+- **Collision:** it collides. The chapter builds its venue once, KINEPOLIS
+  plus the drape, and hands that same venue to the simulation, the crowd and
+  the renderer, so the drape you see is the one you bump into.
+- **Checked:**
+  - `traverse` has two new scenarios: Droid drives through the gap, and
+    Voxxy is stopped beside it.
+  - `objectives`, `venue`, `crowd`, `physics` and `shoot` pass.
+  - Peeks were taken in Chapters II and III.
+
+> That's not bad but's more like some small picket with a rope linking them
+> toghether
+
+**Done:** the drape became queue stanchions.
+- **Posts:** polished steel, about a metre tall on a weighted foot, 1.8 m
+  apart.
+- **Rope:** red, slung between each pair; three pieces per bay, the middle
+  one lower, so it sags.
+- **Collision:** one hidden bar at rope height along each run, so nothing
+  slips between two posts. The 3 m opening in the middle is unchanged.
+- **Checked:** `traverse` (through the gap, stopped beside it), `objectives`,
+  `venue`, `crowd` and `shoot` pass. Peeks were taken in Chapters II and III.
+
 ---
 
 ## Audio
