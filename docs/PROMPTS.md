@@ -5253,6 +5253,22 @@ precast above, which carries the star, is unchanged. The band-end cut in
   flight and 34 on each hall flight. `MAX_TREADS` and `MIN_TREAD` are gone.
   The rakes already had one per row and are unchanged.
 
+> It still needs a few more steps on the big stairs
+
+**Done:**
+- **More steps:** the grand flight has 34 steps, not 28: 0.147 m risers on a
+  0.238 m going, 8.1 m of run.
+- **Longer at the foot:** its head stays put, because the reception's
+  fit-out is laid out from it. So the extra 0.8 m comes off the landing at
+  its foot (`GRAND_LANDING` 1.2 → 0.4). On the ground floor the concourse
+  runs on to the glass, 0.95 m past the foot.
+- **Venue check:** `npm run venue`'s shallowest going is now the legal
+  minimum, 0.22 m (it was 0.25).
+- **Floor-1 railing:** the rule for a railing round a well now also needs
+  floor right beside the rail, not only half a metre out. Otherwise a rail
+  stood over the well across the flight's foot. A diff of the floor-1 rails
+  shows only the grand flight's side rail lengthening.
+
 ---
 
 ## Audio

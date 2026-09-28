@@ -709,10 +709,11 @@ for (const link of KINEPOLIS.links) {
 /**
  * Shallowest tread worth calling a step, metres. Regulations put the
  * comfortable figure near 0.28 and the legal minimum around 0.22; this is
- * under both, because the point is to catch geometry that is impossible
- * rather than to grade it.
+ * the minimum, because the point is to catch geometry that is impossible
+ * rather than to grade it. It was 0.25 until the grand flight took 34 steps
+ * of 0.238 (28 Sep).
  */
-const MIN_GOING = 0.25;
+const MIN_GOING = 0.22;
 
 for (const link of KINEPOLIS.links) {
   if (link.riser <= 0) continue; // a ramp has no tread; maxSlope judges those

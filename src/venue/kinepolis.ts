@@ -1135,18 +1135,17 @@ const GRAND_WEST = -2.4;
  * (`access-main-stairs.png`): at 11.9 m the head was 4.7 m from Rooms 5 and
  * 8, where the plan has it 10.4 m off them.
  *
- * At 0.18 over 0.26 the 5.0 m takes 28 risers and 7.3 m, which puts the head
- * 9.3 m off the rooms. Steeper than the old pitch and still a staircase —
- * `npm run venue` holds every flight to a 0.25 m going — and 0.18 is exactly
- * Droid's `maxStepRise`, the same as every other flight in the building, so
- * the cast climbs it as before and Biggy still cannot.
+ * It was 28 risers of 0.18 over 0.26, 7.3 m, which puts the head 9.3 m off
+ * the rooms. The author asked twice for more steps on it (28 Sep): at that
+ * size the steps read as a few big blocks for a flight that wide. The head
+ * stays put, because the reception's fit-out is laid out from it (see
+ * `planY`), so the extra run comes off the landing at the foot: 0.8 m of
+ * it. That is 34 risers of 0.147 over 0.238 in 8.1 m, a gentler flight than
+ * the old one and still over the legal minimum going. Droid clears 0.147
+ * as it cleared 0.18, and Biggy still clears nothing.
  */
-const GRAND_RISER = RISER;
-const GRAND_GOING = 0.26;
-
-/** Risers in the grand flight, and the run they need. */
-const GRAND_STEPS = Math.round((FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_RISER);
-const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
+const GRAND_STEPS = 34;
+const GRAND_RUN = 28 * 0.26 + 0.8;
 
 /**
  * Clear concourse at the FOOT of the flight, inside the well.
@@ -1160,8 +1159,12 @@ const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
  *
  * So the WELL reaches the wall and the FLIGHT stops short, and what you see
  * through the gap is the concourse the stairs land on.
+ *
+ * 0.4 m of it since 28 Sep, down from 1.2: the flight took the rest for its
+ * extra steps (see `GRAND_STEPS`). On the ground floor the concourse runs on
+ * past the well to the glass, so the foot still has floor in front of it.
  */
-const GRAND_LANDING = 1.2;
+const GRAND_LANDING = 0.4;
 
 /**
  * The WELL — the hole the grand flight comes up through. Exactly as wide as
@@ -4261,18 +4264,25 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
       // balustrade straddles the lip of the opening, so its own centre is on
       // the line and answers yes to everything. What decides it is whether
       // there is floor on the far side for anyone to be standing on.
-      const out = 0.5;
-      const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
-      const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
-      const guarding = rooms.some(
-        (r) =>
-          r.floor === link.to &&
-          rectContains(r.bounds, ox, oy) &&
-          // A hole in the plate is not floor to stand on. Without this the
-          // grand flight kept a balustrade down each side of its well, in mid
-          // air, once the well became wider than the flight.
-          !r.voids?.some((v) => rectContains(v, ox, oy)),
-      );
+      //
+      // And just outboard of it as well. The well can run on past the flight
+      // (the grand flight's landing at its foot), and then half a metre out is
+      // floor beyond the far lip while the rail itself stands over the well.
+      // A 0.4 m landing did exactly that (28 Sep).
+      const floorAt = (out: number): boolean => {
+        const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
+        const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
+        return rooms.some(
+          (r) =>
+            r.floor === link.to &&
+            rectContains(r.bounds, ox, oy) &&
+            // A hole in the plate is not floor to stand on. Without this the
+            // grand flight kept a balustrade down each side of its well, in
+            // mid air, once the well became wider than the flight.
+            !r.voids?.some((v) => rectContains(v, ox, oy)),
+        );
+      };
+      const guarding = floorAt(0.5) && floorAt(half + 0.05);
       if (!guarding) continue;
       decor.push({ floor: link.to, bounds: edge.bounds, base: 0, height: RAIL_HEIGHT });
     }
