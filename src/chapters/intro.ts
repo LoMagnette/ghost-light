@@ -1,23 +1,41 @@
 /**
  * The words before the menu. Data, like the chapters.
  *
- * It HINTS. SPEC's rule for Chapter I is that the game never explains why the
- * building is empty and is not interested in blame, and an intro that told
- * you would spend the one mystery the game has before a robot has moved. So
- * it says what a ghost light is, that this place was full once, and that
- * something is still walking it — and leaves the wormholes, the eras and the
- * splitting robots for the chapters to show.
+ * The frame is the author's (28 Sep): in 2126 a robot and its ship come down
+ * on a lost planet called Earth, looking for what is left of the old
+ * scriptures. They tell of a time when humans wrote code and loved to gather
+ * and talk about it — and of a temple to that, in a country hardly larger
+ * than a stamp, in a city known for its harbour and its diamonds. Antwerp.
  *
- * Nothing here is said by anybody real, and the one fact about the real
- * conference — that it has filled this building every year for more than
- * twenty — is plainly true: it has been here since the JavaPolis years.
+ * So Chapter I's "later" is 2126, the robot is Voxxy, and the empty building
+ * is a ruin being explored rather than a place that has just been closed.
+ * What it still does NOT say is why the humans are gone — SPEC's rule that
+ * the game is not interested in blame holds — and it leaves the wormholes,
+ * the eras and the splitting robots for the chapters to show. The last line
+ * promises the fold back to JavaPolis without naming it.
+ *
+ * Nothing here is said by anybody real. The one claim about the real
+ * conference — that thousands gathered to talk about code — is plainly true.
  */
-export const INTRO_LINES: readonly string[] = [
-  'A ghost light is the one bulb left burning on an empty stage, all night.',
-  'Theatres leave it on so that nobody walks into the dark. Some say it is there for the ghosts.',
-  'This cinema held a conference once. Every year, for more than twenty years, the whole building filled.',
-  'Now the seats are empty, and the power is off.',
-  'Nearly everywhere.',
-  'Something small is still walking the halls, carrying a light of its own.',
-  'The building remembers what it was. Give it power, and it may show you.',
+
+export interface IntroLine {
+  text: string;
+  /**
+   * How it is set. `date` and `place` are the two words the whole premise
+   * hangs on, so they get a frame of their own; `light` is the ghost light's
+   * colour, Chapter I's accent.
+   */
+  look?: 'date' | 'place' | 'light';
+}
+
+export const INTRO_LINES: readonly IntroLine[] = [
+  { text: '2126', look: 'date' },
+  { text: 'A small ship comes down through the clouds of a planet nobody has visited in a very long time. Its old name was Earth.' },
+  { text: 'The robot on board has come for the scriptures: what little is left of the ones who lived here.' },
+  { text: 'They tell of a strange time, when humans wrote code — and loved it so much that they gathered by the thousand, just to talk about it.' },
+  { text: 'They built temples for it.' },
+  { text: 'One stood in a country hardly larger than a stamp, in a city once famous for its harbour and its diamonds.' },
+  { text: 'Antwerp.', look: 'place' },
+  { text: 'The temple is dark now. But one light is still burning inside.', look: 'light' },
+  { text: 'It remembers what this place was. Give it power, and it may show you.', look: 'light' },
 ];

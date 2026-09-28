@@ -91,6 +91,14 @@ Same building. Same engine. Three rulesets.
 The building is **empty, not wrecked**. The game never explains why, and it is
 not interested in blame.
 
+**The frame, from the author, 28 Sep.** "Later" is **2126**. A robot and its
+ship come down on a lost planet called Earth to study what is left of the
+old scriptures, which tell of a time when humans wrote code and loved to
+gather and talk about it. One of their temples stood in a country hardly
+larger than a stamp, in a city known for its harbour and its diamonds:
+Antwerp. The title sequence before the menu says this (`src/chapters/intro.ts`);
+why the humans are gone it still does not say.
+
 This chapter is first for four reasons, and all four matter:
 
 1. An empty building is the best tutorial available — nothing competes for

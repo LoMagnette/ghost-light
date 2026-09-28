@@ -1494,6 +1494,19 @@ music. The key that skips it cannot also start Chapter I: the menu's keys
 are bound only once the words have faded, 1.4 s later. Checked headless:
 wait, lines, skip to the menu, remembered on reload, replayed with I.
 
+**Then the author took the lore further:**
+> The intro a bit too light. It go a bit further in 2126 a robot and their space ship land on a lost planet call Earth and decide to research what what some left over of old scripture. Those talks about a time where human where writing code and love to chat talk about this hobby long gone. One of those temple what supposed to be a country just a bit larger then a stamps, in city well known at the time for it's harbor and diamonds... Antwerp.
+
+Rewritten to that frame in nine lines, the author's beats in the author's
+order: 2126; the ship and the lost planet; the scriptures; humans who wrote
+code and gathered by the thousand to talk about it; the temples; the
+country the size of a stamp and the city of the harbour and the diamonds;
+Antwerp. Then the two lines that tie it to the game: the dark temple with
+one light still burning, and the promise that it will show you what it was.
+The date and the city get a setting of their own, mono and spaced, and a
+large serif. About 50 s; any key still skips. Still unsaid, on purpose: why
+the humans are gone.
+
 Also caught here, and unrelated to the desk: `npm run shoot` was drawing 1217
 boxes a frame on the auditorium level and dropping one frame in five. The cull
 margin was 160 px, which sounds harmless and is an eighty percent increase in

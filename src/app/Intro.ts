@@ -13,11 +13,11 @@
  * is remembered, and I on the menu plays it again.
  */
 
-import { INTRO_LINES } from '@/chapters/intro';
-import { el, MONO, SANS } from './dom';
+import { INTRO_LINES, type IntroLine } from '@/chapters/intro';
+import { el, MONO, SANS, SERIF, type Style } from './dom';
 
 /** Seconds each line takes to arrive, and to leave. */
-const FADE_IN = 1.1;
+const FADE_IN = 0.9;
 const FADE_OUT = 0.8;
 /** Seconds a line stays up: a floor, and a reading allowance per character. */
 const HOLD = 1.3;
@@ -107,12 +107,13 @@ export class Intro {
     }
 
     if (this.stage === 'lines') {
-      const text = INTRO_LINES[this.index];
+      const said = INTRO_LINES[this.index];
+      const text = said.text;
       const hold = HOLD + text.length * PER_CHARACTER;
       const life = FADE_IN + hold + FADE_OUT;
       if (this.line.textContent !== text) {
         this.line.textContent = text;
-        this.line.style.color = this.index === INTRO_LINES.length - 1 ? this.accent : '#d4dade';
+        Object.assign(this.line.style, this.lookOf(said));
       }
       const t = this.t;
       this.line.style.opacity = String(
@@ -134,6 +135,20 @@ export class Intro {
         this.dispose();
         this.onDone();
       }
+    }
+  }
+
+  /** How a line is set. See `IntroLine.look`. */
+  private lookOf(said: IntroLine): Style {
+    switch (said.look) {
+      case 'date':
+        return { font: `20px ${MONO}`, letterSpacing: '0.5em', color: '#8b9398' };
+      case 'place':
+        return { font: `52px ${SERIF}`, letterSpacing: '0.04em', color: '#f2f5f7' };
+      case 'light':
+        return { font: `24px ${SANS}`, letterSpacing: '0', color: this.accent };
+      default:
+        return { font: `24px ${SANS}`, letterSpacing: '0', color: '#d4dade' };
     }
   }
 
