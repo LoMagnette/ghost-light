@@ -4810,6 +4810,32 @@ the door moved to the north end.
 traverse` now drives Voxxy through the door of every auditorium, all
 fourteen.
 
+### Claude Opus — the hall flights are stair cores
+
+**Prompt:**
+> Let's fix what's not correct compare to the venue. First the stairs from
+> the exhibition to the room hallway. the stairs have only lateral access
+> and are surrounded by wall just like on this diagram
+
+**Wrong stairs first.** The attached crop, `stairs-exhibition.png`, shows the
+steps between the hall and the reception, so I read the request as being
+about those and asked which of two shapes was right. The author meant the
+two flights in the hall. On `hollywood-area.png` each one is an enclosed
+core, with walls down both sides and across the north end, and a vestibule
+at the foot with doors in both side walls. The game had them open at the
+foot and along both flanks.
+
+**Built:** walls round each flight on floor 0, outside the flight's own
+bounds, so the stair rule is unchanged. There is a 4 m vestibule with a
+1.8 m door in each side. `npm run traverse` checks that the north end and
+the flanks are shut, and that Voxxy gets in through either door and reaches
+floor 1.
+
+**Fixed by hand in the harness:** at full throttle Voxxy crosses the 2.3 m
+vestibule and leaves by the far door. The drive now eases off after 0.9 s
+before turning to climb. Only 0.8–1.0 s works, so a player has to steer
+into the turn rather than hold the key down.
+
 ---
 
 ## Audio
