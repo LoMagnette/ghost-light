@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 39
-    "In progress" : 2
+    "In progress" : 3
     "To do" : 12
 ```
 
@@ -88,7 +88,8 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **The objects the jobs are about** | `job-props` | Built and checked: every job has its object. A fix shows red, green or dark; a carried item rides in the robot's arms | The author plays it and says whether the objects read; then merge | Human looks · agent adjusts |
+| **The objects the jobs are about, and Chapter II retuned** | `job-props` | Every job has its object, and the zones are wider (the projector counts anywhere in the back aisle). Devoxx uses Rooms 3–10, JavaPolis 3–8. Chapter II has nine breakdowns, not eleven, with longer windows and gaps for the speakers | Push, then merge | Agent, once the push works |
+| **Stanchions where the rooms in use stop** | `session-drape`, on `job-props` | Posts and a red rope across the upstairs corridor, open in the middle. The author: "perfect" (28 Sep) | Push, then merge after `job-props` | Agent, once the push works |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
