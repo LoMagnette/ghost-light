@@ -4571,6 +4571,29 @@ committed before any more hacks. The throwaway build is now always restored
 with `git checkout`, from the commit. That lesson was already in here once;
 this is its second entry.
 
+### Claude Opus — overwhelming, not zombie; and a cat that speaks first
+
+**Prompt:**
+> So the cat don't need to look like zombie but the idea to have a bit of an
+> overwhelming feeling. Btw if the robot touch come close to a cat the
+> interaction should be automatically triggered.
+
+**Read as: keep the horde, lose the costume.** The glowing eyes were the
+only thing that LOOKED zombie, so they came out, by taking the renderer back
+to the commit before them (a checkout from git, not a copy: see the entry
+above). The lurch, the lunge and a cat every 8 s from the dark stay, because
+that is the overwhelm.
+
+**`autoStart` on a conversation.** When a robot is in range and nothing has
+been said, the first line is up as if the key had been pressed; paging is
+still the key. The cat's range went from 3 m to 1.8, arm's length, since at
+three a cat Voxxy only drove past would stop it. Tested against the runner:
+nothing at 2 m, the first line on arrival, done after paging.
+
+**One sentence corrected before committing.** My comment on the range said
+the 3 m version "fired on a cat Voxxy was only driving past", which reads as
+something observed. It was a prediction, and it says "would" now.
+
 ---
 
 ## Audio

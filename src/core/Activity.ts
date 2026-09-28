@@ -312,6 +312,12 @@ export interface TalkActivity extends Common {
   who: string;
   /** What they say, one boxful at a time. */
   lines: string[];
+  /**
+   * Opens on its own the moment a robot is close enough, instead of waiting
+   * for the talk key. Paging on is still the key. For something that talks
+   * to YOU: Chapter I's cat, which is not waiting to be spoken to.
+   */
+  autoStart?: boolean;
 }
 
 export type Activity =

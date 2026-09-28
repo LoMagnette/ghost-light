@@ -132,8 +132,12 @@ const SILENCE: Activity[] = [
      * swarm's (see `SILENCE_OBJECTIVE.swarm`), there is no one cat posted
      * here, and the screen carries this conversation to the nearest of them
      * until it starts. After it, no cat can be talked to: they follow.
+     *
+     * And it starts itself: come close to a cat and it is talking. The
+     * player does not approach this cat to chat, the cat stops them.
      */
     alreadyHere: true,
+    autoStart: true,
     // In the concourse, out in the open east of the reception island. Early
     // enough on the route that a player meets it before they know the
     // building, which is when a talking cat is at its most unsettling.

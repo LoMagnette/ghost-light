@@ -446,6 +446,12 @@ export class ObjectiveRun {
           state.progress = 0;
           return;
         }
+        // Something that talks to you first: the first line is up the moment
+        // a robot arrives, as if the key had been pressed for it.
+        if (a.autoStart && state.progress === 0) {
+          state.progress = 1 / a.lines.length;
+          return;
+        }
         if (!talk) return;
         const shown = Math.round(state.progress * a.lines.length);
         if (shown >= a.lines.length) {

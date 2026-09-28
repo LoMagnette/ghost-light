@@ -66,8 +66,13 @@ interface ScreenMarker extends ObjectiveMarker {
 /** The dialogue portrait's side, design pixels. Two lines of text and a name, and a little over. */
 const PORTRAIT = 92;
 
-/** How close to a cat counts as having reached it, metres across. */
-const CAT_TALK = 3.0;
+/**
+ * How close to a cat counts as having reached it, metres across. Arm's
+ * length rather than conversational distance, because the cat's talk opens
+ * by itself (`autoStart`): at three metres it would fire on a cat Voxxy was
+ * only driving past.
+ */
+const CAT_TALK = 1.8;
 /** Top speed lost per cat underfoot, and the least a robot is ever held to. */
 const CAT_DRAG = 0.1;
 const CAT_SLOWEST = 0.4;

@@ -341,8 +341,6 @@ export interface Person {
   shape?: 'cat' | 'dog';
   /** Who they are, for the ones who are somebody. See `Look`. */
   look?: Look;
-  /** A cat that is after a robot on its own storey. The renderer lights its eyes. */
-  hunting?: boolean;
   /** Gone, and not drawn: a cat the dog has chased off. See `Crowd.scatterCats`. */
   hidden?: boolean;
   /**
@@ -788,7 +786,6 @@ export class Crowd {
     if (this.catMode === 'flee') return;
     this.catMode = 'flee';
     for (const cat of this.cats) {
-      cat.hunting = false;
       const plan = this.planOf(cat.floor);
       const key = plan.list[Math.floor(this.catRandom() * plan.list.length)];
       const [gx, gy] = unpack(key);
@@ -812,7 +809,6 @@ export class Crowd {
   private stepCat(cat: Mover, dt: number): void {
     if (cat.hidden) return;
     const target = this.catTarget;
-    cat.hunting = this.catMode === 'follow' && target !== undefined && target.floor === cat.floor;
     if (this.catMode === 'flee') {
       cat.fleeing = (cat.fleeing ?? 0) - dt;
       if (cat.fleeing <= 0) {

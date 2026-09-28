@@ -179,17 +179,19 @@ every 20 seconds**, at a random walkable spot on either storey, up to
 sixteen. Random per run: the crowd is seeded so a room always fills the same
 way, and the cats are meant to be somewhere new every time.
 
-- **The first cat Voxxy reaches is the one that talks.** The conversation is
-  carried to whichever cat is nearest until it starts. It lights **90
+- **The first cat Voxxy reaches is the one that talks, and it starts by
+  itself**: come within arm's length (1.8 m) and the first line is up
+  without a key; E pages on. The conversation is carried to whichever cat
+  is nearest until it starts. It lights **90
   seconds** to find the dog (45 until the chase got harder), and after it no
   cat can be talked to.
 - **From then on they hunt, like a horde.** New cats stop turning up at
   random and come every 8 s instead, up to 30, out of the dark 12–22 m from
   Voxxy, just past its lamp. Each one lurches on its own rhythm, surging and
   stalling between about 1 and 3.7 m/s and never in step with the cat beside
-  it, and lunges at 4.2 m/s from within 3 m. Their eyes light up in the
-  chapter's accent: in Chapter I's dark, what you see behind you is eyes. They
-  chase greedily over the floor plan, so they take the obvious way round and
+  it, and lunges at 4.2 m/s from within 3 m. They are still ordinary cats to
+  look at (a glowing-eyed version was tried and taken out: the author wants
+  overwhelming, not zombie). They chase greedily over the floor plan, so they take the obvious way round and
   get caught on the obvious corners. A cat on the other storey wanders until
   Voxxy comes back.
 - **Each cat underfoot takes a tenth off Voxxy's top speed**, down to 40%.
