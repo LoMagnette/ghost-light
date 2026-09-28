@@ -149,11 +149,13 @@ function hiss(
 export function footfall(robot: RobotId, weight: number, place: Place = HERE): void {
   const w = Math.max(0.15, Math.min(1, weight));
   if (robot === 'voxxy') {
-    // Light plastic: a high tick and a click of noise.
-    const v = voice(place, 0.22 * w);
+    // Light plastic: a soft tap. It was a 1.7 kHz tick with a click of high
+    // noise, and at eight steps a second that was the most annoying thing
+    // in the game (the author, 28 Sep). Lower, rounder, and quieter.
+    const v = voice(place, 0.13 * w);
     if (!v) return;
-    tone(v, 'triangle', 1700 + Math.random() * 300, 900, 0.035, 0.7);
-    hiss(v, 'highpass', 3500, 0.025, 0.5);
+    tone(v, 'sine', 620 + Math.random() * 80, 380, 0.05, 0.7);
+    hiss(v, 'bandpass', 1500, 0.03, 0.25, 0, 1);
   } else if (robot === 'droid') {
     // Metal: two inharmonic partials ring for a moment over a scuff.
     const v = voice(place, 0.32 * w);
@@ -266,7 +268,9 @@ export class Motor {
 
 /** Each drive's pitch at rest and at full speed, how loud, and how sluggish. */
 const MOTORS: Record<RobotId, { base: number; range: number; level: number; lag: number; cutoff: number }> = {
-  voxxy: { base: 260, range: 620, level: 0.035, lag: 0.05, cutoff: 1600 },
+  // Voxxy's was a sawtooth up to 880 Hz; a whine that rises that far is a
+  // mosquito. Now a lower hum with the top filtered off.
+  voxxy: { base: 180, range: 260, level: 0.02, lag: 0.08, cutoff: 700 },
   droid: { base: 110, range: 190, level: 0.05, lag: 0.18, cutoff: 900 },
   biggy: { base: 42, range: 70, level: 0.11, lag: 0.55, cutoff: 380 },
 };

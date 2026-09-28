@@ -125,6 +125,12 @@ screen, fading with distance, nothing from the other storey):
 | Photograph | a print lands | shutter |
 | Wormhole | leaving: a rising roar; arriving: each robot lands with its own impact, and a shimmer as one splits | |
 
+**First listen, 28 Sep.** The author: music in II and III too loud to hear
+the sounds, and Voxxy annoying. II's and III's tracks now play at half
+level (`TRIM` in `audio.ts`); Voxxy's step is a soft 620 Hz tap instead of
+a 1.7 kHz tick, and its motor a filtered hum topping out at 440 Hz instead
+of a sawtooth at 880.
+
 Not yet: brakes, stairs, loads rattling, the Chapter II breakdowns heard
 from their room, the cats. Checked headless by counting nodes started while
 driving each robot in the lab (Voxxy about 8 steps in 3 s, Droid 5, Biggy

@@ -38,6 +38,16 @@ const AMBIENCE_LEVEL = 0.7;
 /** The robots and the interface, synthesised in `sfx.ts`. */
 const EFFECTS_LEVEL = 0.9;
 
+/**
+ * Per-track level, by ear. The three tracks measure about the same, but
+ * Chapter I's is sparse and II's and III's are busy grooves that sat over
+ * the robots: 28 Sep, the author could not hear the sounds under them.
+ */
+const TRIM: Record<string, number> = {
+  'music-javapolis': 0.5,
+  'music-capacity': 0.5,
+};
+
 const MUTE_KEY = 'ghost-light:muted';
 
 interface Bus {
@@ -158,7 +168,7 @@ async function play(target: Bus, name: string | undefined): Promise<void> {
   const fade = context.createGain();
   const now = context.currentTime;
   fade.gain.setValueAtTime(0, now);
-  fade.gain.linearRampToValueAtTime(1, now + FADE);
+  fade.gain.linearRampToValueAtTime(TRIM[name] ?? 1, now + FADE);
   source.connect(fade).connect(target.gain);
   source.start();
   target.playing = { name, source, fade };
