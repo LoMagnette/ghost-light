@@ -24,7 +24,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Attendees | 🔄 | Models merged (#17, #18) and judged good; the bunching is fixed on `crowd-spread`, **not merged** |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
-| Audio | 🔄 | Music plays in all three chapters (`audio` branch); the synthesised robot sounds are next |
+| Audio | 🔄 | Music in all three chapters, robot and interaction sounds synthesised (`audio` branch); **needs a listen** |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
@@ -100,7 +100,7 @@ pie showData
 | Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
 | **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
 | 🔄 **Attendees bunch up in some areas of the map** | Agent | Mon 28 Sep | **Fixed 28 Sep on `crowd-spread`, not merged.** A bug in how walkers pick their next step pushed everyone north-east, so every room emptied into its top-right corner (37× the average in the reception). Also fixed: people following walls, and a pocket in the reception desk nobody could leave. `npm run crowd` now guards it: worst cell 3.6× average. Needs a look in the game |
-| 🔄 Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | **28 Sep, `audio` branch:** music per chapter plays, crossfades, mutes on M. The three Suno tracks are in, one per chapter. Check Suno's terms cover publishing them in an MIT repo. Next: the robots' footfalls and impacts, synthesised |
+| 🔄 Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | **28 Sep, `audio` branch:** music per chapter plays, crossfades, mutes on M. The three Suno tracks are in, one per chapter. Check Suno's terms cover publishing them in an MIT repo. Robot footfalls, impacts and motors, and interaction cues (done, missed, pick up, put down, countdown, speech, shutter, wormhole) synthesised. Next: a listen by the author, then balance; brakes, stairs and breakdown cues if there is time |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
 | README reread and tech/genAI description | Agent | Wed 30 Sep | |

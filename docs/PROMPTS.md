@@ -4726,6 +4726,27 @@ SOUNDS right is the author's call.
 decodes to about 75 s and plays in its chapter; the loop seams are
 measured in `docs/AUDIO.md`.
 
+### Claude Opus — the robots and the interactions, heard
+
+**Prompt:**
+> So the the we're still missing the sound for the robot and the interactions
+
+**No files, on purpose.** `src/app/sfx.ts` synthesises every sound from
+what the game already knows. Footfalls and impacts come from the same sim
+events and the same momentum that shake the camera, so Biggy's thump is its
+430 kg made audible rather than a sample chosen to suggest it. Interaction
+cues come from watching each job's status change, in the screen, so
+nothing new enters `core/`.
+
+**Heard from the camera.** Panned by position across the screen rather than
+by compass direction, because the camera looks north-east and world-x is
+not screen-right. Every robot is heard, not only the driven one: that is
+how you know where the others are.
+
+**The speech blip** is the non-verbal voice `ROADMAP.md` parked: a pitch
+per speaker from a hash of their name, so it is stable for a person and
+claims to be nobody's real voice.
+
 ---
 
 ## Audio

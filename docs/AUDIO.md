@@ -108,6 +108,28 @@ Suno (the files' own tags say so):
 | `music-javapolis.mp3` | *Tech Conference Groove* | 74.9 s | near seamless |
 | `music-capacity.mp3` | *Conference Groove* | 75.1 s | drops for its last second: a short dip every 75 s |
 
+**Synthesised, 28 Sep (`src/app/sfx.ts`).** No files; all of it is
+oscillators and filtered noise, heard from the camera (panned across the
+screen, fading with distance, nothing from the other storey):
+
+| Sound | When | Voxxy · Droid · Biggy |
+|---|---|---|
+| Footfall | every step the sim reports, level by momentum | tick · clank · sub thump |
+| Impact | every collision, level by momentum | knock · clang · boom |
+| Motor | always, pitch and level by speed, silent standing still | high whine, quick · mid hum · low drone, slow to rise |
+| Job done | a status turns `done` | two notes up |
+| Job missed, room lost | `missed` or `failed` | low, falling |
+| Pick up · put down | a haul turns `carried`, and back | blip up · thunk down |
+| Countdown | each of the last 10 s of the nearest deadline or the day's clock | tick; sharper in the last 3 |
+| Speech | every other letter as a line types | a blip pitched per speaker, from their name; robots fixed high to low |
+| Photograph | a print lands | shutter |
+| Wormhole | leaving: a rising roar; arriving: each robot lands with its own impact, and a shimmer as one splits | |
+
+Not yet: brakes, stairs, loads rattling, the Chapter II breakdowns heard
+from their room, the cats. Checked headless by counting nodes started while
+driving each robot in the lab (Voxxy about 8 steps in 3 s, Droid 5, Biggy
+2) with no errors; how it SOUNDS is for a person to judge.
+
 Measured by decoding each in a browser and reading the level second by
 second across the end and the start. Mixed loud (about −16 dBFS), so the
 music bus sits at 0.55.

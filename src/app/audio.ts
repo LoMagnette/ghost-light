@@ -35,6 +35,8 @@ const FADE = 2.2;
 /** Where each bus sits. The robots, when they speak, go on top of the music. */
 const MUSIC_LEVEL = 0.55;
 const AMBIENCE_LEVEL = 0.7;
+/** The robots and the interface, synthesised in `sfx.ts`. */
+const EFFECTS_LEVEL = 0.9;
 
 const MUTE_KEY = 'ghost-light:muted';
 
@@ -48,7 +50,7 @@ interface Bus {
 
 let context: AudioContext | undefined;
 let master: GainNode | undefined;
-const buses: { music?: Bus; ambience?: Bus } = {};
+const buses: { music?: Bus; ambience?: Bus; effects?: Bus } = {};
 const buffers = new Map<string, Promise<AudioBuffer | undefined>>();
 let muted = readMuted();
 const wanted: { music?: string; ambience?: string } = {};
@@ -106,6 +108,16 @@ export function playAmbience(...names: string[]): void {
   if (buses.ambience) void play(buses.ambience, wanted.ambience);
 }
 
+/**
+ * Where synthesised sound goes, once there is anywhere for it to go. Before
+ * the first key or click there is not, and a footfall then is simply silent
+ * — nobody has asked for it to be heard yet.
+ */
+export function effectsOut(): { context: AudioContext; bus: AudioNode } | undefined {
+  if (!context || !buses.effects || context.state !== 'running') return undefined;
+  return { context, bus: buses.effects.gain };
+}
+
 function start(): void {
   if (context) return;
   const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -116,6 +128,7 @@ function start(): void {
   master.connect(context.destination);
   buses.music = bus(MUSIC_LEVEL);
   buses.ambience = bus(AMBIENCE_LEVEL);
+  buses.effects = bus(EFFECTS_LEVEL);
   void context.resume();
   void play(buses.music, wanted.music);
   void play(buses.ambience, wanted.ambience);
