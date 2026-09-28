@@ -31,6 +31,14 @@ const SWALLOWED = new Set([
 
 export class Keyboard {
   private readonly down = new Set<string>();
+  /** Keys held by something other than a key: the touch buttons. */
+  private readonly held = new Set<string>();
+  /**
+   * An analogue stick in SCREEN axes, x right and y down, each -1..1, with
+   * its length the throttle. The touch joystick writes it; the controller
+   * reads it when no direction key is down. Zero when nobody is touching.
+   */
+  readonly stick = { x: 0, y: 0 };
   private readonly handlers = new Map<string, KeyHandler[]>();
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
@@ -53,6 +61,9 @@ export class Keyboard {
    */
   private readonly onBlur = (): void => {
     this.down.clear();
+    this.held.clear();
+    this.stick.x = 0;
+    this.stick.y = 0;
   };
 
   constructor() {
@@ -62,7 +73,19 @@ export class Keyboard {
   }
 
   isDown(...codes: string[]): boolean {
-    return codes.some((code) => this.down.has(code));
+    return codes.some((code) => this.down.has(code) || this.held.has(code));
+  }
+
+  /** A key pressed by something else: runs its handlers, as a keydown would. */
+  press(code: string): void {
+    const bound = this.handlers.get(code);
+    if (bound) for (const handler of [...bound]) handler();
+  }
+
+  /** A key held down, or let go, by something else. */
+  hold(code: string, on: boolean): void {
+    if (on) this.held.add(code);
+    else this.held.delete(code);
   }
 
   /** Call `handler` each time this key goes down. Returns an unbind function. */
@@ -89,5 +112,6 @@ export class Keyboard {
     window.removeEventListener('blur', this.onBlur);
     this.handlers.clear();
     this.down.clear();
+    this.held.clear();
   }
 }

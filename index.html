@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Ghost Light</title>
     <meta
       name="description"
@@ -55,6 +55,60 @@
         pointer-events: auto;
       }
 
+      /*
+       * Phones and tablets (see src/input/Touch.ts). The page must not
+       * scroll, zoom or select under a thumb, and the stage is half size on
+       * a phone, so the text a player has to read is drawn bigger: `zoom`
+       * on what is anchored to the top or the sides, a scale from the
+       * bottom-left corner on what is placed near the bottom by its top.
+       */
+      html.touch,
+      html.touch body {
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html.touch .touch-talk {
+        zoom: 1.45;
+      }
+      html.touch .touch-zoom {
+        zoom: 1.3;
+      }
+      html.touch .touch-grow-centre {
+        transform: scale(1.4);
+      }
+      html.touch .touch-grow {
+        transform: scale(1.3);
+        transform-origin: left bottom;
+      }
+
+      /* A phone held upright shows a strip of game: ask for it sideways. */
+      #rotate {
+        display: none;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate {
+          position: fixed;
+          inset: 0;
+          z-index: 30;
+          display: grid;
+          place-content: center;
+          gap: 14px;
+          padding: 24px;
+          text-align: center;
+          background: #06080a;
+          color: #c9d0d4;
+          font-size: 15px;
+          letter-spacing: 0.06em;
+        }
+        #rotate .turn {
+          font-size: 44px;
+          color: #f24471;
+        }
+      }
+
       #boot-fallback {
         position: fixed;
         inset: 0;
@@ -75,6 +129,7 @@
       <canvas id="game"></canvas>
       <div id="ui"></div>
     </div>
+    <div id="rotate"><div class="turn">&#x27F3;</div><div>Turn your phone sideways to play</div></div>
     <div id="boot-fallback">Powering on&hellip;</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
