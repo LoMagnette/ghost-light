@@ -5310,6 +5310,38 @@ precast above, which carries the star, is unchanged. The band-end cut in
 carrying `stair-swap`). `STATUS.md` moves them to done, and no venue work is
 left unmerged.
 
+### The objects the jobs are about
+
+> Can adapt the game so when the robot has to interact with an object you
+> can see the actual object
+
+This was the backlog row "show the object a robot-specific job is about".
+**Done** on `job-props`:
+- **What was there:** most job spots had nothing at all; only the polo counter
+  existed.
+- **Now:**
+  - an activity carries a `prop` (render only, never collided), drawn by
+    `render/Props.ts`, twelve kinds;
+  - a fix shows its state on an unlit lamp: red and blinking while broken,
+    green once fixed, dark if the room is lost; the shutter rolls up and the
+    plug goes back in;
+  - a haul's item sits on its stand and rides in the carrier's arms,
+    parented to the robot. It stays wherever it is put down or delivered.
+- **What the first frames got wrong, and what changed:**
+  - The boards hung on west walls, and the south-west camera looked at the
+    back of the wall. They are now floor-standing power cabinets.
+  - Room 8's rack stood inside the letters of `#DEVOXX`. It moved past the
+    last letter, and its tap zone moved with it.
+  - Every projector showed broken before any breakdown was due. States start
+    `open`, and the arrival dialogue holds the run still, so "not yet" is now
+    read from the chapter clock.
+  - The scanner went onto the keynote steward's activity because two zones
+    matched the text I replaced; moved to the badge job.
+  - The projector lens pointed sideways; it was turned to point out of the
+    front.
+- **Checked:** `typecheck`, `objectives`, `venue`, `traverse` and `shoot`
+  pass. Peeks were taken of every prop and of Voxxy carrying the coffee.
+
 ---
 
 ## Audio

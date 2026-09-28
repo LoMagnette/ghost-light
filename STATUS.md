@@ -32,8 +32,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 39
-    "In progress" : 1
-    "To do" : 13
+    "In progress" : 2
+    "To do" : 12
 ```
 
 ---
@@ -88,6 +88,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **The objects the jobs are about** | `job-props` | Built and checked: every job has its object. A fix shows red, green or dark; a carried item rides in the robot's arms | The author plays it and says whether the objects read; then merge | Human looks · agent adjusts |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
@@ -115,7 +116,6 @@ pie showData
 | What | Owner | Notes |
 |---|---|---|
 | **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
-| **Show the object a robot-specific job is about** | Agent | When a job needs one robot, the THING should say why: a projector visibly two metres up in the booth, the cable behind the lectern, the adapter on the organisers' desk, the stack of chairs in the foyer, the keg, the shutter. The marker says whose job it is; the object should say why it is theirs. Props are `decor` in `kinepolis.ts` or drawn per activity |
 | **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
 
 ### Small, whenever there is a gap
