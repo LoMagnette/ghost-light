@@ -23,7 +23,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18) and judged good; the bunching fix is merged (#21) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#29). Three follow-ups are stacked and **not merged**: `entrance-doors` → `stair-swap` → `stair-treads`. One cinema-room improvement is noted for later |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#31), the front's glass doors, the storey swap and the longer grand flight included. One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
@@ -31,8 +31,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 38
-    "In progress" : 2
+    "Done" : 39
+    "In progress" : 1
     "To do" : 13
 ```
 
@@ -79,6 +79,7 @@ pie showData
 | **Chapter I cats**: five at the start and one every 20 s up to 16, eight coats, a horde that follows Voxxy round walls and up the stairs and slows it, the dog sends them away | `more-cats`, on `main` | 28 Sep: done, on the author's word |
 | Attendees no longer bunch into every room's north-east corner | #21 `crowd-spread` | `npm run crowd` guards it: worst cell 3.6× the average |
 | **The venue remodelled zone by zone, from the author's plans** | #25 `reception-east`, #26 `stair-cores`, #27 `hall-threshold`, #28 `reception-centre`, #29 `hall-north-east` | 28 Sep, the author: "good enough for now". What changed:<ul><li>the hall flights are walled cores entered from the side;</li><li>the hall is a bay deeper, and the threshold has a landing with steps on three sides and no ramp;</li><li>two BOF rooms down three steps, and toilets in the north-east corner;</li><li>the reception island, five pillars and the free counter are on the column grid;</li><li>the grand flight runs wall to wall, with the corridor upstairs 5.4 m wider along its whole east side;</li><li>the hall's east side steps as drawn, and the polo pickup is an L-shaped counter</li></ul> |
+| Glass doors across the whole front; the storey swaps half way up a flight; one tread per riser; a 10.2 m grand flight of 34 steps | #30 `entrance-doors`, #31 `stair-treads` (with `stair-swap`) | 28 Sep |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
@@ -87,7 +88,6 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **Three venue follow-ups, stacked** | `entrance-doors` → `stair-swap` → `stair-treads` | Committed, **not pushed** | Push `stair-treads` (it carries the other two), open a PR, merge. Contents:<ul><li>every glazed bay of the front is a glass door;</li><li>a robot changes storey half way up a flight;</li><li>one tread per riser on every flight;</li><li>the grand flight is 10.2 m, 34 steps</li></ul> | Human |
 | **Chapter II and III balance** | merged | Windows set from distances and speeds, not from play | Play both, then retune `BREAKDOWNS` and Chapter III's clock from what you felt | Human plays · agent tunes |
 
 > **Pushing from the sandbox** still fails on credentials. Either push from
@@ -160,8 +160,6 @@ gantt
     title Ghost Light, the last four days
     dateFormat YYYY-MM-DD
     axisFormat %a %d
-    section Merge
-    Merge the stacked venue branches  :active, m1, 2026-09-28, 1d
     section Human
     Play Chapter II and III           :active, h1, 2026-09-27, 1d
     Playtest with a stranger          :t1, 2026-09-29, 1d

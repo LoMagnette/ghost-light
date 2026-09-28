@@ -5304,6 +5304,12 @@ precast above, which carries the star, is unchanged. The band-end cut in
 - **Noted for later:** one cinema-room improvement, which the author hasn't
   described yet.
 
+> the stair treads is merged
+
+**Done:** `origin/main` has #30 (`entrance-doors`) and #31 (`stair-treads`,
+carrying `stair-swap`). `STATUS.md` moves them to done, and no venue work is
+left unmerged.
+
 ---
 
 ## Audio
