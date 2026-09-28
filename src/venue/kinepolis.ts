@@ -2985,26 +2985,6 @@ for (const room of floor1Rooms) {
  * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
  */
 
-/**
- * Treads per flight.
- *
- * A real 6.2 m floor takes 34 risers at 0.18 m, and at this zoom 34 steps are
- * 10 px apart and 2 px high — visual noise, not a staircase. 18 reads as a
- * flight. Capped rather than computed for that reason alone.
- */
-const MAX_TREADS = 18;
-
-/**
- * Shallowest tread worth drawing, metres.
- *
- * The cap above is really a statement about tread SIZE — 18 steps in an 11.2 m
- * flight is 0.62 m each — and stated as a count it lies about long flights. An
- * auditorium rake runs 25 m and wants a step every metre, one per row of
- * seats, and getting 18 instead would put its steps out of register with the
- * seating standing on them. So: eighteen treads, or as many as fit at 0.62 m
- * apart, whichever is more. Every flight in the building is unchanged.
- */
-const MIN_TREAD = 0.62;
 
 
 /**
@@ -3029,10 +3009,12 @@ const SHAFT_SKIN = 0.06;
 function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
   const { bounds: b, rise, axis, ascending } = link;
   const run = axis === 'y' ? b.h : b.w;
-  const treads = Math.min(
-    Math.max(3, Math.round(rise / (link.riser || RISER))),
-    Math.max(MAX_TREADS, Math.floor(run / MIN_TREAD)),
-  );
+  // One band per real riser. The robots are drawn stepping from riser to
+  // riser (`climbOf` in the renderer), and a flight drawn with fewer, taller
+  // treads than it has left them rising through thin air between the drawn
+  // steps: the grand flight's 28 risers were 18 treads, the hall flights'
+  // 34 were 18 too (the author, 28 Sep: "like he's flying").
+  const treads = Math.max(1, Math.round(rise / (link.riser || RISER)));
   const step = run / treads;
   const start = axis === 'y' ? b.y : b.x;
 

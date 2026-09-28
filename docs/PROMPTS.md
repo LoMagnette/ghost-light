@@ -5238,6 +5238,21 @@ precast above, which carries the star, is unchanged. The band-end cut in
   - New scenarios: still downstairs at 40% of the grand flight, upstairs at
     60%, and in the top half it can't step off either side.
 
+### More steps on the grand flight
+
+> Can you add a few step to the main stair in the reception so the robot does
+> not like he's flying
+
+**Done (branch `stair-treads`):**
+- **Cause:** a flight was drawn with at most 18 treads (`MAX_TREADS`). The
+  grand flight has 28 risers, so it was drawn as 18 tall treads. The robot
+  is drawn stepping riser by riser (`climbOf`), so it rose through the air
+  between the drawn steps. The hall flights had the same fault: 34 risers,
+  18 treads.
+- **Fix:** `treadsOf` now draws one tread per real riser, 28 on the grand
+  flight and 34 on each hall flight. `MAX_TREADS` and `MIN_TREAD` are gone.
+  The rakes already had one per row and are unchanged.
+
 ---
 
 ## Audio
