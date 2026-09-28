@@ -5269,6 +5269,24 @@ precast above, which carries the star, is unchanged. The band-end cut in
   stood over the well across the flight's foot. A diff of the floor-1 rails
   shows only the grand flight's side rail lengthening.
 
+> When I say more step I mean make the stair longer
+
+**Done:**
+- **Longer flight:** the grand flight keeps its 34 risers of 0.147 m but on
+  a 0.30 m going, so it is 10.2 m long instead of 8.1. That is a
+  comfortable grand-stair pitch. `npm run venue`'s minimum going is back to
+  0.25.
+- **It grew north:** the foot can't move south (0.95 m from the glass), so
+  the head is 2.1 m further north. The reception island, the pillars, the
+  counter and the stair hall's walls are laid out from the head, so they
+  moved with it.
+- **Upstairs corner:** the open corner beside the flight's head
+  (`TERRACE_BLOCK`) was laid out from the head too. Moved with it, it ran
+  across half of Room 6's doorway (`traverse` caught it). It stays where the
+  plan has it against the rooms: the straight edge is 2.4 m past the new
+  head, and the curve is tightened from 2.5 m to 2.0 m so it still meets
+  the flight.
+
 ---
 
 ## Audio

@@ -1136,16 +1136,22 @@ const GRAND_WEST = -2.4;
  * 8, where the plan has it 10.4 m off them.
  *
  * It was 28 risers of 0.18 over 0.26, 7.3 m, which puts the head 9.3 m off
- * the rooms. The author asked twice for more steps on it (28 Sep): at that
- * size the steps read as a few big blocks for a flight that wide. The head
- * stays put, because the reception's fit-out is laid out from it (see
- * `planY`), so the extra run comes off the landing at the foot: 0.8 m of
- * it. That is 34 risers of 0.147 over 0.238 in 8.1 m, a gentler flight than
- * the old one and still over the legal minimum going. Droid clears 0.147
- * as it cleared 0.18, and Biggy still clears nothing.
+ * the rooms. The author asked for more steps, and then said what that means:
+ * a LONGER flight (28 Sep). So it is 34 risers of 0.147 on a 0.30 m going,
+ * 10.2 m, which is the comfortable pitch a grand stair has (twice the riser
+ * plus the going is 0.59). Droid clears 0.147 as it cleared 0.18, and Biggy
+ * still clears nothing.
+ *
+ * The foot is as far south as it goes: 0.4 m of landing, 0.95 m from the
+ * glass doors. So the flight grew north, and its head is 2.1 m further into
+ * the concourse than it was. The reception's fit-out is laid out from the
+ * head (`planY`), so the island, the pillars and the stair hall's walls
+ * moved north with it and keep their places relative to it. Upstairs the
+ * head is 7.2 m off Rooms 5 and 8.
  */
 const GRAND_STEPS = 34;
-const GRAND_RUN = 28 * 0.26 + 0.8;
+const GRAND_GOING = 0.3;
+const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
 
 /**
  * Clear concourse at the FOOT of the flight, inside the well.
@@ -1160,8 +1166,8 @@ const GRAND_RUN = 28 * 0.26 + 0.8;
  * So the WELL reaches the wall and the FLIGHT stops short, and what you see
  * through the gap is the concourse the stairs land on.
  *
- * 0.4 m of it since 28 Sep, down from 1.2: the flight took the rest for its
- * extra steps (see `GRAND_STEPS`). On the ground floor the concourse runs on
+ * 0.4 m of it since 28 Sep, down from 1.2: the flight took the rest when it
+ * was lengthened (see `GRAND_STEPS`). On the ground floor the concourse runs on
  * past the well to the glass, so the foot still has floor in front of it.
  */
 const GRAND_LANDING = 0.4;
@@ -1200,9 +1206,15 @@ const GRAND_STAIR = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_LANDING, GRAND_WELL.
  * Measured off the plan relative to the stairhead: the edge's straight run is
  * 4.5 m north of the head, the curve is 2.5 m in radius, and it meets the
  * flight's west edge 2.0 m north of the head.
+ *
+ * Then the flight grew 2.1 m north (28 Sep, see `GRAND_STEPS`) and the edge
+ * stayed where the plan puts it against the rooms: moved with the head, it
+ * ran across half of Room 6's doorway. So the straight run is now 2.4 m past
+ * the head, and the curve is tightened to 2.0 m so that it still comes down
+ * onto the flight's west edge, 0.4 m north of the head.
  */
-const TERRACE_WALL_PAST_HEAD = 4.5;
-const TERRACE_CURVE = 2.5;
+const TERRACE_WALL_PAST_HEAD = 2.4;
+const TERRACE_CURVE = 2.0;
 
 /** The corner that is open to the floor below: west of the flight, south of the curved edge. */
 const TERRACE_BLOCK = rect(
