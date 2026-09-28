@@ -416,6 +416,22 @@ scenario(
   () => drive('biggy', KEYNOTE_BACK, EAST, 20, 1),
 );
 
+// Every auditorium has a way in. Room 6's door opened onto the open well
+// beside the grand flight until 28 Sep, and nothing here noticed: the rooms
+// were only ever entered by name, never walked into. So each one is, through
+// the end of its frontage the venue says the door is at.
+for (const room of KINEPOLIS.rooms.filter((r) => r.kind === 'auditorium')) {
+  const b = room.bounds;
+  const y = room.doorSide === 'high' ? b.y + b.h - 2.5 : b.y + 2.5;
+  const west = b.x < 0;
+  const wall = west ? b.x + b.w : b.x;
+  scenario(
+    `Voxxy walks into ${room.label}`,
+    (r) => r.floor === 1 && (west ? r.x < wall - 1 : r.x > wall + 1),
+    () => drive('voxxy', { x: west ? wall + 2.5 : wall - 2.5, y }, west ? WEST : EAST, 3, 1),
+  );
+}
+
 // The building has to hold them in. This was a printed warning for as long as
 // rooms were floor plates rather than enclosures, and a robot at full throttle
 // drove clean out of the Kinepolis. Now it is an assertion.

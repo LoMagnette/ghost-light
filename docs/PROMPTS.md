@@ -4747,6 +4747,23 @@ how you know where the others are.
 per speaker from a hash of their name, so it is stable for a person and
 claims to be nobody's real voice.
 
+### Claude Opus — Room 6 had no door
+
+**Prompt:**
+> So there's no way to access to room 6. It missing it's door.
+
+**It had a door, onto a drop.** Room 6 is even, so the alternation puts its
+door at the south end of its frontage, which is beside the grand flight.
+Upstairs, the 1.5 m either side of that flight is open well down to the
+reception. `doorBlocked` moves a door that has a staircase in front of it,
+but it tested the flight's treads, not the well, and 0.9 m out of Room 6's
+doorway is in the well and not on the stair. Now the well counts too, and
+the door moved to the north end.
+
+**Why nothing caught it:** no check ever walked into a room. `npm run
+traverse` now drives Voxxy through the door of every auditorium, all
+fourteen.
+
 ---
 
 ## Audio
