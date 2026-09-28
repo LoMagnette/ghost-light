@@ -4995,6 +4995,13 @@ behind the toilets' back wall. The toilets now run back to the hall-wall
 line, 5.87 m deep, so there is one wall. The fittings stay where the plan
 draws them, in the southern 4.1 m.
 
+> almost there theres now a missing wall
+
+**Done:** the back line was open for 1.9 m between the hall's south-east
+corner and the women's room. No room owned that stretch, because nothing is
+built under the label yet, so the wall builder left it open. It now has an
+envelope wall of its own, in `toiletFitOut`.
+
 ---
 
 ## Audio

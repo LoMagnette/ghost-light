@@ -655,6 +655,22 @@ function toiletFitOut(): { solids: Obstacle[]; decor: Decor[] } {
   }
   counter(MENS.x + MENS.w - inset - 0.55);
 
+  /*
+   * The back wall between the hall's south-east corner and the women's room.
+   *
+   * The hall stops at x 28.8, the toilets start at 30.7, and nothing is
+   * built under the "Toilets >" label, so no room owned this stretch of the
+   * back line and the wall builder left it open. It is the building's
+   * edge, like the rest of that line.
+   */
+  const hallCorner = HALL.x + HALL.w - WALL_THICKNESS / 2;
+  solids.push({
+    floor: 0,
+    bounds: rect(hallCorner, HALL.y - WALL_THICKNESS / 2, WOMENS.x - hallCorner, WALL_THICKNESS),
+    height: WALL_HEIGHT,
+    exterior: true,
+  });
+
   return { solids, decor };
 }
 
