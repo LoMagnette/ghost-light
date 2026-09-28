@@ -1291,6 +1291,11 @@ export class Crowd {
           const x = (gx + 0.5) * CELL;
           const y = (gy + 0.5) * CELL;
           if (!rectContains(b, x, y)) continue;
+          // Not over a stairwell, or over the open corner beside the grand
+          // stair's head. `voids` are the floor the renderer does not draw,
+          // and a flight's treads hang below the plate, so nothing solid
+          // stands there to keep people off: they were walking on air.
+          if (room.voids?.some((v) => overlaps(v, x, y, PERSON_RADIUS))) continue;
           if (solids.some((o) => overlaps(o.bounds, x, y, PERSON_RADIUS + 0.2))) continue;
           cells.add(pack(gx, gy));
         }

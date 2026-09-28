@@ -4810,6 +4810,90 @@ the door moved to the north end.
 traverse` now drives Voxxy through the door of every auditorium, all
 fourteen.
 
+### Claude Opus — the hall flights are stair cores
+
+**Prompt:**
+> Let's fix what's not correct compare to the venue. First the stairs from
+> the exhibition to the room hallway. the stairs have only lateral access
+> and are surrounded by wall just like on this diagram
+
+**Wrong stairs first.** The attached crop, `stairs-exhibition.png`, shows the
+steps between the hall and the reception, so I read the request as being
+about those and asked which of two shapes was right. The author meant the
+two flights in the hall. On `hollywood-area.png` each one is an enclosed
+core, with walls down both sides and across the north end, and a vestibule
+at the foot with doors in both side walls. The game had them open at the
+foot and along both flanks.
+
+**Built:** walls round each flight on floor 0, outside the flight's own
+bounds, so the stair rule is unchanged. There is a 4 m vestibule with a
+1.8 m door in each side. `npm run traverse` checks that the north end and
+the flanks are shut, and that Voxxy gets in through either door and reaches
+floor 1.
+
+**Fixed by hand in the harness:** at full throttle Voxxy crosses the 2.3 m
+vestibule and leaves by the far door. The drive now eases off after 0.9 s
+before turning to climb. Only 0.8–1.0 s works, so a player has to steer
+into the turn rather than hold the key down.
+
+### Claude Opus — a terrace at the head of the grand stair
+
+**Prompt:**
+> Great on room floor, the access to the main stair case is not aligned. It
+> missing a terasse like part. You can find schematic about it here:
+> references/venue/maps/access-main-stairs.png
+
+**What was wrong:** on the plan the corridor between Rooms 5 and 8 opens onto
+a wide landing. The flight starts from its far side, off to the east, and a
+curved wall closes the corner beside it. Ours was centred with an open drop
+down each side, and it started 4.7 m from the rooms instead of 10.4 m. The
+cause was a choice made earlier: the flight had been given a gentle
+"ceremonial" pitch 11.9 m long, and that length is exactly what used up the
+terrace. Both floor plans draw a short flight, about 6–7 m, offset east by
+the same amount.
+
+**Built:** the flight now runs from 2.4 m west of the centre line to the
+corridor's east wall. Its pitch is the building's 0.18 riser on a 0.26 going,
+so it is 7.3 m long and leaves 9.3 m of terrace. The corner behind the curved
+wall is a solid block with a rounded corner. Downstairs the reception island
+and counter moved east with the flight, as they are anchored to it.
+
+**Caught by the harnesses:** `npm run objectives` found Chapter I's cat
+inside the counter that had moved, so the cat now sits north of it.
+`npm run traverse` started a robot inside the island, which is now in front
+of the flight's west half, so that start point moved east. A new scenario
+walks into the curved wall.
+
+### Claude Opus — the corner by the stairhead is open, not a room
+
+**Prompt:**
+> the area with some blue (I've updated the image) it supposed to be empty,
+> it's a direct view on the level down.
+
+The author scribbled over the corner behind the curve on
+`access-main-stairs.png`. I had built it as a solid block. It is a hole in
+the floor looking down into the reception, with the curve as its edge.
+
+**Built:** a banded hole in the corridor's floor plate, with a balustrade
+along the edge that robots collide with. Only one storey is drawn at a time,
+so the concourse floor 5 m down is drawn under the hole as dressing, with a
+new `floorBelow` material, and skins on the two rims the camera can see.
+
+**Wrong by me, twice:**
+- **Stale frames:** I spent a round checking frames of the previous build,
+  because `npm run peek` serves `dist/` and does not rebuild. A pale block
+  that was really the old solid corner sent me hunting a renderer bug that
+  did not exist. `CLAUDE.md` now says it in bold.
+- **The cp trap:** I backed up `kinepolis.ts` with `cp` on the direct-mode
+  mount, which this project's notes warn against. The file and the copy both
+  came back as zeros. Everything committed was safe: I restored from git and
+  replayed the edits, then committed before experimenting again.
+
+**Found on the way:** the public crowd walked over every stairwell on the
+auditorium level. Its grid is rooms minus solids, a hole is render-only,
+and treads upstairs hang below the plate, so nothing kept people off.
+Room holes are now out of the grid.
+
 ---
 
 ## Audio
