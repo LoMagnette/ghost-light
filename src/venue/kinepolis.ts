@@ -4471,6 +4471,9 @@ export const POLO_DESK = {
   floor: 0 as const,
   x: POLO_WEST_RUN.x - 0.9,
   y: POLO_WEST_RUN.y + POLO_WEST_RUN.h / 2,
+  /** The middle of the counter across from it, and its top: where the polos are. */
+  counterX: POLO_WEST_RUN.x + POLO_COUNTER_DEPTH / 2,
+  counterTop: COUNTER_HEIGHT,
 };
 
 function poloDesk(): Obstacle[] {

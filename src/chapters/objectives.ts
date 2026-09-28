@@ -11,7 +11,7 @@
  * second thing to keep true, and the first one to drift.
  */
 
-import type { Activity, Zone } from '@/core/Activity';
+import { zoneCentre, type Activity, type Zone } from '@/core/Activity';
 import type { Look } from '@/core/Crowd';
 import { roomName, type Objective } from '@/core/Objective';
 import { CROSS_AISLE, KINEPOLIS, POLO_DESK, RECEPTION_DESK } from '@/venue/kinepolis';
@@ -75,6 +75,11 @@ const roomBounds = (id: string): { floor: Level; bounds: Rect } => {
   return { floor: room.floor, bounds: room.bounds };
 };
 
+/** The coffee comes from the middle of the foyer. */
+const FOYER_CENTRE = zoneCentre(roomZone('foyer', 2.0));
+/** The middle of Room 5's stage, where the mic stands. */
+const MIC_AT = zoneCentre(roomZone('aud-5-stage', 0.4));
+
 /** The keynote room. Spots on its stage are taken from its screen end. */
 const ROOM_8 = roomBounds('aud-8').bounds;
 
@@ -100,6 +105,7 @@ const SILENCE: Activity[] = [
     id: 'board-hall',
     label: 'Hall board',
     at: spot(0, -21.8, -1.7, 2.6),
+    prop: { kind: 'board', x: -21.0, y: -0.9 },
     reveal: { ...roomBounds('hall'), to: 0.42 },
   },
   {
@@ -107,6 +113,7 @@ const SILENCE: Activity[] = [
     id: 'board-concourse',
     label: 'Concourse board',
     at: spot(0, -11.0, -50.0, 2.6),
+    prop: { kind: 'board', x: -10.2, y: -49.2 },
     reveal: { ...roomBounds('reception'), to: 0.5 },
   },
   /*
@@ -191,7 +198,12 @@ const SILENCE: Activity[] = [
     // whether you can slow a robot down on a slope.
     // From Room 8's screen end, so it goes where the room goes: the room
     // moved 5.4 m east when the corridor was widened (28 Sep).
-    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -31.0, 2.6),
+    //
+    // At the south end of the stage, just past the last letter of `#DEVOXX`,
+    // where the rack can stand against the screen wall without standing in
+    // the word.
+    at: spot(1, ROOM_8.x + ROOM_8.w - 2.05, -35.6, 2.6),
+    prop: { kind: 'rack', x: ROOM_8.x + ROOM_8.w - 0.9, y: -37.3, facing: Math.PI },
     after: ['board-hall', 'board-concourse'],
     reveal: { ...roomBounds('aud-8'), to: 0.62 },
   },
@@ -260,6 +272,7 @@ export const SILENCE_OBJECTIVE: Objective = {
 
 /** A dead projector: 2 m up in the booth at the back of the room. */
 function projector(room: string, from: number, to: number): Activity {
+  const b = roomBounds(room).bounds;
   return {
     kind: 'dwell',
     id: `bulb-${room}-${from}`,
@@ -271,6 +284,8 @@ function projector(room: string, from: number, to: number): Activity {
     at: backOfHouse(room),
     gates: { reach: 2.0 },
     seconds: 3,
+    // On its bracket on the back wall, two metres up, aimed at the screen.
+    prop: { kind: 'projector', x: b.x + b.w - 0.9, y: b.y + b.h / 2, z: PROJECTOR_HEIGHT, facing: Math.PI },
   };
 }
 
@@ -295,6 +310,8 @@ function micCable(room: string, from: number, to: number): Activity {
     window: { from, to },
     at: spot(1, b.x + WALL_FACE + SLOT_DEPTH / 2, lectern, 0.5),
     gates: { maxRadius: 0.4 },
+    // The socket is in the screen wall, and the plug is on the floor.
+    prop: { kind: 'cable', x: b.x + WALL_FACE + 0.02, y: lectern, facing: 0 },
   };
 }
 
@@ -317,6 +334,7 @@ function adapter(room: string, from: number, to: number): Activity {
     window: { from, to },
     at: ORGANISERS_DESK,
     mass: 0.5,
+    prop: ORGANISERS_TABLE,
     // On the stage in front of the presenter's table, which is where the
     // laptop is and where the person waiting for it is standing.
     to: spot(1, b.x + PRESENTER_FROM_WALL, b.y + b.h - TABLE_CENTRE_FROM_NORTH, 1.0),
@@ -340,6 +358,7 @@ function chairs(room: string, from: number, to: number): Activity {
     window: { from, to },
     at: FOYER_STACK,
     mass: 40,
+    prop: { kind: 'chairs', x: -19.3, y: 50.6 },
     to: crossAisle(room),
   };
 }
@@ -351,6 +370,8 @@ function chairs(room: string, from: number, to: number): Activity {
  */
 /** The screen wall is 0.3 m thick, centred on the room's edge. */
 const WALL_FACE = 0.15;
+/** Where a projector hangs: two metres, the reach gate's own number. */
+const PROJECTOR_HEIGHT = 2.0;
 /** The slot behind the lectern, wall face to lectern back. */
 const SLOT_DEPTH = 0.8;
 /** How far the lectern starts in from the north wall, and how long it is. */
@@ -366,6 +387,8 @@ const TABLE_CENTRE_FROM_NORTH = 3.8;
  * go when something is missing, which at a conference this size is always.
  */
 const ORGANISERS_DESK = spot(1, 3.2, -40.0, 1.4);
+/** The desk itself, just east of where you stand at it, with the adapters on it. */
+const ORGANISERS_TABLE = { kind: 'adapter', x: 3.95, y: -40.0, facing: Math.PI } as const;
 /** The chairs nobody expected to need, stacked in the foyer. */
 const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
 
@@ -791,6 +814,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // aisle beside a blank wall.
       at: spot(RECEPTION_DESK.floor, RECEPTION_DESK.x, RECEPTION_DESK.y, 3.0),
       seconds: 2,
+      // The steward's scanner, on its post against the counter.
+      prop: { kind: 'scanner', x: RECEPTION_DESK.x + 1.1, y: RECEPTION_DESK.y + 0.8 },
     },
 
     /*
@@ -879,6 +904,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // The public side of it: see POLO_DESK.
       at: spot(POLO_DESK.floor, POLO_DESK.x, POLO_DESK.y, 1.2),
       gates: { reach: 2.0 },
+      prop: { kind: 'polo', x: POLO_DESK.counterX, y: POLO_DESK.y, z: POLO_DESK.counterTop, facing: Math.PI },
       seconds: 3,
     },
 
@@ -890,6 +916,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       to: { floor: 1, bounds: rect(-6.0, -34.0, 12.0, 6.0) },
       mass: 2,
       fragile: true,
+      prop: { kind: 'coffee', x: FOYER_CENTRE.x + 1.0, y: FOYER_CENTRE.y + 1.0 },
       // Biggy is excluded by the stairs long before it is excluded by this,
       // but a 430 kg machine carrying a tray of coffee is the wrong image
       // even where it can reach.
@@ -901,6 +928,8 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'shutter',
       label: 'Free the jammed shutter',
       at: spot(0, 20.0, 12.3, 3.2),
+      // In the hall's east wall, whose inner face is at x 22.02.
+      prop: { kind: 'shutter', x: 21.94, y: 12.3, facing: Math.PI },
       // 900 kg·m/s: Droid peaks at 777 and cannot, Biggy cruises at 1366 and
       // must still be doing two thirds of its top speed. A run-up, or nothing.
       momentum: 900,
@@ -912,6 +941,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       label: 'The keg, to the party stage',
       at: spot(0, 20.0, 15.8, 2.6),
       to: spot(0, -14.0, 10.3, 3.4),
+      prop: { kind: 'keg', x: 20.9, y: 16.3 },
       mass: 200,
       after: ['shutter'],
       window: { from: 0, to: 270 },
@@ -934,6 +964,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // nothing to spare, which is the most Droid sentence in the game.
       at: roomZone('aud-5-stage', 0.4),
       gates: { reach: 2.0 },
+      prop: { kind: 'mic', x: MIC_AT.x, y: MIC_AT.y + 0.8 },
       window: { from: 60, to: 110 },
       seconds: 2,
     },

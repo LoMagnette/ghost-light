@@ -24,7 +24,13 @@ import { ROBOTS, type RobotId, type RobotSpec } from '@/core/RobotSpec';
 import { KINEPOLIS, SPAWNS } from '@/venue/kinepolis';
 import { groundAt, rect, roomAt, type Level } from '@/core/Venue';
 import { linkAt, surfaceHeight } from '@/core/Traversal';
-import { BlockoutRenderer, shade, type MarkerIcon, type ObjectiveMarker } from '@/render/BlockoutRenderer';
+import {
+  BlockoutRenderer,
+  shade,
+  type MarkerIcon,
+  type ObjectiveMarker,
+  type PropState,
+} from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
 import { ObjectiveRun, roomName, type ActivityState, type Arrival, type Exit } from '@/core/Objective';
@@ -121,6 +127,9 @@ const WALKOUT = 7;
 
 /** How far a posted creature stands from its marker, metres, south and west. */
 const POST_OFFSET = 0.62;
+
+/** A prop's front, unless its activity says otherwise: south-west, at the camera. */
+const FACING_CAMERA = -Math.PI * 0.75;
 
 /** A print on screen, design pixels. 3:2 — see `public/photos/README.md`. */
 const PRINT_WIDTH = 340;
@@ -584,6 +593,7 @@ export class ChapterScreen implements Screen {
     this.followControlled(dt);
     const markers = this.markers();
     this.blockout.setMarkers(markers, this.floor);
+    this.blockout.setProps(this.props(), this.floor);
     this.pointAt(markers);
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.focus(this.cameraX, this.cameraY, this.cameraZ);
@@ -1235,6 +1245,68 @@ export class ChapterScreen implements Screen {
       });
     }
 
+    return out;
+  }
+
+  /**
+   * Every job's object, and how it is. See `Activity.prop`.
+   *
+   * A fix is working until its room's breakdown comes due, broken until it
+   * is done, and dark if the room was lost. A haul's item is on its stand
+   * until somebody picks it up, in their arms while they have it, and on
+   * the floor wherever it was put down or delivered. Done or not, the object
+   * stays: the adapter on the stage is the proof somebody brought it.
+   */
+  private props(): PropState[] {
+    const out: PropState[] = [];
+    const stands = new Map<string, number>();
+    for (const state of this.run.states) {
+      const { activity, status } = state;
+      const prop = activity.prop;
+      if (!prop) continue;
+      const centre = zoneCentre(activity.at);
+      const floor = activity.at.floor;
+      const x = prop.x ?? centre.x;
+      const y = prop.y ?? centre.y;
+      const key = `${prop.kind}@${floor}:${x.toFixed(2)},${y.toFixed(2)}`;
+      const sharing = stands.get(key) ?? 0;
+      stands.set(key, sharing + 1);
+
+      let item: PropState['item'];
+      if (activity.kind === 'haul') {
+        const untouched =
+          status !== 'done' && state.floor === floor && Math.hypot(state.x - centre.x, state.y - centre.y) < 0.01;
+        item = state.carrier
+          ? { carrier: state.carrier }
+          : untouched
+            ? { slot: sharing }
+            : { x: state.x, y: state.y, z: groundAt(KINEPOLIS, state.floor, state.x, state.y), floor: state.floor };
+      }
+
+      // Before its window a breakdown has not happened. Asked of the clock
+      // rather than of `locked`, because every state starts `open` and the
+      // run is not advanced while the arrival is still talking.
+      const due = activity.window === undefined || this.run.elapsed >= activity.window.from;
+      const pending = activity.room !== undefined && !due;
+
+      out.push({
+        id: activity.id,
+        kind: prop.kind,
+        floor,
+        x,
+        y,
+        z: groundAt(KINEPOLIS, floor, x, y) + (prop.z ?? 0),
+        facing: prop.facing ?? FACING_CAMERA,
+        condition:
+          status === 'done' || pending
+            ? 'working'
+            : status === 'missed' || status === 'failed'
+              ? 'dead'
+              : 'broken',
+        stand: sharing === 0,
+        item,
+      });
+    }
     return out;
   }
 
