@@ -5217,6 +5217,93 @@ to the east corner. The small windows that were in the pier are gone. The
 precast above, which carries the star, is unchanged. The band-end cut in
 `glazeFacade` stays, but now falls on the entrance's edge.
 
+### The storey swaps half way up a flight
+
+> One mechanic that should be adapted when the robot climb the stairs and it
+> reach mid heigh it should swap level avoiding to long stairs visually
+
+**Done (branch `stair-swap`):**
+- **Swap at the middle:** `Sim.resolveSurfaces` moves a robot onto the upper
+  storey once it is past 55% of a flight, and back down below 45%. It used
+  to wait for the top or bottom step. Heights were already measured per
+  storey (`surfaceHeight` and `datumOf`), so the robot's z is re-expressed
+  from the new datum and nothing jumps.
+- **View follows:** the screen follows the robot's storey, so the view
+  swaps with it.
+- **Tests:**
+  - `traverse` measures peaks from the ground floor's datum (`above`),
+    because z is now storey-relative at the top of a climb.
+  - The grand flight's east-end drive is cut to 6 s: held for longer, it now
+    crosses the corridor and goes down the hall's east flight.
+  - New scenarios: still downstairs at 40% of the grand flight, upstairs at
+    60%, and in the top half it can't step off either side.
+
+### More steps on the grand flight
+
+> Can you add a few step to the main stair in the reception so the robot does
+> not like he's flying
+
+**Done (branch `stair-treads`):**
+- **Cause:** a flight was drawn with at most 18 treads (`MAX_TREADS`). The
+  grand flight has 28 risers, so it was drawn as 18 tall treads. The robot
+  is drawn stepping riser by riser (`climbOf`), so it rose through the air
+  between the drawn steps. The hall flights had the same fault: 34 risers,
+  18 treads.
+- **Fix:** `treadsOf` now draws one tread per real riser, 28 on the grand
+  flight and 34 on each hall flight. `MAX_TREADS` and `MIN_TREAD` are gone.
+  The rakes already had one per row and are unchanged.
+
+> It still needs a few more steps on the big stairs
+
+**Done:**
+- **More steps:** the grand flight has 34 steps, not 28: 0.147 m risers on a
+  0.238 m going, 8.1 m of run.
+- **Longer at the foot:** its head stays put, because the reception's
+  fit-out is laid out from it. So the extra 0.8 m comes off the landing at
+  its foot (`GRAND_LANDING` 1.2 → 0.4). On the ground floor the concourse
+  runs on to the glass, 0.95 m past the foot.
+- **Venue check:** `npm run venue`'s shallowest going is now the legal
+  minimum, 0.22 m (it was 0.25).
+- **Floor-1 railing:** the rule for a railing round a well now also needs
+  floor right beside the rail, not only half a metre out. Otherwise a rail
+  stood over the well across the flight's foot. A diff of the floor-1 rails
+  shows only the grand flight's side rail lengthening.
+
+> When I say more step I mean make the stair longer
+
+**Done:**
+- **Longer flight:** the grand flight keeps its 34 risers of 0.147 m but on
+  a 0.30 m going, so it is 10.2 m long instead of 8.1. That is a
+  comfortable grand-stair pitch. `npm run venue`'s minimum going is back to
+  0.25.
+- **It grew north:** the foot can't move south (0.95 m from the glass), so
+  the head is 2.1 m further north. The reception island, the pillars, the
+  counter and the stair hall's walls are laid out from the head, so they
+  moved with it.
+- **Upstairs corner:** the open corner beside the flight's head
+  (`TERRACE_BLOCK`) was laid out from the head too. Moved with it, it ran
+  across half of Room 6's doorway (`traverse` caught it). It stays where the
+  plan has it against the rooms: the straight edge is 2.4 m past the new
+  head, and the curve is tightened from 2.5 m to 2.0 m so it still meets
+  the flight.
+
+### Status update
+
+> So the venue is good enough for now. One improvement for later or the
+> theater room
+>
+> Can you update the status. btw the more cat is done.
+
+**Done:** `STATUS.md` brought up to date against `origin/main`:
+- **Moved to done:**
+  - the cats (`more-cats`);
+  - the crowd fix (#21), audio (#22), Room 6's door (#23) and the intro (#24);
+  - the venue zones (#25–#29), marked good enough for now.
+- **In progress:** the three stacked follow-ups, `entrance-doors` →
+  `stair-swap` → `stair-treads`, which are not merged.
+- **Noted for later:** one cinema-room improvement, which the author hasn't
+  described yet.
+
 ---
 
 ## Audio

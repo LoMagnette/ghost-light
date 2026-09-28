@@ -1135,17 +1135,22 @@ const GRAND_WEST = -2.4;
  * (`access-main-stairs.png`): at 11.9 m the head was 4.7 m from Rooms 5 and
  * 8, where the plan has it 10.4 m off them.
  *
- * At 0.18 over 0.26 the 5.0 m takes 28 risers and 7.3 m, which puts the head
- * 9.3 m off the rooms. Steeper than the old pitch and still a staircase —
- * `npm run venue` holds every flight to a 0.25 m going — and 0.18 is exactly
- * Droid's `maxStepRise`, the same as every other flight in the building, so
- * the cast climbs it as before and Biggy still cannot.
+ * It was 28 risers of 0.18 over 0.26, 7.3 m, which puts the head 9.3 m off
+ * the rooms. The author asked for more steps, and then said what that means:
+ * a LONGER flight (28 Sep). So it is 34 risers of 0.147 on a 0.30 m going,
+ * 10.2 m, which is the comfortable pitch a grand stair has (twice the riser
+ * plus the going is 0.59). Droid clears 0.147 as it cleared 0.18, and Biggy
+ * still clears nothing.
+ *
+ * The foot is as far south as it goes: 0.4 m of landing, 0.95 m from the
+ * glass doors. So the flight grew north, and its head is 2.1 m further into
+ * the concourse than it was. The reception's fit-out is laid out from the
+ * head (`planY`), so the island, the pillars and the stair hall's walls
+ * moved north with it and keep their places relative to it. Upstairs the
+ * head is 7.2 m off Rooms 5 and 8.
  */
-const GRAND_RISER = RISER;
-const GRAND_GOING = 0.26;
-
-/** Risers in the grand flight, and the run they need. */
-const GRAND_STEPS = Math.round((FLOOR_HEIGHT - CONCOURSE_LEVEL) / GRAND_RISER);
+const GRAND_STEPS = 34;
+const GRAND_GOING = 0.3;
 const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
 
 /**
@@ -1160,8 +1165,12 @@ const GRAND_RUN = GRAND_STEPS * GRAND_GOING;
  *
  * So the WELL reaches the wall and the FLIGHT stops short, and what you see
  * through the gap is the concourse the stairs land on.
+ *
+ * 0.4 m of it since 28 Sep, down from 1.2: the flight took the rest when it
+ * was lengthened (see `GRAND_STEPS`). On the ground floor the concourse runs on
+ * past the well to the glass, so the foot still has floor in front of it.
  */
-const GRAND_LANDING = 1.2;
+const GRAND_LANDING = 0.4;
 
 /**
  * The WELL — the hole the grand flight comes up through. Exactly as wide as
@@ -1197,9 +1206,15 @@ const GRAND_STAIR = rect(GRAND_WELL.x, GRAND_WELL.y + GRAND_LANDING, GRAND_WELL.
  * Measured off the plan relative to the stairhead: the edge's straight run is
  * 4.5 m north of the head, the curve is 2.5 m in radius, and it meets the
  * flight's west edge 2.0 m north of the head.
+ *
+ * Then the flight grew 2.1 m north (28 Sep, see `GRAND_STEPS`) and the edge
+ * stayed where the plan puts it against the rooms: moved with the head, it
+ * ran across half of Room 6's doorway. So the straight run is now 2.4 m past
+ * the head, and the curve is tightened to 2.0 m so that it still comes down
+ * onto the flight's west edge, 0.4 m north of the head.
  */
-const TERRACE_WALL_PAST_HEAD = 4.5;
-const TERRACE_CURVE = 2.5;
+const TERRACE_WALL_PAST_HEAD = 2.4;
+const TERRACE_CURVE = 2.0;
 
 /** The corner that is open to the floor below: west of the flight, south of the curved edge. */
 const TERRACE_BLOCK = rect(
@@ -2985,26 +3000,6 @@ for (const room of floor1Rooms) {
  * takes 34 of them, and the flight reads as a staircase instead of a ziggurat.
  */
 
-/**
- * Treads per flight.
- *
- * A real 6.2 m floor takes 34 risers at 0.18 m, and at this zoom 34 steps are
- * 10 px apart and 2 px high — visual noise, not a staircase. 18 reads as a
- * flight. Capped rather than computed for that reason alone.
- */
-const MAX_TREADS = 18;
-
-/**
- * Shallowest tread worth drawing, metres.
- *
- * The cap above is really a statement about tread SIZE — 18 steps in an 11.2 m
- * flight is 0.62 m each — and stated as a count it lies about long flights. An
- * auditorium rake runs 25 m and wants a step every metre, one per row of
- * seats, and getting 18 instead would put its steps out of register with the
- * seating standing on them. So: eighteen treads, or as many as fit at 0.62 m
- * apart, whichever is more. Every flight in the building is unchanged.
- */
-const MIN_TREAD = 0.62;
 
 
 /**
@@ -3029,10 +3024,12 @@ const SHAFT_SKIN = 0.06;
 function treadsOf(link: Link): { from: number; to: number; surface: number }[] {
   const { bounds: b, rise, axis, ascending } = link;
   const run = axis === 'y' ? b.h : b.w;
-  const treads = Math.min(
-    Math.max(3, Math.round(rise / (link.riser || RISER))),
-    Math.max(MAX_TREADS, Math.floor(run / MIN_TREAD)),
-  );
+  // One band per real riser. The robots are drawn stepping from riser to
+  // riser (`climbOf` in the renderer), and a flight drawn with fewer, taller
+  // treads than it has left them rising through thin air between the drawn
+  // steps: the grand flight's 28 risers were 18 treads, the hall flights'
+  // 34 were 18 too (the author, 28 Sep: "like he's flying").
+  const treads = Math.max(1, Math.round(rise / (link.riser || RISER)));
   const step = run / treads;
   const start = axis === 'y' ? b.y : b.x;
 
@@ -4279,18 +4276,25 @@ function stairRails(links: Link[], rooms: Room[]): { solids: Obstacle[]; decor: 
       // balustrade straddles the lip of the opening, so its own centre is on
       // the line and answers yes to everything. What decides it is whether
       // there is floor on the far side for anyone to be standing on.
-      const out = 0.5;
-      const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
-      const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
-      const guarding = rooms.some(
-        (r) =>
-          r.floor === link.to &&
-          rectContains(r.bounds, ox, oy) &&
-          // A hole in the plate is not floor to stand on. Without this the
-          // grand flight kept a balustrade down each side of its well, in mid
-          // air, once the well became wider than the flight.
-          !r.voids?.some((v) => rectContains(v, ox, oy)),
-      );
+      //
+      // And just outboard of it as well. The well can run on past the flight
+      // (the grand flight's landing at its foot), and then half a metre out is
+      // floor beyond the far lip while the rail itself stands over the well.
+      // A 0.4 m landing did exactly that (28 Sep).
+      const floorAt = (out: number): boolean => {
+        const ox = cx + Math.sign(cx - (b.x + b.w / 2)) * out;
+        const oy = cy + Math.sign(cy - (b.y + b.h / 2)) * out;
+        return rooms.some(
+          (r) =>
+            r.floor === link.to &&
+            rectContains(r.bounds, ox, oy) &&
+            // A hole in the plate is not floor to stand on. Without this the
+            // grand flight kept a balustrade down each side of its well, in
+            // mid air, once the well became wider than the flight.
+            !r.voids?.some((v) => rectContains(v, ox, oy)),
+        );
+      };
+      const guarding = floorAt(0.5) && floorAt(half + 0.05);
       if (!guarding) continue;
       decor.push({ floor: link.to, bounds: edge.bounds, base: 0, height: RAIL_HEIGHT });
     }

@@ -14,7 +14,10 @@
 
 import { Body, NO_INPUT, type DriveInput } from './Body';
 import { groundAt, type Level, type Link, type Obstacle, type Venue } from './Venue';
-import { canStepOnto, climbFraction, footingAt, type Footing } from './Traversal';
+import { canStepOnto, climbFraction, footingAt, surfaceHeight, type Footing } from './Traversal';
+
+/** Either side of a flight's middle, as a fraction of it, before the storey swaps. */
+const SWAP_BAND = 0.05;
 
 export const FIXED_DT = 1 / 120;
 
@@ -185,14 +188,30 @@ export class Sim {
         body.z = footing.z;
         actor.onLink = link.id;
 
-        // Reaching an end while still ON the flight settles the storey, so a
-        // robot that stops on the top step is upstairs rather than hovering
-        // over the floor it left.
+        /*
+         * Half way up, the robot is upstairs.
+         *
+         * The storey changed at the top step, so a climb drew the whole
+         * flight from the floor below it: fourteen metres of stairs rising
+         * out of the cutaway into nothing, and the floor you were going to
+         * only appearing once you were on it. The author wanted the swap at
+         * mid-height (28 Sep), which is where a real staircase stops being
+         * part of the room you left. A flight is drawn on both storeys (see
+         * `stairMass`), so either half can be seen from either end.
+         *
+         * `SWAP_BAND` either side of the middle keeps a robot parked on the
+         * halfway tread from flicking between floors every step.
+         */
         if (link.from !== link.to) {
-          const arriving = f >= 0.999 ? link.to : f <= 0.001 ? link.from : undefined;
-          if (arriving !== undefined && arriving !== actor.floor) {
+          const arriving =
+            actor.floor === link.from && f >= 0.5 + SWAP_BAND
+              ? link.to
+              : actor.floor === link.to && f <= 0.5 - SWAP_BAND
+                ? link.from
+                : undefined;
+          if (arriving !== undefined) {
             actor.floor = arriving;
-            body.z = groundAt(this.venue, arriving, body.x, body.y);
+            body.z = surfaceHeight(link, body.x, body.y, arriving);
           }
         }
         this.limitStairSpeed(actor, link);

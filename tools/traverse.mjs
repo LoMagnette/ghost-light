@@ -63,7 +63,18 @@ const { Body } = await import(pathToFileURL(join(out, 'core/Body.js')));
 const { Sim, makeActor, FIXED_DT } = await import(pathToFileURL(join(out, 'core/Sim.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
 const { KINEPOLIS, CORE_VESTIBULE, CORE_DOOR, CORE_DOOR_SET } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
+const { FLOOR_HEIGHT } = await import(pathToFileURL(join(out, 'core/Venue.js')));
+const { climbFraction } = await import(pathToFileURL(join(out, 'core/Traversal.js')));
 rmSync(out, { recursive: true, force: true });
+
+/**
+ * Height above the ground floor's datum, whichever storey the robot is on.
+ *
+ * `body.z` is measured from the storey it is on, and the storey swaps half
+ * way up a flight (Sim, 28 Sep), so a robot at the top of a full climb reads
+ * 3.1 m and not 6.2. The peak a check asks about is the building's.
+ */
+const above = (actor) => actor.body.z + actor.floor * FLOOR_HEIGHT;
 
 /** Drive one robot from a point in a fixed world direction, and report where it stopped. */
 function drive(robotId, from, dir, seconds, floor = 0) {
@@ -79,7 +90,7 @@ function drive(robotId, from, dir, seconds, floor = 0) {
   let minZ = 0;
   for (let t = 0; t < seconds; t += FIXED_DT) {
     sim.advance(FIXED_DT);
-    peakZ = Math.max(peakZ, body.z);
+    peakZ = Math.max(peakZ, above(actor));
     minZ = Math.min(minZ, body.z);
   }
   return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, minZ, onLink: actor.onLink };
@@ -104,10 +115,43 @@ function route(robotId, from, legs, floor = 0) {
     Object.assign(actor.input, { dirX: dir.x / mag, dirY: dir.y / mag, throttle: 1, braking: false });
     for (let t = 0; t < seconds; t += FIXED_DT) {
       sim.advance(FIXED_DT);
-      peakZ = Math.max(peakZ, body.z);
+      peakZ = Math.max(peakZ, above(actor));
     }
   }
   return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, onLink: actor.onLink };
+}
+
+/**
+ * Climb a flight until the robot is `fraction` of the way up it, note which
+ * storey it is on there, then hold `then` for `seconds`.
+ *
+ * For the storey swap, which happens half way up, and for what is beside a
+ * flight in each half of it: the floor below's walls in the lower half, the
+ * floor above's rails in the upper.
+ */
+function climbTo(robotId, from, dir, linkId, fraction, then, seconds = 0) {
+  const sim = new Sim(KINEPOLIS);
+  const body = new Body(ROBOTS[robotId], from.x, from.y);
+  const actor = makeActor(body, 0);
+  sim.add(actor);
+  const link = KINEPOLIS.links.find((l) => l.id === linkId);
+  const hold = (d) => {
+    const mag = Math.hypot(d.x, d.y);
+    Object.assign(actor.input, { dirX: d.x / mag, dirY: d.y / mag, throttle: 1, braking: false });
+  };
+  hold(dir);
+  let floorAt;
+  for (let t = 0; t < 30 && floorAt === undefined; t += FIXED_DT) {
+    sim.advance(FIXED_DT);
+    if (actor.onLink === linkId && climbFraction(link, body.x, body.y) >= fraction) floorAt = actor.floor;
+  }
+  hold(then);
+  let lowest = above(actor);
+  for (let t = 0; t < seconds; t += FIXED_DT) {
+    sim.advance(FIXED_DT);
+    lowest = Math.min(lowest, above(actor));
+  }
+  return { x: body.x, y: body.y, z: body.z, floor: actor.floor, floorAt, lowest, onLink: actor.onLink };
 }
 
 /**
@@ -131,7 +175,7 @@ function driveLoaded(robotId, from, dir, seconds, payload, floor = 0) {
   let peakZ = 0;
   for (let t = 0; t < seconds; t += FIXED_DT) {
     sim.advance(FIXED_DT);
-    peakZ = Math.max(peakZ, body.z);
+    peakZ = Math.max(peakZ, above(actor));
   }
   return { x: body.x, y: body.y, z: body.z, floor: actor.floor, peakZ, onLink: actor.onLink };
 }
@@ -508,7 +552,9 @@ scenario(
 scenario(
   'Voxxy climbs the east end of the grand flight into the corridor',
   (r) => r.floor === 1 && r.x > 7.3,
-  () => drive('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.5, y: GRAND.bounds.y - 0.6 }, NORTH, 14),
+  // 6 s, not 14: held for longer it crosses the corridor and goes down the
+  // hall's east flight, which is in line with it against the east wall.
+  () => drive('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.5, y: GRAND.bounds.y - 0.6 }, NORTH, 6),
 );
 
 /*
@@ -519,6 +565,35 @@ scenario(
   'Biggy drives in off the forecourt through the glass doors',
   (r) => r.y > -59.5 && Math.abs(r.z - CONCOURSE_LEVEL) < 0.1,
   () => drive('biggy', { x: 18.6, y: -63.5 }, NORTH, 6),
+);
+
+/*
+ * The storey swaps half way up a flight (28 Sep), so the floor you are going
+ * to is the one drawn for the top half of the climb. The grand flight, from
+ * the concourse, on its centre line.
+ */
+const GRAND_FOOT = { x: GRAND.bounds.x + GRAND.bounds.w / 2, y: GRAND.bounds.y - 0.6 };
+scenario(
+  'Voxxy is still downstairs 40% of the way up the grand flight',
+  (r) => r.floorAt === 0,
+  () => climbTo('voxxy', GRAND_FOOT, NORTH, 'grand-stair', 0.4, NORTH),
+);
+scenario(
+  'Voxxy is upstairs 60% of the way up the grand flight',
+  (r) => r.floorAt === 1,
+  () => climbTo('voxxy', GRAND_FOOT, NORTH, 'grand-stair', 0.6, NORTH),
+);
+// In the top half the robot is on storey 1, where the floor below's walls
+// are not: what keeps it on the flight there is the floor above's rails.
+scenario(
+  'Voxxy cannot step off the west side of the grand flight in its top half',
+  (r) => r.lowest > 4 && r.x > GRAND.bounds.x - 0.5,
+  () => climbTo('voxxy', { x: GRAND.bounds.x + 1.0, y: GRAND.bounds.y - 0.6 }, NORTH, 'grand-stair', 0.8, WEST, 2),
+);
+scenario(
+  'Voxxy cannot step off the east side of the grand flight in its top half',
+  (r) => r.lowest > 4 && r.x < GRAND.bounds.x + GRAND.bounds.w + 0.5,
+  () => climbTo('voxxy', { x: GRAND.bounds.x + GRAND.bounds.w - 1.0, y: GRAND.bounds.y - 0.6 }, NORTH, 'grand-stair', 0.8, EAST, 2),
 );
 
 /*

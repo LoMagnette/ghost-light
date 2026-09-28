@@ -38,6 +38,14 @@ wasting them.
 | Fit | `radius` | **0.34 m** | 0.46 m | 0.72 m | a 0.8 m gap admits Voxxy alone |
 | Carry | `payload` *(new)* | 10 kg | 90 kg | **400 kg** | who can lift the thing at all |
 
+**The storey swaps half way up a flight** (28 Sep). A robot climbing is on
+the floor below for the lower half of the stairs and on the floor above for
+the upper half. So the view changes at mid-height, not at the top step, and
+a climb never draws a whole flight rising out of the room you left. It is
+the sim's floor, not only the view's: collision in the top half is against
+the upper storey's railings. A 5% band either side of the middle stops a
+robot parked on the halfway tread from flicking between the two.
+
 Reach is `height` and fit is `radius`. Neither is a new field and neither is a
 flag: an activity states the metres it needs and the robots answer from
 dimensions they already had. Same discipline as the stair rule, and for the
