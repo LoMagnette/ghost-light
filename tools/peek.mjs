@@ -45,6 +45,11 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.jpg': 'image/jpeg',
   '.map': 'application/json',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.opus': 'audio/ogg',
 };
 
 const server = createServer(async (req, res) => {

@@ -32,6 +32,8 @@ import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
+import { playAmbience, playMusic } from './audio';
+import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
@@ -149,6 +151,9 @@ const DEPART_OPEN = 1.3;
 const DEPART_PULL = 1.9;
 const DEPART_WHITE = 2.6;
 const DEPART_END = 3.8;
+
+/** The robots' speaking pitch, Hz: small and high, down to big and low. */
+const ROBOT_VOICE: Record<RobotId, number> = { voxxy: 520, droid: 300, biggy: 170 };
 const ARRIVE_FADE = 1.0;
 const ARRIVE_LAND = 1.75;
 const ARRIVE_SPLIT_AT = 2.5;
@@ -170,7 +175,7 @@ const WORMHOLE_COLOUR = CHAPTER_ONE.palette.accent;
 /** A story beat in progress. While there is one, nobody is driving. */
 type Story =
   | { kind: 'departure'; t: number; exit: Exit; holes: Hole[]; left: boolean }
-  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: Set<Actor> };
+  | { kind: 'arrival'; t: number; arrival: Arrival; line: number; landed: Set<Actor>; shimmered?: boolean };
 
 /** Where a robot went through, which is where it stood when the floor opened. */
 interface Hole {
@@ -227,6 +232,12 @@ export class ChapterScreen implements Screen {
    */
   private typed = 0;
   private typingLine = '';
+  /** Each robot's drive, heard. See `listen`. */
+  private readonly motors = new Map<Actor, sfx.Motor>();
+  /** What each job was last frame, so a change of status can be heard once. */
+  private readonly heard = new Map<ActivityState, ActivityState['status']>();
+  /** The last whole second a countdown ticked on. */
+  private lastTick = Infinity;
   private toast!: HTMLElement;
   /** Chapter seconds at which the next cat arrives. See `driveSwarm`. */
   private nextCatAt = 0;
@@ -315,6 +326,11 @@ export class ChapterScreen implements Screen {
 
     game.setBackground(chapter.palette.void);
     this.renderer = game.renderer;
+    // Each era its own tune, by file name: `music-silence`, `music-javapolis`,
+    // `music-capacity`. Crossfaded from whatever was playing, which through a
+    // wormhole is the chapter before. See `app/audio.ts`.
+    playMusic(`music-${chapter.id}`);
+    playAmbience(`ambience-${chapter.id}`);
 
     this.sim = new Sim(KINEPOLIS);
 
@@ -531,6 +547,7 @@ export class ChapterScreen implements Screen {
       this.driveSwarm();
       this.run.update(dt, this.actors, this.dropRequested, this.talkRequested);
       this.consumeObjective();
+      this.hearObjective();
       if (this.run.phase === 'ended') {
         // Won, and the chapter goes somewhere: through the floor, not to a
         // card. A lost round still gets the card — you do not fall through
@@ -597,6 +614,7 @@ export class ChapterScreen implements Screen {
   }
 
   dispose(): void {
+    for (const motor of this.motors.values()) motor.stop();
     for (const hole of this.wormholes) hole.dispose();
     this.blockout.dispose();
   }
@@ -667,6 +685,7 @@ export class ChapterScreen implements Screen {
     }));
     this.story = { kind: 'departure', t: 0, exit, holes, left: false };
     this.openWormholes(holes.length);
+    sfx.whoosh(DEPART_END);
   }
 
   /** Start a chapter out of the white, with robots about to fall into it. */
@@ -772,6 +791,10 @@ export class ChapterScreen implements Screen {
     this.whiteout.style.opacity = String(1 - smooth(t / ARRIVE_FADE));
 
     const split = clamp01((t - splitAt) / ARRIVE_SPLIT);
+    if (split > 0 && !story.shimmered) {
+      story.shimmered = true;
+      sfx.shimmer();
+    }
     const grown = smooth(split);
     const dropFrom = ARRIVE_FADE * 0.55;
 
@@ -787,6 +810,7 @@ export class ChapterScreen implements Screen {
         // Heavier machines land harder. Droid is four Voxxys.
         const weight = Math.min(1, b.spec.mass / 200);
         this.shake(0.3 + 0.15 * weight, 0.008 + 0.012 * weight, true);
+        sfx.land(b.spec.id);
       }
       if (t >= end) return;
 
@@ -846,7 +870,9 @@ export class ChapterScreen implements Screen {
       this.typingLine = said.text;
       this.typed = 0;
     }
+    const before = this.typed;
     this.typed = Math.min(said.text.length, this.typed + ChapterScreen.TYPE_RATE * dt);
+    this.speak(before, this.typed, ROBOT_VOICE[said.who]);
     this.talkBox.style.display = 'flex';
     this.showPortrait(spec.name, tint);
     this.talkWho.textContent = spec.name;
@@ -904,6 +930,7 @@ export class ChapterScreen implements Screen {
    * the day carries on behind it, which is the joke and also the cost.
    */
   private showPrint(photo: Photo, taken?: HTMLCanvasElement): void {
+    sfx.shutter();
     const { palette } = this.chapter;
     this.print.replaceChildren();
 
@@ -1435,6 +1462,7 @@ export class ChapterScreen implements Screen {
    * pace hits harder than Voxxy at a sprint, and it should look like it.
    */
   private applyFeedback(): void {
+    this.listen();
     for (const impact of this.sim.impacts) {
       if (impact.actor !== this.controlled) continue;
       const weight = Math.min(1, impact.momentum / IMPACT_REFERENCE_MOMENTUM);
@@ -1447,6 +1475,69 @@ export class ChapterScreen implements Screen {
       // Do not force: a footfall must never interrupt an impact, which is the
       // more important event and is shaking the same camera.
       this.shake(0.07, 0.0004 + weight * 0.0022, false);
+    }
+  }
+
+  /**
+   * The same events, heard — and for every robot, not only the driven one:
+   * Biggy thudding about off to the left is how you know where Biggy is.
+   * Heard from the camera, so what is on screen is loud and what is across
+   * the building is not there. Momentum sets the level, exactly as it sets
+   * the shake.
+   */
+  private listen(): void {
+    const ear = { x: this.cameraX, y: this.cameraY, floor: this.floor };
+    const at = (actor: Actor): sfx.Place => sfx.placeAt(actor.body.x, actor.body.y, actor.floor, ear);
+    for (const impact of this.sim.impacts) {
+      const weight = Math.min(1, impact.momentum / IMPACT_REFERENCE_MOMENTUM);
+      sfx.impact(impact.actor.body.spec.id, weight, at(impact.actor));
+    }
+    for (const footfall of this.sim.footfalls) {
+      const weight = Math.min(1, footfall.momentum / FOOTFALL_REFERENCE_MOMENTUM);
+      sfx.footfall(footfall.actor.body.spec.id, weight, at(footfall.actor));
+    }
+    for (const actor of this.actors) {
+      let motor = this.motors.get(actor);
+      if (!motor) this.motors.set(actor, (motor = new sfx.Motor(actor.body.spec.id)));
+      motor.update(this.story?.kind === 'departure' ? 0 : actor.body.speedFraction, at(actor));
+    }
+  }
+
+  /**
+   * The objective, heard: a job done, lost, picked up or put down, once, as
+   * its status changes — and the last ten seconds of anything running out.
+   */
+  private hearObjective(): void {
+    for (const state of this.run.states) {
+      const was = this.heard.get(state);
+      const now = state.status;
+      this.heard.set(state, now);
+      if (was === undefined || was === now) continue;
+      const place = sfx.placeAt(state.x, state.y, state.floor, { x: this.cameraX, y: this.cameraY, floor: this.floor });
+      if (now === 'carried') sfx.pickUp(place);
+      else if (was === 'carried') sfx.putDown(place);
+      if (now === 'done') sfx.done();
+      else if (now === 'missed' || now === 'failed') sfx.missed();
+    }
+
+    // Any job's deadline, or the day's own clock, whichever is nearest.
+    let left = Infinity;
+    for (const state of this.run.states) left = Math.min(left, this.secondsLeft(state) ?? Infinity);
+    const clock = this.chapter.objective.clock;
+    if (clock) left = Math.min(left, clock - this.run.elapsed);
+    const whole = Math.ceil(left);
+    if (whole <= 10 && whole >= 1 && whole < this.lastTick) sfx.tick(whole <= 3);
+    this.lastTick = whole;
+  }
+
+  /** A syllable of somebody talking, every other letter as a line types out. */
+  private speak(before: number, after: number, pitch: number): void {
+    const line = this.typingLine;
+    for (let i = Math.floor(before); i < Math.floor(after); i += 1) {
+      if (i % 2 === 0 && /[\p{L}\p{N}]/u.test(line[i] ?? '')) {
+        sfx.blip(pitch);
+        break;
+      }
     }
   }
 
@@ -1691,6 +1782,7 @@ export class ChapterScreen implements Screen {
       ...(chapter.cast.length > 1 ? ['TAB robot', 'SPACE drop'] : []),
       ...(talks ? ['E talk'] : []),
       'R reset',
+      'M sound',
       'ESC menu',
     ].join('   ');
 
@@ -1911,7 +2003,9 @@ export class ChapterScreen implements Screen {
       this.typingLine = line;
       this.typed = 0;
     }
+    const before = this.typed;
     this.typed = Math.min(line.length, this.typed + ChapterScreen.TYPE_RATE * dt);
+    this.speak(before, this.typed, sfx.pitchOf(activity.who));
 
     this.talkBox.style.display = 'flex';
     this.showPortrait(activity.who, tint);

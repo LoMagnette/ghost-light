@@ -86,8 +86,59 @@ silent.
 
 **Format.** `.ogg` (Vorbis or Opus) for size; `.mp3` works too. 44.1 or
 48 kHz. Loops cut on a zero crossing so they do not click. Mixed quietly —
-the synthesised robots sit on top. Keep the whole folder under about 3 MB:
-it is downloaded before the first chapter.
+the synthesised robots sit on top. Each file is fetched the first time it
+is wanted, so a big one delays only its own chapter's music, but keep the
+folder to a few MB all the same: it is what a judge downloads.
+
+**Built 28 Sep (`audio` branch):** the engine, the unlock on the first key
+or click, M to mute (remembered), and music and ambience playback per
+chapter with a 2.2 s crossfade that carries through the wormholes. The menu
+plays `music-menu`, or Chapter I's track if there is none. Checked in a
+headless browser with three test tones: nothing before the first key, the
+same track carries from the menu into Chapter I without restarting, Chapter
+II crossfades to its own, and mute survives a reload. Not yet built:
+everything synthesised, and the Chapter III tension layer.
+
+**The three tracks, 28 Sep.** Supplied by the author as `.mp3`, made with
+Suno (the files' own tags say so):
+
+| File | Title | Length | At the loop |
+|---|---|---|---|
+| `music-silence.mp3` | *forgotten technology* | 75.2 s | fades out over about 2 s and back in over 2 s: a breath every 75 s, which suits the chapter |
+| `music-javapolis.mp3` | *Tech Conference Groove* | 74.9 s | near seamless |
+| `music-capacity.mp3` | *Conference Groove* | 75.1 s | drops for its last second: a short dip every 75 s |
+
+**Synthesised, 28 Sep (`src/app/sfx.ts`).** No files; all of it is
+oscillators and filtered noise, heard from the camera (panned across the
+screen, fading with distance, nothing from the other storey):
+
+| Sound | When | Voxxy · Droid · Biggy |
+|---|---|---|
+| Footfall | every step the sim reports, level by momentum | tick · clank · sub thump |
+| Impact | every collision, level by momentum | knock · clang · boom |
+| Motor | always, pitch and level by speed, silent standing still | high whine, quick · mid hum · low drone, slow to rise |
+| Job done | a status turns `done` | two notes up |
+| Job missed, room lost | `missed` or `failed` | low, falling |
+| Pick up · put down | a haul turns `carried`, and back | blip up · thunk down |
+| Countdown | each of the last 10 s of the nearest deadline or the day's clock | tick; sharper in the last 3 |
+| Speech | every other letter as a line types | a blip pitched per speaker, from their name; robots fixed high to low |
+| Photograph | a print lands | shutter |
+| Wormhole | leaving: a rising roar; arriving: each robot lands with its own impact, and a shimmer as one splits | |
+
+**First listen, 28 Sep.** The author: music in II and III too loud to hear
+the sounds, and Voxxy annoying. II's and III's tracks now play at half
+level (`TRIM` in `audio.ts`); Voxxy's step is a soft 620 Hz tap instead of
+a 1.7 kHz tick, and its motor a filtered hum topping out at 440 Hz instead
+of a sawtooth at 880.
+
+Not yet: brakes, stairs, loads rattling, the Chapter II breakdowns heard
+from their room, the cats. Checked headless by counting nodes started while
+driving each robot in the lab (Voxxy about 8 steps in 3 s, Droid 5, Biggy
+2) with no errors; how it SOUNDS is for a person to judge.
+
+Measured by decoding each in a browser and reading the level second by
+second across the end and the start. Mixed loud (about −16 dBFS), so the
+music bus sits at 0.55.
 
 ## How it will work
 

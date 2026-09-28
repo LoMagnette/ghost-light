@@ -24,16 +24,16 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Attendees | 🔄 | Models merged (#17, #18) and judged good; the bunching is fixed on `crowd-spread`, **not merged** |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ⬜ | Some zones still differ from the real building; list to come |
-| Audio | ⬜ | Planned in `docs/AUDIO.md`; nothing playing yet |
+| Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep (`audio` branch, **not merged**) |
 | Playtest | ⬜ | Nobody has played II or III end to end |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 32
+    "Done" : 33
     "In progress" : 3
-    "To do" : 15
+    "To do" : 14
 ```
 
 ---
@@ -73,6 +73,7 @@ pie showData
 | All four shot-list photographs in the game | `more-cats` | 28 Sep: `josh-long.jpeg` and `group.jpeg` added and wired; every print shows at the same 3:2 frame |
 | Faster stairs, portraits beside dialogue | #20 `dialogue-portraits` | Stairs at 60% of top speed; portraits go in `src/portraits/` |
 | No stutter when a Chapter I light comes on | #19 `fix-light-stutter` | Light rigs prebuilt, no shader recompile |
+| **Audio: music and sound** | `audio` | 28 Sep: three Suno tracks, one per chapter, at half level in II and III; robots' steps, impacts and motors and the interaction cues synthesised; Voxxy softened after the first listen. Closed on the author's word. Left for later if ever: brakes, stairs, breakdown cues, cats. Still to check: Suno's terms for an MIT repo |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 
 ---
@@ -100,7 +101,6 @@ pie showData
 | Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
 | **Remodel the venue zones that are not yet true to the real Kinepolis** | Human names them · agent rebuilds | Mon 28 Sep | Which zones is still to be listed: point at each with a photo, a plan or a drone-flight timestamp. Each fix is `src/venue/kinepolis.ts`, then `npm run venue`, `traverse` and `objectives`, because every activity is coordinates and moving a wall can put one inside it |
 | 🔄 **Attendees bunch up in some areas of the map** | Agent | Mon 28 Sep | **Fixed 28 Sep on `crowd-spread`, not merged.** A bug in how walkers pick their next step pushed everyone north-east, so every room emptied into its top-right corner (37× the average in the reception). Also fixed: people following walls, and a pocket in the reception desk nobody could leave. `npm run crowd` now guards it: worst cell 3.6× average. Needs a look in the game |
-| Audio: sound and music | Agent synthesises the robots and UI · human supplies ambience and music | Mon 28 Sep | Planned 27 Sep in `docs/AUDIO.md`, with the list of files and their names |
 | Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
 | Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
 | README reread and tech/genAI description | Agent | Wed 30 Sep | |
@@ -166,6 +166,5 @@ gantt
     section Agent
     Tune from play                    :g1, after h1, 2d
     Attendee bunching                 :g4, 2026-09-28, 1d
-    Audio integration                 :g2, 2026-09-28, 1d
     README and tech description       :g3, 2026-09-30, 1d
 ```

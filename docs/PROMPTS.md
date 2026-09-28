@@ -4702,6 +4702,51 @@ reception desk trapped anyone a robot shoved into it; the floor plan now
 drops islands under 24 cells. After all three, across four seeds, no cell
 anywhere holds more than 3.6 times its room's average.
 
+### Claude Opus — music, one track per chapter
+
+**Prompt:**
+> Let starts working on sound. I've 3 sound one for each level how can you move on this.
+
+**Built the player before the files arrived.** Step one of `docs/AUDIO.md`,
+music first because that is what the author has: `src/app/audio.ts` finds
+tracks by file name, like portraits, so the three files need no wiring.
+Music is module state, not a screen's, because the wormhole is a screen
+change and the music has to crossfade through it rather than cut.
+
+**Checked without ears.** A headless browser, three generated test tones of
+different lengths standing in for the tracks, and the audio source nodes
+counted as they start and stop: nothing before the first key, the menu's
+tune carries into Chapter I without restarting, Chapter II crossfades, and
+mute survives a reload. The tones were deleted, not committed. Whether it
+SOUNDS right is the author's call.
+
+**The tracks.** The author made the three with Suno and dropped them in as
+`.mp3`: *forgotten technology* (Chapter I), *Tech Conference Groove*
+(Chapter II), *Conference Groove* (Chapter III), all created 28 Sep. Each
+decodes to about 75 s and plays in its chapter; the loop seams are
+measured in `docs/AUDIO.md`.
+
+### Claude Opus — the robots and the interactions, heard
+
+**Prompt:**
+> So the the we're still missing the sound for the robot and the interactions
+
+**No files, on purpose.** `src/app/sfx.ts` synthesises every sound from
+what the game already knows. Footfalls and impacts come from the same sim
+events and the same momentum that shake the camera, so Biggy's thump is its
+430 kg made audible rather than a sample chosen to suggest it. Interaction
+cues come from watching each job's status change, in the screen, so
+nothing new enters `core/`.
+
+**Heard from the camera.** Panned by position across the screen rather than
+by compass direction, because the camera looks north-east and world-x is
+not screen-right. Every robot is heard, not only the driven one: that is
+how you know where the others are.
+
+**The speech blip** is the non-verbal voice `ROADMAP.md` parked: a pitch
+per speaker from a hash of their name, so it is stable for a person and
+claims to be nobody's real voice.
+
 ---
 
 ## Audio
