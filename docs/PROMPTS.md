@@ -6029,6 +6029,12 @@ deadline. Checked by running the objective in Node (the round ends at 92 s,
 `endedBy` the dog) and by photographing the card with the ending forced, on
 desktop and phone.
 
+> the pull request have been merged
+
+`STATUS.md` brought level on `status-after-66`: #64–#66 (with
+`portrait-list`) moved to Done, nothing left in progress, the phone and
+playtest rows updated, and "try it on a real phone" added to the last day.
+
 ---
 
 ## Audio

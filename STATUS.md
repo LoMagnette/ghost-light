@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Tue 29 Sep, evening: one day left.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Tue 29 Sep, late: one day left.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -28,17 +28,17 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | 🔄 | Stick, buttons, tap to page (#36); text sized from the real scale and a "Drag here to move" cue on `mobile-text`, after a playtest at 844 × 390. Not yet on a real phone |
+| Phone | 🔄 | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). All checked in a headless 844 × 390 browser; still to try on a real phone |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |
-| Playtest | 🔄 | A test player has been through the chapters twice; both sets of notes are answered and merged (#47–#57). The author's own cold run of II is still to do |
+| Playtest | 🔄 | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66). The author's own cold run of II, and a real phone, are still to do |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 57
-    "In progress" : 4
-    "To do" : 12
+    "Done" : 61
+    "In progress" : 0
+    "To do" : 13
 ```
 
 ---
@@ -104,6 +104,10 @@ pie showData
 | **People to meet in II and III** | #60 `corridor-people` | Bruno Souza, Guillaume Laforge, Antonio Goncalves; Tom Cools, Brian Vermeer, Alexander Chatzizacharias, Alina Yurenko, Ana-Maria Mihalceanu, Holly Cummins, Kevin Dubois. No marker, outside every count; one narrated line each, since nobody has agreed words for them |
 | **A mixed crowd** | #61 `crowd-mix` | A third of the crowd with long hair, a little under half of those in a skirt or dress; Alina blond, Ana-Maria dark brown, Holly black, as the author gave them |
 | Status updates | #52 `status-playtest`, #58 `status-playtest-2` | |
+| **The photographs needed, listed** | #64 (with `portrait-list`) | `src/portraits/README.md`: the eighteen real people, the exact file names, an Agreed box each; their actual photograph, 512 × 512. Collecting them is the to-do below |
+| **Phone text and the movement cue** | #64 `mobile-text` | Text sized from the stage's real scale (10.5 real px for a 12 px line); pause and end card fit; bigger menu cards; a "Drag here to move" ghost stick until the first drag. Headless 844 × 390 only so far |
+| **Touch buttons as a controller's diamond** | #65 `pad-diamond` | TALK bottom, BRAKE right, DROP left, ROBOT top; the card steps left of them when it would reach them |
+| **The end card names what ended the run** | #66 `failure-advice` | "Out of time", what ran out, and a tip for it (the dog: north into the hall, follow its marker) |
 
 ---
 
@@ -111,10 +115,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **The photographs needed** | `portrait-list`, on `main` | `src/portraits/README.md` lists the eighteen real people, each with the file name the game looks for and an Agreed box; their actual photograph, 512 × 512 | Merge; then collect agreed photographs | Human |
-| **Phone text and the movement cue** | `mobile-text`, on `portrait-list` | HUD, card, headings and menu text sized from the stage's real scale; pause and end card fit; the action buttons in one row; a "Drag here to move" ghost stick until the first drag | The author tries it on a real phone, then merge | Human tests · agent fixes |
-| **Touch buttons as a controller's diamond** | `pad-diamond`, on `mobile-text` | TALK bottom, BRAKE right, DROP left, ROBOT top; the card steps left of them when it would reach down into them | The author tries it on a real phone with `mobile-text`, then merge both | Human tests · agent fixes |
-| **The end card names what ended the run** | `failure-advice`, on `pad-diamond` | "Out of time", what ran out, and a tip for that (the dog: north into the hall, follow its marker) instead of the earliest job left undone | Merge with the phone branches | Human merges |
+| *Nothing in flight.* Everything through #66 is on `main` | | | | |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -130,6 +131,7 @@ pie showData
 |---|---|---|---|
 | **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
 | The author plays Chapter II cold, on a phone too | Human | Wed 30 Sep | The tester's notes are answered; the question left is whether II is fair with the NEXT now following the breakdowns |
+| Try it on a real phone | Human | Wed 30 Sep | Frame rate, thumb reach to ROBOT at the top of the diamond, and whether the text now reads |
 | Tune from that play | Agent | Wed 30 Sep | Windows, clocks, anything that stuck |
 | Check the cards of the real people read as they should | Human | Wed 30 Sep | The who's who quotes what the game gives each person; see the follow-up below on the Chapter II speakers |
 | **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
