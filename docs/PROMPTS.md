@@ -5819,6 +5819,55 @@ kept JavaPolis running, and the building folded again." Nothing about why
 the building is empty. A `recap` field on `Chapter`, words on a card like
 the tagline.
 
+> A second round from the test player, five rows:
+> High — JavaPolis introduced timed repair jobs while "Say hello to Stephan"
+> remained the highlighted next task. Two rooms emptied before I started that
+> conversation. → Give the first conversation a protected tutorial phase, or
+> make urgent repairs override the recommended task.
+> Medium — Completing a board displayed its name, changed its light, and
+> replaced its checklist arrow with a dot. The result was easy to under-read.
+> → Display "Concourse power restored" and a clear checkmark.
+> Medium — Objective markers sometimes overlapped the task panel or approached
+> the screen edge. → Keep markers inside a safe screen area and prevent
+> overlap with the HUD.
+> Medium — In chapter three, "0/9" appeared alongside a first task and "11
+> more" tasks. I couldn't tell what the nine counted. → Label the score
+> explicitly and distinguish scored activities from supporting tasks.
+> Medium — Pressing E near a character sometimes produced no visible response
+> until I moved closer. → Show "E — Talk to Stephan" when in range, so
+> interaction distance is predictable.
+
+**Row 1, done** on `next-on-clock`, the second of the two suggestions: the
+NEXT is now chosen by what can wait least — something about to be lost,
+then anything due within 120 s (every breakdown, from the moment it
+happens), then the day's work, then side quests. Sticky within a tier. So
+Stephan is the NEXT only until the first breakdown. No protected phase: it
+would change Chapter II's difficulty, and the clock already stops while
+the robot stands still.
+
+**Row 2, done** on `done-banner`: a finished job puts a banner at the top of
+the scene — a green tick and what it did — for 2.8 s, and its card row gets
+a green ✓ in place of the dot. Activities gained an optional `done` line:
+"Hall power restored", "Concourse power restored", "Room 8 amplifier on",
+and "Room 6 running again" for every breakdown. Without one, the label.
+
+**Row 3, done** on `marker-safe-area`: each badge, label included, goes at
+the nearest spot clear of the HUD's panels (measured from the page, so the
+card's height and a phone's zoom count), of the badges already placed, and
+16 px in from the edge. The side inset is 56 px. An arrow pointing down
+puts its label above it, where it had been drawn over its own label.
+
+**Row 4, done** on `score-label`: the line under the objective reads "0 of 9
+jobs done"; the card lists the day's work first and the side quests under a
+SIDE QUESTS · NOT COUNTED heading; the folded card says "+ 8 more jobs, 3
+side quests after this".
+
+**Row 5, done** on `talk-range`: the talk prompt was dim accent text in the
+bottom-left corner, where the notices go. It is now a chip centred over the
+control strip, `[E] Talk to Stephan Janssen` in range (`[TALK]` on a
+phone), and within 2.5 m of the range, dimmer, "Closer to talk to Stephan
+Janssen", so where the range starts can be seen.
+
 ---
 
 ## Audio
