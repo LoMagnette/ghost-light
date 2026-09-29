@@ -37,7 +37,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 57
-    "In progress" : 3
+    "In progress" : 4
     "To do" : 12
 ```
 
@@ -114,6 +114,7 @@ pie showData
 | **The photographs needed** | `portrait-list`, on `main` | `src/portraits/README.md` lists the eighteen real people, each with the file name the game looks for and an Agreed box; their actual photograph, 512 × 512 | Merge; then collect agreed photographs | Human |
 | **Phone text and the movement cue** | `mobile-text`, on `portrait-list` | HUD, card, headings and menu text sized from the stage's real scale; pause and end card fit; the action buttons in one row; a "Drag here to move" ghost stick until the first drag | The author tries it on a real phone, then merge | Human tests · agent fixes |
 | **Touch buttons as a controller's diamond** | `pad-diamond`, on `mobile-text` | TALK bottom, BRAKE right, DROP left, ROBOT top; the card steps left of them when it would reach down into them | The author tries it on a real phone with `mobile-text`, then merge both | Human tests · agent fixes |
+| **The end card names what ended the run** | `failure-advice`, on `pad-diamond` | "Out of time", what ran out, and a tip for that (the dog: north into the hall, follow its marker) instead of the earliest job left undone | Merge with the phone branches | Human merges |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:

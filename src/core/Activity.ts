@@ -122,6 +122,14 @@ interface Common {
    * way Chapter II's three emptied rooms do.
    */
   failsRound?: boolean;
+  /**
+   * For something that `failsRound`: what the end card says ended it, and
+   * what to do about it next time. Specific, because the card's general
+   * tip reads the jobs left undone, and a tester whose dog ran out was told
+   * to reach the hall board sooner. Absent, the card builds both from the
+   * label and the deadline.
+   */
+  whyFailed?: { what: string; tip: string };
   reveal?: Reveal;
   /**
    * Activities that are one thing to the player, many to the simulation.
