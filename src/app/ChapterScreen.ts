@@ -89,6 +89,11 @@ const PORTRAIT = 92;
  * only driving past.
  */
 const CAT_TALK = 1.8;
+/**
+ * How far outside a conversation's range the prompt already shows, dimmed,
+ * metres. See `showPrompt`.
+ */
+const TALK_NEAR = 2.5;
 /** Top speed lost per cat underfoot, and the least a robot is ever held to. */
 const CAT_DRAG = 0.1;
 const CAT_SLOWEST = 0.4;
@@ -322,6 +327,8 @@ export class ChapterScreen implements Screen {
   private portraitOfWho = '';
   /** "E  Talk to …", shown when you are in range and the box is shut. */
   private talkPrompt!: HTMLElement;
+  /** What the prompt last drew, so it is rebuilt only on a change. See `showPrompt`. */
+  private promptKey = '';
   /** Edge-triggered, exactly like `dropRequested`. */
   private talkRequested = false;
   /**
@@ -1076,7 +1083,7 @@ export class ChapterScreen implements Screen {
   private updateStory(dt: number, pressed: boolean): void {
     const story = this.story;
     if (!story) return;
-    this.talkPrompt.textContent = '';
+    this.showPrompt();
     story.t += dt;
     if (story.kind === 'departure') this.playDeparture(story, dt);
     else if (story.kind === 'landing') this.playLanding(story, dt, pressed);
@@ -2073,7 +2080,8 @@ export class ChapterScreen implements Screen {
     const out: Box[] = [];
     // The banner runs the width of the stage to be centred in it: its chip is what shows.
     const banner = this.banner.style.opacity === '0' ? undefined : this.banner.firstElementChild;
-    for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, this.talkPrompt, banner]) {
+    const prompt = this.talkPrompt.firstElementChild;
+    for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, prompt, banner]) {
       if (!(e instanceof HTMLElement) || !e.textContent) continue;
       if (e.style.visibility === 'hidden' || e.style.display === 'none') continue;
       const r = e.getBoundingClientRect();
@@ -2608,11 +2616,9 @@ export class ChapterScreen implements Screen {
     this.talkBox.classList.add('touch-talk');
     game.ui.append(this.talkBox);
 
-    this.talkPrompt = label(28, VIEW_HEIGHT - 80, {
-      font: `13px ${MONO}`,
-      color: css(chapter.palette.accent),
-      letterSpacing: '0.06em',
-    });
+    // Across the stage and centred, over the control strip. See `showPrompt`.
+    this.talkPrompt = label(0, VIEW_HEIGHT - 116, { right: '0', textAlign: 'center', pointerEvents: 'none' });
+    this.talkPrompt.classList.add('touch-zoom');
     game.ui.append(this.talkPrompt);
 
     this.debugText = label(0, 24, {
@@ -2653,6 +2659,73 @@ export class ChapterScreen implements Screen {
       return { state, activity: a };
     }
     return undefined;
+  }
+
+  /**
+   * A conversation just out of reach: one the controlled robot could have,
+   * within `TALK_NEAR` of where it would start. Not one that starts itself,
+   * which needs no offer. See `showPrompt`.
+   */
+  private talkNear(): TalkActivity | undefined {
+    const body = this.controlled.body;
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if (a.kind !== 'talk' || a.autoStart || state.status !== 'open' || !admits(a, body.spec)) continue;
+      if (a.at.floor !== this.controlled.floor) continue;
+      const b = a.at.bounds;
+      const dx = Math.max(b.x - body.x, 0, body.x - (b.x + b.w));
+      const dy = Math.max(b.y - body.y, 0, body.y - (b.y + b.h));
+      if (Math.hypot(dx, dy) <= TALK_NEAR) return a;
+    }
+    return undefined;
+  }
+
+  /**
+   * The offer of a conversation: the key and who it is with.
+   *
+   * It was a line of dim text in the corner, the corner the notices use, and
+   * a tester pressing E beside Stephan saw nothing happen until they had
+   * edged closer, without knowing that was why. Now it is a chip over the
+   * control strip, the key on a keycap as in the box itself: "E  Talk to
+   * Stephan" in range, and a step before that, dimmer, "Closer to talk to
+   * Stephan", so where the range begins can be seen rather than guessed.
+   */
+  private showPrompt(state?: 'near' | 'here', who = ''): void {
+    const key = state ? `${state}|${who}|${this.touch ? 1 : 0}` : '';
+    if (key === this.promptKey) return;
+    this.promptKey = key;
+    if (!state) {
+      this.talkPrompt.replaceChildren();
+      return;
+    }
+    const accent = css(this.chapter.palette.accent);
+    const here = state === 'here';
+    const chip = el('span', {
+      display: 'inline-block',
+      font: `15px ${SANS}`,
+      color: here ? '#eef2f4' : '#aab2b8',
+      padding: '7px 14px 7px 8px',
+      background: 'rgba(8, 11, 14, 0.9)',
+      border: `1px solid ${here ? accent : 'rgba(255, 255, 255, 0.12)'}`,
+      borderRadius: '4px',
+    });
+    chip.append(
+      el(
+        'span',
+        {
+          display: 'inline-block',
+          padding: '1px 7px',
+          marginRight: '10px',
+          border: `1px solid ${here ? accent : '#5d666c'}`,
+          borderRadius: '3px',
+          color: here ? accent : '#7d868b',
+          font: `bold 13px ${MONO}`,
+        },
+        this.touch ? 'TALK' : 'E',
+      ),
+      el('span', {}, here ? `Talk to ${who}` : `Closer to talk to ${who}`),
+    );
+    this.talkPrompt.replaceChildren(chip);
   }
 
   /**
@@ -2735,7 +2808,9 @@ export class ChapterScreen implements Screen {
 
     if (!found) {
       this.talkBox.style.display = 'none';
-      this.talkPrompt.textContent = '';
+      const near = this.talkNear();
+      if (near) this.showPrompt('near', near.who);
+      else this.showPrompt();
       this.typingLine = '';
       this.typed = 0;
       return;
@@ -2748,13 +2823,13 @@ export class ChapterScreen implements Screen {
     // that opens because you drove past is a box that interrupts you.
     if (shown === 0) {
       this.talkBox.style.display = 'none';
-      this.talkPrompt.textContent = `${this.touch ? 'TALK' : 'E'}    Talk to ${activity.who}`;
+      this.showPrompt('here', activity.who);
       this.typingLine = '';
       this.typed = 0;
       return;
     }
 
-    this.talkPrompt.textContent = '';
+    this.showPrompt();
     /*
      * The box takes the speaker's own colour.
      *
