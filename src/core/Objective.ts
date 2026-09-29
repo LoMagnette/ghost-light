@@ -286,6 +286,8 @@ export class ObjectiveRun {
 
     for (const state of this.states) {
       if ((state.activity.optional === true) !== optional) continue;
+      // Somebody met in passing is not a thing done. See `Activity.aside`.
+      if (state.activity.aside) continue;
       const group = state.activity.group;
       if (group === undefined) {
         total += 1;
@@ -639,7 +641,7 @@ export class ObjectiveRun {
     state.status = 'done';
     state.doneAt = this.elapsed;
     state.progress = 1;
-    this.say(state.activity.done ?? state.activity.label, true);
+    if (!state.activity.aside) this.say(state.activity.done ?? state.activity.label, true);
     if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
     if (state.activity.photo) this.photos.push(state.activity.photo);
   }

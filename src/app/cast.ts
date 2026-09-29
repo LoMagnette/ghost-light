@@ -58,7 +58,7 @@ export const CARDS: readonly Card[] = (() => {
       const known = cards.find((c) => c.who === who);
       if (known) {
         // Filed under the first, but a line said later still counts if the first said none.
-        if (!known.line && a.kind === 'talk') known.line = a.lines[0];
+        if (!known.line && a.kind === 'talk' && !a.narrated) known.line = a.lines[0];
         known.look ??= a.look;
         continue;
       }
@@ -68,7 +68,8 @@ export const CARDS: readonly Card[] = (() => {
         chapter: `${chapter.numeral}. ${chapter.title}`,
         accent: chapter.palette.accent,
         where: a.label,
-        line: a.kind === 'talk' ? a.lines[0] : undefined,
+        // Only what they say. Narration is the game describing them, not them.
+        line: a.kind === 'talk' && !a.narrated ? a.lines[0] : undefined,
         look: a.look,
         shape: a.shape,
       });

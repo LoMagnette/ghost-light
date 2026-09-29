@@ -1698,6 +1698,8 @@ export class ChapterScreen implements Screen {
     for (const state of this.run.states) {
       const { activity, status } = state;
       if (status === 'done' || status === 'missed' || status === 'failed') continue;
+      // Somebody to meet has no marker: they are found by walking past them.
+      if (activity.aside) continue;
       // A breakdown that has not happened yet has no post. A grey marker on
       // a projector that is working is a spoiler for the next two minutes.
       if (activity.room !== undefined && status === 'locked') continue;
@@ -2273,7 +2275,7 @@ export class ChapterScreen implements Screen {
       const place = sfx.placeAt(state.x, state.y, state.floor, { x: this.cameraX, y: this.cameraY, floor: this.floor });
       if (now === 'carried') sfx.pickUp(place);
       else if (was === 'carried') sfx.putDown(place);
-      if (now === 'done') sfx.done();
+      if (now === 'done' && !state.activity.aside) sfx.done();
       else if (now === 'missed' || now === 'failed') sfx.missed();
     }
 
@@ -2929,7 +2931,9 @@ export class ChapterScreen implements Screen {
     }
     const before = this.typed;
     this.typed = Math.min(line.length, this.typed + ChapterScreen.TYPE_RATE * dt);
-    this.speak(before, this.typed, sfx.pitchOf(activity.who));
+    // Narration is read, not heard: no voice, and in italics. See `TalkActivity.narrated`.
+    if (!activity.narrated) this.speak(before, this.typed, sfx.pitchOf(activity.who));
+    this.talkText.style.fontStyle = activity.narrated ? 'italic' : 'normal';
 
     this.talkBox.style.display = 'flex';
     this.showPortrait(activity.who, tint);
@@ -2965,6 +2969,8 @@ export class ChapterScreen implements Screen {
     >();
 
     for (const state of this.run.states) {
+      // Nor are the people there only to be met. See `Activity.aside`.
+      if (state.activity.aside) continue;
       /*
        * A side quest you have not been told about yet is not on the card.
        *
@@ -3276,6 +3282,7 @@ export class ChapterScreen implements Screen {
     const rows: Row[] = [];
     const grouped = new Map<string, ActivityState[]>();
     for (const state of run.states) {
+      if (state.activity.aside) continue;
       const group = state.activity.group;
       if (group === undefined) {
         rows.push({ label: state.activity.label, first: state, done: state.status === 'done', optional: state.activity.optional === true, due: due(state) });
