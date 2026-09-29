@@ -686,6 +686,83 @@ function bofDoorJambs(): Obstacle[] {
   ];
 }
 
+/**
+ * The BOF rooms set out for a lab, as Devoxx sets them (the author, 29 Sep):
+ * rows of tables with chairs, all facing the front, split by a passage down
+ * the middle from the door end to the presenter.
+ *
+ * The door is at the west end, down the steps; the front is the east wall,
+ * with a screen on it and the presenter's table before it. Each row is two
+ * tables, one either side of the passage, chairs on the side away from the
+ * front. Clear floor inside the door and before the front, so coming down the
+ * steps is not coming down into a table.
+ *
+ * One hidden block collides per half-row, tables and chairs together, as the
+ * seat banks do: nobody drives between the rows, and the passage is the way
+ * in. Heights are from the room's own floor, as every fitting's is.
+ */
+function bofLabs(): { solids: Obstacle[]; decor: Decor[] } {
+  const solids: Obstacle[] = [];
+  const decor: Decor[] = [];
+  for (const b of [BOF_SOUTH_ROOM, BOF_NORTH_ROOM]) {
+    const mid = b.y + b.h / 2;
+    const inner = WALL_THICKNESS / 2;
+    const x0 = b.x + BOF_STEPS * BOF_GOING + LAB_DOOR_CLEAR;
+    const front = b.x + b.w - inner;
+    const rows = Math.floor((front - LAB_FRONT_CLEAR - x0) / LAB_ROW);
+    // The two halves of every row: wall side to the passage.
+    const halves: [number, number][] = [
+      [b.y + inner + LAB_WALL_GAP, mid - LAB_AISLE / 2],
+      [mid + LAB_AISLE / 2, b.y + b.h - inner - LAB_WALL_GAP],
+    ];
+    for (let i = 0; i < rows; i += 1) {
+      const rx = x0 + i * LAB_ROW;
+      const tx = rx + LAB_CHAIR_ROW;
+      for (const [y0, y1] of halves) {
+        const len = y1 - y0;
+        solids.push({ floor: 0, bounds: rect(rx + 0.05, y0, LAB_CHAIR_ROW + LAB_DEEP - 0.05, len), height: 0.9, hidden: true });
+        decor.push({ floor: 0, bounds: rect(tx, y0 + 0.01, LAB_DEEP, len - 0.02), base: 0.71, height: 0.75, material: 'desk' });
+        // Legs at the ends, run up into the top so no face shares its plane.
+        for (const ly of [y0 + 0.08, y1 - 0.12]) {
+          decor.push({ floor: 0, bounds: rect(tx + 0.06, ly, LAB_DEEP - 0.12, 0.04), height: 0.72, material: 'desk' });
+        }
+        // Chairs behind the table, backs to the door, facing the front.
+        const seats = Math.max(1, Math.floor(len / LAB_SEAT));
+        for (let k = 0; k < seats; k += 1) {
+          const cy = y0 + (len / seats) * (k + 0.5);
+          const sx = rx + 0.1;
+          decor.push({ floor: 0, bounds: rect(sx, cy - LAB_CHAIR / 2, LAB_CHAIR, LAB_CHAIR), base: 0.42, height: 0.46, material: 'chair' });
+          decor.push({ floor: 0, bounds: rect(sx + 0.01, cy - LAB_CHAIR / 2 + 0.01, 0.05, LAB_CHAIR - 0.02), base: 0.43, height: 0.86, material: 'chair' });
+          decor.push({ floor: 0, bounds: rect(sx + LAB_CHAIR / 2 - 0.02, cy - 0.02, 0.04, 0.04), height: 0.43, material: 'stanchion' });
+        }
+      }
+    }
+    // The front: the presenter's table across the end of the passage, and the
+    // screen on the wall behind it.
+    const px = front - 1.3;
+    solids.push({ floor: 0, bounds: rect(px, mid - 0.9, 0.7, 1.8), height: 0.75 });
+    decor.push({ floor: 0, bounds: rect(px, mid - 0.9, 0.7, 1.8), base: 0.71, height: 0.75, material: 'desk' });
+    decor.push({ floor: 0, bounds: rect(px + 0.05, mid - 0.85, 0.6, 1.7), height: 0.72, material: 'desk' });
+    decor.push({ floor: 0, bounds: rect(front - 0.05, mid - 1.8, 0.04, 3.6), base: 1.0, height: 2.8, material: 'screen' });
+  }
+  return { solids, decor };
+}
+
+/** Floor left clear inside a BOF door, past the steps, and before the front wall, metres. */
+const LAB_DOOR_CLEAR = 2.2;
+const LAB_FRONT_CLEAR = 2.6;
+/** One row: a chair's strip, the table, and room to get to the next. */
+const LAB_ROW = 1.7;
+const LAB_DEEP = 0.6;
+/** The passage down the middle, and the gap left along each side wall. */
+const LAB_AISLE = 1.4;
+const LAB_WALL_GAP = 0.35;
+/** Table length per seat. */
+const LAB_SEAT = 0.7;
+/** A chair, and the strip behind a table it takes. As the corridor's, declared here since this runs first. */
+const LAB_CHAIR = 0.44;
+const LAB_CHAIR_ROW = 0.62;
+
 const bofSteps: Link[] = BOF_FLIGHTS.map((bounds, i) => ({
   id: i === 0 ? 'bof-2-steps' : 'bof-1-steps',
   from: 0,
@@ -4673,6 +4750,7 @@ const RAILS = stairRails(staircases, [...floor0Rooms, ...floor1Rooms]);
 const FORECOURT_FIT = forecourtFitOut();
 const TERRACE_EDGE = terraceEdge();
 const TOILET_FIT = toiletFitOut();
+const BOF_LABS = bofLabs();
 
 export const KINEPOLIS: Venue = {
   rooms: [...floor0Rooms, ...floor1Rooms],
@@ -4693,6 +4771,7 @@ export const KINEPOLIS: Venue = {
     ...railBesideWells(FACADE.walls, staircases),
     ...FORECOURT_FIT.solids,
     ...TOILET_FIT.solids,
+    ...BOF_LABS.solids,
     ...bofDoorJambs(),
   ],
   decor: [
@@ -4705,6 +4784,7 @@ export const KINEPOLIS: Venue = {
     ...FORECOURT_FIT.decor,
     ...TERRACE_EDGE.decor,
     ...TOILET_FIT.decor,
+    ...BOF_LABS.decor,
   ],
   links: staircases,
   extents: [rect(HALL.x, -62, EAST_EDGE + 1 - HALL.x, HALL_NORTH + 62), rect(-46, SOUTH_END, 92, 150)],
