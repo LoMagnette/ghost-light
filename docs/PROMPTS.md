@@ -5728,6 +5728,18 @@ run is over there.
 **Done**: the note shows only on the item the pointer is over or the arrow
 keys have chosen, and is hidden, not removed, so the menu does not jump.
 
+> Make the album fully usable with a keyboard. […] Add arrow-key selection and
+> Enter to open; use focusable buttons for photos and menu actions.
+
+**Done** on `album-keys`: every page and CLOSE is a `<button>`, blanks
+included, so the arrows walk the grid as drawn (down from the last row is
+CLOSE) and a blank can be read for where its print is. ENTER or SPACE opens
+a print; in the large view LEFT and RIGHT turn to the next print taken, and
+ESC, ENTER or SPACE put it down with focus back on it. TAB and SHIFT+TAB
+cycle. It opens on the first print taken, or on CLOSE. A red outline marks
+the choice, from the keyboard only (`:focus-visible`). Driven key by key in
+the browser, from P on the menu to ENTER on CLOSE.
+
 ---
 
 ## Audio
