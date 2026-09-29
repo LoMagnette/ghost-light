@@ -55,9 +55,12 @@ On the menu, and on the card at the end of a chapter:
 | `G` | Graphics: high (shadows, mood) or low (flat, fastest) |
 | `L` | Movement lab: all three robots in one lit hall |
 
-**On a phone**, held sideways: a stick under the left thumb, TALK and BRAKE
-(and ROBOT and DROP) under the right, PAUSE at the top. Tap a dialogue box to
-page it. Turning the phone upright pauses the game.
+**On a phone**, held sideways: drag anywhere on the left to move (a
+"Drag here to move" ghost shows where, until the first time). On the right,
+the buttons sit where a controller's face buttons do: TALK at the bottom,
+BRAKE on the right, and in chapters II and III DROP on the left and ROBOT on
+top. SOUND and PAUSE are at the top. Tap a dialogue box to page it. Turning
+the phone upright pauses the game.
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.

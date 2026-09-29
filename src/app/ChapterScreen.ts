@@ -46,7 +46,7 @@ import type { TouchControls } from '@/input/Touch';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
 import { abandoned, type Chapter } from '@/chapters/Chapter';
-import type { Game, Screen } from './Game';
+import { touchZoom, type Game, type Screen } from './Game';
 import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS } from './dom';
 import { currentQuality } from './quality';
@@ -181,6 +181,8 @@ const FIRST_JOB_ALONE = 45;
 
 /** Where the card sits, design pixels from the top of the design frame. */
 const CARD_TOP = 70;
+/** And from the right, unless it has had to step round the touch buttons. See `clearCardOfPad`. */
+const CARD_RIGHT = 20;
 
 /**
  * How far a room's lights go down while it waits for a breakdown, 0..1.
@@ -2519,7 +2521,7 @@ export class ChapterScreen implements Screen {
       font: `12px ${MONO}`,
       color: '#aab2b8',
       left: 'auto',
-      right: '20px',
+      right: `${CARD_RIGHT}px`,
       textAlign: 'right',
       // Tighter on a phone, where the card is drawn a good deal bigger and a
       // full Chapter III list otherwise runs down into the action buttons.
@@ -3159,6 +3161,32 @@ export class ChapterScreen implements Screen {
   }
 
   /**
+   * On a phone, move the card left of the touch buttons when it would reach
+   * down into them.
+   *
+   * The buttons are a controller's diamond in the bottom right, and a full
+   * Chapter III card at phone size runs down past the top of it. Most cards
+   * never get there, so the card keeps its corner until it does, and then
+   * stands just left of the buttons instead, under the objective's line.
+   */
+  private clearCardOfPad(): void {
+    const pad = this.touchPad?.obstacles() ?? [];
+    const ui = this.cardText.parentElement;
+    if (pad.length === 0 || !ui) return;
+    const frame = ui.getBoundingClientRect();
+    if (frame.width === 0) return;
+    const k = VIEW_WIDTH / frame.width;
+    const zoom = touchZoom(frame.width / VIEW_WIDTH);
+    // Measured in its own corner, since where it would be is the question.
+    this.cardText.style.right = `${CARD_RIGHT}px`;
+    const card = this.cardText.getBoundingClientRect();
+    const hit = pad.filter((b) => b.top < card.bottom + 6 && b.left < card.right && b.bottom > card.top);
+    if (hit.length === 0) return;
+    const left = Math.min(...hit.map((b) => b.left)) - 10;
+    this.cardText.style.right = `${((frame.right - left) * k) / zoom}px`;
+  }
+
+  /**
    * The one robot in the cast that can do this, if there is exactly one.
    *
    * The same question the markers ask, so the card and the building never
@@ -3516,6 +3544,7 @@ export class ChapterScreen implements Screen {
     // evaluated — and a card reading out a chapter the player is not in yet
     // is the game talking over itself.
     this.cardText.style.visibility = this.story || lines.length === 0 ? 'hidden' : 'visible';
+    this.clearCardOfPad();
 
     if (!this.debug) return;
 
