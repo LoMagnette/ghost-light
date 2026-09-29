@@ -5703,6 +5703,15 @@ reading has no reason to want the clock running.
 - **Checked** in the phone-sized browser, top and scrolled to the bottom,
   and on the desktop. **Not checked**: scrolling with a real thumb.
 
+> Explain when reading pauses time. […] Show "Time paused while reading," and
+> "Release movement to pause" when appropriate.
+
+**Done** on `reading-hint`: a line under the clock while a conversation or a
+photograph is up, in a chapter with a clock running. "Time paused while
+reading" while it holds; "Release movement to pause the clock" while the
+player is still driving ("Let go of the stick…" on a phone). Checked beside
+Stephan in Chapter II, both states.
+
 ---
 
 ## Audio

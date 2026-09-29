@@ -246,6 +246,7 @@ export class ChapterScreen implements Screen {
 
   private hud!: HTMLElement;
   private clockText!: HTMLElement;
+  private readingText!: HTMLElement;
   private cardText!: HTMLElement;
   /** The dialogue box, and the two things inside it. */
   private talkBox!: HTMLElement;
@@ -650,8 +651,20 @@ export class ChapterScreen implements Screen {
     const reading = this.talkBox.style.display !== 'none' || this.printFor > 0;
     const held = !over && !this.story && reading && this.controlled.input.throttle === 0;
     const step = held ? 0 : dt;
-    // Dimmed while it waits, so a clock that has stopped reads as meant.
+    // Dimmed while it waits, so a clock that has stopped reads as meant, and
+    // said in words under it: a player still holding a direction through a
+    // photograph would otherwise never find out that letting go stops time.
+    // Only where there is a clock to stop.
     this.clockText.style.opacity = held ? '0.45' : '1';
+    const timed = this.clockText.textContent !== '';
+    this.readingText.textContent =
+      !timed || over || this.story || !reading
+        ? ''
+        : held
+          ? 'Time paused while reading'
+          : this.touch
+            ? 'Let go of the stick to pause the clock'
+            : 'Release movement to pause the clock';
 
     this.sim.advance(step);
     this.crowd.advance(step, this.actors);
@@ -2060,6 +2073,16 @@ export class ChapterScreen implements Screen {
     });
     this.clockText.classList.add('touch-zoom');
     game.ui.append(this.clockText);
+
+    // Under the clock: whether reading is holding it, or how to make it.
+    this.readingText = label(28, 92, {
+      font: `12px ${MONO}`,
+      color: css(chapter.palette.text),
+      letterSpacing: '0.04em',
+      opacity: '0.8',
+    });
+    this.readingText.classList.add('touch-zoom');
+    game.ui.append(this.readingText);
 
     // The card. Top right, monospaced, and deliberately plain: it is a list
     // of things to do, and a list of things to do is most readable as a list
