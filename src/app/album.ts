@@ -118,6 +118,18 @@ const BIG_W = 600;
 const BIG_H = 400;
 
 /**
+ * The album's measures, in design pixels. On a phone the stage is drawn at
+ * about half size, so an 11 px caption is five and a half real pixels: two
+ * columns of bigger prints and bigger type instead, and the page scrolls
+ * rather than squeezing five prints into one screen.
+ */
+function measures(touch: boolean) {
+  return touch
+    ? { columns: 2, thumbW: 300, thumbH: 200, caption: 17, hint: 17, title: 44, count: 18, close: 18, gap: '30px 40px', big: { w: 840, h: 560 } }
+    : { columns: 3, thumbW: THUMB_W, thumbH: THUMB_H, caption: 11, hint: 11, title: 34, count: 13, close: 12, gap: '22px 26px', big: { w: BIG_W, h: BIG_H } };
+}
+
+/**
  * Open the album over whatever is on screen, in the 1280 × 720 UI layer.
  *
  * It takes every key while it is open, so ENTER on the menu behind it does
@@ -125,32 +137,44 @@ const BIG_H = 400;
  * from a print held up large goes back to the pages first.
  */
 export function openAlbum(host: HTMLElement, touch: boolean): void {
+  const m = measures(touch);
+  // Opaque: a collection is read, and the menu showing through it is noise.
   const root = el('div', {
     position: 'absolute',
     inset: '0',
-    background: 'rgba(4, 6, 8, 0.97)',
+    background: '#06080a',
     zIndex: '12',
+    boxSizing: 'border-box',
+    textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
+    overflowY: 'auto',
+    // The page is `touch-action: none` on a phone, so it never scrolls under
+    // a thumb; this one panel is allowed to, vertically.
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
+  });
+  const page = el('div', {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingTop: '46px',
+    padding: '46px 0 40px',
+    minHeight: '100%',
     boxSizing: 'border-box',
-    textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
   });
+  root.append(page);
 
   const { taken, total } = albumCount();
-  root.append(
+  page.append(
     el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
-    el('div', { font: `34px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, 'Album'),
-    el('div', { font: `13px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${taken} of ${total} prints`),
+    el('div', { font: `${m.title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, 'Album'),
+    el('div', { font: `${m.count}px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${taken} of ${total} prints`),
   );
 
   const grid = el('div', {
     display: 'grid',
-    gridTemplateColumns: `repeat(3, ${THUMB_W + 20}px)`,
-    gap: '22px 26px',
+    gridTemplateColumns: `repeat(${m.columns}, ${m.thumbW + 20}px)`,
+    gap: m.gap,
   });
-  root.append(grid);
+  page.append(grid);
 
   const big = el('div', {
     position: 'absolute',
@@ -158,31 +182,33 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
     display: 'none',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(4, 6, 8, 0.9)',
+    background: '#06080a',
     cursor: 'pointer',
+    zIndex: '13',
   });
-  root.append(big);
+  // Outside the scrolling page, over the whole album.
+  host.append(big);
 
   const showBig = (page: Page, src: string): void => {
-    big.replaceChildren(print(src, page.photo.caption, BIG_W, BIG_H, page.photo.selfie ? 1.2 : -1));
+    big.replaceChildren(print(src, page.photo.caption, m.big.w, m.big.h, page.photo.selfie ? 1.2 : -1, touch ? 20 : 14));
     big.style.display = 'flex';
   };
 
-  for (const page of PAGES) {
-    const src = pictureOf(page);
-    const kept = load()[page.id] !== undefined;
+  for (const entry of PAGES) {
+    const src = pictureOf(entry);
+    const kept = load()[entry.id] !== undefined;
     if (kept && src) {
-      const card = print(src, page.photo.caption, THUMB_W, THUMB_H, page.photo.selfie ? 1.4 : -1.2, 11);
+      const card = print(src, entry.photo.caption, m.thumbW, m.thumbH, entry.photo.selfie ? 1.4 : -1.2, m.caption);
       card.style.cursor = 'pointer';
       card.addEventListener('click', (event) => {
         event.stopPropagation();
-        showBig(page, src);
+        showBig(entry, src);
       });
       grid.append(card);
     } else {
       // A blank: the shape of a print, and where it is to be had.
       const blank = el('div', {
-        width: `${THUMB_W + 20}px`,
+        width: `${m.thumbW + 20}px`,
         boxSizing: 'border-box',
         padding: '10px',
         border: '1px dashed rgba(255, 255, 255, 0.16)',
@@ -191,7 +217,7 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
         el(
           'div',
           {
-            height: `${THUMB_H}px`,
+            height: `${m.thumbH}px`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -200,7 +226,7 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
           },
           '?',
         ),
-        el('div', { font: `11px ${MONO}`, color: '#6f777c', lineHeight: '1.5', paddingTop: '8px' }, page.hint),
+        el('div', { font: `${m.hint}px ${MONO}`, color: '#8d959b', lineHeight: '1.5', paddingTop: '8px' }, entry.hint),
       );
       grid.append(blank);
     }
@@ -208,14 +234,15 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
 
   const close = el(
     'div',
-    { font: `12px ${MONO}`, color: '#8d959b', marginTop: '28px', padding: '8px 14px', cursor: 'pointer' },
+    { font: `${m.close}px ${MONO}`, color: '#c9d0d4', marginTop: '28px', padding: '10px 18px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '3px' },
     touch ? 'CLOSE' : 'ESC close',
   );
-  root.append(close);
+  page.append(close);
 
   const shut = (): void => {
     window.removeEventListener('keydown', onKey, true);
     root.remove();
+    big.remove();
   };
   const back = (): void => {
     if (big.style.display !== 'none') big.style.display = 'none';
@@ -235,7 +262,7 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
   });
   close.addEventListener('click', shut);
   root.addEventListener('click', (event) => {
-    if (event.target === root) shut();
+    if (event.target === root || event.target === page) shut();
   });
   host.append(root);
 }
