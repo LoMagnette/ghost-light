@@ -5658,6 +5658,37 @@ reading has no reason to want the clock running.
   **Not checked**: earning a print in play and finding it in the album, and
   the selfie's JPEG.
 
+> Make the ending explain and celebrate the player's choices. The end card
+> mainly reports totals and "R again / ESC menu." Show completed experiences,
+> collected photos, and one specific retry suggestion. Add visible Retry and
+> Menu buttons. Chapter III deliberately asks players to choose what they
+> miss; its ending should make those choices feel meaningful.
+
+**Done** on `ending-card`:
+- **What you did / what you let go**, side by side and the same size, so the
+  second column reads as a choice. In Chapter II it is "what got away". A
+  group is one row ("Stickers, 3 of 8"), counted as done once any of it is.
+  Jobs whose window had not opened when a day ended early are left out.
+- **The prints from this run** on the table under it, and the album count
+  with the side quests still out there.
+- **One suggestion**, worked out rather than written: the first thing the
+  day took, by when its window closed, who passes its gates, and when it
+  opens. Chapter II, from the card: "Next time: Room 6: mic cable. It cost
+  you the room. Only Voxxy can do it, so have Voxxy there by 0:10 into the
+  day." With nothing missed, the side quest still waiting; with nothing left,
+  "All of it, in one day."
+- **Real buttons**: Retry (the accent one), Album and Chapter select, each
+  with its key beside it on a keyboard.
+- **"A full day"** for a day with nothing let go.
+- **`?late=n`**, a new look-only parameter: the day starts n seconds in. Six
+  real minutes in the headless browser got Chapter III's clock only to 0:50
+  left, since software rendering runs slower than real time.
+- **By hand, after the first look**: the eight stickers were eight rows
+  under "what you let go", beside a header counting them as one. Grouped.
+- **Checked** with `?late`: Chapter III run out with nothing done, and
+  Chapter II lost with three rooms dark. **Not seen**: a card with the "did"
+  column and the prints filled in, which needs a real playthrough.
+
 ---
 
 ## Audio

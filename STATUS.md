@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 6
+    "In progress" : 7
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **An ending that says what you chose** | `ending-card`, on `photo-album` | What you did and what you let go, the run's prints, one computed tip, and Retry / Album / Chapter select buttons. `?late=n` added for looking at it | Play a chapter through to see the filled-in card, then push and merge | Human plays · agent pushes |
 | **Photo album** | `photo-album`, on `hold-for-story` | Every print taken is kept in the browser; P or a tap opens the album from the menu and the end card, with blanks saying where the rest are | Earn one in play and check it lands, then push and merge | Agent, once the push works |
 | **The clock waits while you read** | `hold-for-story`, on `pause-menu` | A conversation or a photograph, with the robot not driving, holds the sim, crowd, cats and clock; the clock dims | Push and merge | Agent, once the push works |
 | **Pause menu** | `pause-menu`, on `chapter-2-slack` | ESC and the phone's PAUSE open Resume / Restart / Chapter select and freeze the run; R asks before restarting; turning a phone upright or switching away pauses | Push and merge | Agent, once the push works |

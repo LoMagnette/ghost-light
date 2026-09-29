@@ -41,7 +41,7 @@ import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCam
 import { playAmbience, playMusic } from './audio';
 import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
-import { keepPhoto, openAlbum } from './album';
+import { albumCount, keepPhoto, keptPicture, openAlbum } from './album';
 import type { TouchControls } from '@/input/Touch';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
@@ -218,6 +218,7 @@ export class ChapterScreen implements Screen {
    * drawn again, so the building stays on screen behind the menu.
    */
   private paused = false;
+  private lateApplied = false;
   /** Opens the album over the end card, once there is one. */
   private openEndAlbum: (() => void) | undefined;
   private pauseMenu!: HTMLDivElement;
@@ -667,6 +668,13 @@ export class ChapterScreen implements Screen {
       if (this.talkRequested && this.typed < this.typingLine.length) {
         this.typed = this.typingLine.length;
         this.talkRequested = false;
+      }
+      // `?late=n`: the day starts n seconds in, once, for looking at the end
+      // card or a late window without playing up to it. Like `?at`, a tool.
+      if (!this.lateApplied) {
+        this.lateApplied = true;
+        const late = Number(new URLSearchParams(window.location.search).get('late'));
+        if (late > 0) this.run.elapsed += late;
       }
       this.driveSwarm();
       // A held frame still pages a conversation: that is a press, not time.
@@ -2507,9 +2515,22 @@ export class ChapterScreen implements Screen {
    * there was. What differs is the count underneath, and the count is the
    * whole point in Chapter III — nobody does all twelve.
    */
+  /**
+   * The end of a day, and what the player made of it.
+   *
+   * It used to be totals and two keys. Chapter III is built so that nobody
+   * does all of it, and a card that only counts makes what you chose look
+   * like a score you fell short on. So it says what you did and what you let
+   * go, puts the prints you took on the table, and gives one specific thing
+   * to try next time, worked out from what was missed and who could have
+   * done it. The way on is three real buttons rather than a line of keys.
+   */
   private showEndCard(): void {
     if (this.endCard) return;
     const { chapter } = this;
+    const run = this.run;
+    const text = css(chapter.palette.text);
+    const accent = css(chapter.palette.accent);
 
     const panel = el('div', {
       position: 'absolute',
@@ -2518,72 +2539,205 @@ export class ChapterScreen implements Screen {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '14px',
-      background: 'rgba(4, 6, 8, 0.82)',
+      gap: '12px',
+      background: 'rgba(4, 6, 8, 0.88)',
       textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
+      zIndex: '7',
     });
+    panel.classList.add('touch-zoom');
 
-    const missed = this.run.states.filter((s) => s.status === 'missed').length;
-    const lost = this.run.lost;
+    // Before its window, a job has not happened: a day that ended early did
+    // not "miss" the breakdowns still to come.
+    const due = (s: ActivityState): boolean => s.activity.window === undefined || run.elapsed >= s.activity.window.from;
+    /*
+     * One row per thing the player sees on the card: a group (eight
+     * stickers, the shot list) is one row, "Stickers, 3 of 8", and counts as
+     * done here as soon as any of it is — the card is celebrating what you
+     * got to, not auditing it. It is let go only if none of it was.
+     */
+    interface Row {
+      label: string;
+      first: ActivityState;
+      done: boolean;
+      optional: boolean;
+      due: boolean;
+    }
+    const rows: Row[] = [];
+    const grouped = new Map<string, ActivityState[]>();
+    for (const state of run.states) {
+      const group = state.activity.group;
+      if (group === undefined) {
+        rows.push({ label: state.activity.label, first: state, done: state.status === 'done', optional: state.activity.optional === true, due: due(state) });
+        continue;
+      }
+      const members = grouped.get(group);
+      if (members) {
+        members.push(state);
+        continue;
+      }
+      const list = [state];
+      grouped.set(group, list);
+      // A placeholder, filled in below once the whole group is known.
+      rows.push({ label: group, first: state, done: false, optional: state.activity.optional === true, due: true });
+    }
+    for (const row of rows) {
+      const members = row.first.activity.group === undefined ? undefined : grouped.get(row.first.activity.group);
+      if (!members) continue;
+      const got = members.filter((m) => m.status === 'done').length;
+      const name = row.label.charAt(0).toUpperCase() + row.label.slice(1);
+      row.label = got > 0 && got < members.length ? `${name}, ${got} of ${members.length}` : name;
+      row.done = got > 0;
+      row.due = members.some(due);
+    }
+    const done = rows.filter((r) => r.done);
+    const letGo = rows.filter((r) => !r.optional && !r.done && r.due);
+    const leftOut = rows.filter((r) => r.optional && !r.done);
+    const complete = letGo.length === 0;
 
+    const title = run.failed ? 'The day ended early' : complete ? 'A full day' : 'The day ended';
     panel.append(
+      el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, `${chapter.numeral}. ${chapter.title.toUpperCase()}`),
+      el('div', { font: `34px ${SANS}`, color: text, letterSpacing: '0.01em' }, title),
       el(
         'div',
-        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' },
-        `${chapter.numeral}. ${chapter.title.toUpperCase()}`,
-      ),
-      el(
-        'div',
-        { font: `34px ${SANS}`, color: css(chapter.palette.text), letterSpacing: '0.01em' },
-        this.run.failed ? 'The day ended early' : 'The day ended',
-      ),
-      el(
-        'div',
-        { font: `15px ${SANS}`, color: css(chapter.palette.accent) },
+        { font: `15px ${SANS}`, color: accent },
         // Same rule as the header, and it has to be: a chapter about keeping
-        // five rooms alive does not end on a score out of the side quest.
+        // rooms alive does not end on a score out of the side quest.
         this.sessionRooms.length > 0
-          ? `${this.sessionRooms.length - this.run.lost} of ${this.sessionRooms.length} rooms still running`
-          : `${this.run.done} of ${this.run.total}`,
+          ? `${this.sessionRooms.length - run.lost} of ${this.sessionRooms.length} rooms still running`
+          : `${run.done} of ${run.total}${run.extras > 0 ? `, and ${run.extras} extra` : ''}`,
       ),
     );
 
-    const extras = this.run.extras;
-    if (missed > 0 || lost > 0 || extras > 0) {
-      const detail = [
-        extras > 0 ? `${extras} extra` : '',
-        lost > 0 ? `${lost} room${lost === 1 ? '' : 's'} emptied` : '',
-        missed > 0 ? `${missed} missed` : '',
-      ]
-        .filter(Boolean)
-        .join('   ·   ');
-      panel.append(el('div', { font: `13px ${MONO}`, color: '#8d959b' }, detail));
+    // What you did, and what you let go. Side by side, the same size: in
+    // Chapter III the second column is a choice, not a failing.
+    const column = (heading: string, rows: string[], colour: string, mark: string): HTMLElement => {
+      const col = el('div', { minWidth: '300px', maxWidth: '380px' });
+      col.append(el('div', { font: `11px ${MONO}`, color: '#6f777c', letterSpacing: '0.18em', marginBottom: '8px' }, heading));
+      const shown = rows.slice(0, 9);
+      for (const row of shown) {
+        col.append(el('div', { font: `13px ${SANS}`, color: colour, lineHeight: '1.65' }, `${mark}  ${row}`));
+      }
+      if (rows.length > shown.length) {
+        col.append(el('div', { font: `12px ${MONO}`, color: '#6f777c' }, `and ${rows.length - shown.length} more`));
+      }
+      if (rows.length === 0) col.append(el('div', { font: `13px ${SANS}`, color: '#5c6368' }, '—'));
+      return col;
+    };
+    const columns = el('div', { display: 'flex', gap: '48px', marginTop: '8px', alignItems: 'flex-start' });
+    columns.append(
+      column('WHAT YOU DID', done.map((r) => r.label), text, '✓'),
+      column(chapter.id === 'capacity' ? 'WHAT YOU LET GO' : 'WHAT GOT AWAY', letGo.map((r) => r.label), '#8d959b', '·'),
+    );
+    panel.append(columns);
+
+    // The prints from this run, on the table.
+    const prints = run.states.flatMap((s) => (s.status === 'done' && s.activity.photo ? [s.activity.photo] : []));
+    if (prints.length > 0) {
+      const table = el('div', { display: 'flex', gap: '14px', marginTop: '6px' });
+      prints.forEach((photo, i) => {
+        const src = keptPicture(photo);
+        const card = el('div', {
+          background: '#efece4',
+          padding: '5px 5px 0',
+          transform: `rotate(${i % 2 === 0 ? -2 : 1.6}deg)`,
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)',
+        });
+        const img = el('img', { display: 'block', width: '96px', height: '64px', objectFit: 'cover', background: '#2c2a26' });
+        if (src) img.src = src;
+        img.alt = photo.caption;
+        card.append(img, el('div', { height: '10px' }));
+        table.append(card);
+      });
+      panel.append(table);
+    }
+    const { taken, total } = albumCount();
+    const optionalLeft = leftOut.filter((r) => r.due).length;
+    if (total > 0 && (taken > 0 || chapter.id === 'capacity')) {
+      panel.append(
+        el(
+          'div',
+          { font: `12px ${MONO}`, color: '#6f777c' },
+          `${taken} of ${total} prints in the album${optionalLeft > 0 ? `   ·   ${optionalLeft} side quest${optionalLeft === 1 ? '' : 's'} still out there` : ''}`,
+        ),
+      );
     }
 
-    // Tappable as well as keyed: on a phone they are the only way on.
-    const choice = (text: string, act: () => void): HTMLElement => {
-      const node = el('span', { cursor: 'pointer', padding: '6px 10px' }, text);
-      node.addEventListener('click', act);
-      return node;
-    };
+    // One thing to try next time.
+    panel.append(el('div', { font: `15px ${SANS}`, color: accent, marginTop: '6px', maxWidth: '720px', textAlign: 'center', lineHeight: '1.5' }, this.nextTime(letGo, leftOut)));
+
+    // Real buttons, keyed and tappable: on a phone they are the only way on.
     const touch = this.touch;
-    const row = el('div', { font: `12px ${MONO}`, color: '#5c6368', marginTop: '10px', display: 'flex', gap: '28px' });
     const album = (): void => {
       const host = this.hud.parentElement;
       if (host) openAlbum(host, touch);
     };
-    row.append(
-      choice(touch ? 'AGAIN' : 'R again', () => this.restart()),
-      choice(touch ? 'ALBUM' : 'P album', album),
-      choice(touch ? 'CHAPTER SELECT' : 'ESC chapter select', () => this.routes.menu()),
+    const button = (label: string, key: string, act: () => void, primary = false): HTMLElement => {
+      const node = el('div', {
+        font: `15px ${SANS}`,
+        color: primary ? '#0b0d0f' : text,
+        background: primary ? accent : 'rgba(255, 255, 255, 0.06)',
+        border: `1px solid ${primary ? accent : 'rgba(255, 255, 255, 0.18)'}`,
+        borderRadius: '3px',
+        padding: '9px 20px',
+        cursor: 'pointer',
+        textShadow: 'none',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'baseline',
+      });
+      node.append(el('span', {}, label));
+      if (!touch) node.append(el('span', { font: `11px ${MONO}`, opacity: '0.6' }, key));
+      node.addEventListener('click', act);
+      return node;
+    };
+    const buttons = el('div', { display: 'flex', gap: '14px', marginTop: '12px' });
+    buttons.append(
+      button('Retry', 'R', () => this.restart(), true),
+      button('Album', 'P', album),
+      button('Chapter select', 'ESC', () => this.routes.menu()),
     );
     this.openEndAlbum = album;
-    panel.append(row);
+    panel.append(buttons);
 
     this.endCard = panel;
     // Appended to the same UI layer everything else is on, so it scales with
     // the stage and disappears with the screen.
     this.hud.parentElement?.append(panel);
+  }
+
+  /**
+   * One suggestion for the next go, and a specific one.
+   *
+   * The first thing the day took, in the order it closed, and who could have
+   * done it: when only one robot passes its gates, that is the whole tip.
+   * With nothing missed, the side quest still waiting. With nothing at all,
+   * say so.
+   */
+  private nextTime(
+    letGo: { label: string; first: ActivityState }[],
+    leftOut: { label: string; first: ActivityState }[],
+  ): string {
+    const close = (r: { first: ActivityState }): number => r.first.activity.window?.to ?? Infinity;
+    const first = [...letGo].sort((a, b) => close(a) - close(b))[0];
+    const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+    if (first) {
+      const a = first.first.activity;
+      const able = this.chapter.cast.filter((id) => admits(a, ROBOTS[id])).map((id) => ROBOTS[id].name);
+      const who =
+        able.length === 1
+          ? ` Only ${able[0]} can do it, so have ${able[0]} there`
+          : able.length > 0 && able.length < this.chapter.cast.length
+            ? ` It is a job for ${able.join(' or ')}: have one of them there`
+            : ' Be there';
+      const when = a.window && a.window.from > 0 ? ` by ${clock(a.window.from)} into the day.` : ' early.';
+      const lost = a.room && this.run.lost > 0 ? ' It cost you the room.' : '';
+      return `Next time: ${first.label}.${lost}${who}${when}`;
+    }
+    const waiting = leftOut.find((r) => r.first.status !== 'locked') ?? leftOut[0];
+    if (waiting) return `Next time, make room for this: ${waiting.label}.`;
+    return 'All of it, in one day. The only thing left to try is faster.';
   }
 
   private updateHud(): void {
