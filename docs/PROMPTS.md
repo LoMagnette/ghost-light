@@ -6011,6 +6011,24 @@ into them (a full Chapter III list), and keeps its corner otherwise. The
 "Drag here to move" cue joins the ground badges avoid. README's phone
 paragraph rewritten to match.
 
+> Failure advice identifies the wrong problem. My dog deadline expired, but
+> the results recommended reaching the hall board earlier. Explain the
+> deadline that actually ended the run and give advice specific to it.
+
+**Done** on `failure-advice`, on `pad-diamond`. The tip was built only from
+the jobs left undone, earliest first, so a Chapter I run lost to the dog
+advised the hall board. The objective now records which `failsRound` job
+ended the round (`endedBy`), and the end card: titles it "Out of time"; says
+what ran out ("The cat gave you ninety seconds to find the dog, and they ran
+out."); puts that job first under what got away; and gives its tip ("the
+moment the cat stops talking, head north into the exhibition hall and follow
+the dog's marker. It is asleep on the west side of the hall, down the terrace
+steps. Leave the boards until after."). Both lines are the dog's own
+`whyFailed`; an activity without one gets both built from its label and
+deadline. Checked by running the objective in Node (the round ends at 92 s,
+`endedBy` the dog) and by photographing the card with the ending forced, on
+desktop and phone.
+
 ---
 
 ## Audio
