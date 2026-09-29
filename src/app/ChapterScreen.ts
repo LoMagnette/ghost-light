@@ -34,7 +34,7 @@ import {
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
 import { ObjectiveRun, roomName, type ActivityState, type Exit, type Landing, type Split } from '@/core/Objective';
-import { Crowd, PERSON_HEIGHT, type Look } from '@/core/Crowd';
+import { Crowd, PERSON_HEIGHT } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
@@ -51,6 +51,8 @@ import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS } from './dom';
 import { currentQuality } from './quality';
 import { portraitOf } from './portraits';
+import { ink, lift } from './tint';
+import { castCount, face, meet, meets, number, openCast, tintOf, type Card } from './cast';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
@@ -288,6 +290,11 @@ export class ChapterScreen implements Screen {
   private lateApplied = false;
   /** Opens the album over the end card, once there is one. */
   private openEndAlbum: (() => void) | undefined;
+  /** Opens the who's who over the end card, once there is one. */
+  private openEndCast: (() => void) | undefined;
+  /** Somebody just met: their card, a moment, top centre. See `showNewCard`. */
+  private newCard!: HTMLElement;
+  private newCardFor = 0;
   private pauseMenu!: HTMLDivElement;
   private pauseItems: { node: HTMLElement; act: () => void; hint?: HTMLElement }[] = [];
   private pauseAt = 0;
@@ -662,6 +669,9 @@ export class ChapterScreen implements Screen {
     game.keyboard.on('KeyP', () => {
       if (this.endCard && !this.paused) this.openEndAlbum?.();
     });
+    game.keyboard.on('KeyC', () => {
+      if (this.endCard && !this.paused) this.openEndCast?.();
+    });
     for (const [code, step] of [['ArrowUp', -1], ['KeyW', -1], ['ArrowDown', 1], ['KeyS', 1]] as const) {
       game.keyboard.on(code, () => {
         if (this.paused) this.movePause(step);
@@ -786,6 +796,7 @@ export class ChapterScreen implements Screen {
       this.evaluated = true;
       this.consumeObjective();
       this.hearObjective();
+      this.meetCast();
       if (this.run.phase === 'ended') {
         // Won, and the chapter goes somewhere: through the floor, not to a
         // card. A lost round still gets the card — you do not fall through
@@ -843,6 +854,11 @@ export class ChapterScreen implements Screen {
       // Fade on the way out and clear only once the transition has run, or
       // the print vanishes mid-fade and reads as a glitch.
       if (this.printFor <= 0) this.print.style.opacity = '0';
+    }
+
+    if (this.newCardFor > 0) {
+      this.newCardFor -= dt;
+      if (this.newCardFor <= 0) this.newCard.style.opacity = '0';
     }
 
     if (this.bannerFor > 0) {
@@ -911,6 +927,14 @@ export class ChapterScreen implements Screen {
     // as the choice moves. There is no save; the menu says what that means.
     const items: [string, string | undefined, () => void][] = [
       ['Resume', undefined, () => this.setPaused(false)],
+      [
+        "Who's who",
+        undefined,
+        () => {
+          const host = this.hud.parentElement;
+          if (host) openCast(host, this.touch);
+        },
+      ],
       ['Restart', 'Start this chapter over. Progress is lost', () => this.restart()],
       ['Leave run', 'Back to chapter select. Progress is lost', () => this.routes.menu()],
     ];
@@ -1035,6 +1059,8 @@ export class ChapterScreen implements Screen {
     this.toast.textContent = '';
     this.bannerFor = 0;
     this.banner.style.opacity = '0';
+    this.newCardFor = 0;
+    this.newCard.style.opacity = '0';
     this.selfie = undefined;
     this.snapCamera();
   }
@@ -1325,6 +1351,51 @@ export class ChapterScreen implements Screen {
       }
       events.length = 0;
     }
+  }
+
+  /**
+   * Put anybody the robot has just met in the who's who, and say so.
+   *
+   * Every frame, over every job with a person at it: cheap, since `meet`
+   * answers from memory, and a card is only ever new once.
+   */
+  private meetCast(): void {
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if (!a.who || !meets(a, state.status, state.progress)) continue;
+      const card = meet(a.who);
+      if (card) this.showNewCard(card);
+    }
+  }
+
+  /**
+   * A new card: their face, the number, their name, for a few seconds at
+   * the top of the scene. The moment a creature index is built around, and
+   * the only place the game says the book exists until it is opened.
+   */
+  private showNewCard(card: Card): void {
+    const { met, total } = castCount();
+    const tint = tintOf(card);
+    const chip = el('span', {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '7px 16px 7px 7px',
+      background: 'rgba(8, 11, 14, 0.9)',
+      border: `1px solid ${tint}`,
+      borderRadius: '4px',
+      textAlign: 'left',
+    });
+    const words = el('span', { display: 'flex', flexDirection: 'column', gap: '2px' });
+    words.append(
+      el('span', { font: `bold 11px ${MONO}`, color: tint, letterSpacing: '0.12em' }, `NEW CARD ${number(card)}`),
+      el('span', { font: `15px ${SANS}`, color: '#eef2f4' }, card.who),
+      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `Who's who: ${met} of ${total}  ·  in the pause menu`),
+    );
+    chip.append(face(card, 40), words);
+    this.newCard.replaceChildren(chip);
+    this.newCard.style.opacity = '1';
+    this.newCardFor = 3.4;
   }
 
   /**
@@ -2081,7 +2152,8 @@ export class ChapterScreen implements Screen {
     // The banner runs the width of the stage to be centred in it: its chip is what shows.
     const banner = this.banner.style.opacity === '0' ? undefined : this.banner.firstElementChild;
     const prompt = this.talkPrompt.firstElementChild;
-    for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, prompt, banner]) {
+    const newCard = this.newCard.style.opacity === '0' ? undefined : this.newCard.firstElementChild;
+    for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, prompt, banner, newCard]) {
       if (!(e instanceof HTMLElement) || !e.textContent) continue;
       if (e.style.visibility === 'hidden' || e.style.display === 'none') continue;
       const r = e.getBoundingClientRect();
@@ -2456,6 +2528,11 @@ export class ChapterScreen implements Screen {
     });
     this.banner.classList.add('touch-zoom');
     game.ui.append(this.banner);
+
+    // Under the banner, which a pose that is also a meeting puts up at once.
+    this.newCard = label(0, 166, { right: '0', textAlign: 'center', opacity: '0', transition: 'opacity 0.35s', pointerEvents: 'none' });
+    this.newCard.classList.add('touch-zoom');
+    game.ui.append(this.newCard);
 
     /*
      * The photograph.
@@ -3306,6 +3383,10 @@ export class ChapterScreen implements Screen {
       const host = this.hud.parentElement;
       if (host) openAlbum(host, touch);
     };
+    const cast = (): void => {
+      const host = this.hud.parentElement;
+      if (host) openCast(host, touch);
+    };
     const button = (label: string, key: string, act: () => void, primary = false): HTMLElement => {
       const node = el('div', {
         font: `15px ${SANS}`,
@@ -3329,9 +3410,11 @@ export class ChapterScreen implements Screen {
     buttons.append(
       button('Retry', 'R', () => this.restart(), true),
       button('Album', 'P', album),
+      button("Who's who", 'C', cast),
       button('Chapter select', 'ESC', () => this.routes.menu()),
     );
     this.openEndAlbum = album;
+    this.openEndCast = cast;
     panel.append(buttons);
 
     this.endCard = panel;
@@ -3522,56 +3605,6 @@ function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
     return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
   }
   return { x, y, floor: Number.isFinite(floor) ? floor : chapter.startFloor };
-}
-
-/**
- * Which of somebody's colours the dialogue box borrows.
- *
- * The rule used to be "the shirt", and the rule used to work, because the
- * shirts were invented. They are off photographs now, and three of the five
- * people in Chapter II's corridor turn out to wear black — so three names
- * came up the same washed grey, and a box that is meant to say WHO is
- * speaking said nothing three times out of five.
- *
- * So it takes whichever of their colours is furthest from grey: the amber
- * glasses, the ochre hair, the blue-grey shirt. That is the same thing a
- * person does when they point somebody out across a room, and it lands on a
- * different answer for each of the five.
- *
- * When everything about somebody IS grey, grey is the honest answer and it
- * survives the lift: a white-haired man in a black t-shirt has a silver
- * name, and that is a description of him rather than a failure to find one.
- */
-function ink(look: Look): number {
-  const saturation = (colour: number): number => {
-    const r = (colour >> 16) & 0xff;
-    const g = (colour >> 8) & 0xff;
-    const b = colour & 0xff;
-    const high = Math.max(r, g, b);
-    return high === 0 ? 0 : (high - Math.min(r, g, b)) / high;
-  };
-  let best = look.shirt ?? 0x9aa0a6;
-  for (const colour of [look.hair, look.glasses]) {
-    if (colour !== undefined && saturation(colour) > saturation(best)) best = colour;
-  }
-  return best;
-}
-
-/**
- * A colour, pulled up until it can be read as text on a dark box.
- *
- * Not `shade`, which multiplies: a very dark navy multiplied by three is a
- * slightly less dark navy. This mixes toward white instead, so every shirt
- * arrives at about the same legibility whatever it started at, and keeps its
- * hue on the way.
- */
-function lift(colour: number): number {
-  const mixTo = (channel: number): number => Math.round(channel + (255 - channel) * 0.52);
-  return (
-    (mixTo((colour >> 16) & 0xff) << 16) |
-    (mixTo((colour >> 8) & 0xff) << 8) |
-    mixTo(colour & 0xff)
-  );
 }
 
 /** A job's row on the card, which its marker shares: its sweep's, if it is one of many. */

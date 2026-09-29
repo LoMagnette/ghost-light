@@ -350,7 +350,7 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
 }
 
 /** A bare button: focusable and announced, and drawn by what is put in it. */
-function button(className: string): HTMLButtonElement {
+export function button(className: string): HTMLButtonElement {
   const node = el('button', {
     background: 'none',
     border: 'none',
