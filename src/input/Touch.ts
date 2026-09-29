@@ -53,10 +53,11 @@ const ACTIONS: Button[] = [
 ];
 
 /** Top middle, small: the ones used between attempts. */
+// Restart and chapter select are in the pause menu, not a tap away from
+// throwing a run out by accident.
 const SYSTEM: Button[] = [
-  { label: 'RESET', code: 'KeyR', size: 0 },
   { label: 'SOUND', code: 'KeyM', size: 0 },
-  { label: 'MENU', code: 'Escape', size: 0 },
+  { label: 'PAUSE', code: 'Escape', size: 0 },
 ];
 
 export class TouchControls {
