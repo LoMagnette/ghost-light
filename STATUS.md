@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 10
+    "In progress" : 11
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **The tester's second five** | `next-on-clock` → `done-banner` → `marker-safe-area` → `score-label` → `talk-range`, on `status-playtest` | A breakdown takes the NEXT from a conversation; a finished job gets a banner ("Concourse power restored") and a green tick; badges keep off the HUD, the edge and each other; Chapter III's count reads "0 of 9 jobs done" and side quests sit under their own heading; the talk prompt is a keycap chip, dimmed just out of range | The author plays Chapter II cold, then push and merge | Human plays · agent pushes |
 | **A tester's five points** | `dialogue-continue` → `hint-contrast` → `marker-numbers` → `first-job` → `menu-start-here`, on `bof-labs` | The dialogue box shows `[E] Continue` (SPACE and ENTER page it too); the control hints sit on a solid strip; every open job has a number shared by its card row and its marker, and one NEXT is filled and named; the card starts with that one job and opens out once the player acts or after 45 s; Chapter I says START HERE and II and III recap what came before | The author plays Chapter I cold, then push and merge | Human plays · agent pushes |
 | **The BOF rooms set out as labs** | `bof-labs`, on `album-keys` | Seven rows each, tables either side of a 1.4 m passage, chairs facing a presenter's table and screen | Push and merge | Agent, once the push works |
 | **Album and pause, tidied** | `album-phone` → `reading-hint` → `leave-run` → `album-keys`, on `ending-card` | Album readable and opaque on a phone; "Time paused while reading" under the clock; "Leave run" with its loss note on the chosen item; the album driven from the keyboard | Push and merge | Agent, once the push works |
@@ -104,7 +105,7 @@ pie showData
 | **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |
 
 > **Pushing from the sandbox** still fails on credentials. Set the token
-> once on the host, and the whole chain goes up from `status-playtest`:
+> once on the host, and the whole chain goes up from `status-playtest-2`:
 > `sbx secret set github --sandbox devoxx-game -t "$(gh auth token)"`
 
 ---
