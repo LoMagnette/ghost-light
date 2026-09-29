@@ -437,7 +437,7 @@ const ORGANISERS_TABLE = { kind: 'adapter', x: 3.95, y: -40.0, facing: Math.PI }
 const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
 
 /**
- * The day, as it goes wrong. Seconds on a four-minute clock.
+ * The day, as it goes wrong. Seconds on a five-and-a-half-minute clock.
  *
  * Written as a schedule rather than rolled at random, so every run is the
  * same day and a player can learn it — which is what a real AV crew does
@@ -460,21 +460,31 @@ const FOYER_STACK = spot(1, -20.0, 50.0, 1.4);
  * wanted time between the jobs to go and talk to the speakers. The corridor
  * conversations are half the chapter, and a schedule with no gaps in it
  * said they were not. A spare adapter and a spare projector went, and the
- * rest are spread out. Voxxy has a minute free after the first mic cable
- * (about 20 to 80 s), and Droid has from its first projector to the chairs
- * and from the chairs to the next projector. Nothing overlaps within one
- * room, so losing one job never takes another down with it.
+ * rest are spread out. Nothing overlaps within one room, so losing one job
+ * never takes another down with it.
+ *
+ * Eight, and a longer day, since 29 Sep: still too tight, the author said,
+ * and more so on a phone, where a thumb on a stick steers less surely than
+ * a key. So a bigger step than the last two. The second adapter went, every
+ * window is about 40% longer again (a mic cable 75 s, a projector 85, an
+ * adapter 65, the chairs 150), and the day is 330 s instead of 240. The
+ * round still ends the moment the last job is settled, so a player who is
+ * quick is not kept waiting for the clock.
+ *
+ * Each robot has one job at a time, most of the day:
+ *
+ *   Voxxy   mic 6 (10-85)  adapter 8 (100-165)  mic 3 (150-225)  mic 5 (245-320)
+ *   Droid   bulb 4 (20-105)  chairs 5 (70-220)  bulb 7 (190-275)  bulb 6 (240-325)
  */
 const BREAKDOWNS: Activity[] = [
-  micCable('aud-6', 10, 65),
-  projector('aud-4', 15, 75),
-  chairs('aud-5', 55, 165),
-  adapter('aud-8', 80, 125),
-  micCable('aud-3', 115, 170),
-  projector('aud-7', 140, 200),
-  adapter('aud-4', 160, 205),
-  projector('aud-6', 195, 238),
-  micCable('aud-5', 195, 238),
+  micCable('aud-6', 10, 85),
+  projector('aud-4', 20, 105),
+  chairs('aud-5', 70, 220),
+  adapter('aud-8', 100, 165),
+  micCable('aud-3', 150, 225),
+  projector('aud-7', 190, 275),
+  projector('aud-6', 240, 325),
+  micCable('aud-5', 245, 320),
 ];
 
 /**
@@ -585,7 +595,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
     ],
   },
   line: 'Keep every room running',
-  clock: 240,
+  clock: 330,
   // Two fewer than Devoxx uses now, for a younger conference. See `rooms`.
   rooms: ['aud-3', 'aud-4', 'aud-5', 'aud-6', 'aud-7', 'aud-8'],
   failLimit: 3,

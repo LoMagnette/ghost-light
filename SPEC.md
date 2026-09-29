@@ -121,7 +121,7 @@ This chapter is first for four reasons, and all four matter:
 - **Light:** 0.62 — warm, tungsten, slightly dated
 - **Starts on:** the auditorium level
 - **Objective:** keep every room running
-- **Mechanic:** nine breakdowns across six rooms (3 to 8), on a schedule, each one a
+- **Mechanic:** eight breakdowns across six rooms (3 to 8), over 5½ minutes, on a schedule, each one a
   job only one shape of robot does well — a projector bulb 2 m up and a
   40 kg stack of chairs for Droid, a mic cable behind the lectern and an
   adapter sprinted to the stage for Voxxy. A room dims while it waits; miss

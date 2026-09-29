@@ -5573,6 +5573,22 @@ analogue throttle.
   `traverse` and `physics` pass. **Not checked**: a real phone, for frame
   rate and feel.
 
+> So the chapter 2 is still to tight in term of timing especially on mobile
+
+**Done** on `chapter-2-slack`, a bigger step than the last two, since two
+small ones had not been enough:
+- **Eight breakdowns, not nine**: the second adapter (Room 4) went.
+- **Every window about 40% longer**: a mic cable 75 s, a projector 85, an
+  adapter 65, the chairs 150.
+- **A 330 s day, not 240.** The round still ends as soon as the last job is
+  settled, so the extra clock costs a quick player nothing.
+- **Each robot mostly has one job at a time**: Voxxy the three mics and the
+  adapter, Droid the three bulbs and the chairs; nothing overlaps in a room.
+- **The phone stick gives full speed at 80% of its travel**, not at its
+  edge: a thumb rarely holds it hard against the rim, so on a phone the
+  robots were driving slower than the windows were set for.
+- **Checked:** `objectives` and `shoot` pass. Not played.
+
 ---
 
 ## Audio

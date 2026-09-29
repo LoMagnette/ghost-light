@@ -15,7 +15,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 |---|---|---|
 | Engine, physics, venue | ✅ | Built, measured, on `main` |
 | Chapter I: The Silence | ✅ | Finishable, and the cat horde is done and on `main` |
-| Chapter II: JavaPolis | ✅ | Nine breakdowns in Rooms 3–8 with gaps for the speakers, merged (#32); balance done for now, on the author's word (28 Sep) |
+| Chapter II: JavaPolis | 🔄 | Nine breakdowns in Rooms 3–8, merged (#32). Still too tight on 29 Sep, worst on a phone: eight jobs over 5½ minutes with longer windows on `chapter-2-slack` |
 | Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); balance done for now, on the author's word (28 Sep) |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12) |
 | Objective markers | ✅ | Beacons per robot (#15), off-screen arrows and focus on `main` |
@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 2
+    "In progress" : 3
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **Chapter II loosened again** | `chapter-2-slack`, on `touch-controls` | Eight breakdowns, windows ~40% longer, a 330 s day; the phone stick reaches full speed at 80% of its travel | The author plays it, on a phone too, then push and merge | Human plays · agent tunes |
 | **Plays on a phone** | `touch-controls`, on `chapter-one-landing` | Stick, buttons, tap to page dialogue, bigger text, rotate message, low graphics by default. Checked in a headless phone-sized browser only | The author plays it on a real phone (frame rate, thumbs), then push and merge | Human tests · agent fixes |
 | **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |
 
