@@ -141,7 +141,7 @@ pie showData
 
 | **Words and looks for the ten people to meet** | Human | Each says one narrated line ("You stop to say hello to …") and wears a shirt colour. Agreed lines, and looks from photographs, are one entry each in `src/chapters/objectives.ts`. Also to confirm: that Bruno Souza, Guillaume Laforge and Antonio Goncalves belong at JavaPolis |
 | **The Chapter II speakers' lines, against the rule** | Human | Gosling, Goetz, King and Johnson speak invented lines in their own voice, and their who's who cards quote them. The standing rule is that nothing is put in real people's mouths: either keep them as plainly true of their public work, or make them narration like the ten above |
-| **Portraits** | Human | Photographs of real people only with their agreement. Named files in `src/portraits/` are picked up by the dialogue box and the who's who with no code |
+| **Portraits** | Human | Eighteen real people, listed with their file names and an Agreed box in `src/portraits/README.md`: their actual photograph, recognisable, 512 × 512, only once they have said yes. Dropped in, they show in the dialogue box and the who's who with no code |
 
 ### Small, whenever there is a gap
 

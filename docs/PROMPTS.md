@@ -5951,6 +5951,32 @@ the three chapters, the card and markers, and the two collections; the
 project layout and the checks are current; "People in the game" says how
 real people appear; the "Early, grey-box" status is replaced.
 
+> So we need still to figure out the picture for the npc. I wondering what
+> style we should go for based on the game (pixel art, cartoony,
+> realistic,...) and what resolution
+
+Answered, no code: treated photographs (duotone into the chapter's light),
+512 × 512.
+
+> When I said real I mean the actual picture of the person. I want the person
+> to be actually recognizable
+
+Revised: the actual photograph in full colour, untreated, since colour and
+expression are most of what makes a face known; only the framing is made
+the same (square, head and shoulders, eyes a third down, face ~60% of the
+frame), from each person's own front-lit headshot, 512 × 512 JPEG. A soft
+dark vignette drawn over the frame in the game was offered, not built.
+
+> update the picture list required
+
+**Done** on `portrait-list`, from `main`: `src/portraits/README.md` lists
+all eighteen real people who need a photograph (the ten added in II and III
+included, and Josh Long and Venkat Subramaniam, who were missing), each with
+where they are and the exact file name, and an "Agreed" box to tick. The spec
+is now the one above, 512 not 256, since the who's who card is drawn larger
+than the dialogue box. The robots, animals and roles are listed apart, as
+optional.
+
 ---
 
 ## Audio
