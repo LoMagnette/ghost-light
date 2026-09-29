@@ -244,8 +244,8 @@ and two, 7 and 8, face them from the east; Room 5 (684 seats) is the main
 hall. The objective names them (`Objective.rooms`), and the other rooms stand
 dark.
 
-Things go wrong in them all day, on a schedule: nine breakdowns in four
-minutes, spread out so there is time between them to go and talk to the
+Things go wrong in them all day, on a schedule: eight breakdowns in five and
+a half minutes, spread out so there is time between them to go and talk to the
 speakers in the corridor. Each is a question about what shape of robot you have,
 and the four questions are the four real differences between the two:
 
@@ -286,8 +286,10 @@ stops Droid at the lectern's end.
 
 The author played it on 28 Sep and found it thin, twice. The windows are now
 about half as long again as they were first set, and the schedule went from
-eleven jobs to nine. It is `BREAKDOWNS` in `src/chapters/objectives.ts`, a
-list of nine lines to tune.
+eleven jobs to nine. On 29 Sep it was still too tight, worst on a phone: eight
+jobs now, every window about 40% longer again, and a 330 s day instead of
+240. It is `BREAKDOWNS` in `src/chapters/objectives.ts`, a list of eight lines
+to tune.
 
 ### 5.3 Chapter III — At Capacity · *the conference*
 

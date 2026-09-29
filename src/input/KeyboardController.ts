@@ -32,6 +32,12 @@ const UP_Y = Math.sin(ISO_AZIMUTH);
 
 /** How far the touch stick has to move before it drives, as a fraction of its reach. */
 const STICK_DEAD = 0.15;
+/**
+ * How far it has to move for full throttle. Short of its edge, because a
+ * thumb rarely holds a stick hard against it, and Chapter II's windows were
+ * set for robots at the speed a key drives them (29 Sep).
+ */
+const STICK_FULL = 0.8;
 
 export class KeyboardController {
   constructor(private readonly keys: Keyboard) {}
@@ -56,7 +62,7 @@ export class KeyboardController {
     if (screenX === 0 && screenY === 0 && pushed > STICK_DEAD) {
       screenX = stick.x / pushed;
       screenY = stick.y / pushed;
-      throttle = Math.min(1, (pushed - STICK_DEAD) / (1 - STICK_DEAD));
+      throttle = Math.min(1, (pushed - STICK_DEAD) / (STICK_FULL - STICK_DEAD));
     }
 
     if (screenX === 0 && screenY === 0) {
