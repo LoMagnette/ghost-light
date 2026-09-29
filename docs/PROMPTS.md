@@ -5910,6 +5910,19 @@ a distinct shirt colour and nothing else, to be set from photographs like
 the five speakers'. Not checked here: whether the three in Chapter II were
 at JavaPolis.
 
+> Can you at least make sure that alina, ana-maria, and holly look like
+> girls. And maybe take the opportuninty to had a bit of mixity in the crowd.
+
+**Done** on `crowd-mix`, on `corridor-people`. Alina Yurenko, Ana-Maria
+Mihalceanu and Holly Cummins have `long` hair, a little shorter figure,
+and their own shirt; the hair colours are placeholders until checked
+against a photograph. `long` now also draws hair down the back, since this
+camera is behind half the people it sees. The crowd: 34% of the people who
+are nobody in particular wear their hair long — standing, walking or seated
+— and 45% of those a skirt or dress, a flared box over the top of the legs a
+shade darker than their clothes. It stays in the era's one colour, so a
+full room still photographs as one mass.
+
 ---
 
 ## Audio
