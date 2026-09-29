@@ -39,6 +39,14 @@ export interface Screen {
 /** Longest frame the loop will admit, seconds. An alt-tab must not teleport. */
 const MAX_FRAME = 0.25;
 
+/** Real pixels a 12 px design line should come out at on a touch screen. */
+const TOUCH_TEXT_PX = 10.5;
+
+/** The touch text zoom for a stage drawn at `scale`: never below the old 1.3, never past 1.8. */
+export function touchZoom(scale: number): number {
+  return Math.min(1.8, Math.max(1.3, TOUCH_TEXT_PX / (12 * scale)));
+}
+
 export class Game {
   readonly renderer: WebGLRenderer;
   readonly keyboard = new Keyboard();
@@ -165,6 +173,20 @@ export class Game {
     const left = Math.round((window.innerWidth - VIEW_WIDTH * scale) / 2);
     const top = Math.round((window.innerHeight - VIEW_HEIGHT * scale) / 2);
     this.stage.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
+    /*
+     * How much bigger a touch screen draws the text it needs read, from the
+     * scale the stage actually got rather than one fixed guess. A playtest at
+     * 844 × 390 found the old 1.3 left the card and the objective at about
+     * eight real pixels: the stage is 0.54 there. So text is brought up to
+     * `TOUCH_TEXT_PX` real pixels for a 12 px line, within limits, and the
+     * three classes in index.html read it. See `touchZoom`.
+     */
+    const zoom = touchZoom(scale);
+    const root = document.documentElement.style;
+    root.setProperty('--hud-zoom', zoom.toFixed(3));
+    root.setProperty('--talk-zoom', (zoom * 1.1).toFixed(3));
+    // The pause menu and the end card fill the stage already: a little only.
+    root.setProperty('--panel-zoom', Math.min(zoom, 1.2).toFixed(3));
     this.renderer.setPixelRatio(Math.min(2, (window.devicePixelRatio || 1) * scale));
     this.mood?.setPixelRatio(this.renderer.getPixelRatio());
   };
