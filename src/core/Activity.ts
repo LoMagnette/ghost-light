@@ -61,6 +61,12 @@ interface Common {
   id: string;
   /** One line, shown on the card. Written for a player, not for a log. */
   label: string;
+  /**
+   * What the screen says when it is finished, if the label alone would
+   * under-read it: "Concourse power restored" rather than "Concourse board".
+   * Absent, the banner says the label and a tick.
+   */
+  done?: string;
   /** Where it is done. */
   at: Zone;
   gates?: Gates;
