@@ -253,6 +253,8 @@ export class ChapterScreen implements Screen {
   private talkWho!: HTMLElement;
   private talkText!: HTMLElement;
   private talkMore!: HTMLElement;
+  /** What `talkMore` last showed, so it is only rebuilt when that changes. */
+  private moreKey = '';
   /** The speaker's picture, and whose it is, so it is rebuilt only on a change. */
   private talkPortrait!: HTMLElement;
   private portraitOfWho = '';
@@ -560,12 +562,17 @@ export class ChapterScreen implements Screen {
       else if (this.endCard) this.restart();
       else this.setPaused(true, 1);
     });
+    // SPACE and ENTER turn a page too, while a box is up: they are what a
+    // player who has not read the box presses first. Otherwise SPACE drops.
+    const reading = (): boolean => this.story !== undefined || this.talkBox.style.display !== 'none';
     game.keyboard.on('Space', () => {
       if (this.paused) this.choosePause();
+      else if (reading()) this.talkRequested = true;
       else this.dropRequested = true;
     });
     game.keyboard.on('Enter', () => {
       if (this.paused) this.choosePause();
+      else if (reading()) this.talkRequested = true;
     });
     // The album, from the end card only: mid-run the prints are still to take.
     game.keyboard.on('KeyP', () => {
@@ -1174,7 +1181,7 @@ export class ChapterScreen implements Screen {
     this.showPortrait(spec.name, tint);
     this.talkWho.textContent = spec.name;
     this.talkText.textContent = said.text.slice(0, Math.floor(this.typed));
-    this.talkMore.textContent = this.typed >= said.text.length ? (more ? '▼' : '■') : '';
+    this.showMore(this.typed >= said.text.length ? (more ? 'more' : 'last') : 'typing');
   }
 
   private endStory(): void {
@@ -2217,11 +2224,12 @@ export class ChapterScreen implements Screen {
     this.talkMore = el(
       'div',
       {
-        font: `12px ${MONO}`,
+        font: `13px ${MONO}`,
         color: css(chapter.palette.accent),
+        letterSpacing: '0.06em',
         textAlign: 'right',
         marginTop: '4px',
-        height: '14px',
+        height: '20px',
       },
       '',
     );
@@ -2342,6 +2350,44 @@ export class ChapterScreen implements Screen {
     this.talkPortrait.replaceChildren(el('span', { color: tint }, initials));
   }
 
+  /**
+   * The bottom right of the box: which key turns the page, once there is one
+   * to turn.
+   *
+   * It was a lone ▼, the mark every text box uses for "there is more", and a
+   * tester who had never held one pressed SPACE at it and then guessed E. So
+   * the key is written out, in a keycap, beside what it does: E on a
+   * keyboard, TAP on a phone, where the whole box is the button. Still only
+   * once the line has finished arriving — a prompt to continue that appears
+   * while the text is still coming is a prompt to skip.
+   */
+  private showMore(state: 'typing' | 'more' | 'last'): void {
+    // The colour is in the key: the keycap's border is the speaker's.
+    const key = `${this.touch ? 'TAP' : 'E'}|${state}|${this.talkMore.style.color}`;
+    if (key === this.moreKey) return;
+    this.moreKey = key;
+    if (state === 'typing') {
+      this.talkMore.replaceChildren();
+      return;
+    }
+    const tint = this.talkMore.style.color;
+    this.talkMore.replaceChildren(
+      el(
+        'span',
+        {
+          display: 'inline-block',
+          padding: '1px 6px',
+          marginRight: '8px',
+          border: `1px solid ${tint}`,
+          borderRadius: '3px',
+          font: `bold 12px ${MONO}`,
+        },
+        this.touch ? 'TAP' : 'E',
+      ),
+      el('span', {}, state === 'more' ? 'Continue  ▼' : 'Close  ■'),
+    );
+  }
+
   private updateTalk(dt: number): void {
     const found = this.talkHere();
 
@@ -2398,8 +2444,7 @@ export class ChapterScreen implements Screen {
     // The marker every text box in the world uses for "there is more", and
     // only once the line has finished arriving — a prompt to continue that
     // appears while the text is still coming is a prompt to skip.
-    this.talkMore.textContent =
-      this.typed >= line.length ? (shown < activity.lines.length ? '▼' : '■') : '';
+    this.showMore(this.typed >= line.length ? (shown < activity.lines.length ? 'more' : 'last') : 'typing');
   }
 
   /**
