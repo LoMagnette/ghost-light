@@ -156,6 +156,13 @@ interface Common {
    */
   who?: string;
   /**
+   * Who they are, in a sentence, for their card in the who's who. Only
+   * what is plainly true of their public work, and in Chapter II true as of
+   * JavaPolis, around 2006. Sources in `docs/PROMPTS.md`. On the first
+   * activity with this person in it.
+   */
+  bio?: string;
+  /**
    * What is standing there, if it is not a person.
    *
    * Chapter I is an empty building and the only two things left living in it

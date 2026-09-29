@@ -43,6 +43,8 @@ export interface Card {
   where: string;
   /** The first thing they say, if they say anything. */
   line?: string;
+  /** Who they are, in a sentence. See `Activity.bio`. */
+  bio?: string;
   /** A person's colours, an animal's shape. */
   look?: Look;
   shape?: 'cat' | 'dog';
@@ -60,6 +62,7 @@ export const CARDS: readonly Card[] = (() => {
         // Filed under the first, but a line said later still counts if the first said none.
         if (!known.line && a.kind === 'talk' && !a.narrated) known.line = a.lines[0];
         known.look ??= a.look;
+        known.bio ??= a.bio;
         continue;
       }
       cards.push({
@@ -72,6 +75,7 @@ export const CARDS: readonly Card[] = (() => {
         line: a.kind === 'talk' && !a.narrated ? a.lines[0] : undefined,
         look: a.look,
         shape: a.shape,
+        bio: a.bio,
       });
     }
   }
@@ -260,6 +264,15 @@ function badge(card: Card, met: boolean, m: ReturnType<typeof measures>, big: bo
       el('div', { font: `${small}px ${MONO}`, color: '#8d959b', marginTop: '4px', letterSpacing: '0.04em' }, card.chapter),
     );
     if (big) {
+      if (card.bio) {
+        body.append(
+          el(
+            'div',
+            { font: `${small + 2}px ${SANS}`, color: '#c9d0d4', marginTop: '12px', lineHeight: '1.45', whiteSpace: 'normal' },
+            card.bio,
+          ),
+        );
+      }
       body.append(el('div', { font: `${small}px ${MONO}`, color: '#8d959b', marginTop: '10px' }, `On the list as: ${card.where}`));
       if (card.line) {
         body.append(
