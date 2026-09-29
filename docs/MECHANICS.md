@@ -270,6 +270,12 @@ and left to it; the chairs are the long job of the day, so you start Droid
 on them early and TAB to Voxxy for the sprint. At most moments one of the
 two is the right robot and the other is somewhere else, busy.
 
+**Reading is not playing** (29 Sep). While a conversation box or a photograph
+is up and the player is not driving, the day holds: the sim, the crowd, the
+cats and the clock all wait, and the clock dims to say so. Driving off lets
+time go again, so a conversation can still be walked away from. Travel and
+the jobs themselves are timed as before.
+
 The card lists a breakdown only while it is happening, with its seconds
 left and — when only one of the cast can do it at all — whose job it is.
 

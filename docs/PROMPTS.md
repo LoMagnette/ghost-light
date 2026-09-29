@@ -5616,6 +5616,26 @@ small ones had not been enough:
   upright during Voxxy's opening paused it mid-line. `shoot`, `shoot --lab`,
   `objectives` and `traverse` pass.
 
+> Let players enjoy dialogue and photographs without losing time. Ordinary
+> conversations keep the objective clock running. Photographs cover the
+> centre of the screen for several seconds while gameplay continues. […]
+> Consider freezing gameplay during these moments, or offering a relaxed mode
+> that does so. Keep travel and task execution timed.
+
+**Done** on `hold-for-story`: frozen by default, not a mode, since a player
+reading has no reason to want the clock running.
+- **The day holds while reading**: while a conversation box or a photograph
+  is up and the controlled robot has no throttle, the sim, the crowd, the
+  cats and the objective clock all take a zero step. A press still pages a
+  conversation, since that is a key and not time.
+- **Driving lets time go**, so walking away from a conversation still works
+  and nobody can park in one to stop the clock while moving.
+- **The clock dims** while it is held.
+- **Checked** in the browser, starting beside Stephan with `?at=`: the clock
+  stayed on 5:30 through 5 s of his lines and ran again once Voxxy drove.
+  `shoot`, `objectives` and `physics` pass. The photograph case uses the same
+  rule (`printFor > 0`) and was not photographed.
+
 ---
 
 ## Audio
