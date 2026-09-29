@@ -189,22 +189,51 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
   // Outside the scrolling page, over the whole album.
   host.append(big);
 
-  const showBig = (page: Page, src: string): void => {
-    big.replaceChildren(print(src, page.photo.caption, m.big.w, m.big.h, page.photo.selfie ? 1.2 : -1, touch ? 20 : 14));
+  /*
+   * Every page is a button, blanks included, so the arrow keys walk the
+   * grid the way it is drawn and a blank can be read for where its print is
+   * to be had; ENTER on a print holds it up, ENTER on a blank does nothing.
+   * CLOSE is the last stop, below the grid. In the large view LEFT and
+   * RIGHT turn to the next print taken, and ESC, ENTER or SPACE put it
+   * down and hand focus back to where it came from.
+   */
+  interface Cell {
+    node: HTMLButtonElement;
+    open?: () => void;
+  }
+  const cells: Cell[] = [];
+  const earned: { entry: Page; src: string; cell: number }[] = [];
+  let showing: number | undefined;
+
+  const showBig = (at: number): void => {
+    const { entry, src } = earned[at];
+    showing = at;
+    big.replaceChildren(print(src, entry.photo.caption, m.big.w, m.big.h, entry.photo.selfie ? 1.2 : -1, touch ? 20 : 14));
     big.style.display = 'flex';
+  };
+  const hideBig = (): void => {
+    if (showing === undefined) return;
+    const cell = cells[earned[showing].cell];
+    showing = undefined;
+    big.style.display = 'none';
+    cell?.node.focus();
   };
 
   for (const entry of PAGES) {
     const src = pictureOf(entry);
     const kept = load()[entry.id] !== undefined;
+    const node = button('album-cell');
     if (kept && src) {
-      const card = print(src, entry.photo.caption, m.thumbW, m.thumbH, entry.photo.selfie ? 1.4 : -1.2, m.caption);
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', (event) => {
+      const at = earned.length;
+      earned.push({ entry, src, cell: cells.length });
+      node.append(print(src, entry.photo.caption, m.thumbW, m.thumbH, entry.photo.selfie ? 1.4 : -1.2, m.caption));
+      node.setAttribute('aria-label', `Open ${entry.photo.caption}`);
+      const open = (): void => showBig(at);
+      node.addEventListener('click', (event) => {
         event.stopPropagation();
-        showBig(entry, src);
+        open();
       });
-      grid.append(card);
+      cells.push({ node, open });
     } else {
       // A blank: the shape of a print, and where it is to be had.
       const blank = el('div', {
@@ -212,6 +241,7 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
         boxSizing: 'border-box',
         padding: '10px',
         border: '1px dashed rgba(255, 255, 255, 0.16)',
+        textAlign: 'left',
       });
       blank.append(
         el(
@@ -228,15 +258,25 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
         ),
         el('div', { font: `${m.hint}px ${MONO}`, color: '#8d959b', lineHeight: '1.5', paddingTop: '8px' }, entry.hint),
       );
-      grid.append(blank);
+      node.append(blank);
+      node.style.cursor = 'default';
+      node.setAttribute('aria-label', `Not taken yet: ${entry.hint}`);
+      node.addEventListener('click', (event) => event.stopPropagation());
+      cells.push({ node });
     }
+    grid.append(node);
   }
 
-  const close = el(
-    'div',
-    { font: `${m.close}px ${MONO}`, color: '#c9d0d4', marginTop: '28px', padding: '10px 18px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '3px' },
-    touch ? 'CLOSE' : 'ESC close',
-  );
+  const close = button('album-close');
+  Object.assign(close.style, {
+    font: `${m.close}px ${MONO}`,
+    color: '#c9d0d4',
+    marginTop: '28px',
+    padding: '10px 18px',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '3px',
+  });
+  close.textContent = touch ? 'CLOSE' : 'ESC close';
   page.append(close);
 
   const shut = (): void => {
@@ -244,27 +284,86 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
     root.remove();
     big.remove();
   };
-  const back = (): void => {
-    if (big.style.display !== 'none') big.style.display = 'none';
-    else shut();
+
+  /** Where focus goes from `at` (a cell index, or `cells.length` for CLOSE). */
+  const step = (at: number, code: string, back: boolean): number => {
+    const n = cells.length;
+    const cols = m.columns;
+    switch (code) {
+      case 'ArrowRight':
+        return Math.min(at + 1, n);
+      case 'ArrowLeft':
+        return Math.max(at - 1, 0);
+      case 'ArrowDown':
+        return at >= n ? n : at + cols < n ? at + cols : n;
+      case 'ArrowUp':
+        return at >= n ? n - 1 : at - cols >= 0 ? at - cols : at;
+      case 'Tab':
+        return (at + (back ? n : 1)) % (n + 1);
+      default:
+        return at;
+    }
   };
+  const focusAt = (at: number): void => (at >= cells.length ? close : cells[at].node).focus();
+
   // Capture, on the window, ahead of the game's own keyboard: while the
-  // album is open no key reaches the screen behind it.
+  // album is open no key reaches the screen behind it, and the browser's own
+  // TAB and button activation are done here instead, so they cannot leak.
   const onKey = (event: KeyboardEvent): void => {
     event.stopImmediatePropagation();
     event.preventDefault();
-    if (event.repeat) return;
-    if (event.code === 'Escape' || event.code === 'Enter' || event.code === 'Space') back();
+    const code = event.code;
+    if (showing !== undefined) {
+      if (event.repeat) return;
+      if (code === 'ArrowRight' || code === 'ArrowLeft') {
+        const next = showing + (code === 'ArrowRight' ? 1 : -1);
+        if (next >= 0 && next < earned.length) showBig(next);
+      } else if (code === 'Escape' || code === 'Enter' || code === 'Space') {
+        hideBig();
+      }
+      return;
+    }
+    if (code === 'Escape') {
+      if (!event.repeat) shut();
+      return;
+    }
+    const at = document.activeElement === close ? cells.length : cells.findIndex((c) => c.node === document.activeElement);
+    if (code === 'Enter' || code === 'Space') {
+      if (event.repeat) return;
+      if (at >= cells.length) shut();
+      else if (at >= 0) cells[at].open?.();
+      return;
+    }
+    if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Tab'].includes(code)) {
+      focusAt(at < 0 ? 0 : step(at, code, event.shiftKey));
+    }
   };
   window.addEventListener('keydown', onKey, true);
-  big.addEventListener('click', () => {
-    big.style.display = 'none';
-  });
+  big.addEventListener('click', hideBig);
   close.addEventListener('click', shut);
   root.addEventListener('click', (event) => {
     if (event.target === root || event.target === page) shut();
   });
   host.append(root);
+  // Start on the first print taken, or on CLOSE when there is none.
+  focusAt(earned.length > 0 ? earned[0].cell : cells.length);
+}
+
+/** A bare button: focusable and announced, and drawn by what is put in it. */
+function button(className: string): HTMLButtonElement {
+  const node = el('button', {
+    background: 'none',
+    border: 'none',
+    padding: '0',
+    margin: '0',
+    font: 'inherit',
+    color: 'inherit',
+    cursor: 'pointer',
+    borderRadius: '4px',
+  });
+  node.type = 'button';
+  node.className = className;
+  return node;
 }
 
 /** A print: the picture in a white border with its caption under it. */

@@ -5712,6 +5712,34 @@ reading" while it holds; "Release movement to pause the clock" while the
 player is still driving ("Let go of the stick…" on a phone). Checked beside
 Stephan in Chapter II, both states.
 
+> Clarify that "Chapter select" abandons the run. […] Label the action "Leave
+> run" or explicitly state that progress will be lost.
+
+**Done** on `leave-run`: both. The pause menu's last item is **Leave run**,
+and it and **Restart** carry a line under their names, always shown rather
+than on focus (a phone has no focus before the tap): "Back to chapter
+select. Progress is lost", "Start this chapter over. Progress is lost". The
+key hint under the menu had lost its spacing (no `white-space: pre`), fixed
+by hand after the screenshot. The end card keeps "Chapter select", since the
+run is over there.
+
+> the text should only appear when the user is over the option
+
+**Done**: the note shows only on the item the pointer is over or the arrow
+keys have chosen, and is hidden, not removed, so the menu does not jump.
+
+> Make the album fully usable with a keyboard. […] Add arrow-key selection and
+> Enter to open; use focusable buttons for photos and menu actions.
+
+**Done** on `album-keys`: every page and CLOSE is a `<button>`, blanks
+included, so the arrows walk the grid as drawn (down from the last row is
+CLOSE) and a blank can be read for where its print is. ENTER or SPACE opens
+a print; in the large view LEFT and RIGHT turn to the next print taken, and
+ESC, ENTER or SPACE put it down with focus back on it. TAB and SHIFT+TAB
+cycle. It opens on the first print taken, or on CLOSE. A red outline marks
+the choice, from the keyboard only (`:focus-visible`). Driven key by key in
+the browser, from P on the menu to ENTER on CLOSE.
+
 ---
 
 ## Audio

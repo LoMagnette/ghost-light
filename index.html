@@ -84,6 +84,17 @@
         transform-origin: left bottom;
       }
 
+      /* The album's pages and CLOSE, chosen from the keyboard (src/app/album.ts). */
+      .album-cell:focus-visible,
+      .album-close:focus-visible {
+        outline: 2px solid #f24471;
+        outline-offset: 6px;
+      }
+      .album-cell:focus:not(:focus-visible),
+      .album-close:focus:not(:focus-visible) {
+        outline: none;
+      }
+
       /* A phone held upright shows a strip of game: ask for it sideways. */
       #rotate {
         display: none;

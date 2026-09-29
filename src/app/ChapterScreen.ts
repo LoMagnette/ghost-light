@@ -222,7 +222,7 @@ export class ChapterScreen implements Screen {
   /** Opens the album over the end card, once there is one. */
   private openEndAlbum: (() => void) | undefined;
   private pauseMenu!: HTMLDivElement;
-  private pauseItems: { node: HTMLElement; act: () => void }[] = [];
+  private pauseItems: { node: HTMLElement; act: () => void; hint?: HTMLElement }[] = [];
   private pauseAt = 0;
   /** A phone turned upright: the rotate message covers the game, so it pauses. */
   private upright: MediaQueryList | undefined;
@@ -808,12 +808,16 @@ export class ChapterScreen implements Screen {
       ),
       el('div', { font: `34px ${SANS}`, color: css(chapter.palette.text), marginBottom: '14px' }, 'Paused'),
     );
-    const items: [string, () => void][] = [
-      ['Resume', () => this.setPaused(false)],
-      ['Restart', () => this.restart()],
-      ['Chapter select', () => this.routes.menu()],
+    // The two that throw the run away say so, under their names, while the
+    // pointer is over them or the keys have them chosen (the author, 29
+    // Sep: only then). Hidden rather than removed, so the menu does not jump
+    // as the choice moves. There is no save; the menu says what that means.
+    const items: [string, string | undefined, () => void][] = [
+      ['Resume', undefined, () => this.setPaused(false)],
+      ['Restart', 'Start this chapter over. Progress is lost', () => this.restart()],
+      ['Leave run', 'Back to chapter select. Progress is lost', () => this.routes.menu()],
     ];
-    this.pauseItems = items.map(([text, act], index) => {
+    this.pauseItems = items.map(([text, note, act], index) => {
       const node = el(
         'div',
         {
@@ -827,18 +831,22 @@ export class ChapterScreen implements Screen {
         },
         text,
       );
+      const hint = note
+        ? el('div', { font: `11px ${MONO}`, color: '#8d959b', marginTop: '3px', letterSpacing: '0.02em', visibility: 'hidden' }, note)
+        : undefined;
+      if (hint) node.append(hint);
       node.addEventListener('pointerenter', () => {
         this.pauseAt = index;
         this.showPauseChoice();
       });
       node.addEventListener('click', act);
       this.pauseMenu.append(node);
-      return { node, act };
+      return { node, act, hint };
     });
     this.pauseMenu.append(
       el(
         'div',
-        { font: `12px ${MONO}`, color: '#5c6368', marginTop: '14px' },
+        { font: `12px ${MONO}`, color: '#5c6368', marginTop: '14px', whiteSpace: 'pre' },
         game.touch ? 'TAP to choose' : 'ESC resume     ↑ ↓ choose     ENTER select',
       ),
     );
@@ -872,8 +880,9 @@ export class ChapterScreen implements Screen {
 
   private showPauseChoice(): void {
     const accent = css(this.chapter.palette.accent);
-    this.pauseItems.forEach(({ node }, index) => {
+    this.pauseItems.forEach(({ node, hint }, index) => {
       const on = index === this.pauseAt;
+      if (hint) hint.style.visibility = on ? 'visible' : 'hidden';
       node.style.color = on ? css(this.chapter.palette.text) : '#8d959b';
       node.style.borderColor = on ? accent : 'transparent';
     });

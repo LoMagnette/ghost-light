@@ -39,7 +39,7 @@ no account, no build step to run by hand.
 | `TAB` | Switch robot *(chapters II and III)* |
 | `SPACE` | Put down what you are carrying *(chapters II and III)* |
 | `1` `2` `3` | Take control of a robot, where more than one is present |
-| `ESC` | Pause: resume, restart or go to chapter select. The run is kept |
+| `ESC` | Pause, and the run is kept: resume, restart, or leave the run for chapter select (both of those lose it) |
 | `R` | Restart the chapter (asks first, through the pause menu) |
 | `M` | Sound on or off |
 | `P` *(menu, end of a chapter)* | The album: every photograph you have taken, kept between visits |

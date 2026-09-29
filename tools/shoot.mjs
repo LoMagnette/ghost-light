@@ -137,7 +137,7 @@ if (process.argv.includes('--lab')) {
 // Walk each chapter: select it, drive for a moment, capture.
 for (let index = 0; index < 3; index += 1) {
   // Back to the chapters the way a player goes: ESC pauses, and the pause
-  // menu's last item is chapter select. Chapter I starts from the menu.
+  // menu's last item, Leave run, goes to chapter select. Chapter I starts from the menu.
   if (index > 0) {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
