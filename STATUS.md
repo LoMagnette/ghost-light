@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 12
+    "In progress" : 13
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **People to meet in II and III** | `corridor-people`, on `main` | Ten real people standing in the building, no marker and outside every count; the talk prompt offers them and meeting one adds a card (who's who 23). One narrated line each, a shirt colour each | The author writes or gets agreed lines and sets looks from photographs; confirms the Chapter II three belong at JavaPolis | Human writes · agent wires |
 | **Who's who** | `whos-who`, on `status-playtest-2` | A card for each of the 13 characters: silhouette and chapter until met, a badge with portrait, name and first line after; NEW CARD notice; open from the menu (C), pause menu and end card (C) | The author checks the cards of the real people read as they should, then push and merge | Human reads · agent pushes |
 | **The tester's second five** | `next-on-clock` → `done-banner` → `marker-safe-area` → `score-label` → `talk-range`, on `status-playtest` | A breakdown takes the NEXT from a conversation; a finished job gets a banner ("Concourse power restored") and a green tick; badges keep off the HUD, the edge and each other; Chapter III's count reads "0 of 9 jobs done" and side quests sit under their own heading; the talk prompt is a keycap chip, dimmed just out of range | The author plays Chapter II cold, then push and merge | Human plays · agent pushes |
 | **A tester's five points** | `dialogue-continue` → `hint-contrast` → `marker-numbers` → `first-job` → `menu-start-here`, on `bof-labs` | The dialogue box shows `[E] Continue` (SPACE and ENTER page it too); the control hints sit on a solid strip; every open job has a number shared by its card row and its marker, and one NEXT is filled and named; the card starts with that one job and opens out once the player acts or after 45 s; Chapter I says START HERE and II and III recap what came before | The author plays Chapter I cold, then push and merge | Human plays · agent pushes |
