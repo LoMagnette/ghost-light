@@ -5723,6 +5723,11 @@ key hint under the menu had lost its spacing (no `white-space: pre`), fixed
 by hand after the screenshot. The end card keeps "Chapter select", since the
 run is over there.
 
+> the text should only appear when the user is over the option
+
+**Done**: the note shows only on the item the pointer is over or the arrow
+keys have chosen, and is hidden, not removed, so the menu does not jump.
+
 ---
 
 ## Audio
