@@ -5810,6 +5810,15 @@ Anything on a clock (a breakdown, a deadline) is never folded away. Numbers
 are given as rows are shown, so the first job is 1. Edge badges now stop
 above the control strip.
 
+**Row 5, done** on `menu-start-here`: Chapter I's card wears START HERE in
+its accent (and is the one selected on arrival, as before). II and III
+keep open, for a judge who wants the busy one, and each card says in a
+line what came before it — "After I: Voxxy switched on the last rack, and
+the building folded back to its first years." / "After II: Voxxy and Droid
+kept JavaPolis running, and the building folded again." Nothing about why
+the building is empty. A `recap` field on `Chapter`, words on a card like
+the tagline.
+
 ---
 
 ## Audio

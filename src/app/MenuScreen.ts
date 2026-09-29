@@ -36,7 +36,7 @@ import { Intro, introWanted } from './Intro';
 import { albumCount, openAlbum } from './album';
 
 const CARD_WIDTH = 300;
-const CARD_HEIGHT = 240;
+const CARD_HEIGHT = 280;
 const CARD_GAP = 28;
 
 /** Seconds for the lens to ease from one era's grade to the next. */
@@ -125,7 +125,7 @@ export class MenuScreen implements Screen {
     const startX = (VIEW_WIDTH - total) / 2;
 
     CHAPTERS.forEach((chapter, index) => {
-      const card = this.buildCard(chapter.numeral, chapter.title, chapter.era, chapter.tagline);
+      const card = this.buildCard(chapter.numeral, chapter.title, chapter.era, chapter.tagline, chapter.recap, index === 0 ? chapter.palette.accent : undefined);
       card.dataset.accent = `#${chapter.palette.accent.toString(16).padStart(6, '0')}`;
       card.style.left = `${startX + index * (CARD_WIDTH + CARD_GAP)}px`;
       card.style.top = '210px';
@@ -285,7 +285,24 @@ export class MenuScreen implements Screen {
     this.refresh();
   }
 
-  private buildCard(numeral: string, title: string, era: string, tagline: string): HTMLElement {
+  /**
+   * One chapter's card.
+   *
+   * All three can be opened, because a judge may want to go straight to the
+   * busiest one. But the second and third begin in the middle of a story,
+   * and a tester who started there met dialogue about things they had not
+   * seen. So the first card says START HERE, and the others say in a line
+   * what happened before them.
+   */
+  private buildCard(
+    numeral: string,
+    title: string,
+    era: string,
+    tagline: string,
+    recap: string | undefined,
+    /** The chapter's accent, on the one to start with. */
+    startHere: number | undefined,
+  ): HTMLElement {
     const card = el('div', {
       position: 'absolute',
       width: `${CARD_WIDTH}px`,
@@ -343,6 +360,43 @@ export class MenuScreen implements Screen {
         tagline,
       ),
     );
+    if (startHere !== undefined) {
+      card.append(
+        el(
+          'div',
+          {
+            position: 'absolute',
+            right: '20px',
+            top: '28px',
+            padding: '4px 9px',
+            borderRadius: '3px',
+            background: `#${startHere.toString(16).padStart(6, '0')}`,
+            color: '#06080a',
+            font: `bold 11px ${MONO}`,
+            letterSpacing: '0.1em',
+          },
+          'START HERE',
+        ),
+      );
+    }
+    if (recap) {
+      card.append(
+        el(
+          'div',
+          {
+            position: 'absolute',
+            left: '24px',
+            bottom: '18px',
+            width: `${CARD_WIDTH - 48}px`,
+            font: `12px ${SANS}`,
+            fontStyle: 'italic',
+            lineHeight: '1.4',
+            color: '#6f777c',
+          },
+          recap,
+        ),
+      );
+    }
 
     return card;
   }

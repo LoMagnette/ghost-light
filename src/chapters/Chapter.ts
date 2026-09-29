@@ -169,6 +169,13 @@ export interface Chapter {
   era: string;
   /** One line on the chapter-select card. Sets the tone, not the rules. */
   tagline: string;
+  /**
+   * For a chapter whose dialogue assumes the one before: what happened
+   * there, in a line, for a player who opens this one first. Shown on the
+   * chapter-select card. Words on a card, like the tagline, not a fifth
+   * thing a chapter changes about the game.
+   */
+  recap?: string;
   /** Two or three sentences shown on the loading card before play. */
   brief: string;
 
