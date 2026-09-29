@@ -105,6 +105,16 @@ const BADGE_LIFT_LOW = 2.3;
 const STOREY_COST = 30;
 /** How far in from the edge the arrows sit, design pixels. Clear of the HUD text. */
 const ARROW_INSET = 44;
+/** The same at the sides, where a label anchored inwards still needs room past its badge. */
+const ARROW_INSET_SIDE = 56;
+/** Clear space kept around the HUD's panels and between badges, design pixels. See `placeBadge`. */
+const BADGE_CLEAR = 8;
+/** The nearest a badge or its label comes to the edge of the screen, design pixels. */
+const BADGE_EDGE = 16;
+/** How far a badge may be moved to keep it clear, design pixels, nearest first. */
+const BADGE_NUDGES = [0, 24, 48, 72, 100, 130, 170, 220, 280];
+/** A monospaced character of a badge's label, design pixels, for the room it takes. */
+const LABEL_CHAR = 6.7;
 /** The same at the bottom, above the control strip and the label under a badge. */
 const ARROW_INSET_BOTTOM = 84;
 /** A finished job: its banner and its tick on the card. */
@@ -123,6 +133,14 @@ const CLOCK_SECONDS = 120;
  * letter in the robot's colour is unambiguous at any size.
  */
 const GLYPH: Record<MarkerIcon, string> = { any: '◆', voxxy: 'V', droid: 'D', biggy: 'B', drop: '▼' };
+
+/** A rectangle on screen, design pixels. See `placeBadge`. */
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
 
 /** One row of the card, and the robot it is for if only one can do it. */
 interface CardLine {
@@ -1901,6 +1919,8 @@ export class ChapterScreen implements Screen {
     const v = new Vector3();
     // Clear of the control strip along the bottom, where there is one.
     const bottom = this.touch ? ARROW_INSET : ARROW_INSET_BOTTOM;
+    // What a badge must not land on: the HUD's panels, and the badges already placed.
+    const taken = this.hudBoxes();
     let used = 0;
     for (const c of picked) {
       if (used >= pool.length) break;
@@ -1911,7 +1931,7 @@ export class ChapterScreen implements Screen {
       let sx = ((v.x + 1) / 2) * VIEW_WIDTH;
       let sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
       const inside =
-        sx > ARROW_INSET && sx < VIEW_WIDTH - ARROW_INSET && sy > ARROW_INSET && sy < VIEW_HEIGHT - bottom;
+        sx > ARROW_INSET_SIDE && sx < VIEW_WIDTH - ARROW_INSET_SIDE && sy > ARROW_INSET && sy < VIEW_HEIGHT - bottom;
       const over = inside && sameFloor;
       if (over) {
         // Over the marker itself: above its icon, or above the head of the
@@ -1928,13 +1948,21 @@ export class ChapterScreen implements Screen {
         const dx = sx - VIEW_WIDTH / 2;
         const dy = sy - VIEW_HEIGHT / 2;
         const t = Math.min(
-          (VIEW_WIDTH / 2 - ARROW_INSET) / Math.max(Math.abs(dx), 1e-6),
+          (VIEW_WIDTH / 2 - ARROW_INSET_SIDE) / Math.max(Math.abs(dx), 1e-6),
           (VIEW_HEIGHT / 2 - (dy > 0 ? bottom : ARROW_INSET)) / Math.max(Math.abs(dy), 1e-6),
         );
         x = VIEW_WIDTH / 2 + dx * t;
         y = VIEW_HEIGHT / 2 + dy * t;
         angle = Math.atan2(dy, dx);
       }
+
+      const storey = m.floor > this.floor ? '↑ upstairs · ' : m.floor < this.floor ? '↓ downstairs · ' : '';
+      const far = over ? '' : `${storey}${Math.round(c.d)} m`;
+      const text = isNext ? (far ? `NEXT · ${m.label} · ${far}` : `NEXT · ${m.label}`) : far;
+      const size = isNext ? 34 : 28;
+      // An arrow pointing down would sit on its own label: the label goes above.
+      const above = angle !== undefined && Math.sin(angle) > 0.4;
+      ({ x, y } = this.placeBadge(x, y, size, text, above, bottom, taken));
 
       const arrow = pool[used++];
       const colour = css(m.colour);
@@ -1947,7 +1975,6 @@ export class ChapterScreen implements Screen {
       // The next is filled, so it is found before it is read.
       arrow.badge.style.background = isNext ? colour : 'rgba(8, 11, 14, 0.78)';
       arrow.badge.style.color = isNext ? '#06080a' : colour;
-      const size = isNext ? 34 : 28;
       arrow.badge.style.width = `${size}px`;
       arrow.badge.style.height = `${size}px`;
       arrow.badge.style.fontSize = isNext ? '16px' : '13px';
@@ -1961,10 +1988,8 @@ export class ChapterScreen implements Screen {
         arrow.pointer.style.borderLeftColor = colour;
         arrow.pointer.style.transform = `rotate(${angle.toFixed(3)}rad) translate(${isNext ? 21 : 18}px, -50%)`;
       }
-      const storey = m.floor > this.floor ? '↑ upstairs · ' : m.floor < this.floor ? '↓ downstairs · ' : '';
-      const far = over ? '' : `${storey}${Math.round(c.d)} m`;
-      arrow.label.textContent = isNext ? (far ? `NEXT · ${m.label} · ${far}` : `NEXT · ${m.label}`) : far;
-      arrow.label.style.top = isNext ? '22px' : '18px';
+      arrow.label.textContent = text;
+      arrow.label.style.top = above ? `${-(size / 2 + 18)}px` : `${size / 2 + 4}px`;
       // Centred under the badge, except near a side edge, where a centred
       // "↑ upstairs · 78 m" hangs half off the screen. Anchored inwards there.
       arrow.label.style.transform =
@@ -1972,6 +1997,91 @@ export class ChapterScreen implements Screen {
       arrow.label.style.color = c.urgent ? '#ff8a7a' : isNext ? colour : '#c9d0d4';
     }
     for (let i = used; i < pool.length; i += 1) pool[i].root.style.display = 'none';
+  }
+
+  /**
+   * Where a badge goes: where it was asked for, or the nearest place to it
+   * that is on screen, off the HUD, and off every badge already placed.
+   *
+   * A tester saw badges sitting on the card and crowding the edge. The
+   * card is the list the badges are numbered from, and a number drawn over
+   * the list is two readouts in one place, neither readable. So the
+   * panels, and each badge as it is placed, are ground no badge may land
+   * on, and a badge that would is moved the least distance that clears it.
+   * Its label counts as part of it. It gives up after `BADGE_NUDGES` and
+   * stays where it was asked for: a crowded badge beats a missing one.
+   */
+  private placeBadge(
+    x: number,
+    y: number,
+    size: number,
+    text: string,
+    above: boolean,
+    bottom: number,
+    taken: Box[],
+  ): { x: number; y: number } {
+    const boxAt = (bx: number, by: number): Box => {
+      const w = text.length * LABEL_CHAR;
+      // As the label is anchored in `pointAt`: centred, or inwards near a side.
+      const lx = bx < 160 ? bx - 14 : bx > VIEW_WIDTH - 160 ? bx + 14 - w : bx - w / 2;
+      const half = size / 2;
+      const ly0 = w === 0 ? by : above ? by - half - 18 : by + half + 4;
+      return {
+        x0: Math.min(bx - half, w === 0 ? bx : lx),
+        y0: Math.min(by - half, ly0),
+        x1: Math.max(bx + half, w === 0 ? bx : lx + w),
+        y1: Math.max(by + half, w === 0 ? by : ly0 + 14),
+      };
+    };
+    const clear = (b: Box): boolean =>
+      b.x0 >= BADGE_EDGE &&
+      b.x1 <= VIEW_WIDTH - BADGE_EDGE &&
+      b.y0 >= BADGE_EDGE &&
+      b.y1 <= VIEW_HEIGHT - bottom + 30 &&
+      taken.every((t) => b.x1 + BADGE_CLEAR <= t.x0 || b.x0 - BADGE_CLEAR >= t.x1 || b.y1 + BADGE_CLEAR <= t.y0 || b.y0 - BADGE_CLEAR >= t.y1);
+    const dirs = [[0, 1], [-1, 0], [1, 0], [0, -1], [-0.7, 0.7], [0.7, 0.7], [-0.7, -0.7], [0.7, -0.7]];
+    for (const r of BADGE_NUDGES) {
+      for (const [dx, dy] of r === 0 ? [[0, 0]] : dirs) {
+        const bx = x + dx * r;
+        const by = y + dy * r;
+        const box = boxAt(bx, by);
+        if (!clear(box)) continue;
+        taken.push(box);
+        return { x: bx, y: by };
+      }
+    }
+    taken.push(boxAt(x, y));
+    return { x, y };
+  }
+
+  /**
+   * The HUD's panels, in design pixels: the objective and the clock at the
+   * top left, the card at the top right, a notice or a talk prompt at the
+   * bottom. Measured, not assumed, because the card is as tall as its list
+   * and on a phone all of them are drawn bigger. See `placeBadge`.
+   */
+  private hudBoxes(): Box[] {
+    const ui = this.cardText.parentElement;
+    if (!ui) return [];
+    const frame = ui.getBoundingClientRect();
+    if (frame.width === 0) return [];
+    const k = VIEW_WIDTH / frame.width;
+    const out: Box[] = [];
+    // The banner runs the width of the stage to be centred in it: its chip is what shows.
+    const banner = this.banner.style.opacity === '0' ? undefined : this.banner.firstElementChild;
+    for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, this.talkPrompt, banner]) {
+      if (!(e instanceof HTMLElement) || !e.textContent) continue;
+      if (e.style.visibility === 'hidden' || e.style.display === 'none') continue;
+      const r = e.getBoundingClientRect();
+      if (r.width === 0) continue;
+      out.push({
+        x0: (r.left - frame.left) * k,
+        y0: (r.top - frame.top) * k,
+        x1: (r.right - frame.left) * k,
+        y1: (r.bottom - frame.top) * k,
+      });
+    }
+    return out;
   }
 
   /**
