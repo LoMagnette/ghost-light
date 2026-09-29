@@ -5785,6 +5785,11 @@ word — `[E] Continue ▼`, `[E] Close ■` on the last page, `[TAP]` on a phon
 ENTER turn the page too while a box is up (SPACE still drops otherwise),
 since they are what the tester pressed first.
 
+**Row 3, done** on `hint-contrast`: the control line is on a solid dark
+strip (90%, a hairline border), keys in near-white bold and words in the
+card's grey, where it was #4c5357 type straight on the scene. Checked in
+Chapter I's dark forecourt and Chapter III's lit hall.
+
 ---
 
 ## Audio

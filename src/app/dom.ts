@@ -32,11 +32,12 @@ export function label(x: number, y: number, style: Style, text = ''): HTMLDivEle
       top: `${y}px`,
       whiteSpace: 'pre',
       /*
-       * Not decoration. Chapter I's hint line is #4c5357 and a lit wall is
-       * #454d54, so without this the controls vanish whenever a column passes
-       * behind them — and the one thing a judge must always be able to read is
-       * how to play. Every chapter has a different palette, so no single text
-       * colour is safe against all of them; a shadow is.
+       * Not decoration. Chapter I's hint line was #4c5357 and a lit wall is
+       * #454d54, so without this the controls vanished whenever a column
+       * passed behind them. Every chapter has a different palette, so no
+       * single text colour is safe against all of them; a shadow is. (The
+       * control line itself now has a solid strip as well: a shadow was
+       * still not enough for a tester, 29 Sep.)
        */
       textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
       ...style,
