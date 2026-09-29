@@ -156,6 +156,10 @@ interface CardLine {
   timed?: boolean;
   /** Not a job, a note about the card. */
   dim?: boolean;
+  /** A side quest: listed under the day's work, and not in the count. See `card`. */
+  optional?: boolean;
+  /** The heading over the side quests. */
+  heading?: boolean;
 }
 
 /**
@@ -2803,7 +2807,10 @@ export class ChapterScreen implements Screen {
    */
   private card(): CardLine[] {
     const lines: CardLine[] = [];
-    const groups = new Map<string, { done: number; total: number; shown: boolean; who: Set<RobotSpec | undefined> }>();
+    const groups = new Map<
+      string,
+      { done: number; total: number; shown: boolean; optional: boolean; who: Set<RobotSpec | undefined> }
+    >();
 
     for (const state of this.run.states) {
       /*
@@ -2831,8 +2838,9 @@ export class ChapterScreen implements Screen {
          * than no count. So the row appears when the quest does, and it
          * appears complete, which is what a shot list is.
          */
-        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false, who: new Set() };
+        const tally = groups.get(group) ?? { done: 0, total: 0, shown: false, optional: true, who: new Set() };
         tally.total += 1;
+        if (state.activity.optional !== true) tally.optional = false;
         if (state.status === 'done') tally.done += 1;
         if (!hidden) tally.shown = true;
         tally.who.add(this.onlyFor(state.activity));
@@ -2857,6 +2865,7 @@ export class ChapterScreen implements Screen {
           text: `${glyph} ${state.activity.label}  ${secs}s`,
           who: this.onlyFor(state.activity),
           timed: true,
+          optional: state.activity.optional,
           ...this.numbered(cardKey(state.activity)),
         });
         continue;
@@ -2873,6 +2882,7 @@ export class ChapterScreen implements Screen {
         // A finished job no longer needs anybody.
         who: done ? undefined : this.onlyFor(state.activity),
         timed: left !== undefined && state.status === 'open',
+        optional: state.activity.optional,
         ...(state.status === 'open' || state.status === 'carried' ? this.numbered(cardKey(state.activity)) : {}),
       });
     }
@@ -2885,13 +2895,24 @@ export class ChapterScreen implements Screen {
       lines.push({
         text: `${complete ? '✓' : '›'} ${name} ${tally.done}/${tally.total}`,
         who,
+        optional: tally.optional,
         ...(complete ? {} : this.numbered(`group:${name}`)),
       });
     }
 
     for (const room of this.run.lostRooms.keys()) lines.push({ text: `× ${roomName(room)} — emptied` });
 
-    return lines;
+    /*
+     * The day's work first, then the side quests under a heading.
+     *
+     * In Chapter III a tester read "0/9" beside a card of twelve and could
+     * not tell what the nine were. The nine are the rows above the heading;
+     * what is under it is there to be chosen, and the count does not see it.
+     */
+    const work = lines.filter((l) => !l.optional);
+    const side = lines.filter((l) => l.optional);
+    if (work.length === 0 || side.length === 0) return lines;
+    return [...work, { text: 'SIDE QUESTS · NOT COUNTED', dim: true, heading: true }, ...side];
   }
 
   /**
@@ -2918,8 +2939,14 @@ export class ChapterScreen implements Screen {
     // Nothing chosen yet (the first frame, or every job is another robot's).
     if (!lines.some((l) => l.next)) return lines;
     const kept = lines.filter((l) => l.next || l.timed);
-    const rest = lines.length - kept.length;
-    if (rest > 0) kept.push({ text: `+ ${rest} more on the list after this`, dim: true });
+    const folded = lines.filter((l) => !l.dim && !l.next && !l.timed);
+    const jobs = folded.filter((l) => !l.optional).length;
+    const side = folded.length - jobs;
+    const parts = [
+      ...(jobs > 0 ? [`${jobs} more job${jobs === 1 ? '' : 's'}`] : []),
+      ...(side > 0 ? [`${side} side quest${side === 1 ? '' : 's'}`] : []),
+    ];
+    if (parts.length > 0) kept.push({ text: `+ ${parts.join(', ')} after this`, dim: true });
     return kept;
   }
 
@@ -2971,12 +2998,21 @@ export class ChapterScreen implements Screen {
    * frames the card is identical to the last one.
    */
   private renderCard(lines: CardLine[]): void {
-    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}|${l.dim ? 1 : 0}`).join('\n');
+    const key = lines
+      .map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}|${l.dim ? 1 : 0}|${l.heading ? 1 : 0}`)
+      .join('\n');
     if (key === this.cardKey) return;
     this.cardKey = key;
     const accent = css(this.chapter.palette.accent);
     this.cardText.replaceChildren(
       ...lines.map((line) => {
+        if (line.heading) {
+          return el(
+            'div',
+            { color: '#7d868b', paddingRight: '25px', marginTop: '6px', fontSize: '10px', letterSpacing: '0.1em' },
+            line.text,
+          );
+        }
         if (line.dim) return el('div', { color: '#7d868b', paddingRight: '25px' }, line.text);
         // A finished row: the tick in green and the rest stepped back.
         const ticked = line.text.startsWith('✓ ');
@@ -3281,7 +3317,7 @@ export class ChapterScreen implements Screen {
      */
     const rooms = this.sessionRooms.length;
     const tally =
-      rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done}/${this.run.total}`;
+      rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done} of ${this.run.total} jobs done`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
     const lines = this.numberRows(this.firstJob(this.card()));
