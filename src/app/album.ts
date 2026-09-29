@@ -99,6 +99,12 @@ export function keepPhoto(photo: Photo, taken?: HTMLCanvasElement): void {
   save();
 }
 
+/** The picture kept for this print, if it has been taken: for the end card. */
+export function keptPicture(photo: Photo): string | undefined {
+  const page = PAGES.find((p) => p.photo === photo);
+  return page ? pictureOf(page) : undefined;
+}
+
 function pictureOf(page: Page): string | undefined {
   const entry = load()[page.id];
   if (!entry) return undefined;

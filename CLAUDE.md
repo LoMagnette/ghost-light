@@ -72,7 +72,7 @@ building, and this answers those in a single build.
 afternoon on 28 Sep: a dozen frames of the stair cores and the grand-stair
 terrace were of the build before, and the new walls looked invisible.
 
-Eight query parameters exist for looking at the game rather than playing it,
+Nine query parameters exist for looking at the game rather than playing it,
 and none is reachable from inside it:
 
 | | |
@@ -85,6 +85,7 @@ and none is reachable from inside it:
 | `?high` / `?low` | force the graphics quality: shadows and mood, or the flat blockout |
 | `?zoom=n` | look n times closer — for holding a robot against its model sheet |
 | `?face` | turn the cast to face the camera, as on the sheets' front views |
+| `?late=n` | start the day n seconds in: the end card, or a late window, without playing up to it |
 | `?touch` | the phone controls on a desktop: stick, buttons, bigger text (a phone gets them on its own) |
 
 `?at=` is worth knowing about. Photographing a particular doorway thirty metres
