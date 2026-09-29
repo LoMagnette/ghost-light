@@ -567,9 +567,10 @@ function speaker(
  *
  * They are real people, and nobody has written words for them, so they are
  * given none: the one line is narration, the robot stopping to say hello,
- * in italics and without a voice. Their look is a shirt colour and nothing
- * else — no hair, beard or glasses — until somebody sets it from a
- * photograph, the way the five speakers' were. Words, if they are ever
+ * in italics and without a voice. Their look is a shirt colour, and for
+ * Alina, Ana-Maria and Holly long hair (the author, 29 Sep: they should read
+ * as women), in colours not yet checked against a photograph. The rest waits
+ * for somebody to set it from one, the way the five speakers' were. Words, if they are ever
  * written, should be ones the person has agreed to.
  */
 function passerby(id: string, who: string, look: Look, at: Zone): Activity {
@@ -1305,9 +1306,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
     passerby('cools', 'Tom Cools', { shirt: 0x3d5a73 }, spot(0, 8.0, 12.0, 2.4)),
     passerby('vermeer', 'Brian Vermeer', { shirt: 0x5a3d4a }, spot(0, -8.0, 4.0, 2.4)),
     passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x46604a }, spot(0, 15.0, -45.0, 2.4)),
-    passerby('yurenko', 'Alina Yurenko', { shirt: 0x6b4f7a }, spot(1, 2.4, -15.0, 2.4)),
-    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0x7a5a3a }, spot(1, 2.4, 0.0, 2.4)),
-    passerby('cummins', 'Holly Cummins', { shirt: 0x3a6b6b }, spot(1, 2.4, 10.0, 2.4)),
+    passerby('yurenko', 'Alina Yurenko', { shirt: 0x6b4f7a, hair: 0x3a2a20, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4)),
+    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0x7a5a3a, hair: 0x2a221c, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4)),
+    passerby('cummins', 'Holly Cummins', { shirt: 0x3a6b6b, hair: 0x6a4a2e, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4)),
     passerby('dubois', 'Kevin Dubois', { shirt: 0x4a4f6b }, spot(0, 12.0, -30.0, 2.4)),
   ],
 };

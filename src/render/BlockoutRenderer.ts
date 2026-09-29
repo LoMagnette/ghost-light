@@ -338,6 +338,14 @@ function tone(x: number, y: number, z: number): number {
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
 /**
+ * How many of the people who are nobody in particular wear their hair long,
+ * and of those how many a skirt or a dress. A conference crowd drawn as one
+ * short-haired figure four hundred times was a crowd of one kind of person,
+ * and the building has never been that. See `longHaired`.
+ */
+const LONG_HAIR_SHARE = 0.34;
+const SKIRT_SHARE = 0.45;
+/**
  * Boxes per standing person, at most: two legs and two shoes, a torso, two
  * arms and two hands, a lanyard and its badge, hair, a backpack.
  *
@@ -923,6 +931,30 @@ export class BlockoutRenderer {
     return [shade(crowd, TROUSER_SHADE), shade(crowd, low + person.tint * (high - low)), mix(skin, crowd, ERA_TINT)];
   }
 
+  /** Is this one of the crowd who wears their hair long? Fixed per person. See `LONG_HAIR_SHARE`. */
+  private longHaired(person: Person): boolean {
+    return person.look === undefined && !person.shape && personSeed(person, 13) < LONG_HAIR_SHARE && this.hairOf(person) !== undefined;
+  }
+
+  /**
+   * Long hair on somebody who is nobody in particular: past the ears either
+   * side, and down the back to the shoulders. The same three boxes
+   * `placeFace` gives a named person with `long`.
+   */
+  private placeLongHair(index: number, person: Person, hair: number, k: number): number {
+    let i = index;
+    const w = PERSON_HEAD_WIDE;
+    const crown = PERSON_HEIGHT * k;
+    const chin = PERSON_NECK * k;
+    // Fuller than a named person's `long`, which is drawn to a photograph:
+    // these only have to read as long from across a hall, so they fall to
+    // the shoulder and stand a little proud of the face.
+    for (const side of [w * 0.5, -w * 0.5]) {
+      i = this.placePart(i, person, chin - 0.03 * k, crown - 0.055 * k, w * 0.82, w * 0.17, hair, side, -w * 0.06);
+    }
+    return this.placePart(i, person, chin - 0.06 * k, crown - 0.04 * k, w * 0.34, w * 0.98, hair, 0, -w * 0.42);
+  }
+
   /** Somebody's hair, when the objective has not said what it is. */
   private hairOf(person: Person): number | undefined {
     const seed = personSeed(person, 7);
@@ -1008,6 +1040,23 @@ export class BlockoutRenderer {
         top: person.z + SEATED_PERSON_HEIGHT + 0.012,
         colour: this.hairOf(person) ?? mix(HAIR_COLOURS[0], this.palette.crowd, ERA_TINT),
       },
+      // Long hair down the back, which from behind the back row is most of
+      // what tells one head from the next. See `LONG_HAIR_SHARE`.
+      ...(this.longHaired(person)
+        ? [
+            {
+              bounds: rect(
+                spine - f * PERSON_HEAD_WIDE * 0.42 - PERSON_HEAD_WIDE * 0.15,
+                person.y - PERSON_HEAD_WIDE * 0.45,
+                PERSON_HEAD_WIDE * 0.3,
+                PERSON_HEAD_WIDE * 0.9,
+              ),
+              bottom: person.z + SEATED_PERSON_HEIGHT - 0.27,
+              top: person.z + SEATED_PERSON_HEIGHT - 0.03,
+              colour: this.hairOf(person) as number,
+            },
+          ]
+        : []),
     ];
   }
 
@@ -1221,6 +1270,14 @@ export class BlockoutRenderer {
       if (hair !== undefined) {
         const w = PERSON_HEAD_WIDE;
         i = this.placePart(i, person, up(PERSON_HEIGHT) - 0.07, up(PERSON_HEIGHT) + 0.012, w * 0.94, w * 0.96, hair, 0, -w * 0.05);
+        if (this.longHaired(person)) {
+          i = this.placeLongHair(i, person, hair, k);
+          // A skirt or a dress: a flared box over the top of the legs, in
+          // the clothing's own colour a shade down, so it reads as one garment.
+          if (personSeed(person, 17) < SKIRT_SHARE) {
+            i = this.placePart(i, person, up(0.44), up(PERSON_LEG_TOP) + 0.03, PERSON_THICK * 1.25, PERSON_TORSO_WIDE * 1.3, shade(clothing, 0.72));
+          }
+        }
       }
 
       // Hair, beard and glasses, for the people who are somebody. Up to
@@ -1407,6 +1464,9 @@ export class BlockoutRenderer {
       for (const side of [w * 0.46, -w * 0.46]) {
         i = this.placePart(i, person, foot, crown - 0.055 * k, w * 0.78, w * 0.13, hair, side, -w * 0.04);
       }
+      // And down the back, which is what long hair is from behind — and
+      // this camera is behind half the people in the building.
+      if (look.long) i = this.placePart(i, person, chin - 0.06 * k, crown - 0.04 * k, w * 0.34, w * 0.98, hair, 0, -w * 0.42);
     }
 
     /*
