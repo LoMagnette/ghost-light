@@ -5936,6 +5936,21 @@ a tight shadow on the title; one row of keycap buttons for Who's who, Album,
 Intro, Graphics and Sound; one hint line. The dev line is gone (L still
 works). Checked on desktop and phone size.
 
+> Can you update the status and the readme
+
+**Done** on `docs-refresh`, on `menu-clean`. `STATUS.md`: everything that was
+in progress is merged (#35–#61) and moved to Done with its PR numbers; the
+glance table gains HUD and dialogue, people, collections, phone, and pause
+and endings; in progress is only `menu-clean` and this; the to-do list is
+the last day (the author's cold play of II, the real people's cards, the
+final submission), with three follow-ups on real people's words, looks and
+portraits; the fixed arrow-overlap item is gone; the pie and the timeline
+are redrawn. `README.md`: the controls now cover the talk prompt, the pause
+menu and the menu keys (C, P, I, G, L); a "What's in it" section describes
+the three chapters, the card and markers, and the two collections; the
+project layout and the checks are current; "People in the game" says how
+real people appear; the "Early, grey-box" status is replaced.
+
 ---
 
 ## Audio
