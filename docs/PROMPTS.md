@@ -5712,6 +5712,17 @@ reading" while it holds; "Release movement to pause the clock" while the
 player is still driving ("Let go of the stick…" on a phone). Checked beside
 Stephan in Chapter II, both states.
 
+> Clarify that "Chapter select" abandons the run. […] Label the action "Leave
+> run" or explicitly state that progress will be lost.
+
+**Done** on `leave-run`: both. The pause menu's last item is **Leave run**,
+and it and **Restart** carry a line under their names, always shown rather
+than on focus (a phone has no focus before the tap): "Back to chapter
+select. Progress is lost", "Start this chapter over. Progress is lost". The
+key hint under the menu had lost its spacing (no `white-space: pre`), fixed
+by hand after the screenshot. The end card keeps "Chapter select", since the
+run is over there.
+
 ---
 
 ## Audio

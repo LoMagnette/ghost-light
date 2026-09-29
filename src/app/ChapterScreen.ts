@@ -808,12 +808,16 @@ export class ChapterScreen implements Screen {
       ),
       el('div', { font: `34px ${SANS}`, color: css(chapter.palette.text), marginBottom: '14px' }, 'Paused'),
     );
-    const items: [string, () => void][] = [
-      ['Resume', () => this.setPaused(false)],
-      ['Restart', () => this.restart()],
-      ['Chapter select', () => this.routes.menu()],
+    // The two that throw the run away say so, under their names, always:
+    // on a phone nothing is focused before it is tapped, so a note shown
+    // only on focus would be read after the run was gone. There is no save;
+    // the menu says what that means rather than pretending otherwise.
+    const items: [string, string | undefined, () => void][] = [
+      ['Resume', undefined, () => this.setPaused(false)],
+      ['Restart', 'Start this chapter over. Progress is lost', () => this.restart()],
+      ['Leave run', 'Back to chapter select. Progress is lost', () => this.routes.menu()],
     ];
-    this.pauseItems = items.map(([text, act], index) => {
+    this.pauseItems = items.map(([text, note, act], index) => {
       const node = el(
         'div',
         {
@@ -827,6 +831,9 @@ export class ChapterScreen implements Screen {
         },
         text,
       );
+      if (note) {
+        node.append(el('div', { font: `11px ${MONO}`, color: '#8d959b', marginTop: '3px', letterSpacing: '0.02em' }, note));
+      }
       node.addEventListener('pointerenter', () => {
         this.pauseAt = index;
         this.showPauseChoice();
@@ -838,7 +845,7 @@ export class ChapterScreen implements Screen {
     this.pauseMenu.append(
       el(
         'div',
-        { font: `12px ${MONO}`, color: '#5c6368', marginTop: '14px' },
+        { font: `12px ${MONO}`, color: '#5c6368', marginTop: '14px', whiteSpace: 'pre' },
         game.touch ? 'TAP to choose' : 'ESC resume     ↑ ↓ choose     ENTER select',
       ),
     );
