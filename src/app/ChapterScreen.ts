@@ -629,8 +629,24 @@ export class ChapterScreen implements Screen {
       this.controller.read(this.controlled.input);
     }
 
-    this.sim.advance(dt);
-    this.crowd.advance(dt, this.actors);
+    /*
+     * Reading is not playing (29 Sep). While somebody is talking or a
+     * photograph is up, and the player is not driving, the day holds: the
+     * sim, the crowd, the cats and the objective clock all wait. A player who
+     * stops to hear Stephan out, or to look at the print they just earned,
+     * no longer pays for it out of Chapter II's windows or Chapter III's six
+     * minutes. Driving off lets time go again, so walking away from a
+     * conversation still works, and travel and the jobs themselves are
+     * timed exactly as before.
+     */
+    const reading = this.talkBox.style.display !== 'none' || this.printFor > 0;
+    const held = !over && !this.story && reading && this.controlled.input.throttle === 0;
+    const step = held ? 0 : dt;
+    // Dimmed while it waits, so a clock that has stopped reads as meant.
+    this.clockText.style.opacity = held ? '0.45' : '1';
+
+    this.sim.advance(step);
+    this.crowd.advance(step, this.actors);
 
     // Read before it is cleared below; a story beat pages on the same key.
     const talkPressed = this.talkRequested;
@@ -646,7 +662,8 @@ export class ChapterScreen implements Screen {
         this.talkRequested = false;
       }
       this.driveSwarm();
-      this.run.update(dt, this.actors, this.dropRequested, this.talkRequested);
+      // A held frame still pages a conversation: that is a press, not time.
+      this.run.update(step, this.actors, this.dropRequested, this.talkRequested);
       this.consumeObjective();
       this.hearObjective();
       if (this.run.phase === 'ended') {
