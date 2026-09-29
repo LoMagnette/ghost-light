@@ -33,6 +33,7 @@ import { el, MONO, SANS, SERIF } from './dom';
 import { currentQuality, setQuality } from './quality';
 import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic, toggleMuted } from './audio';
 import { Intro, introWanted } from './Intro';
+import { albumCount, openAlbum } from './album';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 240;
@@ -186,7 +187,14 @@ export class MenuScreen implements Screen {
     this.layer.append(tappable(sound, toggleMuted));
     this.stopListening = onMuteChange(showSound);
 
+    // The prints taken so far, and a way to look at them again.
+    const prints = albumCount();
+    const showAlbum = (): void => openAlbum(game.ui, touch);
     this.layer.append(
+      tappable(
+        centred(VIEW_HEIGHT - 164, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('P')}album: ${prints.taken} of ${prints.total} prints`),
+        showAlbum,
+      ),
       tappable(centred(VIEW_HEIGHT - 146, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('I')}intro`), () =>
         this.playIntro(game),
       ),
@@ -206,6 +214,7 @@ export class MenuScreen implements Screen {
       // accident would be choosing a debug screen over the game.
       game.keyboard.on('KeyL', () => this.routes.chapter(MOVEMENT_LAB.id));
       game.keyboard.on('KeyI', () => this.playIntro(game));
+      game.keyboard.on('KeyP', showAlbum);
     };
 
     this.refresh();
