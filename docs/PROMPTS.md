@@ -5887,6 +5887,29 @@ Nothing new is said about anybody: for the real people a card carries only
 their name, the chapter, and a line the game already gives them. No bio,
 no role, no dates.
 
+> I would like to add some other npc in chapter 2 and 3. They will not be
+> marked as quest item but you can interact with them. for chapter 2, add
+> Bruno Souza, Guillaume Laforge and Antonio Goncalves. For chapter 3, put
+> Tom Cools, Brian Vermeer, alexander chatzizacharias, Alina Yurenko,
+> Ana-Maria Mihalceanu, Holly Cummins and Kevin Dubois.
+
+**Done** on `corridor-people`, from `main`. A `passerby` helper makes each
+one a `talk` activity flagged `aside` — no marker, no card row, outside
+every count, no banner and no chime — so they are found by walking past,
+the talk prompt offers them in range, and meeting one adds their card to
+the who's who (13 → 23). Chapter II: the corridor's east side, across from
+the speakers. Chapter III: the hall (Tom Cools, Brian Vermeer, Kevin
+Dubois), reception (Alexander Chatzizacharias) and the upstairs corridor
+(Alina Yurenko, Ana-Maria Mihalceanu, Holly Cummins). `npm run objectives`
+places all ten.
+
+Nobody has written or agreed words for them, so they are given none: one
+line of narration, "You stop to say hello to Tom Cools.", in italics and
+without a voice (`narrated`), and their card carries no quote. Their look is
+a distinct shirt colour and nothing else, to be set from photographs like
+the five speakers'. Not checked here: whether the three in Chapter II were
+at JavaPolis.
+
 ---
 
 ## Audio

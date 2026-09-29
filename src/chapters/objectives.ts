@@ -559,6 +559,35 @@ function speaker(
 }
 
 /**
+ * Somebody in the building to say hello to, and nothing more.
+ *
+ * Not a job: no marker, no row, no count (see `Activity.aside`). Found by
+ * driving past; the talk prompt comes up in range, and meeting them puts
+ * their card in the who's who.
+ *
+ * They are real people, and nobody has written words for them, so they are
+ * given none: the one line is narration, the robot stopping to say hello,
+ * in italics and without a voice. Their look is a shirt colour and nothing
+ * else — no hair, beard or glasses — until somebody sets it from a
+ * photograph, the way the five speakers' were. Words, if they are ever
+ * written, should be ones the person has agreed to.
+ */
+function passerby(id: string, who: string, look: Look, at: Zone): Activity {
+  return {
+    kind: 'talk',
+    id: `hello-${id}`,
+    label: `Say hello to ${who}`,
+    who,
+    look: { scale: 1.0, ...look },
+    at,
+    aside: true,
+    optional: true,
+    narrated: true,
+    lines: [`You stop to say hello to ${who}.`],
+  };
+}
+
+/**
  * Where Stephan stands, and stays.
  *
  * Both of his conversations are here — the one that sends you down the
@@ -774,6 +803,13 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         'Keep the rooms running. But that — what you just did — is the conference.',
       ],
     },
+    /*
+     * People to meet, and nothing to do with them. See `passerby`. The
+     * corridor's east side, across from the speakers Stephan sends you to.
+     */
+    passerby('souza', 'Bruno Souza', { shirt: 0x3f6b4a }, spot(1, 2.4, -24.0, 2.4)),
+    passerby('laforge', 'Guillaume Laforge', { shirt: 0x6b3f3f }, spot(1, 2.4, -4.0, 2.4)),
+    passerby('goncalves', 'Antonio Goncalves', { shirt: 0x3f4f6b }, spot(1, 2.4, 12.0, 2.4)),
   ],
 };
 
@@ -1262,5 +1298,16 @@ export const CAPACITY_OBJECTIVE: Objective = {
       everybody: true,
       photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam', file: 'group.jpeg' },
     },
+    /*
+     * People to meet, and nothing to do with them. See `passerby`.
+     * Spread over both storeys, where the day takes a robot anyway.
+     */
+    passerby('cools', 'Tom Cools', { shirt: 0x3d5a73 }, spot(0, 8.0, 12.0, 2.4)),
+    passerby('vermeer', 'Brian Vermeer', { shirt: 0x5a3d4a }, spot(0, -8.0, 4.0, 2.4)),
+    passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x46604a }, spot(0, 15.0, -45.0, 2.4)),
+    passerby('yurenko', 'Alina Yurenko', { shirt: 0x6b4f7a }, spot(1, 2.4, -15.0, 2.4)),
+    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0x7a5a3a }, spot(1, 2.4, 0.0, 2.4)),
+    passerby('cummins', 'Holly Cummins', { shirt: 0x3a6b6b }, spot(1, 2.4, 10.0, 2.4)),
+    passerby('dubois', 'Kevin Dubois', { shirt: 0x4a4f6b }, spot(0, 12.0, -30.0, 2.4)),
   ],
 };

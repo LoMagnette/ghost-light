@@ -67,6 +67,14 @@ interface Common {
    * Absent, the banner says the label and a tick.
    */
   done?: string;
+  /**
+   * Somebody to meet, not a job. No marker, no row on the card, not in any
+   * count, no banner when it is over: a person standing in the building
+   * whom a robot may stop and say hello to, and who goes in the who's who
+   * if it does. Always `optional` as well, so nothing that finishes a
+   * chapter waits on them.
+   */
+  aside?: boolean;
   /** Where it is done. */
   at: Zone;
   gates?: Gates;
@@ -359,6 +367,12 @@ export interface TalkActivity extends Common {
   who: string;
   /** What they say, one boxful at a time. */
   lines: string[];
+  /**
+   * The lines are narration, not speech: set in italics, without the voice.
+   * For real people nobody has written words for, who must not be given
+   * any. See `passerby` in `chapters/objectives.ts`.
+   */
+  narrated?: boolean;
   /**
    * Opens on its own the moment a robot is close enough, instead of waiting
    * for the talk key. Paging on is still the key. For something that talks
