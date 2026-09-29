@@ -104,6 +104,7 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-hall',
     label: 'Hall board',
+    done: 'Hall power restored',
     at: spot(0, -21.8, -1.7, 3.4),
     prop: { kind: 'board', x: -21.0, y: -0.9 },
     reveal: { ...roomBounds('hall'), to: 0.42 },
@@ -112,6 +113,7 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-concourse',
     label: 'Concourse board',
+    done: 'Concourse power restored',
     at: spot(0, -11.0, -50.0, 3.4),
     prop: { kind: 'board', x: -10.2, y: -49.2 },
     reveal: { ...roomBounds('reception'), to: 0.5 },
@@ -192,6 +194,7 @@ const SILENCE: Activity[] = [
     kind: 'tap',
     id: 'board-stage',
     label: 'Room 8 amplifier rack',
+    done: 'Room 8 amplifier on',
     // On the stage plate, 4.14 m below the corridor you came in from. The
     // only way down is the rake, which is a real staircase of 0.18 m risers —
     // so this last board is also the only part of Chapter I that tests
@@ -313,6 +316,7 @@ function projector(room: string, from: number, to: number): Activity {
     kind: 'dwell',
     id: `bulb-${room}-${from}`,
     label: `${roomName(room)}: projector bulb`,
+    done: `${roomName(room)} running again`,
     room,
     window: { from, to },
     // Standing still up at the lamp housing while it cools enough to touch.
@@ -347,6 +351,7 @@ function micCable(room: string, from: number, to: number): Activity {
     kind: 'tap',
     id: `mic-${room}-${from}`,
     label: `${roomName(room)}: mic cable`,
+    done: `${roomName(room)} running again`,
     room,
     window: { from, to },
     // 1.4 m, not the 0.5 it was: the slot is still where the job is, but
@@ -374,6 +379,7 @@ function adapter(room: string, from: number, to: number): Activity {
     kind: 'haul',
     id: `adapter-${room}-${from}`,
     label: `Adapter for ${roomName(room)}`,
+    done: `${roomName(room)} running again`,
     room,
     window: { from, to },
     at: ORGANISERS_DESK,
@@ -398,6 +404,7 @@ function chairs(room: string, from: number, to: number): Activity {
     kind: 'haul',
     id: `chairs-${room}-${from}`,
     label: `Chairs for ${roomName(room)}`,
+    done: `${roomName(room)} running again`,
     room,
     window: { from, to },
     at: FOYER_STACK,

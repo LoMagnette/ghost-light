@@ -107,6 +107,8 @@ const STOREY_COST = 30;
 const ARROW_INSET = 44;
 /** The same at the bottom, above the control strip and the label under a badge. */
 const ARROW_INSET_BOTTOM = 84;
+/** A finished job: its banner and its tick on the card. */
+const DONE_GREEN = '#8fd694';
 /** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
 const URGENT_SECONDS = 20;
 /**
@@ -318,6 +320,9 @@ export class ChapterScreen implements Screen {
   /** The last whole second a countdown ticked on. */
   private lastTick = Infinity;
   private toast!: HTMLElement;
+  /** A job finished: the tick and what it did, over the top of the scene. See `announce`. */
+  private banner!: HTMLElement;
+  private bannerFor = 0;
   /** Chapter seconds at which the next cat arrives. See `driveSwarm`. */
   private nextCatAt = 0;
   /** The cats are hunting, and arrive as a horde. See `driveSwarm`. */
@@ -811,6 +816,11 @@ export class ChapterScreen implements Screen {
       if (this.printFor <= 0) this.print.style.opacity = '0';
     }
 
+    if (this.bannerFor > 0) {
+      this.bannerFor -= dt;
+      if (this.bannerFor <= 0) this.banner.style.opacity = '0';
+    }
+
     if (this.toastFor > 0) {
       this.toastFor -= dt;
       if (this.toastFor <= 0) this.toast.textContent = '';
@@ -994,6 +1004,8 @@ export class ChapterScreen implements Screen {
     this.endCard?.remove();
     this.endCard = undefined;
     this.toast.textContent = '';
+    this.bannerFor = 0;
+    this.banner.style.opacity = '0';
     this.selfie = undefined;
     this.snapCamera();
   }
@@ -1276,10 +1288,58 @@ export class ChapterScreen implements Screen {
 
     const events = this.run.events;
     if (events.length > 0) {
-      this.toast.textContent = events[events.length - 1].text;
-      this.toastFor = 2.6;
+      const last = events[events.length - 1];
+      if (last.done) this.announce(last.text);
+      else {
+        this.toast.textContent = last.text;
+        this.toastFor = 2.6;
+      }
       events.length = 0;
     }
+  }
+
+  /**
+   * Say, big, that a job is done.
+   *
+   * It used to be the toast: the job's name in the corner in the accent,
+   * the same line a spilled keg gets, while the board changed its light and
+   * its row lost its arrow. A tester under-read all three. So a finished job
+   * gets a banner at the top of the scene, a tick and what it did, for as
+   * long as it takes to read twice, and its row on the card gets the tick.
+   */
+  private announce(text: string): void {
+    const chip = el('span', {
+      display: 'inline-block',
+      font: `18px ${SANS}`,
+      color: '#eef2f4',
+      padding: '9px 18px 9px 12px',
+      background: 'rgba(8, 11, 14, 0.9)',
+      border: `1px solid ${DONE_GREEN}`,
+      borderRadius: '4px',
+    });
+    this.banner.replaceChildren(chip);
+    chip.append(
+      el(
+        'span',
+        {
+          display: 'inline-block',
+          width: '24px',
+          height: '24px',
+          lineHeight: '24px',
+          marginRight: '12px',
+          borderRadius: '12px',
+          background: DONE_GREEN,
+          color: '#06080a',
+          textAlign: 'center',
+          font: `bold 15px ${SANS}`,
+          verticalAlign: '1px',
+        },
+        '✓',
+      ),
+      el('span', {}, text),
+    );
+    this.banner.style.opacity = '1';
+    this.bannerFor = 2.8;
   }
 
   /**
@@ -2263,6 +2323,18 @@ export class ChapterScreen implements Screen {
     this.toast.classList.add('touch-grow');
     game.ui.append(this.toast);
 
+    // Across the stage and centred in it, rather than a left of half the
+    // width: `touch-zoom` scales a left as well as a font.
+    this.banner = label(0, 112, {
+      right: '0',
+      textAlign: 'center',
+      opacity: '0',
+      transition: 'opacity 0.35s',
+      pointerEvents: 'none',
+    });
+    this.banner.classList.add('touch-zoom');
+    game.ui.append(this.banner);
+
     /*
      * The photograph.
      *
@@ -2701,7 +2773,7 @@ export class ChapterScreen implements Screen {
       // A group names a robot only if every one of it is that robot's.
       const who = tally.who.size === 1 && !complete ? [...tally.who][0] : undefined;
       lines.push({
-        text: `${complete ? '·' : '›'} ${name} ${tally.done}/${tally.total}`,
+        text: `${complete ? '✓' : '›'} ${name} ${tally.done}/${tally.total}`,
         who,
         ...(complete ? {} : this.numbered(`group:${name}`)),
       });
@@ -2796,7 +2868,14 @@ export class ChapterScreen implements Screen {
     this.cardText.replaceChildren(
       ...lines.map((line) => {
         if (line.dim) return el('div', { color: '#7d868b', paddingRight: '25px' }, line.text);
-        const row = el('div', line.next ? { color: '#eef2f4', background: 'rgba(255, 255, 255, 0.07)', margin: '0 -6px', padding: '0 6px', borderRadius: '3px' } : {}, line.text);
+        // A finished row: the tick in green and the rest stepped back.
+        const ticked = line.text.startsWith('✓ ');
+        const row = el(
+          'div',
+          line.next ? { color: '#eef2f4', background: 'rgba(255, 255, 255, 0.07)', margin: '0 -6px', padding: '0 6px', borderRadius: '3px' } : {},
+          ticked ? '' : line.text,
+        );
+        if (ticked) row.append(el('span', { color: DONE_GREEN }, '✓'), el('span', { color: '#7d868b' }, line.text.slice(1)));
         if (line.who) {
           row.append(
             el('span', { color: css(line.who.signal), marginLeft: '8px' }, '●'),
@@ -3284,7 +3363,7 @@ function cardLine(state: ActivityState): string {
   const { activity, status } = state;
 
   const glyph =
-    status === 'done' ? '·' : status === 'missed' ? '×' : status === 'carried' ? '»' : status === 'locked' ? ' ' : '›';
+    status === 'done' ? '✓' : status === 'missed' ? '×' : status === 'carried' ? '»' : status === 'locked' ? ' ' : '›';
   if ((activity.kind === 'dwell' || activity.kind === 'attend') && status === 'open' && state.progress > 0.02) {
     return `${glyph} ${activity.label} ${Math.round(state.progress * 100)}%`;
   }

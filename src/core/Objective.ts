@@ -180,6 +180,8 @@ export interface ActivityState {
 /** Something the HUD should say once, briefly. */
 export interface ObjectiveEvent {
   text: string;
+  /** A job finished, which the screen announces bigger than a notice. */
+  done?: boolean;
   /** Chapter seconds at which it happened. */
   at: number;
 }
@@ -637,13 +639,13 @@ export class ObjectiveRun {
     state.status = 'done';
     state.doneAt = this.elapsed;
     state.progress = 1;
-    this.say(state.activity.label);
+    this.say(state.activity.done ?? state.activity.label, true);
     if (state.activity.reveal) this.reveals.push({ ...state.activity.reveal, id: state.activity.id });
     if (state.activity.photo) this.photos.push(state.activity.photo);
   }
 
-  private say(text: string): void {
-    this.events.push({ text, at: this.elapsed });
+  private say(text: string, done = false): void {
+    this.events.push(done ? { text, at: this.elapsed, done } : { text, at: this.elapsed });
   }
 
   /**
