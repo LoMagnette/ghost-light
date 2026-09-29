@@ -5740,6 +5740,20 @@ cycle. It opens on the first print taken, or on CLOSE. A red outline marks
 the choice, from the keyboard only (`:focus-visible`). Driven key by key in
 the browser, from P on the menu to ENTER on CLOSE.
 
+> Normaly the bof room should have row of table and chair for lab with a
+> passage in the middle
+
+**Done** on `bof-labs`: both BOF rooms were empty. Each now has seven rows,
+a table either side of a 1.4 m passage running from the door end to the
+front, chairs behind every table facing the east wall, a presenter's table
+at the end of the passage and a screen on the wall. 2.2 m clear inside the
+door past the steps, 2.6 m before the front. One hidden block per half-row
+collides, as the seat banks do. The constants are the lab's own, because
+the corridor's `CHAIR` is declared below the line that builds the venue and
+would not exist yet when this runs. `venue`, `objectives` (Voxxy still
+stands on the BeJUG spot, in the passage), `traverse`, `crowd` and `shoot`
+pass; photographed in Chapter III.
+
 ---
 
 ## Audio
