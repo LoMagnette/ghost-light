@@ -5689,6 +5689,20 @@ reading has no reason to want the clock running.
   Chapter II lost with three rooms dark. **Not seen**: a card with the "did"
   column and the prints filled in, which needs a real playthrough.
 
+> Improve album readability on phones. The album uses a fixed three-column
+> layout with 11px captions […] Use larger text and a scrollable layout on
+> phones. The desktop preview also shows the menu behind the album; an opaque
+> background would make the collection easier to read.
+
+**Done** on `album-phone`:
+- **Opaque** on every screen, and so is the print held up large.
+- **On a phone**: two columns of bigger prints (300 × 200 design px), captions
+  and hints at 17 px rather than 11, a bigger title and count, and a CLOSE
+  button with a border. The page scrolls vertically: it is the one panel
+  allowed `touch-action: pan-y` on a page that is otherwise `none`.
+- **Checked** in the phone-sized browser, top and scrolled to the bottom,
+  and on the desktop. **Not checked**: scrolling with a real thumb.
+
 ---
 
 ## Audio
