@@ -211,6 +211,24 @@ export class ChapterScreen implements Screen {
   private sim!: Sim;
   private blockout!: BlockoutRenderer;
   private controller!: KeyboardController;
+  /**
+   * The pause menu, and whether it is up. Paused, nothing advances: not the
+   * sim, not the clock, not a story beat, not the crowd. Only the frame is
+   * drawn again, so the building stays on screen behind the menu.
+   */
+  private paused = false;
+  private pauseMenu!: HTMLDivElement;
+  private pauseItems: { node: HTMLElement; act: () => void }[] = [];
+  private pauseAt = 0;
+  /** A phone turned upright: the rotate message covers the game, so it pauses. */
+  private upright: MediaQueryList | undefined;
+  private readonly onTurn = (): void => {
+    if (this.upright?.matches) this.setPaused(true);
+  };
+  /** Switching app or tab: an interruption, so it pauses too. */
+  private readonly onHidden = (): void => {
+    if (document.visibilityState === 'hidden') this.setPaused(true);
+  };
   /** Played by touch: the prompts name the buttons, not the keys. */
   private touch = false;
   private touchPad: TouchControls | undefined;
@@ -513,7 +531,13 @@ export class ChapterScreen implements Screen {
     const query = new URLSearchParams(window.location.search);
     if (exit && query.has('exit') && query.get('chapter') === chapter.id) this.depart(exit);
 
-    game.keyboard.on('Escape', () => this.routes.menu());
+    // ESC pauses rather than leaving: leaving threw the run away, and a
+    // chapter reopened starts over. Only the end card, with no run left to
+    // keep, still goes straight back to the chapters.
+    game.keyboard.on('Escape', () => {
+      if (this.endCard && !this.paused) this.routes.menu();
+      else this.setPaused(!this.paused);
+    });
     game.keyboard.on('F1', () => {
       this.debug = !this.debug;
       this.debugText.style.display = this.debug ? 'block' : 'none';
@@ -523,14 +547,31 @@ export class ChapterScreen implements Screen {
       // view and two illegible lists drawn over each other.
       this.cardText.style.top = this.debug ? `${CARD_TOP + 330}px` : `${CARD_TOP}px`;
     });
-    game.keyboard.on('KeyR', () => this.resetCast());
-    game.keyboard.on('Space', () => {
-      this.dropRequested = true;
+    // R used to restart on the spot. Mid-run it now asks first, by opening
+    // the pause menu on Restart, so R again (or ENTER) is the restart. On the
+    // end card there is nothing to lose, and it restarts at once.
+    game.keyboard.on('KeyR', () => {
+      if (this.paused) this.restart();
+      else if (this.endCard) this.restart();
+      else this.setPaused(true, 1);
     });
+    game.keyboard.on('Space', () => {
+      if (this.paused) this.choosePause();
+      else this.dropRequested = true;
+    });
+    game.keyboard.on('Enter', () => {
+      if (this.paused) this.choosePause();
+    });
+    for (const [code, step] of [['ArrowUp', -1], ['KeyW', -1], ['ArrowDown', 1], ['KeyS', 1]] as const) {
+      game.keyboard.on(code, () => {
+        if (this.paused) this.movePause(step);
+      });
+    }
     // E rather than SPACE or ENTER: SPACE is already the drop, and ENTER is
     // the one key a browser is liable to hand to something else on the page.
     game.keyboard.on('KeyE', () => {
-      this.talkRequested = true;
+      if (this.paused) this.choosePause();
+      else this.talkRequested = true;
     });
 
     // TAB is the whole of `switch` mode, and Chapters II and III are both in
@@ -553,13 +594,30 @@ export class ChapterScreen implements Screen {
     });
 
     game.touch?.show({ crew: chapter.controlMode === 'switch' });
+
+    this.buildPauseMenu(game);
+    this.upright = window.matchMedia?.('(orientation: portrait) and (pointer: coarse)');
+    this.upright?.addEventListener('change', this.onTurn);
+    document.addEventListener('visibilitychange', this.onHidden);
+    // Opened upright, it starts paused: nobody can see it to play it.
+    this.onTurn();
     this.touch = game.touch !== undefined;
     this.touchPad = game.touch;
   }
 
   update(dt: number): void {
-    // Last frame's box, or a story beat: the controls step aside for both.
-    this.touchPad?.setTalking(this.story !== undefined || this.talkBox.style.display !== 'none');
+    // Last frame's box, a story beat, or the pause menu: the controls step
+    // aside for all three.
+    this.touchPad?.setTalking(this.paused || this.story !== undefined || this.talkBox.style.display !== 'none');
+    if (this.paused) {
+      // Frozen, and quiet: a motor left running would hum under the menu.
+      const ear = { x: this.cameraX, y: this.cameraY, floor: this.floor };
+      for (const [actor, motor] of this.motors) {
+        motor.update(0, sfx.placeAt(actor.body.x, actor.body.y, actor.floor, ear));
+      }
+      this.blockout.render(this.floor, this.actors, this.sim.alpha, 0);
+      return;
+    }
     const over = this.run.phase === 'ended';
 
     // Hands off once the round is over: the end card is up, and a robot still
@@ -658,6 +716,8 @@ export class ChapterScreen implements Screen {
   }
 
   dispose(): void {
+    this.upright?.removeEventListener('change', this.onTurn);
+    document.removeEventListener('visibilitychange', this.onHidden);
     for (const motor of this.motors.values()) motor.stop();
     for (const hole of this.wormholes) hole.dispose();
     this.blockout.dispose();
@@ -667,12 +727,123 @@ export class ChapterScreen implements Screen {
 
   private takeControl(index: number): void {
     const next = this.actors[index];
-    if (!next || next === this.controlled || this.story) return;
+    if (!next || next === this.controlled || this.story || this.paused) return;
 
     // Hand the old robot a neutral input or it keeps whatever the player was
     // holding at the moment they swapped and drives off on its own.
     Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
     this.controlled = next;
+  }
+
+  // -- pause ----------------------------------------------------------------
+
+  private buildPauseMenu(game: Game): void {
+    const { chapter } = this;
+    this.pauseMenu = el('div', {
+      position: 'absolute',
+      inset: '0',
+      display: 'none',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      // Darker than the end card: a dialogue box can be up underneath.
+      background: 'rgba(4, 6, 8, 0.9)',
+      textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
+      zIndex: '8',
+    });
+    this.pauseMenu.classList.add('touch-zoom');
+    this.pauseMenu.append(
+      el(
+        'div',
+        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' },
+        `${chapter.numeral}. ${chapter.title.toUpperCase()}`,
+      ),
+      el('div', { font: `34px ${SANS}`, color: css(chapter.palette.text), marginBottom: '14px' }, 'Paused'),
+    );
+    const items: [string, () => void][] = [
+      ['Resume', () => this.setPaused(false)],
+      ['Restart', () => this.restart()],
+      ['Chapter select', () => this.routes.menu()],
+    ];
+    this.pauseItems = items.map(([text, act], index) => {
+      const node = el(
+        'div',
+        {
+          font: `18px ${SANS}`,
+          padding: '9px 28px',
+          minWidth: '220px',
+          textAlign: 'center',
+          border: '1px solid transparent',
+          borderRadius: '3px',
+          cursor: 'pointer',
+        },
+        text,
+      );
+      node.addEventListener('pointerenter', () => {
+        this.pauseAt = index;
+        this.showPauseChoice();
+      });
+      node.addEventListener('click', act);
+      this.pauseMenu.append(node);
+      return { node, act };
+    });
+    this.pauseMenu.append(
+      el(
+        'div',
+        { font: `12px ${MONO}`, color: '#5c6368', marginTop: '14px' },
+        game.touch ? 'TAP to choose' : 'ESC resume     ↑ ↓ choose     ENTER select',
+      ),
+    );
+    game.ui.append(this.pauseMenu);
+  }
+
+  /** Put the menu up or take it down, with `focus` the item it opens on. */
+  private setPaused(on: boolean, focus = 0): void {
+    if (on === this.paused) return;
+    this.paused = on;
+    this.pauseAt = focus;
+    this.showPauseChoice();
+    this.pauseMenu.style.display = on ? 'flex' : 'none';
+    // Whatever was held or pressed on the way in is not a thing to do on
+    // the way out: a robot that resumes still driving, or a line paged by
+    // the tap that closed the menu, is the pause leaking.
+    Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
+    this.talkRequested = false;
+    this.dropRequested = false;
+  }
+
+  private movePause(step: number): void {
+    const n = this.pauseItems.length;
+    this.pauseAt = (this.pauseAt + step + n) % n;
+    this.showPauseChoice();
+  }
+
+  private choosePause(): void {
+    this.pauseItems[this.pauseAt]?.act();
+  }
+
+  private showPauseChoice(): void {
+    const accent = css(this.chapter.palette.accent);
+    this.pauseItems.forEach(({ node }, index) => {
+      const on = index === this.pauseAt;
+      node.style.color = on ? css(this.chapter.palette.text) : '#8d959b';
+      node.style.borderColor = on ? accent : 'transparent';
+    });
+  }
+
+  /**
+   * Start the chapter over. In place when that is possible, which keeps the
+   * opening from playing again; from the top when a story beat is running,
+   * because there is nothing to put the cast back to mid-wormhole.
+   */
+  private restart(): void {
+    if (this.story) {
+      this.routes.chapter(this.chapter.id);
+      return;
+    }
+    this.setPaused(false);
+    this.resetCast();
   }
 
   private resetCast(): void {
@@ -1917,9 +2088,9 @@ export class ChapterScreen implements Screen {
       'SHIFT brake',
       ...(chapter.cast.length > 1 ? ['TAB robot', 'SPACE drop'] : []),
       ...(talks ? ['E talk'] : []),
-      'R reset',
+      'R restart',
       'M sound',
-      'ESC menu',
+      'ESC pause',
     ].join('   ');
 
     // On a phone the buttons say what they do, and the keys are not there.
@@ -2360,9 +2531,19 @@ export class ChapterScreen implements Screen {
       panel.append(el('div', { font: `13px ${MONO}`, color: '#8d959b' }, detail));
     }
 
-    panel.append(
-      el('div', { font: `12px ${MONO}`, color: '#5c6368', marginTop: '10px' }, 'R again     ESC menu'),
+    // Tappable as well as keyed: on a phone they are the only way on.
+    const choice = (text: string, act: () => void): HTMLElement => {
+      const node = el('span', { cursor: 'pointer', padding: '6px 10px' }, text);
+      node.addEventListener('click', act);
+      return node;
+    };
+    const touch = this.touch;
+    const row = el('div', { font: `12px ${MONO}`, color: '#5c6368', marginTop: '10px', display: 'flex', gap: '28px' });
+    row.append(
+      choice(touch ? 'AGAIN' : 'R again', () => this.restart()),
+      choice(touch ? 'CHAPTER SELECT' : 'ESC chapter select', () => this.routes.menu()),
     );
+    panel.append(row);
 
     this.endCard = panel;
     // Appended to the same UI layer everything else is on, so it scales with

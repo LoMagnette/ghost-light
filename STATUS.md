@@ -32,7 +32,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 43
-    "In progress" : 3
+    "In progress" : 4
     "To do" : 12
 ```
 
@@ -92,6 +92,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
+| **Pause menu** | `pause-menu`, on `chapter-2-slack` | ESC and the phone's PAUSE open Resume / Restart / Chapter select and freeze the run; R asks before restarting; turning a phone upright or switching away pauses | Push and merge | Agent, once the push works |
 | **Chapter II loosened again** | `chapter-2-slack`, on `touch-controls` | Eight breakdowns, windows ~40% longer, a 330 s day; the phone stick reaches full speed at 80% of its travel | The author plays it, on a phone too, then push and merge | Human plays · agent tunes |
 | **Plays on a phone** | `touch-controls`, on `chapter-one-landing` | Stick, buttons, tap to page dialogue, bigger text, rotate message, low graphics by default. Checked in a headless phone-sized browser only | The author plays it on a real phone (frame rate, thumbs), then push and merge | Human tests · agent fixes |
 | **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |

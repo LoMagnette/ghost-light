@@ -5589,6 +5589,33 @@ small ones had not been enough:
   robots were driving slower than the windows were set for.
 - **Checked:** `objectives` and `shoot` pass. Not played.
 
+> I would be good to introdue a pause feature: Add a pause menu that preserves
+> the current run. Escape immediately returns to chapter selection, and
+> reopening a chapter starts over. Reset also immediately clears progress. Give
+> players Resume / Restart / Chapter select, and pause when the phone's
+> rotation message covers the game.
+
+**Done** on `pause-menu`:
+- **ESC pauses** instead of leaving. Paused, nothing advances (the sim, the
+  clock, the crowd, a story beat, a line being typed) and the motors go
+  quiet; the frame is still drawn behind the menu.
+- **Resume / Restart / Chapter select**, by click or tap, or ↑ ↓ and ENTER,
+  and ESC resumes.
+- **R asks first**: mid-run it opens the menu on Restart, and R again (or
+  ENTER) restarts. On the end card, with nothing to lose, R restarts at once
+  and ESC goes to the chapters; both are tappable there now.
+- **It pauses by itself** when a phone is turned upright (the rotate message
+  covers the game), when the tab or app is switched away, and if a chapter
+  is opened upright.
+- **Touch**: the top row is SOUND and PAUSE; RESET is gone, since restart is
+  in the menu. The stick and buttons step aside while paused.
+- `npm run shoot` goes back to the chapters through the menu now, and R's
+  reset in the lab is pressed twice.
+- **Checked** in the browser: a 4 s pause in Chapter II moved the clock by
+  none of those 4 s; R opened the menu on Restart; turning a touch phone
+  upright during Voxxy's opening paused it mid-line. `shoot`, `shoot --lab`,
+  `objectives` and `traverse` pass.
+
 ---
 
 ## Audio

@@ -105,6 +105,8 @@ if (process.argv.includes('--lab')) {
 
   for (const [index, name] of ['voxxy', 'droid', 'biggy'].entries()) {
     await page.keyboard.press(`Digit${index + 1}`);
+    // R asks first, by opening the pause menu on Restart; R again restarts.
+    await page.keyboard.press('KeyR');
     await page.keyboard.press('KeyR');
     await page.waitForTimeout(300);
 
@@ -134,7 +136,14 @@ if (process.argv.includes('--lab')) {
 
 // Walk each chapter: select it, drive for a moment, capture.
 for (let index = 0; index < 3; index += 1) {
-  await page.keyboard.press('Escape');
+  // Back to the chapters the way a player goes: ESC pauses, and the pause
+  // menu's last item is chapter select. Chapter I starts from the menu.
+  if (index > 0) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+  }
   await page.waitForTimeout(400);
   for (let step = 0; step < index; step += 1) {
     await page.keyboard.press('ArrowRight');
