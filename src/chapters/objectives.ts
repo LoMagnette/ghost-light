@@ -502,8 +502,10 @@ const BREAKDOWNS: Activity[] = [
  * The people who actually built this conference, standing in the corridor of
  * the building they built it in.
  *
- * Every one of them really spoke at JavaPolis, which is the only reason they
- * are in here: Chapter II IS JavaPolis, and a conference is the people at it.
+ * Gosling, Goetz and Johnson each gave a talk at JavaPolis that the research
+ * of 29 Sep found on record; Chet Haase, the fourth, is the author's choice
+ * and no JavaPolis talk of his was found. Chapter II IS JavaPolis, and a
+ * conference is the people at it.
  * They are drawn and written as a cameo — warm, about the room and the
  * moment, and putting no claim in anybody's mouth that is not plainly true of
  * their public work.
@@ -542,9 +544,11 @@ function speaker(
   look: Look,
   lines: string[],
   y: number,
+  bio: string,
 ): Activity {
   return {
     kind: 'talk',
+    bio,
     id: `met-${id}`,
     label: `Say hello to ${who}`,
     who,
@@ -570,15 +574,14 @@ function speaker(
  * their card in the who's who.
  *
  * They are real people, and nobody has written words for them, so they are
- * given none: the one line is narration, the robot stopping to say hello,
- * in italics and without a voice. Their look is a shirt colour, and for
- * Alina, Ana-Maria and Holly long hair (the author, 29 Sep: they should read
- * as women), blond, dark brown and black, as the author gave them. The rest
- * waits for somebody to set it from a photograph, the way the five
- * speakers' were. Words, if they are ever
- * written, should be ones the person has agreed to.
+ * given none: the one line is narration, the robot stopping to say hello
+ * and who they are, in italics and without a voice. What it says about them
+ * is from their public work, sourced in `docs/PROMPTS.md` (29 Sep): in
+ * Chapter II as of JavaPolis 2006, in Chapter III as of Devoxx 2026. Their
+ * looks are from the author's portraits of them (30 Sep): shirt, hair,
+ * beard and glasses, and for Alina, Ana-Maria and Holly long hair.
  */
-function passerby(id: string, who: string, look: Look, at: Zone): Activity {
+function passerby(id: string, who: string, look: Look, at: Zone, about: { bio: string; line: string }): Activity {
   return {
     kind: 'talk',
     id: `hello-${id}`,
@@ -589,7 +592,8 @@ function passerby(id: string, who: string, look: Look, at: Zone): Activity {
     aside: true,
     optional: true,
     narrated: true,
-    lines: [`You stop to say hello to ${who}.`],
+    bio: about.bio,
+    lines: [about.line],
   };
 }
 
@@ -657,6 +661,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       id: 'met-stephan',
       label: 'Say hello to Stephan',
       who: 'Stephan Janssen',
+      bio: 'Founder of the Belgian Java User Group and chairman of JavaPolis, the Java conference in an Antwerp cinema.',
       look: STEPHAN_LOOK,
       optional: true,
       // Four metres up the corridor from where the chapter starts, so the
@@ -665,9 +670,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       lines: [
         'Maintenance. Good. Room 4 has been making a noise since nine and nobody will own up to hearing it.',
         'You are going to spend today keeping six rooms alive. Before you do, let me tell you what the rooms are for.',
-        'Every talk in this building is being filmed. All of it goes out afterwards, for nothing, to anyone.',
-        'So if the talk were the reason to fly to Antwerp in December, nobody would fly to Antwerp in December.',
-        'There are four people down that corridor with an hour to kill. THAT does not go out afterwards.',
+        'Every talk this week is being filmed, and the talks go online afterwards, on Parleys.',
+        'So the talks are not the only reason to come to Antwerp in December. They are not even the main one.',
+        'There are four people down that corridor with an hour to kill. THAT does not go online afterwards.',
         'Go and use them. The rooms will still be here, more or less.',
       ],
     },
@@ -701,13 +706,13 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         scale: 1.0,
       },
       [
-        'They have put me in the big room again. I keep telling them I do not need the big room.',
-        'Somebody in the second row this morning asked what all of this looks like in twenty years.',
-        'I said I had no idea. You could hear the room decide whether that was a disappointment.',
-        'It is not. Nobody wrote that down anywhere, and I could only say it out loud, to people, in a room.',
-        'Come and stand at the back for the Q&A if your rooms will spare you. The questions are the good part.',
+        'Last month Sun put the Java compiler and HotSpot out under the GPL. The rest of the JDK follows next year.',
+        'I wrote the first compiler for this language. Now anyone can read the one we ship, and change it.',
+        'That is a strange thing to stand in a corridor and think about.',
+        'If your rooms can spare you, ask me about NetBeans. We have been working hard to make it less geeky.',
       ],
       -31.0,
+      'Created the Java language at Sun, where he is a Sun Fellow and CTO of the Developer Products group.',
     ),
     speaker(
       'goetz',
@@ -724,32 +729,39 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         scale: 1.02,
       },
       [
-        'Two machines, six rooms, one of you. You have written this program before.',
-        'And you already know where it goes wrong. It is never the doing. It is agreeing on what happened, and in what order.',
-        'People have been reading that chapter all year and writing to me to say it cannot be right.',
-        'Not one of them has been wrong in the same way twice, and I only ever find that out in a corridor.',
-        'So thank you. That is not a pleasantry — the corridor is where I learn what I got away with.',
+        'Two machines, six rooms, one of you. That is a concurrency problem, and I wrote a book about those this year.',
+        'Java Concurrency in Practice. The threads are never the hard part. Agreeing on what happened, and in what order, is.',
+        'I joined Sun in September, to work on the platform itself.',
+        'If your rooms can spare you, I am talking about performance myths. A lot of what people believe about JVM speed is years out of date.',
       ],
       -11.0,
+      'Lead author of Java Concurrency in Practice (2006); joined Sun\'s Java SE team in September 2006.',
     ),
+    /*
+     * Chet Haase, in Gavin King's place (the author, 29 Sep). Everything he
+     * says is his public work as of late 2006: client architect in Sun's
+     * Java SE group, on Swing and Java 2D; Java SE 6, which he had called
+     * "a rock-solid release of Java for Vista" that October; and the
+     * Filthy Rich Clients session with Romain Guy at JavaOne 2006, which the
+     * two of them then turned into the book (2007). Sources in
+     * `docs/PROMPTS.md`. Not confirmed at JavaPolis: no talk of his was
+     * found there, as for Gavin King.
+     *
+     * His look is from the author's portrait of him: short grey hair,
+     * clean-shaven, a black shirt.
+     */
     speaker(
-      'king',
-      'Gavin King',
-      // Short, fair, and clean-shaven, which at this size is itself the
-      // distinguishing mark in a corridor of beards. Dark t-shirt, lean.
-      // The hair is darker here than the photograph reads, and deliberately.
-      // His is fair, and fair hair under tungsten light rendered at its own
-      // value came out the exact tone of a lit forehead — which made the one
-      // man in this corridor with a full head of hair read as bald.
-      { shirt: 0x2b2f36, hair: 0x8d6a40, hairline: 'full', scale: 1.03 },
+      'haase',
+      'Chet Haase',
+      { shirt: 0x1c1d20, hair: 0x9a948c, hairline: 'full', scale: 1.02 },
       [
-        'Everything in this building is a row somewhere. The seats, the badges, the running order, you.',
-        "Getting all of that onto objects is nobody's idea of a good afternoon, and I am the one who said I had a way.",
-        'Half that room uses it every day and has a list. The other half has a longer list.',
-        'They will bring me the lists tonight, in the bar, to my face. That is worth more to me than the talk was.',
-        'You cannot have that argument by post. Somebody always goes quiet and nobody buys anybody a drink.',
+        'Java SE 6 is out. On the desktop, we have been building a rock-solid release for Windows Vista.',
+        'I work on the client side at Sun: Swing, Java 2D, everything that puts pixels on your screen.',
+        'Romain Guy and I gave a session at JavaOne this year on making desktop applications look good. We called it Filthy Rich Clients.',
+        'Now we are writing the book. A desktop application is allowed to be beautiful.',
       ],
       5.3,
+      'Client architect in Sun\'s Java SE group, working on Swing and Java 2D; writing Filthy Rich Clients with Romain Guy.',
     ),
     speaker(
       'johnson',
@@ -765,16 +777,16 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
         scale: 0.99,
       },
       [
-        'Half the people in that room came because something was too heavy and somebody built a lighter one.',
-        'I wrote a book about it, which is the slowest possible way to have a conversation with anybody.',
-        'You write for a year, it arrives, and you never once find out which part landed.',
-        'Then a man in Belgium puts everyone who read it inside one building for a week. I have learned more this morning than in the whole year I spent writing.',
-        'Ask me the thing you have been arguing about at work. Genuinely. That is what I am standing here for.',
+        'Spring 2.0 came out in October. More than ten thousand downloads on the first day.',
+        'It began as the code in a book, in 2002: how to build J2EE applications without the heavy parts.',
+        'The next book said it in the title. J2EE Development without EJB.',
+        'The company is Interface21. The 21 is for the century, which made more sense when I registered the name in 1998.',
       ],
       // Outside Room 6's door, since 28 Sep: Room 2 has no session in the
       // chapter's six rooms. The door is at the north end of the room, and
       // Room 6's middle is the open well beside the grand stair.
       -44.6,
+      'Created the Spring Framework; CEO of Interface21. Spring 2.0 shipped in October 2006.',
     ),
     /*
      * The way back.
@@ -799,13 +811,13 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       optional: true,
       alreadyHere: true,
       at: STEPHAN_AT,
-      after: ['met-gosling', 'met-goetz', 'met-king', 'met-johnson'],
+      after: ['met-gosling', 'met-goetz', 'met-haase', 'met-johnson'],
       lines: [
         'All four. And your rooms are still up, which I did not expect.',
-        'I started this in a user group. A room above a pub, a projector we borrowed, forty of us.',
-        'Last year two thousand eight hundred people came to Antwerp in the winter, and that made this the biggest independent Java conference anywhere.',
+        'We started this with the Belgian Java User Group in 2002. We wanted a JavaOne for Europe that people could afford.',
+        'This year more than two thousand eight hundred of you came, to a cinema, in December.',
         'Nobody came for the slides. The slides were always going to be online.',
-        'They came because the man who wrote the thing you use is standing in a corridor with nothing to do for an hour.',
+        'They came because the people who built the things you use are standing in a corridor with an hour to spare.',
         'Keep the rooms running. But that — what you just did — is the conference.',
       ],
     },
@@ -813,9 +825,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
      * People to meet, and nothing to do with them. See `passerby`. The
      * corridor's east side, across from the speakers Stephan sends you to.
      */
-    passerby('souza', 'Bruno Souza', { shirt: 0x3f6b4a }, spot(1, 2.4, -24.0, 2.4)),
-    passerby('laforge', 'Guillaume Laforge', { shirt: 0x6b3f3f }, spot(1, 2.4, -4.0, 2.4)),
-    passerby('goncalves', 'Antonio Goncalves', { shirt: 0x3f4f6b }, spot(1, 2.4, 12.0, 2.4)),
+    passerby('souza', 'Bruno Souza', { shirt: 0x1c1d20, hair: 0x3a2e26, hairline: 'receding', scale: 1.02 }, spot(1, 2.4, -24.0, 2.4), { bio: 'Founder of SouJava, Brazil\'s Java user group, and newly NetBeans community manager at Sun.', line: 'You stop to say hello to Bruno Souza, who founded SouJava in Brazil and has just joined Sun to look after the NetBeans community.' }),
+    passerby('laforge', 'Guillaume Laforge', { shirt: 0xe4e4e2, hair: 0x3a2e26, glasses: 0x2a2a2c }, spot(1, 2.4, -4.0, 2.4), { bio: 'Groovy project manager and JSR 241 spec lead; architect at OCTO Technology in Paris.', line: 'You stop to say hello to Guillaume Laforge, who leads the Groovy project. Groovy 1.0 is a few weeks away.' }),
+    passerby('goncalves', 'Antonio Goncalves', { shirt: 0x1c1d20, hair: 0x241e1a, long: true, beard: 'goatee' }, spot(1, 2.4, 12.0, 2.4), { bio: 'Paris Java developer and writer, speaking about JUnit 4 at JavaPolis 2006.', line: 'You stop to say hello to Antonio Goncalves, in from Paris to give a talk on JUnit 4.' }),
   ],
 };
 
@@ -1137,17 +1149,14 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'photographer',
       label: 'Find the photographer',
       who: 'Dimitris',
+      bio: 'Dimitris Doutsiopoulos, a Thessaloniki event photographer who has shot Devoxx Belgium, Greece, the UK and Poland.',
       optional: true,
       /*
-       * His look is what one distant photograph supports and nothing more.
-       *
-       * The only public picture of him is full-length on a beach, so the
-       * honest levers are the ones that survive it: head-to-toe black, short
-       * dark hair, lean. No face is claimed, because none is legible — and a
-       * photographer in black is accurate and typical at once. The camera is
-       * what actually finds him in a hall of three thousand people.
+       * His look is from the author's portrait of him (30 Sep): a denim
+       * jacket, short dark hair and a beard. The camera is what actually
+       * finds him in a hall of three thousand people.
        */
-      look: { shirt: 0x1c1d20, hair: 0x2b2722, scale: 1.0, camera: true },
+      look: { shirt: 0x34465e, hair: 0x2b2722, beard: 'full', scale: 1.0, camera: true },
       // The broad central aisle, which every robot in this chapter drives
       // down: the booth ranks stop at x -6.0 and start again at 4.7, so this
       // is ten metres of clear floor and the one place in the hall a player
@@ -1244,6 +1253,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'photo-josh',
       label: 'Pose with Josh Long',
       who: 'Josh Long',
+      bio: 'Spring Developer Advocate since 2010, Java Champion, author of seven books, host of Spring Tips and A Bootiful Podcast.',
       // Dark-rimmed glasses, short dark hair, a few days of stubble, dark
       // t-shirt. Off his Devoxx speaker photograph.
       look: {
@@ -1273,6 +1283,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       id: 'photo-group',
       label: 'The group photo',
       who: 'Venkat Subramaniam',
+      bio: 'Founder of Agile Developer, Inc., Java Champion, and author of Pragmatic Bookshelf books on Java and agile practice.',
       // Dark hair going grey at the temples, thin frames, and the moustache,
       // which is the whole face: a bar above the mouth and nothing below it.
       look: {
@@ -1308,12 +1319,12 @@ export const CAPACITY_OBJECTIVE: Objective = {
      * People to meet, and nothing to do with them. See `passerby`.
      * Spread over both storeys, where the day takes a robot anyway.
      */
-    passerby('cools', 'Tom Cools', { shirt: 0x3d5a73 }, spot(0, 8.0, 12.0, 2.4)),
-    passerby('vermeer', 'Brian Vermeer', { shirt: 0x5a3d4a }, spot(0, -8.0, 4.0, 2.4)),
-    passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x46604a }, spot(0, 15.0, -45.0, 2.4)),
-    passerby('yurenko', 'Alina Yurenko', { shirt: 0x6b4f7a, hair: 0xc9a86a, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4)),
-    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0x4a6b8a, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4)),
-    passerby('cummins', 'Holly Cummins', { shirt: 0x3a6b6b, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4)),
-    passerby('dubois', 'Kevin Dubois', { shirt: 0x4a4f6b }, spot(0, 12.0, -30.0, 2.4)),
+    passerby('cools', 'Tom Cools', { shirt: 0x1c1d20, hair: 0x2a221c, glasses: 0x3a3a3c, beard: 'full' }, spot(0, 8.0, 12.0, 2.4), { bio: 'Developer Relations Engineer at Timefold, Java Champion, and leader of the Belgian Java User Group.', line: 'You stop to say hello to Tom Cools, who leads the Belgian Java User Group: the group this conference grew out of.' }),
+    passerby('vermeer', 'Brian Vermeer', { shirt: 0x2c3a52, hair: 0x6b4e33, beard: 'full' }, spot(0, -8.0, 4.0, 2.4), { bio: 'Staff Developer Advocate at Snyk and Java Champion; leads the Virtual JUG and NLJUG.', line: 'You stop to say hello to Brian Vermeer, who works on keeping Java applications secure, and runs the Virtual JUG.' }),
+    passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x1c1d20, hair: 0x221c18, glasses: 0x1a1a1c }, spot(0, 15.0, -45.0, 2.4), { bio: 'Software engineer at JDriven with a master\'s in Game Studies, bringing game development and software engineering together.', line: 'You stop to say hello to Alexander Chatzizacharias, who once turned IntelliJ into a game engine, just because he could.' }),
+    passerby('yurenko', 'Alina Yurenko', { shirt: 0x1c1d20, hair: 0xc9a86a, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4), { bio: 'Developer Advocate for GraalVM at Oracle, who loves open source and compilers.', line: 'You stop to say hello to Alina Yurenko, here to talk about GraalVM and Java compiled ahead of time.' }),
+    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', line: 'You stop to say hello to Ana-Maria Mihalceanu, of the Java Platform Group, here to talk about JFR and Project Leyden.' }),
+    passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', line: 'You stop to say hello to Holly Cummins, of the Quarkus team, here to talk about what happens when benchmarks go wrong.' }),
+    passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', line: 'You stop to say hello to Kevin Dubois, here to talk about building AI agents in Java with LangChain4j and Quarkus.' }),
   ],
 };

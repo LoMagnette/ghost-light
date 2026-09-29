@@ -37,7 +37,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 61
-    "In progress" : 0
+    "In progress" : 1
     "To do" : 13
 ```
 
@@ -115,7 +115,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| *Nothing in flight.* Everything through #66 is on `main` | | | | |
+| **Dialogue and bios from research** | `npc-research`, on `status-after-66` | Every real person has a sourced bio on their card; the Chapter II speakers (Chet Haase in Gavin King's place) and Stephan say only what is sourced and true as of Dec 2006; the ten to meet are narrated with who they are | The author reads the lines, then merge | Human reads · agent fixes |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -143,9 +143,9 @@ pie showData
 | **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
 | **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
 
-| **Words and looks for the ten people to meet** | Human | Each says one narrated line ("You stop to say hello to …") and wears a shirt colour. Agreed lines, and looks from photographs, are one entry each in `src/chapters/objectives.ts`. Also to confirm: that Bruno Souza, Guillaume Laforge and Antonio Goncalves belong at JavaPolis |
-| **The Chapter II speakers' lines, against the rule** | Human | Gosling, Goetz, King and Johnson speak invented lines in their own voice, and their who's who cards quote them. The standing rule is that nothing is put in real people's mouths: either keep them as plainly true of their public work, or make them narration like the ten above |
-| **Portraits** | Human | Eighteen real people, listed with their file names and an Agreed box in `src/portraits/README.md`: their actual photograph, recognisable, 512 × 512, only once they have said yes. Dropped in, they show in the dialogue box and the who's who with no code |
+| **Words for the ten people to meet** | Human | Each is narrated, saying who they are from their public work; their looks are set from the portraits. Agreed first-person lines, if any, are one entry each in `src/chapters/objectives.ts` |
+| **Chet Haase and JavaPolis** | Human | He replaces Gavin King (29 Sep); his lines are sourced to late 2006, his look is from the portrait. No JavaPolis talk of his was found (nor of Gavin King's). Guillaume Laforge's JavaPolis evidence is 2007 only |
+| **Portraits: agreement** | Human | All eighteen real people and the cat are in (30 Sep, 512 × 512 via `tools/portraits.py`). Tick each person's Agreed box in `src/portraits/README.md` once they have said yes |
 
 ### Small, whenever there is a gap
 

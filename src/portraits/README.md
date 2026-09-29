@@ -1,5 +1,7 @@
 # Portraits
 
+All eighteen real people, the cat and the dog have their portrait in (30 Sep).
+
 Drop a picture here and it appears in the dialogue box beside whoever is
 speaking, and on their card in the who's who. Nothing needs wiring: the game
 finds it by file name at build time (see `src/app/portraits.ts`). Until a
@@ -20,10 +22,13 @@ untreated: a face someone at Devoxx would know at a glance.
   photo on the Devoxx site is usually exactly this, and it is the picture
   people already know them by. No group shots, sunglasses, or strong back or
   side light.
-- **JPEG at about 80%**, around 40–60 KB. `.jpg`, `.png` and `.webp` work too.
+- **PNG.** Put the full-size original in `portrait-sources/` (not in the
+  repository) and run `python3 tools/portraits.py`: it writes the 512 × 512,
+  256-colour copy the game ships into this folder, about 170 KB each. Keep one
+  file per person: with two, which one shows is not defined.
 - **Named as the game prints the name**: lower case, accents dropped, anything
   that is not a letter or a digit a hyphen. "Ana-Maria Mihalceanu" is
-  `ana-maria-mihalceanu.jpeg`.
+  `ana-maria-mihalceanu.png`.
 
 **Agreement first.** Everything here ships in a public, MIT-licensed
 repository. Tick a row only once that person has said yes to their photograph
@@ -33,27 +38,27 @@ being in the game.
 
 | Person | Where | File | Agreed |
 |---|---|---|---|
-| Stephan Janssen | Chapter II, the host | `stephan-janssen.jpeg` | ☐ |
-| James Gosling | Chapter II, a speaker in the corridor | `james-gosling.jpeg` | ☐ |
-| Brian Goetz | Chapter II, a speaker in the corridor | `brian-goetz.jpeg` | ☐ |
-| Gavin King | Chapter II, a speaker in the corridor | `gavin-king.jpeg` | ☐ |
-| Rod Johnson | Chapter II, a speaker in the corridor | `rod-johnson.jpeg` | ☐ |
-| Bruno Souza | Chapter II, to meet in the corridor | `bruno-souza.jpeg` | ☐ |
-| Guillaume Laforge | Chapter II, to meet in the corridor | `guillaume-laforge.jpeg` | ☐ |
-| Antonio Goncalves | Chapter II, to meet in the corridor | `antonio-goncalves.jpeg` | ☐ |
-| Dimitris | Chapter III, the photographer | `dimitris.jpeg` | ☐ |
-| Josh Long | Chapter III, the shot list | `josh-long.jpeg` | ☐ |
-| Venkat Subramaniam | Chapter III, the group photo | `venkat-subramaniam.jpeg` | ☐ |
-| Tom Cools | Chapter III, to meet in the hall | `tom-cools.jpeg` | ☐ |
-| Brian Vermeer | Chapter III, to meet in the hall | `brian-vermeer.jpeg` | ☐ |
-| Kevin Dubois | Chapter III, to meet in the hall | `kevin-dubois.jpeg` | ☐ |
-| Alexander Chatzizacharias | Chapter III, to meet in reception | `alexander-chatzizacharias.jpeg` | ☐ |
-| Alina Yurenko | Chapter III, to meet upstairs | `alina-yurenko.jpeg` | ☐ |
-| Ana-Maria Mihalceanu | Chapter III, to meet upstairs | `ana-maria-mihalceanu.jpeg` | ☐ |
-| Holly Cummins | Chapter III, to meet upstairs | `holly-cummins.jpeg` | ☐ |
+| Stephan Janssen | Chapter II, the host | `stephan-janssen.png` | ☐ |
+| James Gosling | Chapter II, a speaker in the corridor | `james-gosling.png` | ☐ |
+| Brian Goetz | Chapter II, a speaker in the corridor | `brian-goetz.png` | ☐ |
+| Chet Haase | Chapter II, a speaker in the corridor | `chet-haase.png` | ☐ |
+| Rod Johnson | Chapter II, a speaker in the corridor | `rod-johnson.png` | ☐ |
+| Bruno Souza | Chapter II, to meet in the corridor | `bruno-souza.png` | ☐ |
+| Guillaume Laforge | Chapter II, to meet in the corridor | `guillaume-laforge.png` | ☐ |
+| Antonio Goncalves | Chapter II, to meet in the corridor | `antonio-goncalves.png` | ☐ |
+| Dimitris | Chapter III, the photographer | `dimitris.png` | ☐ |
+| Josh Long | Chapter III, the shot list | `josh-long.png` | ☐ |
+| Venkat Subramaniam | Chapter III, the group photo | `venkat-subramaniam.png` | ☐ |
+| Tom Cools | Chapter III, to meet in the hall | `tom-cools.png` | ☐ |
+| Brian Vermeer | Chapter III, to meet in the hall | `brian-vermeer.png` | ☐ |
+| Kevin Dubois | Chapter III, to meet in the hall | `kevin-dubois.png` | ☐ |
+| Alexander Chatzizacharias | Chapter III, to meet in reception | `alexander-chatzizacharias.png` | ☐ |
+| Alina Yurenko | Chapter III, to meet upstairs | `alina-yurenko.png` | ☐ |
+| Ana-Maria Mihalceanu | Chapter III, to meet upstairs | `ana-maria-mihalceanu.png` | ☐ |
+| Holly Cummins | Chapter III, to meet upstairs | `holly-cummins.png` | ☐ |
 
-`josh-long.jpeg` here is his face; the print of him with Biggy is a different
-file, in `public/photos/`.
+`josh-long.png` here is his face; the print of him with Biggy is a different
+file, `public/photos/josh-long.jpeg`.
 
 ## Everyone else: optional
 
@@ -63,11 +68,11 @@ game's own model.
 
 | Who | Where | File |
 |---|---|---|
-| Voxxy | Chapter I, the opening on the forecourt | `voxxy.jpeg` |
-| Droid | the wormhole arrivals | `droid.jpeg` |
-| Biggy | the Chapter III arrival | `biggy.jpeg` |
-| The cat | Chapter I | `the-cat.jpeg` |
-| The dog | Chapter I | `the-dog.jpeg` |
-| Registration | Chapter III, the desk | `registration.jpeg` |
-| Stand 11 | Chapter III, the stand crew | `stand-11.jpeg` |
-| Steward | Chapter III, outside Room 8 | `steward.jpeg` |
+| Voxxy | Chapter I, the opening on the forecourt | `voxxy.png` |
+| Droid | the wormhole arrivals | `droid.png` |
+| Biggy | the Chapter III arrival | `biggy.png` |
+| The cat | Chapter I | `the-cat.png` |
+| The dog | Chapter I | `the-dog.png` |
+| Registration | Chapter III, the desk | `registration.png` |
+| Stand 11 | Chapter III, the stand crew | `stand-11.png` |
+| Steward | Chapter III, outside Room 8 | `steward.png` |

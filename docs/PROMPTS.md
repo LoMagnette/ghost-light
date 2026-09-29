@@ -6035,6 +6035,101 @@ desktop and phone.
 `portrait-list`) moved to Done, nothing left in progress, the phone and
 playtest rows updated, and "try it on a real phone" added to the last day.
 
+> Can you do some research for each npc, to adapt their dialog and bio based
+> on that.
+
+**Done** on `npc-research`, on `status-after-66`. Three research agents searched
+the web for the eighteen real people (29 Sep 2026), each fact with its URL,
+under the rule already in force: nothing put in anyone's mouth that is not
+plainly true of their public work, and Chapter II true as of JavaPolis,
+December 2006.
+
+What changed:
+
+- A `bio` on every real person, shown on their card in the who's who.
+- The four Chapter II speakers and Stephan now say only sourced things, as of
+  December 2006. Gosling: Sun put the compiler and HotSpot under the GPL the
+  month before (13 Nov 2006), he wrote the first compiler, NetBeans "less
+  geeky" (his 2004 words). Goetz: *Java Concurrency in Practice* (May 2006),
+  joined Sun in September 2006, his JavaPolis 2006 talk on performance myths.
+  King: Hibernate, Seam 1.0 (2006), the EJB 3.0 expert group. Johnson: Spring
+  2.0 (5 Oct 2006, 10,000 downloads the first day), the 2002 and 2004 books,
+  Interface21's name (his 2006 post). Stephan: started with BeJUG in 2002 as
+  an affordable European JavaOne; 2,800+ in 2006; talks online on Parleys.
+  The invented "room above a pub, forty of us" is gone.
+- The ten people to meet keep one narrated line, with no words of their own,
+  but it now says who they are, from their public work.
+
+Two things the research could not support, left for the author:
+
+- **Gavin King**: no evidence of a JavaPolis talk (his Devoxx talks start in
+  2017). He stays, with a comment in the code saying so.
+- **Guillaume Laforge**: JavaPolis evidence is for 2007 only, not 2006.
+
+Sources, by person:
+
+- Stephan Janssen: https://java.developpez.com/interview/javapolis/sjanssen/english/ · https://www.parisjug.org/speakers/stephan-janssen/ · https://en.wikipedia.org/wiki/Devoxx
+- James Gosling: https://en.wikipedia.org/wiki/James_Gosling · https://www.computerworld.com/article/1707302/q-a-sun-s-james-gosling-on-java-tools-woes.html · https://en.wikipedia.org/wiki/Java_(programming_language) · https://blog.lunatech.com/posts/2005-12-21-javapolis-2005/
+- Brian Goetz: https://nofluffjuststuff.com/conference/speaker/brian_goetz · https://www.developerfusion.com/media/10546/brian-goetz-interview/ · https://www.serry.org/blog/2005/2005-12-26-javapolis-first-day-of-conference-35/
+- Gavin King: https://www.redhat.com/en/about/press-releases/jboss-seam · https://qconlondon.com/london-2007/speakers/show_speaker8a8d.html?oid=115
+- Rod Johnson: https://spring.io/blog/2006/10/05/spring-2-0-final-with-over-10-000-downloads-in-the-first-day/ · https://spring.io/blog/2006/12/16/why-the-name-interface21/ · https://en.wikipedia.org/wiki/Rod_Johnson_(programmer) · https://antoniogoncalves.org/2006/12/17/javapolis-2006-back-home/
+- Bruno Souza: https://en.wikipedia.org/wiki/SouJava · https://www.developerfusion.com/media/58608/inside-the-worldwide-netbeans-community-with-bruno-ferreira-de-souza-part-2/
+- Guillaume Laforge: https://www.infoq.com/news/2007/03/groovy-pres · https://en.wikipedia.org/wiki/Apache_Groovy
+- Antonio Goncalves: https://antoniogoncalves.org/2017/07/03/talks-i-gave-at-conferences-and-meetups/ · https://antoniogoncalves.org/2006/12/17/javapolis-2006-back-home/
+- Dimitris Doutsiopoulos: https://www.ddphotography.gr/ · https://www.flickr.com/photos/bejug/albums/72177720329485456/ · https://dev.to/stephan007/face-recognition-in-action-devoxx-4c67
+- Josh Long: https://2026.springio.net/speakers/josh-long/ · https://m.devoxx.com/events/dvbe26/speaker/14654/josh-long
+- Venkat Subramaniam: https://dev.java/community/javaone-2026/speakers/venkat-subramaniam/ · https://agiledeveloper.com/aboutus.html · https://www.devoxx.com/speaker/venkat-subramaniam
+- Tom Cools: https://tomcools.be/ · https://inside.java/2023/12/21/seasons-thanks/ · https://m.devoxx.com/events/dvbe25/talks/20670/java-and-jvm-lovers-in-belgium-let-s-unite
+- Brian Vermeer: https://snyk.io/contributors/brian-vermeer/
+- Alexander Chatzizacharias: https://dvbe26.cfp.dev/api/public/speakers/10163 · https://glycin.github.io/
+- Alina Yurenko: https://dvbe26.cfp.dev/api/public/speakers/19772 · https://github.com/alina-yur
+- Ana-Maria Mihalceanu: https://dvbe26.cfp.dev/api/public/speakers/5830 · https://dev.java/community/javaone-2026/speakers/ana-maria-mihalceanu/
+- Holly Cummins: https://dvbe26.cfp.dev/api/public/speakers/14657 · https://qconlondon.com/speakers/hollycummins
+- Kevin Dubois: https://dvbe26.cfp.dev/api/public/speakers/5843 · https://www.kevindubois.com/about/
+
+> the portait will be png not jpeg
+
+`src/portraits/README.md` now names every file `.png`, with a note that a
+512 × 512 photo as PNG is large and should go through an optimiser, and that
+each person should have one file only. The loader already accepted `.png`;
+nothing in the code changed but the examples in the `portraits.ts` comment.
+
+> Let's replace gavin by Chet Haase
+
+**Done** on `npc-research`. Gavin King's corridor spot, conversation and
+card go to Chet Haase (`met-haase`; `chet-haase.png` in the portrait list;
+Stephan's "all four" now waits on him). His lines are his public work as of
+late 2006: Sun Java client group architect on Swing and Java 2D; Java SE 6,
+"a rock-solid release of Java for Vista" (his words to The Register, Oct
+2006); the Filthy Rich Clients session with Romain Guy at JavaOne 2006,
+which became the book (2007). No JavaPolis talk of his was found, and a
+2008 interview says he was at Adobe by then. His look is a placeholder
+(a shirt, dark hair) until it is set from a photograph.
+
+Sources: https://www.theregister.com/off-prem/2006/10/11/java-for-vista-is-rock-solid-says-sun/1184101 ·
+https://www.amazon.com/Filthy-Rich-Clients-Developing-Applications/dp/0132413930 ·
+https://www.informit.com/articles/article.aspx?p=1353606 ·
+https://www.pushing-pixels.org/2007/08/09/filthy-rich-clients-interview-with-chet-haase.html
+
+> I've added the picture for the for all the main npc
+
+Nineteen portraits arrived at 1254 × 1254, 1.3–1.9 MB each (about 30 MB, all
+of it in the download), plus two misspelled earlier drafts
+(`james-golsing.png`, `rob-johnson.png`). On `npc-research`: the originals
+moved, not deleted, to `portrait-sources/` (git-ignored), the drafts to
+`portrait-sources/superseded/`; `tools/portraits.py` writes 512 × 512,
+256-colour copies into `src/portraits/` (144–201 KB each, 3.2 MB in all;
+dithered 256 colours is indistinguishable in this painted style). With faces
+to go by, the in-game looks of Chet Haase, Dimitris and the ten people to
+meet are set from the portraits (shirt, hair, beard, glasses). Checked in the
+dialogue box, the NEW CARD notice and the who's who. `the-dog.png`, added
+after, went the same way.
+
+The full-size originals had been staged as they were added, and three of the
+branch's commits had taken them in with everything else (about 25 MB). The
+branch was not yet on GitHub, so it was rebuilt from `status-after-66` as two
+commits, with only the 512 px copies in history.
+
 ---
 
 ## Audio

@@ -6,8 +6,8 @@
  * `src/portraits/` and nothing else — no list to keep in step with the
  * folder. The name is the speaker's name as the box prints it, lower-cased,
  * accents dropped, anything that is not a letter or a digit a hyphen:
- * "Stephan Janssen" is `stephan-janssen.jpeg`, "The cat" is `the-cat.jpeg`,
- * "Droid" is `droid.jpeg`. See `src/portraits/README.md` for all of them.
+ * "Stephan Janssen" is `stephan-janssen.png`, "The cat" is `the-cat.png`,
+ * "Droid" is `droid.png`. See `src/portraits/README.md` for all of them.
  *
  * `import.meta.glob` rather than paths under `public/`, for two reasons. A
  * missing portrait costs nothing — the glob simply has no entry — where a
