@@ -67,6 +67,10 @@ import {
  * top of what the renderer needs to draw it.
  */
 interface ScreenMarker extends ObjectiveMarker {
+  /** Its row on the card: the job's id, or its sweep's. See `cardKey`. */
+  key: string;
+  /** What the card calls it, for the NEXT label. */
+  label: string;
   /** The sweep it belongs to, so a sweep gets one arrow and not twelve. */
   group?: string;
   /** Seconds until it is gone, when it has a deadline. */
@@ -87,8 +91,16 @@ const CAT_TALK = 1.8;
 const CAT_DRAG = 0.1;
 const CAT_SLOWEST = 0.4;
 
-/** Never more arrows than this. Past it the screen edge is a fence. */
-const ARROWS = 6;
+/**
+ * Never more badges than this, on screen and at the edge together. Past it
+ * the screen is a scatter of numbers and the edge a fence.
+ */
+const ARROWS = 8;
+/** How far above its floor a badge hangs over a marker on screen: over the icon, or over a head. */
+const BADGE_LIFT = 3.0;
+const BADGE_LIFT_LOW = 2.3;
+/** What the other storey costs when choosing the next job, metres: a flight each way and finding it. */
+const STOREY_COST = 30;
 /** How far in from the edge the arrows sit, design pixels. Clear of the HUD text. */
 const ARROW_INSET = 44;
 /** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
@@ -104,6 +116,10 @@ const GLYPH: Record<MarkerIcon, string> = { any: '◆', voxxy: 'V', droid: 'D', 
 interface CardLine {
   text: string;
   who?: RobotSpec;
+  /** The number its marker wears, while it has one. */
+  n?: number;
+  /** The one the screen recommends. See `chooseNext`. */
+  next?: boolean;
 }
 
 /** Where the card sits, design pixels from the top of the design frame. */
@@ -290,6 +306,16 @@ export class ChapterScreen implements Screen {
   private readonly arrows: { root: HTMLElement; pointer: HTMLElement; badge: HTMLElement; label: HTMLElement }[] = [];
   /** What the card last showed, so it is rebuilt only when it changes. */
   private cardKey = '';
+  /**
+   * The number each job wears on the card and over its marker. Given the
+   * first time it is listed and never changed, so a 3 that was a 3 when the
+   * player read the card is still a 3 when they find the marker.
+   */
+  private readonly numbers = new Map<string, number>();
+  /** The job the screen recommends going to next, by card key. See `chooseNext`. */
+  private nextKey: string | undefined;
+  /** The objective has been run at least once, so its states mean something. */
+  private evaluated = false;
   private endCard: HTMLElement | undefined;
   private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
@@ -699,6 +725,7 @@ export class ChapterScreen implements Screen {
       this.driveSwarm();
       // A held frame still pages a conversation: that is a press, not time.
       this.run.update(step, this.actors, this.dropRequested, this.talkRequested);
+      this.evaluated = true;
       this.consumeObjective();
       this.hearObjective();
       if (this.run.phase === 'ended') {
@@ -936,6 +963,9 @@ export class ChapterScreen implements Screen {
     this.crowd.reseat();
     this.startSwarm();
     this.run = new ObjectiveRun(this.chapter.objective);
+    this.numbers.clear();
+    this.nextKey = undefined;
+    this.evaluated = false;
     this.endCard?.remove();
     this.endCard = undefined;
     this.toast.textContent = '';
@@ -1494,6 +1524,8 @@ export class ChapterScreen implements Screen {
         const carrier = state.carrier?.body.spec;
         out.push({
           id: `${activity.id}:to`,
+          key: cardKey(activity),
+          label: activity.label,
           x: centre.x,
           y: centre.y,
           z: groundAt(KINEPOLIS, activity.to.floor, centre.x, centre.y),
@@ -1519,6 +1551,8 @@ export class ChapterScreen implements Screen {
       const locked = status === 'locked';
       out.push({
         id: activity.id,
+        key: cardKey(activity),
+        label: activity.group ?? activity.label,
         x: state.x,
         y: state.y,
         z: groundAt(KINEPOLIS, state.floor, state.x, state.y),
@@ -1720,19 +1754,24 @@ export class ChapterScreen implements Screen {
   }
 
   /**
-   * Arrows at the edge of the screen for the jobs that are off it.
+   * A numbered badge for every job worth pointing at: over its marker when
+   * it is on screen, at the edge with an arrow when it is not.
    *
    * The building is 126 m long and the camera shows about forty of it, so
    * most of the card is somewhere the player cannot see — and a marker you
-   * cannot see is a line of text. Each arrow is the job's beacon in small:
-   * its colour, the icon of the robot it is for, which way it is and how
-   * far, or ↑ / ↓ when it is on the other storey.
+   * cannot see is a line of text. Each badge carries the NUMBER its row has
+   * on the card, in the job's colour, which way it is and how far, or ↑ / ↓
+   * when it is on the other storey. It used to carry a diamond, the same
+   * diamond on every one, and a tester with four of them on screen could
+   * not tell which was which line of the card. One of them, the NEXT, is
+   * bigger, filled and named, and its row is lit on the card: somewhere to
+   * start for a player who has not yet read the list. See `chooseNext`.
    *
    * Chosen, not all of them: the jobs of the robot being driven and jobs
    * anybody can do, and another robot's job only when it is about to be
-   * lost. A sweep gets one arrow, to its nearest member. Urgent first, then
-   * this robot's, then by distance, and never more than `ARROWS` — past that
-   * the edge of the screen is a fence and points at nothing.
+   * lost. A sweep gets one badge, on its nearest member. The next first,
+   * then urgent, then this robot's, then by distance, and never more than
+   * `ARROWS`.
    */
   private pointAt(markers: ScreenMarker[]): void {
     const pool = this.arrows;
@@ -1758,7 +1797,9 @@ export class ChapterScreen implements Screen {
       }
       picked.push(...nearest.values());
     }
-    const rank = (c: Candidate): number => (c.urgent ? 0 : c.m.focus === 'mine' ? 1 : 2);
+    const next = hide ? undefined : this.chooseNext(picked);
+    const rank = (c: Candidate): number =>
+      c.m.key === next ? -1 : c.urgent ? 0 : c.m.focus === 'mine' ? 1 : 2;
     picked.sort((a, b) => rank(a) - rank(b) || (a.urgent && b.urgent ? (a.m.left ?? 0) - (b.m.left ?? 0) : a.d - b.d));
 
     this.isoCamera.updateMatrixWorld();
@@ -1767,14 +1808,21 @@ export class ChapterScreen implements Screen {
     for (const c of picked) {
       if (used >= pool.length) break;
       const m = c.m;
-      v.set(m.x, m.y, m.z + 1.2).project(this.isoCamera);
-      const sx = ((v.x + 1) / 2) * VIEW_WIDTH;
-      const sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
+      const isNext = m.key === next;
       const sameFloor = m.floor === this.floor;
+      v.set(m.x, m.y, m.z + 1.2).project(this.isoCamera);
+      let sx = ((v.x + 1) / 2) * VIEW_WIDTH;
+      let sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
       const inside =
         sx > ARROW_INSET && sx < VIEW_WIDTH - ARROW_INSET && sy > ARROW_INSET && sy < VIEW_HEIGHT - ARROW_INSET;
-      // On screen and on this storey, the beacon itself is the arrow.
-      if (inside && sameFloor) continue;
+      const over = inside && sameFloor;
+      if (over) {
+        // Over the marker itself: above its icon, or above the head of the
+        // person who is the marker.
+        v.set(m.x, m.y, m.z + (m.low ? BADGE_LIFT_LOW : BADGE_LIFT)).project(this.isoCamera);
+        sx = ((v.x + 1) / 2) * VIEW_WIDTH;
+        sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
+      }
 
       let x = sx;
       let y = sy;
@@ -1799,25 +1847,63 @@ export class ChapterScreen implements Screen {
       // Dashed for the other storey: a solid badge in the middle of the
       // scene reads as belonging to whoever is standing under it.
       arrow.badge.style.borderStyle = sameFloor ? 'solid' : 'dashed';
-      arrow.badge.style.color = colour;
-      arrow.badge.textContent = GLYPH[m.icon ?? 'any'];
-      // An urgent one breathes, so it is found before it is read.
+      // The next is filled, so it is found before it is read.
+      arrow.badge.style.background = isNext ? colour : 'rgba(8, 11, 14, 0.78)';
+      arrow.badge.style.color = isNext ? '#06080a' : colour;
+      const size = isNext ? 34 : 28;
+      arrow.badge.style.width = `${size}px`;
+      arrow.badge.style.height = `${size}px`;
+      arrow.badge.style.fontSize = isNext ? '16px' : '13px';
+      const n = this.numbers.get(m.key);
+      arrow.badge.textContent = n === undefined ? GLYPH[m.icon ?? 'any'] : String(n);
+      // An urgent one breathes.
       const pulse = c.urgent ? 1 + 0.12 * Math.sin(this.run.elapsed * 9) : 1;
       arrow.badge.style.transform = `translate(-50%, -50%) scale(${pulse.toFixed(3)})`;
       arrow.pointer.style.display = angle === undefined ? 'none' : 'block';
       if (angle !== undefined) {
         arrow.pointer.style.borderLeftColor = colour;
-        arrow.pointer.style.transform = `rotate(${angle.toFixed(3)}rad) translate(18px, -50%)`;
+        arrow.pointer.style.transform = `rotate(${angle.toFixed(3)}rad) translate(${isNext ? 21 : 18}px, -50%)`;
       }
       const storey = m.floor > this.floor ? '↑ upstairs · ' : m.floor < this.floor ? '↓ downstairs · ' : '';
-      arrow.label.textContent = `${storey}${Math.round(c.d)} m`;
+      const far = over ? '' : `${storey}${Math.round(c.d)} m`;
+      arrow.label.textContent = isNext ? (far ? `NEXT · ${m.label} · ${far}` : `NEXT · ${m.label}`) : far;
+      arrow.label.style.top = isNext ? '22px' : '18px';
       // Centred under the badge, except near a side edge, where a centred
       // "↑ upstairs · 78 m" hangs half off the screen. Anchored inwards there.
       arrow.label.style.transform =
-        x < 110 ? 'translateX(-14px)' : x > VIEW_WIDTH - 110 ? 'translateX(calc(-100% + 14px))' : 'translateX(-50%)';
-      arrow.label.style.color = c.urgent ? '#ff8a7a' : '#c9d0d4';
+        x < 160 ? 'translateX(-14px)' : x > VIEW_WIDTH - 160 ? 'translateX(calc(-100% + 14px))' : 'translateX(-50%)';
+      arrow.label.style.color = c.urgent ? '#ff8a7a' : isNext ? colour : '#c9d0d4';
     }
     for (let i = used; i < pool.length; i += 1) pool[i].root.style.display = 'none';
+  }
+
+  /**
+   * The job to recommend: where a player who has not read the card should
+   * go first.
+   *
+   * Sticky, because a recommendation that flips between two jobs as the
+   * robot drives between them is two recommendations. It stays until it is
+   * done or can no longer be pointed at, and gives way only to something
+   * about to be lost. Otherwise the nearest of this robot's jobs and
+   * anybody's, with the other storey counted as `STOREY_COST` further,
+   * because a board ten metres straight up is not ten metres away.
+   */
+  private chooseNext(candidates: { m: ScreenMarker; d: number; urgent: boolean }[]): string | undefined {
+    const urgent = candidates.filter((c) => c.urgent).sort((a, b) => (a.m.left ?? 0) - (b.m.left ?? 0));
+    const current = candidates.find((c) => c.m.key === this.nextKey);
+    if (current && (current.urgent || urgent.length === 0)) return this.nextKey;
+    if (urgent.length > 0) {
+      this.nextKey = urgent[0].m.key;
+      return this.nextKey;
+    }
+    let best: { key: string; cost: number } | undefined;
+    for (const c of candidates) {
+      if (c.m.focus === 'theirs') continue;
+      const cost = c.d + (c.m.floor === this.floor ? 0 : STOREY_COST);
+      if (!best || cost < best.cost) best = { key: c.m.key, cost };
+    }
+    this.nextKey = best?.key;
+    return this.nextKey;
   }
 
   // -- feedback -------------------------------------------------------------
@@ -2537,7 +2623,11 @@ export class ChapterScreen implements Screen {
         if ((state.status !== 'open' && state.status !== 'carried') || !window) continue;
         const secs = Math.max(0, Math.ceil(window.to - this.run.elapsed));
         const glyph = state.status === 'carried' ? '»' : secs <= 10 ? '!' : '›';
-        lines.push({ text: `${glyph} ${state.activity.label}  ${secs}s`, who: this.onlyFor(state.activity) });
+        lines.push({
+          text: `${glyph} ${state.activity.label}  ${secs}s`,
+          who: this.onlyFor(state.activity),
+          ...this.numbered(cardKey(state.activity)),
+        });
         continue;
       }
 
@@ -2551,6 +2641,7 @@ export class ChapterScreen implements Screen {
             : ''),
         // A finished job no longer needs anybody.
         who: done ? undefined : this.onlyFor(state.activity),
+        ...(state.status === 'open' || state.status === 'carried' ? this.numbered(cardKey(state.activity)) : {}),
       });
     }
 
@@ -2559,12 +2650,30 @@ export class ChapterScreen implements Screen {
       const complete = tally.done === tally.total;
       // A group names a robot only if every one of it is that robot's.
       const who = tally.who.size === 1 && !complete ? [...tally.who][0] : undefined;
-      lines.push({ text: `${complete ? '·' : '›'} ${name} ${tally.done}/${tally.total}`, who });
+      lines.push({
+        text: `${complete ? '·' : '›'} ${name} ${tally.done}/${tally.total}`,
+        who,
+        ...(complete ? {} : this.numbered(`group:${name}`)),
+      });
     }
 
     for (const room of this.run.lostRooms.keys()) lines.push({ text: `× ${roomName(room)} — emptied` });
 
     return lines;
+  }
+
+  /** A card row's number, given now if it has none yet, and whether it is the next. */
+  private numbered(key: string): { n?: number; next?: boolean } {
+    // Not before the objective has run once: until then nothing has been
+    // evaluated, gated jobs and breakdowns still to come look open, and
+    // they would take numbers with them.
+    if (!this.evaluated) return {};
+    let n = this.numbers.get(key);
+    if (n === undefined) {
+      n = this.numbers.size + 1;
+      this.numbers.set(key, n);
+    }
+    return { n, next: key === this.nextKey };
   }
 
   /**
@@ -2589,17 +2698,51 @@ export class ChapterScreen implements Screen {
    * frames the card is identical to the last one.
    */
   private renderCard(lines: CardLine[]): void {
-    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}`).join('\n');
+    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}`).join('\n');
     if (key === this.cardKey) return;
     this.cardKey = key;
+    const accent = css(this.chapter.palette.accent);
     this.cardText.replaceChildren(
       ...lines.map((line) => {
-        const row = el('div', {}, line.text);
+        const row = el('div', line.next ? { color: '#eef2f4', background: 'rgba(255, 255, 255, 0.07)', margin: '0 -6px', padding: '0 6px', borderRadius: '3px' } : {}, line.text);
         if (line.who) {
           row.append(
             el('span', { color: css(line.who.signal), marginLeft: '8px' }, '●'),
             el('span', { color: css(line.who.signal), marginLeft: '4px' }, line.who.name),
           );
+        }
+        /*
+         * The number its marker wears, at the end of the row, where the
+         * right-aligned card lines them up in a column. The next is filled,
+         * as its badge is.
+         */
+        if (line.n !== undefined) {
+          const colour = line.who ? css(line.who.signal) : accent;
+          row.append(
+            el(
+              'span',
+              {
+                display: 'inline-block',
+                minWidth: '17px',
+                height: '17px',
+                lineHeight: '15px',
+                marginLeft: '8px',
+                boxSizing: 'border-box',
+                borderRadius: '9px',
+                border: `1px solid ${colour}`,
+                background: line.next ? colour : 'transparent',
+                color: line.next ? '#06080a' : colour,
+                textAlign: 'center',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                verticalAlign: '1px',
+              },
+              String(line.n),
+            ),
+          );
+        } else {
+          // Unnumbered rows keep the column: a blank the width of a number.
+          row.append(el('span', { display: 'inline-block', width: '17px', marginLeft: '8px' }));
         }
         return row;
       }),
@@ -3037,6 +3180,11 @@ function lift(colour: number): number {
     (mixTo((colour >> 8) & 0xff) << 8) |
     mixTo(colour & 0xff)
   );
+}
+
+/** A job's row on the card, which its marker shares: its sweep's, if it is one of many. */
+function cardKey(activity: Activity): string {
+  return activity.group === undefined ? activity.id : `group:${activity.group}`;
 }
 
 /** One card row: a glyph for the state, the label, and any live number. */

@@ -5790,6 +5790,18 @@ strip (90%, a hairline border), keys in near-white bold and words in the
 card's grey, where it was #4c5357 type straight on the scene. Checked in
 Chapter I's dark forecourt and Chapter III's lit hall.
 
+**Row 2, done** on `marker-numbers`: every open row of the card has a
+number, given the first time it is listed and never changed, in a chip at
+the row's end (a column, since the card is right-aligned). The badge over
+its marker, or at the screen edge pointing at it, wears the same number in
+the same colour — badges now go over markers on screen too, where there
+was only the beacon. One job is the NEXT: bigger, filled, named ("NEXT ·
+Concourse board · 23 m"), its row lit on the card. Sticky: it stays until
+done or out of reach, and gives way only to something about to be lost;
+otherwise the nearest of this robot's jobs and anybody's, the other storey
+counted 30 m further. Numbering waits for the objective's first update, or
+gated jobs that only look open take numbers and leave gaps.
+
 ---
 
 ## Audio
