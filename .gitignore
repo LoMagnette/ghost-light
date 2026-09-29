@@ -39,3 +39,6 @@ tools/plan-floor*.svg
 
 # Screenshots dropped in for review.
 visual/
+
+# The author's full-size portrait originals; src/portraits/ holds the 512 px copies the game ships.
+portrait-sources/
