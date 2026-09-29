@@ -5802,6 +5802,14 @@ otherwise the nearest of this robot's jobs and anybody's, the other storey
 counted 30 m further. Numbering waits for the objective's first update, or
 gated jobs that only look open take numbers and leave gaps.
 
+**Row 4, done** on `first-job`: a chapter's card starts folded to the NEXT
+job alone and "+ 4 more on the list after this", and only the NEXT's badge
+is up. It opens out for good as soon as the player has done anything —
+finished or begun a job, picked something up, let one go — or after 45 s.
+Anything on a clock (a breakdown, a deadline) is never folded away. Numbers
+are given as rows are shown, so the first job is 1. Edge badges now stop
+above the control strip.
+
 ---
 
 ## Audio
