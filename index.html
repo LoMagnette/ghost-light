@@ -70,17 +70,21 @@
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent;
       }
+      /* From the stage's real scale: see `touchZoom` in src/app/Game.ts. */
       html.touch .touch-talk {
-        zoom: 1.45;
+        zoom: var(--talk-zoom, 1.45);
       }
       html.touch .touch-zoom {
-        zoom: 1.3;
+        zoom: var(--hud-zoom, 1.3);
+      }
+      html.touch .touch-panel {
+        zoom: var(--panel-zoom, 1.2);
       }
       html.touch .touch-grow-centre {
         transform: scale(1.4);
       }
       html.touch .touch-grow {
-        transform: scale(1.3);
+        transform: scale(var(--hud-zoom, 1.3));
         transform-origin: left bottom;
       }
 

@@ -28,6 +28,9 @@ export function isTouch(): boolean {
 /** How far the stick's knob travels from where the thumb landed, CSS pixels. */
 const REACH = 56;
 
+/** Remembered once the stick has been used, so the cue for it is shown until then and never after. */
+const LEARNED = 'ghost-light:stick-learned';
+
 /** What a chapter uses, so only its buttons are shown. */
 export interface TouchLayout {
   /** TAB and SPACE: more than one robot, so switching and dropping. */
@@ -64,8 +67,12 @@ export class TouchControls {
   private readonly root: HTMLDivElement;
   private readonly base: HTMLDivElement;
   private readonly knob: HTMLDivElement;
+  /** "Drag here to move", until the stick has been used once. See `learned`. */
+  private readonly cue: HTMLDivElement;
   private readonly crewOnly: HTMLElement[] = [];
   private readonly driving: HTMLElement[] = [];
+  /** The buttons' two groups, for `obstacles`. */
+  private readonly groups: HTMLElement[] = [];
   private talking = false;
   private stickId: number | undefined;
   private originX = 0;
@@ -120,27 +127,92 @@ export class TouchControls {
       pointerEvents: 'none',
     });
     this.base.append(this.knob);
-    zone.append(this.base);
+
+    /*
+     * The cue: a ghost of the stick where a left thumb rests, its knob
+     * drifting to show what to do, and three words under it.
+     *
+     * The stick floats, so until the thumb lands there is nothing on screen
+     * to say it exists, and a playtester dragged the left side only by
+     * guessing. It goes the first time the stick is used, for good.
+     */
+    this.cue = div({
+      position: 'absolute',
+      left: '46%',
+      top: '58%',
+      width: `${REACH * 2}px`,
+      height: `${REACH * 2}px`,
+      marginLeft: `${-REACH}px`,
+      marginTop: `${-REACH}px`,
+      borderRadius: '50%',
+      border: '2px dashed rgba(255,255,255,0.4)',
+      background: 'rgba(255,255,255,0.05)',
+      display: 'none',
+      pointerEvents: 'none',
+    });
+    const ghost = div({
+      position: 'absolute',
+      left: `${REACH - 24}px`,
+      top: `${REACH - 24}px`,
+      width: '48px',
+      height: '48px',
+      borderRadius: '50%',
+      background: 'rgba(255,255,255,0.3)',
+    });
+    ghost.animate?.(
+      [
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(0, ${-REACH * 0.6}px)` },
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(${REACH * 0.6}px, 0)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      { duration: 2600, iterations: Infinity, easing: 'ease-in-out' },
+    );
+    this.cue.append(
+      ghost,
+      div(
+        {
+          position: 'absolute',
+          left: '50%',
+          top: `${REACH * 2 + 10}px`,
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+          padding: '5px 10px',
+          borderRadius: '4px',
+          background: 'rgba(8, 11, 14, 0.85)',
+          color: '#eef2f4',
+          font: '600 14px ui-sans-serif, system-ui, sans-serif',
+          letterSpacing: '0.04em',
+        },
+        'Drag here to move',
+      ),
+    );
+    zone.append(this.cue, this.base);
     zone.addEventListener('pointerdown', this.onStickDown);
     zone.addEventListener('pointermove', this.onStickMove);
     zone.addEventListener('pointerup', this.onStickUp);
     zone.addEventListener('pointercancel', this.onStickUp);
 
-    // Right thumb: the big one nearest the corner, the rest in an arc.
+    /*
+     * Right thumb: one row along the bottom, the big one in the corner.
+     *
+     * It was a two-by-two block, and the top pair stood up into the right
+     * third of the screen, which on a phone is where the card is: a full
+     * Chapter III list ran behind ROBOT and DROP. A row keeps the buttons
+     * under the thumb and out of the way of what is read.
+     */
     const actions = div({
       position: 'absolute',
       right: 'calc(18px + env(safe-area-inset-right))',
       bottom: 'calc(18px + env(safe-area-inset-bottom))',
-      display: 'grid',
-      gridTemplateColumns: 'auto auto',
-      gridTemplateRows: 'auto auto',
+      display: 'flex',
       gap: '12px',
-      alignItems: 'end',
-      justifyItems: 'end',
+      alignItems: 'flex-end',
       pointerEvents: 'none',
     });
     const [talk, brake, drop, robot] = ACTIONS.map((b) => this.round(b));
-    // Grid, read left to right: ROBOT DROP / BRAKE TALK.
+    // Read left to right: ROBOT DROP BRAKE TALK.
     actions.append(robot, drop, brake, talk);
 
     const system = div({
@@ -155,6 +227,7 @@ export class TouchControls {
     system.append(...SYSTEM.map((b) => this.pill(b)));
 
     this.driving.push(zone, actions);
+    this.groups.push(actions, system);
     this.root.append(zone, actions, system);
     document.body.append(this.root);
   }
@@ -165,6 +238,7 @@ export class TouchControls {
     // the parent hidden while a dialogue box is up.
     for (const node of this.crewOnly) node.style.display = layout.crew ? 'flex' : 'none';
     this.root.style.display = 'block';
+    this.cue.style.display = learned() ? 'none' : 'block';
   }
 
   /**
@@ -182,6 +256,16 @@ export class TouchControls {
       for (const b of ACTIONS) if (b.hold) this.keys.hold(b.code, false);
     }
     for (const node of this.driving) node.style.visibility = on ? 'hidden' : 'visible';
+  }
+
+  /**
+   * Where the buttons are on screen, in window pixels, while they are up:
+   * ground a chapter should not draw anything it wants read on. The stick is
+   * not in it; it floats, and is under a thumb when it is anywhere.
+   */
+  obstacles(): DOMRect[] {
+    if (this.root.style.display === 'none') return [];
+    return this.groups.filter((g) => g.style.visibility !== 'hidden').map((g) => g.getBoundingClientRect());
   }
 
   /** Take them down, and let go of anything held. */
@@ -267,6 +351,14 @@ export class TouchControls {
     if (this.stickId !== undefined) return;
     event.preventDefault();
     this.stickId = event.pointerId;
+    if (this.cue.style.display !== 'none') {
+      this.cue.style.display = 'none';
+      try {
+        window.localStorage.setItem(LEARNED, '1');
+      } catch {
+        // No storage: the cue comes back next visit, which is harmless.
+      }
+    }
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     const zone = (event.currentTarget as HTMLElement).getBoundingClientRect();
     this.originX = event.clientX;
@@ -306,6 +398,15 @@ export class TouchControls {
 
   private moveKnob(dx: number, dy: number): void {
     this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+}
+
+/** Has this browser used the stick before? */
+function learned(): boolean {
+  try {
+    return window.localStorage.getItem(LEARNED) === '1';
+  } catch {
+    return false;
   }
 }
 

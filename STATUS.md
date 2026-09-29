@@ -20,7 +20,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
 | Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
 | HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
-| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up on `menu-clean` |
+| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
 | People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60) |
@@ -28,7 +28,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | ✅ | Stick, buttons, tap to page (#36); checked in a phone-sized headless browser, not yet on a real phone |
+| Phone | 🔄 | Stick, buttons, tap to page (#36); text sized from the real scale and a "Drag here to move" cue on `mobile-text`, after a playtest at 844 × 390. Not yet on a real phone |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |
 | Playtest | 🔄 | A test player has been through the chapters twice; both sets of notes are answered and merged (#47–#57). The author's own cold run of II is still to do |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
@@ -111,8 +111,8 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **A cleaner menu** | `menu-clean`, on `crowd-mix`; pushed | Solid cards lit in place, a darker backdrop without grain, one row of keycap buttons for Who's who, Album, Intro, Graphics, Sound | Open the PR and merge | Human merges |
-| **Status and README brought up to date** | `docs-refresh`, on `menu-clean` | This file and the README, as of 29 Sep evening | Merge after `menu-clean` | Human merges |
+| **The photographs needed** | `portrait-list`, on `main` | `src/portraits/README.md` lists the eighteen real people, each with the file name the game looks for and an Agreed box; their actual photograph, 512 × 512 | Merge; then collect agreed photographs | Human |
+| **Phone text and the movement cue** | `mobile-text`, on `portrait-list` | HUD, card, headings and menu text sized from the stage's real scale; pause and end card fit; the action buttons in one row; a "Drag here to move" ghost stick until the first drag | The author tries it on a real phone, then merge | Human tests · agent fixes |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -141,7 +141,7 @@ pie showData
 
 | **Words and looks for the ten people to meet** | Human | Each says one narrated line ("You stop to say hello to …") and wears a shirt colour. Agreed lines, and looks from photographs, are one entry each in `src/chapters/objectives.ts`. Also to confirm: that Bruno Souza, Guillaume Laforge and Antonio Goncalves belong at JavaPolis |
 | **The Chapter II speakers' lines, against the rule** | Human | Gosling, Goetz, King and Johnson speak invented lines in their own voice, and their who's who cards quote them. The standing rule is that nothing is put in real people's mouths: either keep them as plainly true of their public work, or make them narration like the ten above |
-| **Portraits** | Human | Photographs of real people only with their agreement. Named files in `src/portraits/` are picked up by the dialogue box and the who's who with no code |
+| **Portraits** | Human | Eighteen real people, listed with their file names and an Agreed box in `src/portraits/README.md`: their actual photograph, recognisable, 512 × 512, only once they have said yes. Dropped in, they show in the dialogue box and the who's who with no code |
 
 ### Small, whenever there is a gap
 

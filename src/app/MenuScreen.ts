@@ -40,6 +40,18 @@ const CARD_WIDTH = 300;
 const CARD_HEIGHT = 280;
 const CARD_GAP = 28;
 
+/**
+ * A card's measures, design pixels. On a phone the stage is about half size,
+ * and a playtest at 844 × 390 could not read the chapter descriptions: 14 px
+ * came out at seven real pixels. So the cards are wider and taller there and
+ * everything on them is drawn about a third bigger again.
+ */
+function cardMeasures(touch: boolean) {
+  return touch
+    ? { w: 372, h: 318, gap: 22, top: 194, pad: '20px 24px 18px', numeral: 44, head: 48, title: 31, era: 14, tagline: 20, recap: 16, chip: 14, gapTitle: 20 }
+    : { w: CARD_WIDTH, h: CARD_HEIGHT, gap: CARD_GAP, top: 210, pad: '22px 24px 20px', numeral: 38, head: 44, title: 24, era: 11, tagline: 14, recap: 12, chip: 11, gapTitle: 26 };
+}
+
 /** Seconds for the lens to ease from one era's grade to the next. */
 const GRADE_EASE = 1.6;
 
@@ -122,17 +134,19 @@ export class MenuScreen implements Screen {
     this.layer.append(
       // A tight shadow, not a glow: a glow is what made the type look soft.
       centred(72, { font: `46px ${SANS}`, color: '#f2f5f7', textShadow: '0 1px 2px rgba(0,0,0,0.7)', letterSpacing: '0.02em' }, GAME_TITLE),
-      centred(134, { font: `15px ${SANS}`, color: '#9aa2a7', textShadow: '0 1px 2px rgba(0,0,0,0.7)' }, GAME_SUBTITLE),
+      centred(134, { font: `${game.touch ? 20 : 15}px ${SANS}`, color: '#9aa2a7', textShadow: '0 1px 2px rgba(0,0,0,0.7)' }, GAME_SUBTITLE),
     );
 
-    const total = CHAPTERS.length * CARD_WIDTH + (CHAPTERS.length - 1) * CARD_GAP;
+    const touch = game.touch !== undefined;
+    const cm = cardMeasures(touch);
+    const total = CHAPTERS.length * cm.w + (CHAPTERS.length - 1) * cm.gap;
     const startX = (VIEW_WIDTH - total) / 2;
 
     CHAPTERS.forEach((chapter, index) => {
-      const card = this.buildCard(chapter.numeral, chapter.title, chapter.era, chapter.tagline, chapter.recap, index === 0 ? chapter.palette.accent : undefined);
+      const card = this.buildCard(chapter.numeral, chapter.title, chapter.era, chapter.tagline, chapter.recap, index === 0 ? chapter.palette.accent : undefined, touch);
       card.dataset.accent = `#${chapter.palette.accent.toString(16).padStart(6, '0')}`;
-      card.style.left = `${startX + index * (CARD_WIDTH + CARD_GAP)}px`;
-      card.style.top = '210px';
+      card.style.left = `${startX + index * (cm.w + cm.gap)}px`;
+      card.style.top = `${cm.top}px`;
       card.addEventListener('pointerenter', () => {
         this.selected = index;
         this.refresh();
@@ -149,11 +163,10 @@ export class MenuScreen implements Screen {
      * a debug line, and read as small print. On a phone the keys are left
      * off, since they are tapped, and the row is drawn bigger.
      */
-    const touch = game.touch !== undefined;
     const row = el('div', {
       position: 'absolute',
       left: '0',
-      top: '532px',
+      top: touch ? '548px' : '532px',
       width: '100%',
       display: 'flex',
       justifyContent: 'center',
@@ -234,7 +247,7 @@ export class MenuScreen implements Screen {
     this.layer.append(
       centred(
         VIEW_HEIGHT - 110,
-        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
+        { font: `${touch ? 17 : 12}px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
         touch ? 'TAP a chapter to begin' : '← →  choose        ENTER  begin',
       ),
     );
@@ -344,15 +357,17 @@ export class MenuScreen implements Screen {
     recap: string | undefined,
     /** The chapter's accent, on the one to start with. */
     startHere: number | undefined,
+    touch: boolean,
   ): HTMLElement {
+    const m = cardMeasures(touch);
     // Solid rather than frosted: a blurred building behind blurred glass was
     // most of what made the menu look soft.
     const card = el('div', {
       position: 'absolute',
-      width: `${CARD_WIDTH}px`,
-      height: `${CARD_HEIGHT}px`,
+      width: `${m.w}px`,
+      height: `${m.h}px`,
       boxSizing: 'border-box',
-      padding: '22px 24px 20px',
+      padding: m.pad,
       display: 'flex',
       flexDirection: 'column',
       background: 'rgba(10, 13, 16, 0.92)',
@@ -364,8 +379,8 @@ export class MenuScreen implements Screen {
     });
 
     // The numeral, and on the first card what it is for, on one line.
-    const head = el('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '44px' });
-    head.append(el('div', { font: `38px ${SERIF}`, color: '#4a535a', lineHeight: '1' }, numeral));
+    const head = el('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: `${m.head}px` });
+    head.append(el('div', { font: `${m.numeral}px ${SERIF}`, color: '#4a535a', lineHeight: '1' }, numeral));
     if (startHere !== undefined) {
       head.append(
         el(
@@ -375,7 +390,7 @@ export class MenuScreen implements Screen {
             borderRadius: '3px',
             background: `#${startHere.toString(16).padStart(6, '0')}`,
             color: '#06080a',
-            font: `bold 11px ${MONO}`,
+            font: `bold ${m.chip}px ${MONO}`,
             letterSpacing: '0.1em',
           },
           'START HERE',
@@ -384,9 +399,9 @@ export class MenuScreen implements Screen {
     }
     card.append(
       head,
-      el('div', { font: `24px ${SANS}`, color: '#eef2f4', marginTop: '26px' }, title),
-      el('div', { font: `11px ${MONO}`, color: '#7d868b', letterSpacing: '0.1em', marginTop: '8px' }, era.toUpperCase()),
-      el('div', { font: `14px ${SANS}`, lineHeight: '1.45', color: '#aab2b8', marginTop: '18px' }, tagline),
+      el('div', { font: `${m.title}px ${SANS}`, color: '#eef2f4', marginTop: `${m.gapTitle}px` }, title),
+      el('div', { font: `${m.era}px ${MONO}`, color: '#8d959b', letterSpacing: '0.1em', marginTop: '8px' }, era.toUpperCase()),
+      el('div', { font: `${m.tagline}px ${SANS}`, lineHeight: '1.4', color: '#b8c0c5', marginTop: touch ? '14px' : '18px' }, tagline),
     );
     if (recap) {
       card.append(
@@ -396,10 +411,10 @@ export class MenuScreen implements Screen {
             marginTop: 'auto',
             paddingTop: '12px',
             borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-            font: `12px ${SANS}`,
+            font: `${m.recap}px ${SANS}`,
             fontStyle: 'italic',
-            lineHeight: '1.4',
-            color: '#7d868b',
+            lineHeight: '1.35',
+            color: '#8d959b',
           },
           recap,
         ),

@@ -118,8 +118,12 @@ const ARROW_INSET_SIDE = 56;
 const BADGE_CLEAR = 8;
 /** The nearest a badge or its label comes to the edge of the screen, design pixels. */
 const BADGE_EDGE = 16;
-/** How far a badge may be moved to keep it clear, design pixels, nearest first. */
-const BADGE_NUDGES = [0, 24, 48, 72, 100, 130, 170, 220, 280];
+/**
+ * How far a badge may be moved to keep it clear, design pixels, nearest
+ * first. The long ones are for a phone, where the touch buttons fill the
+ * bottom right and a badge in that corner has to slide past all of them.
+ */
+const BADGE_NUDGES = [0, 24, 48, 72, 100, 130, 170, 220, 280, 360, 460, 580];
 /** A monospaced character of a badge's label, design pixels, for the room it takes. */
 const LABEL_CHAR = 6.7;
 /** The same at the bottom, above the control strip and the label under a badge. */
@@ -718,7 +722,11 @@ export class ChapterScreen implements Screen {
   update(dt: number): void {
     // Last frame's box, a story beat, or the pause menu: the controls step
     // aside for all three.
-    this.touchPad?.setTalking(this.paused || this.story !== undefined || this.talkBox.style.display !== 'none');
+    // And the end card, whose buttons are the only way on and which the stick
+    // and the action buttons would otherwise sit on top of.
+    this.touchPad?.setTalking(
+      this.paused || this.story !== undefined || this.talkBox.style.display !== 'none' || this.endCard !== undefined,
+    );
     if (this.paused) {
       // Frozen, and quiet: a motor left running would hum under the menu.
       const ear = { x: this.cameraX, y: this.cameraY, floor: this.floor };
@@ -912,7 +920,9 @@ export class ChapterScreen implements Screen {
       textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
       zIndex: '8',
     });
-    this.pauseMenu.classList.add('touch-zoom');
+    // A panel over the whole stage, not a readout in a corner: it has less
+    // to grow into. See `--panel-zoom`.
+    this.pauseMenu.classList.add('touch-panel');
     this.pauseMenu.append(
       el(
         'div',
@@ -2155,6 +2165,15 @@ export class ChapterScreen implements Screen {
     const banner = this.banner.style.opacity === '0' ? undefined : this.banner.firstElementChild;
     const prompt = this.talkPrompt.firstElementChild;
     const newCard = this.newCard.style.opacity === '0' ? undefined : this.newCard.firstElementChild;
+    // And, on a phone, the touch buttons, which are over the stage but not in it.
+    for (const r of this.touchPad?.obstacles() ?? []) {
+      out.push({
+        x0: (r.left - frame.left) * k,
+        y0: (r.top - frame.top) * k,
+        x1: (r.right - frame.left) * k,
+        y1: (r.bottom - frame.top) * k,
+      });
+    }
     for (const e of [this.hud, this.clockText, this.readingText, this.cardText, this.toast, prompt, banner, newCard]) {
       if (!(e instanceof HTMLElement) || !e.textContent) continue;
       if (e.style.visibility === 'hidden' || e.style.display === 'none') continue;
@@ -2421,6 +2440,9 @@ export class ChapterScreen implements Screen {
         whiteSpace: 'nowrap',
         textShadow: '0 1px 4px rgba(0,0,0,0.95)',
       });
+      // The words under a badge are read; the badge itself is found. Only the
+      // words are drawn bigger on a phone.
+      label.classList.add('touch-zoom');
       root.append(pointer, badge, label);
       game.ui.append(root);
       this.arrows.push({ root, pointer, badge, label });
@@ -2456,14 +2478,14 @@ export class ChapterScreen implements Screen {
       }),
     );
 
-    game.ui.append(
-      label(
-        28,
-        24,
-        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
-        `${chapter.numeral}. ${chapter.title.toUpperCase()}`,
-      ),
+    const heading = label(
+      28,
+      24,
+      { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
+      `${chapter.numeral}. ${chapter.title.toUpperCase()}`,
     );
+    heading.classList.add('touch-zoom');
+    game.ui.append(heading);
 
     this.hud = label(28, 44, {
       font: `17px ${SANS}`,
@@ -2499,7 +2521,9 @@ export class ChapterScreen implements Screen {
       left: 'auto',
       right: '20px',
       textAlign: 'right',
-      lineHeight: '1.6',
+      // Tighter on a phone, where the card is drawn a good deal bigger and a
+      // full Chapter III list otherwise runs down into the action buttons.
+      lineHeight: game.touch ? '1.42' : '1.6',
       // A panel, because the card is a LIST and a list over a busy scene
       // needs a ground. Translucent and blurred, so the building still
       // shows through it and nothing important is hidden behind the card.
@@ -3261,7 +3285,7 @@ export class ChapterScreen implements Screen {
       textShadow: '0 1px 4px rgba(0, 0, 0, 0.95)',
       zIndex: '7',
     });
-    panel.classList.add('touch-zoom');
+    panel.classList.add('touch-panel');
 
     // Before its window, a job has not happened: a day that ended early did
     // not "miss" the breakdowns still to come.
