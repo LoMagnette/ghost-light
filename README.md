@@ -35,12 +35,19 @@ no account, no build step to run by hand.
 |---|---|
 | `W` `A` `S` `D` / arrows | Move (screen-relative) |
 | `SHIFT` | Brake — a real brake, not just letting go |
-| `TAB` | Switch robot *(chapter II)* |
+| `E` | Talk, and page through what is said |
+| `TAB` | Switch robot *(chapters II and III)* |
+| `SPACE` | Put down what you are carrying *(chapters II and III)* |
 | `1` `2` `3` | Take control of a robot, where more than one is present |
-| `R` | Put the cast back where it started |
+| `ESC` | Pause: resume, restart or go to chapter select. The run is kept |
+| `R` | Restart the chapter (asks first, through the pause menu) |
+| `M` | Sound on or off |
 | `F1` | Debug readout: mass, speed, momentum, stopping distance |
-| `ESC` | Back to chapter select |
 | `L` *(menu)* | Movement lab — all three robots in one lit hall |
+
+**On a phone**, held sideways: a stick under the left thumb, TALK and BRAKE
+(and ROBOT and DROP) under the right, PAUSE at the top. Tap a dialogue box to
+page it. Turning the phone upright pauses the game.
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.
