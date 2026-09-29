@@ -3360,11 +3360,15 @@ export class ChapterScreen implements Screen {
       row.due = members.some(due);
     }
     const done = rows.filter((r) => r.done);
-    const letGo = rows.filter((r) => !r.optional && !r.done && r.due);
+    // What ended the run, if something did, first: it is the one that mattered.
+    const cause = run.endedBy?.activity;
+    const letGo = rows
+      .filter((r) => !r.optional && !r.done && r.due)
+      .sort((a, b) => Number(b.first.activity === cause) - Number(a.first.activity === cause));
     const leftOut = rows.filter((r) => r.optional && !r.done);
     const complete = letGo.length === 0;
 
-    const title = run.failed ? 'The day ended early' : complete ? 'A full day' : 'The day ended';
+    const title = run.failed ? (cause ? 'Out of time' : 'The day ended early') : complete ? 'A full day' : 'The day ended';
     panel.append(
       el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, `${chapter.numeral}. ${chapter.title.toUpperCase()}`),
       el('div', { font: `34px ${SANS}`, color: text, letterSpacing: '0.01em' }, title),
@@ -3378,6 +3382,16 @@ export class ChapterScreen implements Screen {
           : `${run.done} of ${run.total}${run.extras > 0 ? `, and ${run.extras} extra` : ''}`,
       ),
     );
+    // And, when a deadline ended it, which one. See `Activity.whyFailed`.
+    if (cause) {
+      panel.append(
+        el(
+          'div',
+          { font: `16px ${SANS}`, color: text, maxWidth: '640px', textAlign: 'center', lineHeight: '1.45' },
+          cause.whyFailed?.what ?? `${cause.label}: the time ran out, and that ended it.`,
+        ),
+      );
+    }
 
     // What you did, and what you let go. Side by side, the same size: in
     // Chapter III the second column is a choice, not a failing.
@@ -3494,6 +3508,19 @@ export class ChapterScreen implements Screen {
     letGo: { label: string; first: ActivityState }[],
     leftOut: { label: string; first: ActivityState }[],
   ): string {
+    /*
+     * What ended the run comes before anything left undone. The tip used to
+     * be built from the undone jobs alone, and a tester whose dog ran out
+     * was told to reach the hall board sooner: true, and nothing to do with
+     * why they were looking at this card.
+     */
+    const cause = this.run.endedBy?.activity;
+    if (cause) {
+      if (cause.whyFailed) return cause.whyFailed.tip;
+      const from = cause.after?.map((id) => this.run.states.find((s) => s.activity.id === id)?.activity.label ?? id);
+      const within = cause.within !== undefined ? ` within ${cause.within} seconds` : '';
+      return `Next time: ${cause.label} comes before everything else${within}${from?.length ? ` of ${from.join(' and ')}` : ''}.`;
+    }
     const close = (r: { first: ActivityState }): number => r.first.activity.window?.to ?? Infinity;
     const first = [...letGo].sort((a, b) => close(a) - close(b))[0];
     const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;

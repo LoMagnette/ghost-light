@@ -184,6 +184,10 @@ const SILENCE: Activity[] = [
     // better bargain than a short clock and an empty building.
     within: 90,
     failsRound: true,
+    whyFailed: {
+      what: 'The cat gave you ninety seconds to find the dog, and they ran out.',
+      tip: 'Next time: the moment the cat stops talking, head north into the exhibition hall and follow the dog\'s marker. It is asleep on the west side of the hall, down the terrace steps. Leave the boards until after.',
+    },
     lines: [
       'It is enormous, and it has been asleep. It opens one eye.',
       'Every cat in the building remembers, all at once, somewhere else it has to be.',

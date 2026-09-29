@@ -220,6 +220,8 @@ export class ObjectiveRun {
   failed = false;
   /** Something that `failsRound` was missed. See `Activity.failsRound`. */
   private fatal = false;
+  /** Which one, for the end card. See `Activity.whyFailed`. */
+  endedBy: ActivityState | undefined;
 
   /** Consumed and cleared by the screen each frame. */
   readonly events: ObjectiveEvent[] = [];
@@ -393,7 +395,7 @@ export class ObjectiveRun {
         } else {
           this.say(`Missed: ${a.label}`);
         }
-        if (a.failsRound) this.fatal = true;
+        if (a.failsRound) this.endRound(state);
         return;
       }
     }
@@ -411,7 +413,7 @@ export class ObjectiveRun {
         this.release(state);
         state.status = 'missed';
         this.say(`Too late: ${a.label}`);
-        if (a.failsRound) this.fatal = true;
+        if (a.failsRound) this.endRound(state);
         return;
       }
     }
@@ -631,6 +633,12 @@ export class ObjectiveRun {
   /** Where one activity stands in the round. */
   statusOf(id: string): Status | undefined {
     return this.states.find((s) => s.activity.id === id)?.status;
+  }
+
+  /** Something that `failsRound` has been missed: the round is over, and this is why. */
+  private endRound(state: ActivityState): void {
+    this.fatal = true;
+    this.endedBy ??= state;
   }
 
   private isDone(id: string): boolean {
