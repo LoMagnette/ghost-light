@@ -75,6 +75,8 @@ interface ScreenMarker extends ObjectiveMarker {
   group?: string;
   /** Seconds until it is gone, when it has a deadline. */
   left?: number;
+  /** A side quest: never recommended over the day's own work. See `chooseNext`. */
+  optional?: boolean;
 }
 
 /** The dialogue portrait's side, design pixels. Two lines of text and a name, and a little over. */
@@ -107,6 +109,12 @@ const ARROW_INSET = 44;
 const ARROW_INSET_BOTTOM = 84;
 /** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
 const URGENT_SECONDS = 20;
+/**
+ * A deadline this close puts a job on the clock: it takes the NEXT from
+ * anything that can wait. Longer than any breakdown's window, so a
+ * breakdown is on the clock from the moment it happens. See `chooseNext`.
+ */
+const CLOCK_SECONDS = 120;
 /**
  * What the badge says. The robots by initial: the first try drew their
  * shapes as characters, and at 28 px Biggy's wide bar was a minus sign. A
@@ -1551,6 +1559,7 @@ export class ChapterScreen implements Screen {
           icon: 'drop',
           focus: carrier === driving ? 'mine' : carrier ? 'theirs' : undefined,
           left: this.secondsLeft(state),
+          optional: activity.optional,
         });
         continue;
       }
@@ -1580,6 +1589,7 @@ export class ChapterScreen implements Screen {
         focus: only === undefined ? undefined : only === driving ? 'mine' : 'theirs',
         group: activity.group,
         left: this.secondsLeft(state),
+        optional: activity.optional,
         // Twenty-seven stickers are twenty-seven markers, and at full height
         // they turned the exhibition hall into a pole farm — more marker than
         // building. One thing you are doing gets one post; a sweep of many
@@ -1908,25 +1918,36 @@ export class ChapterScreen implements Screen {
    * The job to recommend: where a player who has not read the card should
    * go first.
    *
-   * Sticky, because a recommendation that flips between two jobs as the
-   * robot drives between them is two recommendations. It stays until it is
-   * done or can no longer be pointed at, and gives way only to something
-   * about to be lost. Otherwise the nearest of this robot's jobs and
-   * anybody's, with the other storey counted as `STOREY_COST` further,
-   * because a board ten metres straight up is not ten metres away.
+   * By what can wait least: something about to be lost, then anything on
+   * the clock, then the day's own work, then a side quest. A tester in
+   * Chapter II was still being sent to say hello to Stephan while two rooms
+   * emptied behind them: a conversation that waits all day outranked a
+   * breakdown that waits a minute.
+   *
+   * Sticky within that, because a recommendation that flips between two
+   * jobs as the robot drives between them is two recommendations. It stays
+   * until it is done or can no longer be pointed at, and gives way only to
+   * something that can wait less. Otherwise the nearest of this robot's
+   * jobs and anybody's, with the other storey counted as `STOREY_COST`
+   * further, because a board ten metres straight up is not ten metres away.
    */
   private chooseNext(candidates: { m: ScreenMarker; d: number; urgent: boolean }[]): string | undefined {
-    const urgent = candidates.filter((c) => c.urgent).sort((a, b) => (a.m.left ?? 0) - (b.m.left ?? 0));
-    const current = candidates.find((c) => c.m.key === this.nextKey);
-    if (current && (current.urgent || urgent.length === 0)) return this.nextKey;
-    if (urgent.length > 0) {
-      this.nextKey = urgent[0].m.key;
-      return this.nextKey;
+    const tier = (c: { m: ScreenMarker; urgent: boolean }): number =>
+      c.urgent ? 0 : c.m.left !== undefined && c.m.left <= CLOCK_SECONDS ? 1 : c.m.optional ? 3 : 2;
+    // Another robot's job is a candidate only when it is urgent (see `pointAt`), and then it can be the next.
+    const open = candidates.filter((c) => c.urgent || c.m.focus !== 'theirs');
+    if (open.length === 0) {
+      this.nextKey = undefined;
+      return undefined;
     }
+    const top = Math.min(...open.map(tier));
+    const current = open.find((c) => c.m.key === this.nextKey);
+    if (current && tier(current) <= top) return this.nextKey;
     let best: { key: string; cost: number } | undefined;
-    for (const c of candidates) {
-      if (c.m.focus === 'theirs') continue;
-      const cost = c.d + (c.m.floor === this.floor ? 0 : STOREY_COST);
+    for (const c of open) {
+      if (tier(c) !== top) continue;
+      // The urgent by what is left of them, everything else by how far.
+      const cost = top === 0 ? (c.m.left ?? 0) : c.d + (c.m.floor === this.floor ? 0 : STOREY_COST);
       if (!best || cost < best.cost) best = { key: c.m.key, cost };
     }
     this.nextKey = best?.key;
