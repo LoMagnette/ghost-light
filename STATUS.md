@@ -20,7 +20,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
 | Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
 | HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
-| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up on `menu-clean` |
+| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
 | People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60) |
@@ -111,7 +111,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **A cleaner menu** | `menu-clean`, on `crowd-mix`; pushed | Solid cards lit in place, a darker backdrop without grain, one row of keycap buttons for Who's who, Album, Intro, Graphics, Sound | Open the PR and merge | Human merges |
+| **The photographs needed** | `portrait-list`, on `main` | `src/portraits/README.md` lists the eighteen real people, each with the file name the game looks for and an Agreed box; their actual photograph, 512 × 512 | Merge; then collect agreed photographs | Human |
 | **Phone text and the movement cue** | `mobile-text`, on `portrait-list` | HUD, card, headings and menu text sized from the stage's real scale; pause and end card fit; the action buttons in one row; a "Drag here to move" ghost stick until the first drag | The author tries it on a real phone, then merge | Human tests · agent fixes |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
