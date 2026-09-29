@@ -273,7 +273,9 @@ two is the right robot and the other is somewhere else, busy.
 **Reading is not playing** (29 Sep). While a conversation box or a photograph
 is up and the player is not driving, the day holds: the sim, the crowd, the
 cats and the clock all wait, and the clock dims to say so. Driving off lets
-time go again, so a conversation can still be walked away from. Travel and
+time go again, so a conversation can still be walked away from. A line
+under the clock says which it is doing: "Time paused while reading", or
+"Release movement to pause the clock". Travel and
 the jobs themselves are timed as before.
 
 The card lists a breakdown only while it is happening, with its seconds
