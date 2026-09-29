@@ -6130,6 +6130,16 @@ branch's commits had taken them in with everything else (about 25 MB). The
 branch was not yet on GitHub, so it was rebuilt from `status-after-66` as two
 commits, with only the 512 px copies in history.
 
+> you can update the status
+
+`STATUS.md` dated the last day (first on `status-portraits`, which was
+never pushed; redone on `status-after-68` once #68 was merged, with
+`npc-research` moved to Done and nothing left in flight);
+portraits a row of their own (all twenty in, agreement to tick); people and
+collections note the research, Chet Haase and the portraits; in progress is
+`npc-research` (pushed, #67 under it merged) and this; the to-do asks for
+the real people's lines to be read; the timeline is today's.
+
 ---
 
 ## Audio

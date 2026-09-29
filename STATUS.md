@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Tue 29 Sep, late: one day left.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, just after midnight: the last day.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -23,9 +23,10 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
-| People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60) |
-| Collections | ✅ | The album of prints (#40, #42, #45) and the who's who, a card for all 23 people (#59) |
+| People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60); their lines and bios from sourced research, Chet Haase in Gavin King's place, and looks set from the portraits (#68) |
+| Collections | ✅ | The album of prints (#40, #42, #45) and the who's who, a card for all 23 people (#59); every real person's card has a bio and a portrait (#68) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
+| Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. Agreement boxes still to tick |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Phone | 🔄 | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). All checked in a headless 844 × 390 browser; still to try on a real phone |
@@ -36,8 +37,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 61
-    "In progress" : 1
+    "Done" : 65
+    "In progress" : 0
     "To do" : 13
 ```
 
@@ -108,6 +109,10 @@ pie showData
 | **Phone text and the movement cue** | #64 `mobile-text` | Text sized from the stage's real scale (10.5 real px for a 12 px line); pause and end card fit; bigger menu cards; a "Drag here to move" ghost stick until the first drag. Headless 844 × 390 only so far |
 | **Touch buttons as a controller's diamond** | #65 `pad-diamond` | TALK bottom, BRAKE right, DROP left, ROBOT top; the card steps left of them when it would reach them |
 | **The end card names what ended the run** | #66 `failure-advice` | "Out of time", what ran out, and a tip for it (the dog: north into the hall, follow its marker) |
+| **Research on every real person** | #68 `npc-research` | Sourced bios on every card; Chapter II lines true as of Dec 2006; the ten to meet narrated with who they are. Sources in `docs/PROMPTS.md` |
+| **Chet Haase in Gavin King's place** | #68 `npc-research` | Swing, Java 2D, Java SE 6, Filthy Rich Clients; no JavaPolis talk found for either |
+| **All twenty portraits** | #68 `npc-research` | 512 × 512 PNG via `tools/portraits.py`; originals in the git-ignored `portrait-sources/`; looks set from them |
+| Status updates | #63, #67 `docs-refresh`, `status-after-66` | |
 
 ---
 
@@ -115,7 +120,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **Dialogue and bios from research** | `npc-research`, on `status-after-66` | Every real person has a sourced bio on their card; the Chapter II speakers (Chet Haase in Gavin King's place) and Stephan say only what is sourced and true as of Dec 2006; the ten to meet are narrated with who they are | The author reads the lines, then merge | Human reads · agent fixes |
+| *Nothing in flight.* Everything through #68 is on `main` | | | | |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -133,7 +138,7 @@ pie showData
 | The author plays Chapter II cold, on a phone too | Human | Wed 30 Sep | The tester's notes are answered; the question left is whether II is fair with the NEXT now following the breakdowns |
 | Try it on a real phone | Human | Wed 30 Sep | Frame rate, thumb reach to ROBOT at the top of the diamond, and whether the text now reads |
 | Tune from that play | Agent | Wed 30 Sep | Windows, clocks, anything that stuck |
-| Check the cards of the real people read as they should | Human | Wed 30 Sep | The who's who quotes what the game gives each person; see the follow-up below on the Chapter II speakers |
+| Read the real people's lines and cards | Human | Wed 30 Sep | Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
 | **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
 
 ### Design follow-ups, added 27 Sep
@@ -145,7 +150,7 @@ pie showData
 
 | **Words for the ten people to meet** | Human | Each is narrated, saying who they are from their public work; their looks are set from the portraits. Agreed first-person lines, if any, are one entry each in `src/chapters/objectives.ts` |
 | **Chet Haase and JavaPolis** | Human | He replaces Gavin King (29 Sep); his lines are sourced to late 2006, his look is from the portrait. No JavaPolis talk of his was found (nor of Gavin King's). Guillaume Laforge's JavaPolis evidence is 2007 only |
-| **Portraits: agreement** | Human | All eighteen real people and the cat are in (30 Sep, 512 × 512 via `tools/portraits.py`). Tick each person's Agreed box in `src/portraits/README.md` once they have said yes |
+| **Portraits: agreement** | Human | All twenty are in (30 Sep, 512 × 512 via `tools/portraits.py`, originals in `portrait-sources/`). Tick each real person's Agreed box in `src/portraits/README.md` once they have said yes; the repository is public |
 
 ### Small, whenever there is a gap
 
@@ -189,8 +194,8 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %a %d
     section Human
-    Merge menu-clean and docs-refresh :h0, 2026-09-30, 1d
-    Play Chapter II cold              :active, h1, 2026-09-30, 1d
+    Read the real people's lines      :h3, 2026-09-30, 1d
+    Play Chapter II cold, on a phone  :active, h1, 2026-09-30, 1d
     Final submission                  :crit, s2, 2026-09-30, 1d
     section Agent
     Tune from play                    :g1, 2026-09-30, 1d
