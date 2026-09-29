@@ -121,6 +121,7 @@ export const CHAPTER_TWO: Chapter = {
   title: 'JavaPolis',
   era: 'the early years',
   tagline: 'Half a building, and more people than anyone expected.',
+  recap: 'After I: Voxxy switched on the last rack, and the building folded back to its first years.',
   brief:
     'A community event that outgrew its room. Two robots, half the floor in use, ' +
     'and a conference being held together by hand.',
@@ -195,6 +196,7 @@ export const CHAPTER_THREE: Chapter = {
   title: 'At Capacity',
   era: 'the full house',
   tagline: 'More conference than one day can hold.',
+  recap: 'After II: Voxxy and Droid kept JavaPolis running, and the building folded again.',
   brief:
     'Every room is full and everything is running. Three robots, six minutes, ' +
     'nine things worth doing — and everything you pick up, you have to carry.',
