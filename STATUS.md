@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Tue 29 Sep: one day left.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Tue 29 Sep, evening: one day left.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -15,24 +15,29 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 |---|---|---|
 | Engine, physics, venue | ✅ | Built, measured, on `main` |
 | Chapter I: The Silence | ✅ | Finishable, and the cat horde is done and on `main` |
-| Chapter II: JavaPolis | 🔄 | Nine breakdowns in Rooms 3–8, merged (#32). Still too tight on 29 Sep, worst on a phone: eight jobs over 5½ minutes with longer windows on `chapter-2-slack` |
-| Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); balance done for now, on the author's word (28 Sep) |
-| Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12) |
-| Objective markers | ✅ | Beacons per robot (#15), off-screen arrows and focus on `main` |
-| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), menu and HUD (#11) |
+| Chapter II: JavaPolis | ✅ | Eight breakdowns over a 330 s day (#37); a breakdown now takes the NEXT from any conversation (#53). Balance stands until the author's own cold play says otherwise |
+| Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); the count reads "0 of 9 jobs done" and side quests sit under their own heading (#56) |
+| Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
+| Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
+| HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
+| Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up on `menu-clean` |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
-| Attendees | ✅ | Models merged (#17, #18) and judged good; the bunching fix is merged (#21) |
+| Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
+| People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60) |
+| Collections | ✅ | The album of prints (#40, #42, #45) and the who's who, a card for all 23 people (#59) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep). Zones remodelled from the author's plans and merged (#25–#31), the front's glass doors, the storey swap and the longer grand flight included; the job objects, stanchions and corridor tables merged (#32–#34). One cinema-room improvement is noted for later |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Playtest | ⬜ | Nobody has played II or III end to end |
+| Phone | ✅ | Stick, buttons, tap to page (#36); checked in a phone-sized headless browser, not yet on a real phone |
+| Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |
+| Playtest | 🔄 | A test player has been through the chapters twice; both sets of notes are answered and merged (#47–#57). The author's own cold run of II is still to do |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 43
-    "In progress" : 13
+    "Done" : 57
+    "In progress" : 2
     "To do" : 12
 ```
 
@@ -85,6 +90,20 @@ pie showData
 | **Long tables along the corridor**, between Rooms 5/6 and 7/8 | #34 `corridor-tables` | 28 Sep: chairs on both sides, a metre off the wall, starting 2 m past each door so the entrances stay free; the chair flicker (coplanar faces) is fixed. The west tables show only through the cutaway |
 | **Chapter II and III balance** | #32 `job-props` | 28 Sep: done for now, on the author's word. Chapter II has nine breakdowns with longer windows; Rooms 3–8 for JavaPolis, 3–10 for Devoxx. Reopen after the stranger playtest if it shows a wall |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
+| **Chapter I opens outside, with Voxxy talking** | #35 `chapter-one-landing` | The forecourt, four lines from Voxxy before the player drives |
+| **Plays on a phone** | #36 `touch-controls` | Stick, TALK / BRAKE / ROBOT / DROP, tap a box to page it, bigger text, rotate message, low graphics by default. Still to try on a real phone |
+| **Chapter II loosened again** | #37 `chapter-2-slack` | Eight breakdowns, windows about 40% longer, a 330 s day; the phone stick reaches full speed at 80% of its travel |
+| **Pause menu** | #38 `pause-menu` | ESC or PAUSE: Resume, Who's who, Restart, Leave run; R asks first; turning a phone upright or leaving the tab pauses |
+| **The clock waits while you read** | #39 `hold-for-story`, #43 `reading-hint` | A conversation or a print, with the robot not driving, holds the sim, crowd, cats and clock; "Time paused while reading" under the clock |
+| **Photo album** | #40 `photo-album`, #42 `album-phone`, #45 `album-keys` | Every print kept in the browser; P on the menu and the end card; readable on a phone; keyboard-driven |
+| **An ending that says what you chose** | #41 `ending-card` | What you did, what you let go, the run's prints, one tip; Retry / Album / Who's who / Chapter select |
+| **The BOF rooms set out as labs** | #46 `bof-labs` | Seven rows each, tables either side of a 1.4 m passage, facing a presenter's table and screen |
+| **A tester's first five points** | #47 `dialogue-continue`, #48 `hint-contrast`, #49 `marker-numbers`, #51 `first-job`, #50 `menu-start-here` | `[E] Continue` in the box and SPACE/ENTER page it; a solid control strip; numbered markers matching the card with one filled NEXT; the card starts with one job and opens out after the first action or 45 s; START HERE on Chapter I and a recap on II and III |
+| **A tester's second five points** | #53 `next-on-clock`, #54 `done-banner`, #55 `marker-safe-area`, #56 `score-label`, #57 `talk-range` | A breakdown takes the NEXT; "✓ Concourse power restored"; badges clear of the HUD, the edge and each other; "0 of 9 jobs done" with side quests apart; "[E] Talk to Stephan", dimmed just out of range |
+| **Who's who** | #59 `whos-who` | A card for every person met, numbered, a silhouette until then; NEW CARD when it happens; C on the menu and end card, and in the pause menu |
+| **People to meet in II and III** | #60 `corridor-people` | Bruno Souza, Guillaume Laforge, Antonio Goncalves; Tom Cools, Brian Vermeer, Alexander Chatzizacharias, Alina Yurenko, Ana-Maria Mihalceanu, Holly Cummins, Kevin Dubois. No marker, outside every count; one narrated line each, since nobody has agreed words for them |
+| **A mixed crowd** | #61 `crowd-mix` | A third of the crowd with long hair, a little under half of those in a skirt or dress; Alina blond, Ana-Maria dark brown, Holly black, as the author gave them |
+| Status updates | #52 `status-playtest`, #58 `status-playtest-2` | |
 
 ---
 
@@ -92,22 +111,11 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **People to meet in II and III** | `corridor-people`, on `main` | Ten real people standing in the building, no marker and outside every count; the talk prompt offers them and meeting one adds a card (who's who 23). One narrated line each, a shirt colour each | The author writes or gets agreed lines and sets looks from photographs; confirms the Chapter II three belong at JavaPolis | Human writes · agent wires |
-| **Who's who** | `whos-who`, on `status-playtest-2` | A card for each of the 13 characters: silhouette and chapter until met, a badge with portrait, name and first line after; NEW CARD notice; open from the menu (C), pause menu and end card (C) | The author checks the cards of the real people read as they should, then push and merge | Human reads · agent pushes |
-| **The tester's second five** | `next-on-clock` → `done-banner` → `marker-safe-area` → `score-label` → `talk-range`, on `status-playtest` | A breakdown takes the NEXT from a conversation; a finished job gets a banner ("Concourse power restored") and a green tick; badges keep off the HUD, the edge and each other; Chapter III's count reads "0 of 9 jobs done" and side quests sit under their own heading; the talk prompt is a keycap chip, dimmed just out of range | The author plays Chapter II cold, then push and merge | Human plays · agent pushes |
-| **A tester's five points** | `dialogue-continue` → `hint-contrast` → `marker-numbers` → `first-job` → `menu-start-here`, on `bof-labs` | The dialogue box shows `[E] Continue` (SPACE and ENTER page it too); the control hints sit on a solid strip; every open job has a number shared by its card row and its marker, and one NEXT is filled and named; the card starts with that one job and opens out once the player acts or after 45 s; Chapter I says START HERE and II and III recap what came before | The author plays Chapter I cold, then push and merge | Human plays · agent pushes |
-| **The BOF rooms set out as labs** | `bof-labs`, on `album-keys` | Seven rows each, tables either side of a 1.4 m passage, chairs facing a presenter's table and screen | Push and merge | Agent, once the push works |
-| **Album and pause, tidied** | `album-phone` → `reading-hint` → `leave-run` → `album-keys`, on `ending-card` | Album readable and opaque on a phone; "Time paused while reading" under the clock; "Leave run" with its loss note on the chosen item; the album driven from the keyboard | Push and merge | Agent, once the push works |
-| **An ending that says what you chose** | `ending-card`, on `photo-album` | What you did and what you let go, the run's prints, one computed tip, and Retry / Album / Chapter select buttons. `?late=n` added for looking at it | Play a chapter through to see the filled-in card, then push and merge | Human plays · agent pushes |
-| **Photo album** | `photo-album`, on `hold-for-story` | Every print taken is kept in the browser; P or a tap opens the album from the menu and the end card, with blanks saying where the rest are | Earn one in play and check it lands, then push and merge | Agent, once the push works |
-| **The clock waits while you read** | `hold-for-story`, on `pause-menu` | A conversation or a photograph, with the robot not driving, holds the sim, crowd, cats and clock; the clock dims | Push and merge | Agent, once the push works |
-| **Pause menu** | `pause-menu`, on `chapter-2-slack` | ESC and the phone's PAUSE open Resume / Restart / Chapter select and freeze the run; R asks before restarting; turning a phone upright or switching away pauses | Push and merge | Agent, once the push works |
-| **Chapter II loosened again** | `chapter-2-slack`, on `touch-controls` | Eight breakdowns, windows ~40% longer, a 330 s day; the phone stick reaches full speed at 80% of its travel | The author plays it, on a phone too, then push and merge | Human plays · agent tunes |
-| **Plays on a phone** | `touch-controls`, on `chapter-one-landing` | Stick, buttons, tap to page dialogue, bigger text, rotate message, low graphics by default. Checked in a headless phone-sized browser only | The author plays it on a real phone (frame rate, thumbs), then push and merge | Human tests · agent fixes |
-| **Chapter I opens outside, with Voxxy talking** | `chapter-one-landing`, on `status-merged-props` | Starts on the forecourt; four lines from Voxxy before the player drives; `voxxy.jpeg` listed among the portraits | The author reads the lines, then push and merge | Human reads · agent pushes |
+| **A cleaner menu** | `menu-clean`, on `crowd-mix`; pushed | Solid cards lit in place, a darker backdrop without grain, one row of keycap buttons for Who's who, Album, Intro, Graphics, Sound | Open the PR and merge | Human merges |
+| **Status and README brought up to date** | `docs-refresh`, on `menu-clean` | This file and the README, as of 29 Sep evening | Merge after `menu-clean` | Human merges |
 
-> **Pushing from the sandbox** still fails on credentials. Set the token
-> once on the host, and the whole chain goes up from `whos-who`:
+> **Pushing from the sandbox** still fails on credentials, so branches reach
+> GitHub from the host. To let the agent push and open PRs itself:
 > `sbx secret set github --sandbox devoxx-game -t "$(gh auth token)"`
 
 ---
@@ -119,11 +127,9 @@ pie showData
 | What | Owner | Planned | Notes |
 |---|---|---|---|
 | **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
-| Play Chapter II and III end to end | Human | Sun 27 Sep | Is II fair with two robots and one pair of hands? Is III still "you cannot do all of it" at nine? |
-| Playtest with a stranger, in complete silence | Human | Tue 29 Sep | The 15 playability points |
-| Tune from the playtest | Agent | Tue 29 Sep | Windows, clocks, anything a stranger got stuck on |
-| README reread and tech/genAI description | Agent | Wed 30 Sep | |
-| `docs/PROMPTS.md` kept current | Agent | ongoing | Up to date through the status update of 28 Sep evening |
+| The author plays Chapter II cold, on a phone too | Human | Wed 30 Sep | The tester's notes are answered; the question left is whether II is fair with the NEXT now following the breakdowns |
+| Tune from that play | Agent | Wed 30 Sep | Windows, clocks, anything that stuck |
+| Check the cards of the real people read as they should | Human | Wed 30 Sep | The who's who quotes what the game gives each person; see the follow-up below on the Chapter II speakers |
 | **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
 
 ### Design follow-ups, added 27 Sep
@@ -133,11 +139,14 @@ pie showData
 | **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
 | **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
 
+| **Words and looks for the ten people to meet** | Human | Each says one narrated line ("You stop to say hello to …") and wears a shirt colour. Agreed lines, and looks from photographs, are one entry each in `src/chapters/objectives.ts`. Also to confirm: that Bruno Souza, Guillaume Laforge and Antonio Goncalves belong at JavaPolis |
+| **The Chapter II speakers' lines, against the rule** | Human | Gosling, Goetz, King and Johnson speak invented lines in their own voice, and their who's who cards quote them. The standing rule is that nothing is put in real people's mouths: either keep them as plainly true of their public work, or make them narration like the ten above |
+| **Portraits** | Human | Photographs of real people only with their agreement. Named files in `src/portraits/` are picked up by the dialogue box and the who's who with no code |
+
 ### Small, whenever there is a gap
 
 | What | Owner | Notes |
 |---|---|---|
-| Off-screen arrow labels overlap when two arrows land close together | Agent | Push them apart along the edge |
 | Watch the four drone flights against the blockout | Human | Not blocking |
 | **One improvement to the cinema rooms**, for later | Human names it · agent builds | 28 Sep: the author has one in mind and hasn't said what it is yet. The rest of the venue is good enough for now |
 
@@ -168,18 +177,17 @@ pie showData
 
 ---
 
-## Timeline, remaining days
+## Timeline, the last day
 
 ```mermaid
 gantt
-    title Ghost Light, the last four days
+    title Ghost Light, the last day
     dateFormat YYYY-MM-DD
     axisFormat %a %d
     section Human
-    Play Chapter II and III           :active, h1, 2026-09-27, 1d
-    Playtest with a stranger          :t1, 2026-09-29, 1d
+    Merge menu-clean and docs-refresh :h0, 2026-09-30, 1d
+    Play Chapter II cold              :active, h1, 2026-09-30, 1d
     Final submission                  :crit, s2, 2026-09-30, 1d
     section Agent
-    Tune from play                    :g1, after h1, 2d
-    README and tech description       :g3, 2026-09-30, 1d
+    Tune from play                    :g1, 2026-09-30, 1d
 ```

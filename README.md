@@ -35,16 +35,25 @@ no account, no build step to run by hand.
 |---|---|
 | `W` `A` `S` `D` / arrows | Move (screen-relative) |
 | `SHIFT` | Brake — a real brake, not just letting go |
-| `E` | Talk, and page through what is said |
+| `E` | Talk to whoever the prompt names, and page through what is said (`SPACE` and `ENTER` page too) |
 | `TAB` | Switch robot *(chapters II and III)* |
 | `SPACE` | Put down what you are carrying *(chapters II and III)* |
 | `1` `2` `3` | Take control of a robot, where more than one is present |
-| `ESC` | Pause, and the run is kept: resume, restart, or leave the run for chapter select (both of those lose it) |
-| `R` | Restart the chapter (asks first, through the pause menu) |
+| `ESC` | Pause: Resume, Who's who, Restart, or Leave run (the last two lose the run) |
+| `R` | Restart the chapter (asks first) |
 | `M` | Sound on or off |
-| `P` *(menu, end of a chapter)* | The album: every photograph you have taken, kept between visits |
 | `F1` | Debug readout: mass, speed, momentum, stopping distance |
-| `L` *(menu)* | Movement lab — all three robots in one lit hall |
+
+On the menu, and on the card at the end of a chapter:
+
+| Key | Action |
+|---|---|
+| `←` `→`, `ENTER` | Choose a chapter, and begin. Start with Chapter I |
+| `C` | The who's who: a card for everybody you have met |
+| `P` | The album: every photograph you have taken |
+| `I` | Replay the title sequence |
+| `G` | Graphics: high (shadows, mood) or low (flat, fastest) |
+| `L` | Movement lab: all three robots in one lit hall |
 
 **On a phone**, held sideways: a stick under the left thumb, TALK and BRAKE
 (and ROBOT and DROP) under the right, PAUSE at the top. Tap a dialogue box to
@@ -52,6 +61,36 @@ page it. Turning the phone upright pauses the game.
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.
+
+## What's in it
+
+**Three chapters**, one building:
+
+- **I. The Silence** (*later*). The Kinepolis, empty and dark. Voxxy alone,
+  switching the power back on board by board, with a cat that ends the game
+  unless you find the dog, and every other cat in the building following you.
+- **II. JavaPolis** (*the early years*). The conference's first home, half the
+  building and more people than expected. Voxxy and Droid keep six rooms
+  running through a day of breakdowns, each one a job for a particular shape
+  of robot; `TAB` swaps between them.
+- **III. At Capacity** (*the full house*). Devoxx now. All three robots, nine
+  things worth doing and a day too short for them, plus side quests: a
+  photographer's shot list, a keynote, a keg for the party stage.
+
+Each chapter changes four things only: the light, how full the building is,
+how you control the robots, and what you are there to do. The rest is the
+same building to the centimetre.
+
+**The way the screen helps.** The card at the top right lists the jobs, and
+each open one has a number that its marker in the building wears too. One is
+the NEXT: bigger, filled and named, and always the one that can least wait.
+The card starts with that one job and opens out once you act. A finished job
+says what it did ("✓ Concourse power restored"); anybody you can talk to
+offers it ("[E] Talk to Stephan Janssen") once you are in range.
+
+**Two collections**, kept in the browser between visits: the **album**, a print
+for every photograph earned, and the **who's who**, a card for each of the 23
+people in the building, a silhouette until you have met them.
 
 ## What to look at
 
@@ -94,17 +133,33 @@ a verb rather than a subtitle.
 ## Project layout
 
 ```
-src/core/      simulation: mass, forces, fixed-timestep loop, the view angle
-src/venue/     the Kinepolis, once, in metres
-src/chapters/  the three eras, as data
-src/render/    isometric camera and the grey-box scene builder
-src/input/     keyboard
-src/app/       the shell: canvas, loop, chapter select, the one gameplay screen
+src/core/       simulation: mass, forces, fixed-timestep loop, objectives, crowd
+src/venue/      the Kinepolis, once, in metres
+src/chapters/   the three eras, and everything to do in them, as data
+src/render/     isometric camera, the building, the robots and the people
+src/input/      keyboard and touch
+src/app/        the shell: chapter select, the one gameplay screen, album, who's who
+src/portraits/  dialogue portraits, found by file name
+public/photos/  the shot-list prints
+tools/          checks and screenshot harnesses, run with Node
 ```
 
+**Checks**, none of them needing a browser except the last two:
+
+| Command | What it holds the game to |
+|---|---|
+| `npm run typecheck` | TypeScript, strict |
+| `npm run physics` | Each robot inside its design envelope, and the three still distinct |
+| `npm run venue` | The building's geometry is consistent |
+| `npm run traverse` | Every room can be walked into |
+| `npm run objectives` | Every job is somewhere a robot in its chapter can stand, and reach |
+| `npm run crowd` | The crowd spreads out instead of bunching |
+| `npm run shoot` | Builds, tours the menu and each chapter, fails on any console error |
+| `npm run peek` | One frame anywhere, for looking at a square metre of the building |
+
 `SPEC.md` is the design specification. `CLAUDE.md` is the build convention.
-`ROADMAP.md` is the dated plan and who owns what. `docs/PROMPTS.md` documents
-the generative AI work.
+`ROADMAP.md` is the dated plan and who owns what; `STATUS.md` is where it
+stands today. `docs/PROMPTS.md` documents the generative AI work.
 
 ## Built with
 
@@ -125,14 +180,22 @@ the generative AI work.
 
 Generative AI use is documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 
+## People in the game
+
+Chapter II and III are a conference, and a conference is its people. The
+people who built Devoxx and JavaPolis, and some who speak at it, stand in the
+building as themselves, as a tribute. Photographs of real people go in only
+with their agreement. Where nobody has agreed words for someone, they are
+given none: the game narrates the robot stopping to say hello instead. The
+crowd around them is nobody in particular.
+
 ## Status
 
-Early. The game currently runs as a grey-box blockout: the venue, the
-simulation, the chapter shell and the movement tuning are in place; objectives
-and the art pass are not. Movement is tuned against coloured boxes
-deliberately — it is the right order to work in.
-
-See `SPEC.md` § 7 for the build order.
+Playable end to end: three chapters, the story between them, objectives,
+markers, dialogue, the album and the who's who, music and sound, on a desktop
+or a phone. Two rounds of notes from a test player are in. See
+[`STATUS.md`](STATUS.md) for what is done and what is left before the
+deadline, Wed 30 Sep 2026.
 
 ## Licence
 
