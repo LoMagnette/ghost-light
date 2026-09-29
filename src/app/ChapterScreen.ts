@@ -103,6 +103,8 @@ const BADGE_LIFT_LOW = 2.3;
 const STOREY_COST = 30;
 /** How far in from the edge the arrows sit, design pixels. Clear of the HUD text. */
 const ARROW_INSET = 44;
+/** The same at the bottom, above the control strip and the label under a badge. */
+const ARROW_INSET_BOTTOM = 84;
 /** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
 const URGENT_SECONDS = 20;
 /**
@@ -116,11 +118,23 @@ const GLYPH: Record<MarkerIcon, string> = { any: '◆', voxxy: 'V', droid: 'D', 
 interface CardLine {
   text: string;
   who?: RobotSpec;
-  /** The number its marker wears, while it has one. */
+  /** Its row key, while it is a job with a marker. See `cardKey`. */
+  key?: string;
+  /** The number its marker wears, once it has been listed. See `numberRows`. */
   n?: number;
   /** The one the screen recommends. See `chooseNext`. */
   next?: boolean;
+  /** On a clock: a breakdown, or a job with a deadline. Never folded away. See `firstJob`. */
+  timed?: boolean;
+  /** Not a job, a note about the card. */
+  dim?: boolean;
 }
+
+/**
+ * Seconds the card shows only the NEXT job, if the player has not done
+ * anything by then. See `firstJob`.
+ */
+const FIRST_JOB_ALONE = 45;
 
 /** Where the card sits, design pixels from the top of the design frame. */
 const CARD_TOP = 70;
@@ -316,6 +330,8 @@ export class ChapterScreen implements Screen {
   private nextKey: string | undefined;
   /** The objective has been run at least once, so its states mean something. */
   private evaluated = false;
+  /** The whole card is showing, and stays so. See `firstJob`. */
+  private revealed = false;
   private endCard: HTMLElement | undefined;
   private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
@@ -966,6 +982,7 @@ export class ChapterScreen implements Screen {
     this.numbers.clear();
     this.nextKey = undefined;
     this.evaluated = false;
+    this.revealed = false;
     this.endCard?.remove();
     this.endCard = undefined;
     this.toast.textContent = '';
@@ -1798,12 +1815,22 @@ export class ChapterScreen implements Screen {
       picked.push(...nearest.values());
     }
     const next = hide ? undefined : this.chooseNext(picked);
+    // Until the card opens out, the NEXT's badge and anything on a clock,
+    // as the card keeps, and nothing else. See `firstJob`.
+    if (!this.revealed && next !== undefined) {
+      for (let i = picked.length - 1; i >= 0; i -= 1) {
+        const c = picked[i];
+        if (c.m.key !== next && !c.urgent && c.m.left === undefined) picked.splice(i, 1);
+      }
+    }
     const rank = (c: Candidate): number =>
       c.m.key === next ? -1 : c.urgent ? 0 : c.m.focus === 'mine' ? 1 : 2;
     picked.sort((a, b) => rank(a) - rank(b) || (a.urgent && b.urgent ? (a.m.left ?? 0) - (b.m.left ?? 0) : a.d - b.d));
 
     this.isoCamera.updateMatrixWorld();
     const v = new Vector3();
+    // Clear of the control strip along the bottom, where there is one.
+    const bottom = this.touch ? ARROW_INSET : ARROW_INSET_BOTTOM;
     let used = 0;
     for (const c of picked) {
       if (used >= pool.length) break;
@@ -1814,7 +1841,7 @@ export class ChapterScreen implements Screen {
       let sx = ((v.x + 1) / 2) * VIEW_WIDTH;
       let sy = ((1 - v.y) / 2) * VIEW_HEIGHT;
       const inside =
-        sx > ARROW_INSET && sx < VIEW_WIDTH - ARROW_INSET && sy > ARROW_INSET && sy < VIEW_HEIGHT - ARROW_INSET;
+        sx > ARROW_INSET && sx < VIEW_WIDTH - ARROW_INSET && sy > ARROW_INSET && sy < VIEW_HEIGHT - bottom;
       const over = inside && sameFloor;
       if (over) {
         // Over the marker itself: above its icon, or above the head of the
@@ -1832,7 +1859,7 @@ export class ChapterScreen implements Screen {
         const dy = sy - VIEW_HEIGHT / 2;
         const t = Math.min(
           (VIEW_WIDTH / 2 - ARROW_INSET) / Math.max(Math.abs(dx), 1e-6),
-          (VIEW_HEIGHT / 2 - ARROW_INSET) / Math.max(Math.abs(dy), 1e-6),
+          (VIEW_HEIGHT / 2 - (dy > 0 ? bottom : ARROW_INSET)) / Math.max(Math.abs(dy), 1e-6),
         );
         x = VIEW_WIDTH / 2 + dx * t;
         y = VIEW_HEIGHT / 2 + dy * t;
@@ -2626,6 +2653,7 @@ export class ChapterScreen implements Screen {
         lines.push({
           text: `${glyph} ${state.activity.label}  ${secs}s`,
           who: this.onlyFor(state.activity),
+          timed: true,
           ...this.numbered(cardKey(state.activity)),
         });
         continue;
@@ -2641,6 +2669,7 @@ export class ChapterScreen implements Screen {
             : ''),
         // A finished job no longer needs anybody.
         who: done ? undefined : this.onlyFor(state.activity),
+        timed: left !== undefined && state.status === 'open',
         ...(state.status === 'open' || state.status === 'carried' ? this.numbered(cardKey(state.activity)) : {}),
       });
     }
@@ -2662,18 +2691,59 @@ export class ChapterScreen implements Screen {
     return lines;
   }
 
-  /** A card row's number, given now if it has none yet, and whether it is the next. */
-  private numbered(key: string): { n?: number; next?: boolean } {
-    // Not before the objective has run once: until then nothing has been
-    // evaluated, gated jobs and breakdowns still to come look open, and
-    // they would take numbers with them.
-    if (!this.evaluated) return {};
-    let n = this.numbers.get(key);
-    if (n === undefined) {
-      n = this.numbers.size + 1;
-      this.numbers.set(key, n);
+  /**
+   * The card at the start of a chapter: the NEXT job alone, and how many
+   * more there are.
+   *
+   * A tester opened Chapter I to a list of five that they could not yet
+   * relate to one another — two boards, a cat, a dog, a rack. So the card
+   * begins as one thing to do, the nearest, whose badge is the big one on
+   * screen, and a line saying the rest are there. It opens out, for good,
+   * as soon as the player has done anything (finished a job, begun one,
+   * picked something up, or let one go) or after `FIRST_JOB_ALONE` seconds,
+   * whichever is first. A row on a clock is never folded away: a breakdown
+   * the player cannot see is a breakdown they lose.
+   */
+  private firstJob(lines: CardLine[]): CardLine[] {
+    if (!this.revealed && this.evaluated) {
+      const acted = this.run.states.some(
+        (s) => (s.status !== 'open' && s.status !== 'locked') || s.progress > 0,
+      );
+      if (acted || this.run.elapsed >= FIRST_JOB_ALONE) this.revealed = true;
     }
-    return { n, next: key === this.nextKey };
+    if (this.revealed) return lines;
+    // Nothing chosen yet (the first frame, or every job is another robot's).
+    if (!lines.some((l) => l.next)) return lines;
+    const kept = lines.filter((l) => l.next || l.timed);
+    const rest = lines.length - kept.length;
+    if (rest > 0) kept.push({ text: `+ ${rest} more on the list after this`, dim: true });
+    return kept;
+  }
+
+  /** A card row that is a job with a marker: its key, and whether it is the next. */
+  private numbered(key: string): { key: string; next: boolean } {
+    return { key, next: key === this.nextKey };
+  }
+
+  /**
+   * Give each listed job its number, the first time it is listed, and keep
+   * it. After `firstJob`, so the job the card starts with is 1 and the rest
+   * are numbered as they are shown. Not before the objective has run once:
+   * until then gated jobs and breakdowns still to come look open, and they
+   * would take numbers with them.
+   */
+  private numberRows(lines: CardLine[]): CardLine[] {
+    if (!this.evaluated) return lines;
+    for (const line of lines) {
+      if (line.key === undefined) continue;
+      let n = this.numbers.get(line.key);
+      if (n === undefined) {
+        n = this.numbers.size + 1;
+        this.numbers.set(line.key, n);
+      }
+      line.n = n;
+    }
+    return lines;
   }
 
   /**
@@ -2698,12 +2768,13 @@ export class ChapterScreen implements Screen {
    * frames the card is identical to the last one.
    */
   private renderCard(lines: CardLine[]): void {
-    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}`).join('\n');
+    const key = lines.map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}|${l.dim ? 1 : 0}`).join('\n');
     if (key === this.cardKey) return;
     this.cardKey = key;
     const accent = css(this.chapter.palette.accent);
     this.cardText.replaceChildren(
       ...lines.map((line) => {
+        if (line.dim) return el('div', { color: '#7d868b', paddingRight: '25px' }, line.text);
         const row = el('div', line.next ? { color: '#eef2f4', background: 'rgba(255, 255, 255, 0.07)', margin: '0 -6px', padding: '0 6px', borderRadius: '3px' } : {}, line.text);
         if (line.who) {
           row.append(
@@ -3003,7 +3074,7 @@ export class ChapterScreen implements Screen {
       rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done}/${this.run.total}`;
     this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
 
-    const lines = this.card();
+    const lines = this.numberRows(this.firstJob(this.card()));
     this.renderCard(lines);
     // Not during a story beat. The objective has not started — its locked
     // side quests have not even been hidden yet, because nothing has been
