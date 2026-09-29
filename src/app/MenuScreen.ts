@@ -34,6 +34,7 @@ import { currentQuality, setQuality } from './quality';
 import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic, toggleMuted } from './audio';
 import { Intro, introWanted } from './Intro';
 import { albumCount, openAlbum } from './album';
+import { castCount, openCast } from './cast';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 280;
@@ -190,7 +191,14 @@ export class MenuScreen implements Screen {
     // The prints taken so far, and a way to look at them again.
     const prints = albumCount();
     const showAlbum = (): void => openAlbum(game.ui, touch);
+    // And everybody met so far, on their cards.
+    const cast = castCount();
+    const showCast = (): void => openCast(game.ui, touch);
     this.layer.append(
+      tappable(
+        centred(VIEW_HEIGHT - 182, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('C')}who's who: ${cast.met} of ${cast.total} met`),
+        showCast,
+      ),
       tappable(
         centred(VIEW_HEIGHT - 164, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('P')}album: ${prints.taken} of ${prints.total} prints`),
         showAlbum,
@@ -215,6 +223,7 @@ export class MenuScreen implements Screen {
       game.keyboard.on('KeyL', () => this.routes.chapter(MOVEMENT_LAB.id));
       game.keyboard.on('KeyI', () => this.playIntro(game));
       game.keyboard.on('KeyP', showAlbum);
+      game.keyboard.on('KeyC', showCast);
     };
 
     this.refresh();

@@ -84,14 +84,18 @@
         transform-origin: left bottom;
       }
 
-      /* The album's pages and CLOSE, chosen from the keyboard (src/app/album.ts). */
+      /* The album's pages, the who's who's cards and their CLOSE, chosen from the keyboard (album.ts, cast.ts). */
       .album-cell:focus-visible,
-      .album-close:focus-visible {
+      .album-close:focus-visible,
+      .cast-cell:focus-visible,
+      .cast-close:focus-visible {
         outline: 2px solid #f24471;
         outline-offset: 6px;
       }
       .album-cell:focus:not(:focus-visible),
-      .album-close:focus:not(:focus-visible) {
+      .album-close:focus:not(:focus-visible),
+      .cast-cell:focus:not(:focus-visible),
+      .cast-close:focus:not(:focus-visible) {
         outline: none;
       }
 
