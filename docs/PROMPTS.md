@@ -5754,6 +5754,37 @@ would not exist yet when this runs. `venue`, `objectives` (Voxxy still
 stands on the BeJUG spot, in the passage), `traverse`, `crowd` and `shoot`
 pass; photographed in Chapter III.
 
+> What kind of design style should I use for the portrait in the game ?
+
+**Answered**, no code: one treatment for all fourteen, "lit by the ghost
+light" — a face out of near-black, one warm key light from the side, a rim
+in the speaker's own colour. Head and shoulders, big shapes, no fine detail
+at 92 px. Photos for the real people (with their agreement), drawn for the
+robots, animals and roles, the same ground and light for both.
+
+> Feedback from a test user, five rows:
+> High — Opening dialogue stopped movement. I tried Space; E continued it, but
+> the dialogue only displayed a small arrow. → Show "E — Continue" directly
+> inside the dialogue box.
+> High — Several identical pink markers showed distances, but I couldn't
+> easily match them to the task list. → Label markers and highlight one
+> recommended first destination.
+> High — Dark scenery establishes mood, but the bottom control hints are
+> difficult to read—even in brighter chapters. → Increase text contrast and
+> give controls a solid background.
+> Medium — The first objective expands into several tasks before I understand
+> their relationship. → Introduce one nearby interaction first, then reveal
+> the broader checklist.
+> Medium — The menu lets me enter later chapters, whose dialogue assumes
+> earlier events. → Mark chapter one as the recommended starting point or add
+> a brief recap.
+
+**Row 1, done** on `dialogue-continue`: the lone ▼ is now a keycap and a
+word — `[E] Continue ▼`, `[E] Close ■` on the last page, `[TAP]` on a phone
+— in the speaker's colour, once the line has finished typing. SPACE and
+ENTER turn the page too while a box is up (SPACE still drops otherwise),
+since they are what the tester pressed first.
+
 ---
 
 ## Audio
