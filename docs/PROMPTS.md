@@ -5868,6 +5868,25 @@ control strip, `[E] Talk to Stephan Janssen` in range (`[TALK]` on a
 phone), and within 2.5 m of the range, dimmer, "Closer to talk to Stephan
 Janssen", so where the range starts can be seen.
 
+> I would like to add to the game a pokedex like experience where every npc
+> you meet gets it's card.
+
+**Done** on `whos-who`: a **Who's who**, thirteen cards in play order, read
+off the chapters (anything in an objective with a `who` is a card; a person
+in two jobs is one). Met means spoken to, from the first line, or for the
+two who only pose (Josh Long, Venkat Subramaniam) photographed with. Unmet
+cards are the collection's pull: a number, a silhouette, "Somewhere in II.
+JavaPolis". A met card is a conference badge on a lanyard, in the chapter's
+colour, with the portrait from `src/portraits/` or initials in the
+speaker's own colour; ENTER holds it up with the job that finds them and
+their first line. A NEW CARD chip shows the first time. Open with C on the
+menu and the end card, and from the pause menu mid-run. `localStorage`, as
+the album.
+
+Nothing new is said about anybody: for the real people a card carries only
+their name, the chapter, and a line the game already gives them. No bio,
+no role, no dates.
+
 ---
 
 ## Audio
