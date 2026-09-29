@@ -2159,21 +2159,43 @@ export class ChapterScreen implements Screen {
     // engine and none of them is true of the chapter, and a control list with
     // three dead keys on it is how a player decides the game is broken.
     const talks = chapter.objective.activities.some((a) => a.kind === 'talk');
-    const keys = [
-      'WASD move',
-      'SHIFT brake',
-      ...(chapter.cast.length > 1 ? ['TAB robot', 'SPACE drop'] : []),
-      ...(talks ? ['E talk'] : []),
-      'R restart',
-      'M sound',
-      'ESC pause',
-    ].join('   ');
+    const keys: [string, string][] = [
+      ['WASD', 'move'],
+      ['SHIFT', 'brake'],
+      ...(chapter.cast.length > 1 ? ([['TAB', 'robot'], ['SPACE', 'drop']] as [string, string][]) : []),
+      ...(talks ? ([['E', 'talk']] as [string, string][]) : []),
+      ['R', 'restart'],
+      ['M', 'sound'],
+      ['ESC', 'pause'],
+    ];
 
-    // On a phone the buttons say what they do, and the keys are not there.
+    /*
+     * On a phone the buttons say what they do, and the keys are not there.
+     *
+     * On a solid strip, keys bright and words a step down. It was dark grey
+     * type straight on the scene, chosen so as not to compete with the
+     * building, and a tester could not read it in any chapter, the lit ones
+     * included: a control list nobody can read is not quiet, it is missing.
+     */
     if (!game.touch) {
-      game.ui.append(
-        label(28, VIEW_HEIGHT - 40, { font: `12px ${MONO}`, color: '#4c5357' }, keys),
-      );
+      const strip = label(28, VIEW_HEIGHT - 44, {
+        font: `12px ${MONO}`,
+        color: '#aab2b8',
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        padding: '5px 12px',
+        background: 'rgba(8, 11, 14, 0.9)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '4px',
+        pointerEvents: 'none',
+      });
+      for (const [key, action] of keys) {
+        const pair = el('span', { whiteSpace: 'nowrap' });
+        pair.append(el('span', { color: '#eef2f4', fontWeight: 'bold', marginRight: '6px' }, key), action);
+        strip.append(pair);
+      }
+      game.ui.append(strip);
     }
 
     /*
