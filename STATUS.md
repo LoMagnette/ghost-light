@@ -28,7 +28,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | ✅ | Stick, buttons, tap to page (#36); checked in a phone-sized headless browser, not yet on a real phone |
+| Phone | 🔄 | Stick, buttons, tap to page (#36); text sized from the real scale and a "Drag here to move" cue on `mobile-text`, after a playtest at 844 × 390. Not yet on a real phone |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |
 | Playtest | 🔄 | A test player has been through the chapters twice; both sets of notes are answered and merged (#47–#57). The author's own cold run of II is still to do |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
@@ -112,7 +112,7 @@ pie showData
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
 | **A cleaner menu** | `menu-clean`, on `crowd-mix`; pushed | Solid cards lit in place, a darker backdrop without grain, one row of keycap buttons for Who's who, Album, Intro, Graphics, Sound | Open the PR and merge | Human merges |
-| **Status and README brought up to date** | `docs-refresh`, on `menu-clean` | This file and the README, as of 29 Sep evening | Merge after `menu-clean` | Human merges |
+| **Phone text and the movement cue** | `mobile-text`, on `portrait-list` | HUD, card, headings and menu text sized from the stage's real scale; pause and end card fit; the action buttons in one row; a "Drag here to move" ghost stick until the first drag | The author tries it on a real phone, then merge | Human tests · agent fixes |
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
