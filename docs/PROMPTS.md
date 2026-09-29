@@ -5998,6 +5998,19 @@ under the left thumb with its knob drifting, "Drag here to move", until the
 first drag, remembered in the browser. Checked in a headless 844 × 390
 browser; not yet on a real phone.
 
+> While we are touching the control can the action side be similar in term of
+> positioning to a controller
+
+**Done** on `pad-diamond`, on `mobile-text`. The four action buttons are a
+controller's face-button diamond: TALK at the bottom (A, confirm), BRAKE on
+the right (B), DROP on the left (X) and ROBOT on top (Y). Each is placed by
+its centre, so in Chapter I, which has no DROP or ROBOT, TALK and BRAKE are
+where they will be in II and III. A diamond stands taller than the row did,
+so on a phone the card steps left of the buttons whenever it would reach down
+into them (a full Chapter III list), and keeps its corner otherwise. The
+"Drag here to move" cue joins the ground badges avoid. README's phone
+paragraph rewritten to match.
+
 ---
 
 ## Audio

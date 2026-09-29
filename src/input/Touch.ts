@@ -47,13 +47,23 @@ interface Button {
   crew?: boolean;
 }
 
-/** Bottom right, under the right thumb: the ones used while driving. */
-const ACTIONS: Button[] = [
-  { label: 'TALK', code: 'KeyE', size: 78 },
-  { label: 'BRAKE', code: 'ShiftLeft', hold: true, size: 64 },
-  { label: 'DROP', code: 'Space', size: 56, crew: true },
-  { label: 'ROBOT', code: 'Tab', size: 56, crew: true },
+/**
+ * Bottom right, under the right thumb: the ones used while driving, laid out
+ * as a controller's four face buttons. The author, 29 Sep: "similar in terms
+ * of positioning to a controller". So TALK is the bottom one, where a
+ * controller's confirm is; BRAKE is on the right, where the other thumb-rest
+ * button is; DROP on the left and ROBOT on top, the two a chapter with one
+ * robot does not have. `at` is the button's place in the diamond.
+ */
+const ACTIONS: (Button & { at: 'bottom' | 'right' | 'left' | 'top' })[] = [
+  { label: 'TALK', code: 'KeyE', size: 70, at: 'bottom' },
+  { label: 'BRAKE', code: 'ShiftLeft', hold: true, size: 60, at: 'right' },
+  { label: 'DROP', code: 'Space', size: 56, crew: true, at: 'left' },
+  { label: 'ROBOT', code: 'Tab', size: 56, crew: true, at: 'top' },
 ];
+
+/** The diamond's pitch, CSS pixels: how far each button's centre is from the middle. */
+const DIAMOND = 62;
 
 /** Top middle, small: the ones used between attempts. */
 // Restart and chapter select are in the pause menu, not a tap away from
@@ -71,8 +81,8 @@ export class TouchControls {
   private readonly cue: HTMLDivElement;
   private readonly crewOnly: HTMLElement[] = [];
   private readonly driving: HTMLElement[] = [];
-  /** The buttons' two groups, for `obstacles`. */
-  private readonly groups: HTMLElement[] = [];
+  /** Every button, for `obstacles`. */
+  private readonly buttons: HTMLElement[] = [];
   private talking = false;
   private stickId: number | undefined;
   private originX = 0;
@@ -195,25 +205,35 @@ export class TouchControls {
     zone.addEventListener('pointercancel', this.onStickUp);
 
     /*
-     * Right thumb: one row along the bottom, the big one in the corner.
+     * Right thumb: the diamond, its bottom button in the corner.
      *
-     * It was a two-by-two block, and the top pair stood up into the right
-     * third of the screen, which on a phone is where the card is: a full
-     * Chapter III list ran behind ROBOT and DROP. A row keeps the buttons
-     * under the thumb and out of the way of what is read.
+     * Each button is placed by its centre around the diamond's middle, so a
+     * chapter without a crew keeps TALK and BRAKE exactly where they are in
+     * one that has one: a thumb that learned them in Chapter I does not have
+     * to learn them again.
      */
+    const side = DIAMOND * 2 + 72;
     const actions = div({
       position: 'absolute',
-      right: 'calc(18px + env(safe-area-inset-right))',
-      bottom: 'calc(18px + env(safe-area-inset-bottom))',
-      display: 'flex',
-      gap: '12px',
-      alignItems: 'flex-end',
+      right: 'calc(14px + env(safe-area-inset-right))',
+      bottom: 'calc(10px + env(safe-area-inset-bottom))',
+      width: `${side}px`,
+      height: `${side}px`,
       pointerEvents: 'none',
     });
-    const [talk, brake, drop, robot] = ACTIONS.map((b) => this.round(b));
-    // Read left to right: ROBOT DROP BRAKE TALK.
-    actions.append(robot, drop, brake, talk);
+    const middle = side / 2;
+    const offset = { bottom: [0, DIAMOND], right: [DIAMOND, 0], left: [-DIAMOND, 0], top: [0, -DIAMOND] } as const;
+    for (const b of ACTIONS) {
+      const node = this.round(b);
+      const [dx, dy] = offset[b.at];
+      Object.assign(node.style, {
+        position: 'absolute',
+        left: `${middle + dx - b.size / 2}px`,
+        top: `${middle + dy - b.size / 2}px`,
+      });
+      actions.append(node);
+      this.buttons.push(node);
+    }
 
     const system = div({
       position: 'absolute',
@@ -227,7 +247,7 @@ export class TouchControls {
     system.append(...SYSTEM.map((b) => this.pill(b)));
 
     this.driving.push(zone, actions);
-    this.groups.push(actions, system);
+    this.buttons.push(...(Array.from(system.children) as HTMLElement[]));
     this.root.append(zone, actions, system);
     document.body.append(this.root);
   }
@@ -265,7 +285,13 @@ export class TouchControls {
    */
   obstacles(): DOMRect[] {
     if (this.root.style.display === 'none') return [];
-    return this.groups.filter((g) => g.style.visibility !== 'hidden').map((g) => g.getBoundingClientRect());
+    // Each button rather than the diamond's box, whose corners are empty; and
+    // a button hidden for a dialogue box still counts, so what steps round
+    // them does not jump every time one opens.
+    const rects = this.buttons.filter((b) => b.style.display !== 'none').map((b) => b.getBoundingClientRect());
+    // The cue too, while it is up: it is read, and a badge on it is two things to read at once.
+    if (this.cue.style.display !== 'none') rects.push(this.cue.getBoundingClientRect(), this.cue.lastElementChild!.getBoundingClientRect());
+    return rects;
   }
 
   /** Take them down, and let go of anything held. */
