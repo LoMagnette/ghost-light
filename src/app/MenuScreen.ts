@@ -63,8 +63,8 @@ export class MenuScreen implements Screen {
     saturation: 1,
     contrast: 1,
     vignette: 0.5,
-    grain: 0.04,
-    bloom: 0.9,
+    grain: 0,
+    bloom: 0.4,
   };
 
   constructor(private readonly routes: Routes) {}
@@ -109,8 +109,10 @@ export class MenuScreen implements Screen {
         position: 'absolute',
         inset: '0',
         pointerEvents: 'none',
+        // Darker than it was (29 Sep: "fuzzy, not clean"): the building is
+        // texture behind the menu, not a picture competing with it.
         background:
-          'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(4,6,8,0.35), rgba(4,6,8,0.8))',
+          'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(4,6,8,0.62), rgba(4,6,8,0.9))',
       }),
     );
 
@@ -118,8 +120,9 @@ export class MenuScreen implements Screen {
     game.ui.append(this.layer);
 
     this.layer.append(
-      centred(70, { font: `44px ${SANS}`, color: '#f2f5f7', textShadow: '0 2px 18px rgba(0,0,0,0.9)', letterSpacing: '0.02em' }, GAME_TITLE),
-      centred(132, { font: `15px ${SANS}`, color: '#8b9398', textShadow: '0 1px 8px rgba(0,0,0,0.9)' }, GAME_SUBTITLE),
+      // A tight shadow, not a glow: a glow is what made the type look soft.
+      centred(72, { font: `46px ${SANS}`, color: '#f2f5f7', textShadow: '0 1px 2px rgba(0,0,0,0.7)', letterSpacing: '0.02em' }, GAME_TITLE),
+      centred(134, { font: `15px ${SANS}`, color: '#9aa2a7', textShadow: '0 1px 2px rgba(0,0,0,0.7)' }, GAME_SUBTITLE),
     );
 
     const total = CHAPTERS.length * CARD_WIDTH + (CHAPTERS.length - 1) * CARD_GAP;
@@ -139,29 +142,71 @@ export class MenuScreen implements Screen {
       this.layer.append(card);
     });
 
-    // On a phone the three settings are tapped, not keyed, so they are named
-    // without their keys, and drawn bigger than half size.
+    /*
+     * Everything that is not a chapter, on one row of buttons under the
+     * cards: the key on a keycap and what it does, the way the control strip
+     * in a chapter says it. It was five centred lines of grey monospace and
+     * a debug line, and read as small print. On a phone the keys are left
+     * off, since they are tapped, and the row is drawn bigger.
+     */
     const touch = game.touch !== undefined;
-    const key = (k: string): string => (touch ? '' : `${k}   `);
-    const tappable = (node: HTMLElement, onTap: () => void): HTMLElement => {
+    const row = el('div', {
+      position: 'absolute',
+      left: '0',
+      top: '532px',
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
+    });
+    row.classList.add('touch-grow-centre');
+    this.layer.append(row);
+    const option = (k: string, onTap: () => void): HTMLElement => {
+      const node = el('div', {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '9px',
+        padding: '6px 13px 6px 7px',
+        background: 'rgba(10, 13, 16, 0.9)',
+        border: '1px solid rgba(255, 255, 255, 0.09)',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        font: `13px ${SANS}`,
+        color: '#aab2b8',
+      });
+      if (!touch) {
+        node.append(
+          el(
+            'span',
+            {
+              padding: '1px 6px',
+              border: '1px solid rgba(255, 255, 255, 0.28)',
+              borderRadius: '3px',
+              font: `bold 11px ${MONO}`,
+              color: '#eef2f4',
+            },
+            k,
+          ),
+        );
+      } else node.style.paddingLeft = '13px';
+      const text = el('span', {});
+      node.append(text);
       node.addEventListener('click', onTap);
-      node.style.cursor = 'pointer';
-      node.classList.add('touch-grow-centre');
-      return node;
+      node.addEventListener('pointerenter', () => (node.style.borderColor = 'rgba(255, 255, 255, 0.3)'));
+      node.addEventListener('pointerleave', () => (node.style.borderColor = 'rgba(255, 255, 255, 0.09)'));
+      row.append(node);
+      return text;
     };
+    const dim = (words: string): HTMLElement => el('span', { color: '#6f777c' }, words);
 
-    this.layer.append(
-      centred(
-        VIEW_HEIGHT - 78,
-        { font: `13px ${MONO}`, color: '#5b6266' },
-        touch ? 'TAP a chapter to begin' : 'ARROWS or MOUSE to choose     ENTER or CLICK to begin',
-      ),
-      centred(
-        VIEW_HEIGHT - 52,
-        { font: `11px ${MONO}`, color: '#2f3538' },
-        'L   movement lab (dev)',
-      ),
-    );
+    // Everybody met so far, on their cards, and the prints taken so far.
+    const cast = castCount();
+    const showCast = (): void => openCast(game.ui, touch);
+    option('C', showCast).append("Who's who ", dim(`${cast.met}/${cast.total}`));
+    const prints = albumCount();
+    const showAlbum = (): void => openAlbum(game.ui, touch);
+    option('P', showAlbum).append('Album ', dim(`${prints.taken}/${prints.total}`));
+    option('I', () => this.playIntro(game)).append('Intro');
 
     /*
      * The one setting, on the one screen that is never in the middle of
@@ -169,42 +214,28 @@ export class MenuScreen implements Screen {
      * built when a chapter mounts — which is also exactly when a player who
      * finds the game slow would reach for it.
      */
-    const graphics = centred(VIEW_HEIGHT - 128, { font: `12px ${MONO}`, color: '#6f777c' }, '');
     const toggleGraphics = (): void => {
       setQuality(currentQuality() === 'high' ? 'low' : 'high');
       game.applyQuality();
       showGraphics();
     };
+    const graphics = option('G', toggleGraphics);
     const showGraphics = (): void => {
-      graphics.textContent = `${key('G')}graphics: ${currentQuality()}${currentQuality() === 'high' ? '  (shadows, mood)' : '  (flat, fastest)'}`;
+      graphics.replaceChildren('Graphics ', dim(currentQuality() === 'high' ? 'high' : 'low, fastest'));
     };
     showGraphics();
-    this.layer.append(tappable(graphics, toggleGraphics));
-    const sound = centred(VIEW_HEIGHT - 110, { font: `12px ${MONO}`, color: '#6f777c' }, '');
+    const sound = option('M', toggleMuted);
     const showSound = (): void => {
-      sound.textContent = `${key('M')}sound: ${isMuted() ? 'off' : 'on'}`;
+      sound.replaceChildren('Sound ', dim(isMuted() ? 'off' : 'on'));
     };
     showSound();
-    this.layer.append(tappable(sound, toggleMuted));
     this.stopListening = onMuteChange(showSound);
 
-    // The prints taken so far, and a way to look at them again.
-    const prints = albumCount();
-    const showAlbum = (): void => openAlbum(game.ui, touch);
-    // And everybody met so far, on their cards.
-    const cast = castCount();
-    const showCast = (): void => openCast(game.ui, touch);
     this.layer.append(
-      tappable(
-        centred(VIEW_HEIGHT - 182, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('C')}who's who: ${cast.met} of ${cast.total} met`),
-        showCast,
-      ),
-      tappable(
-        centred(VIEW_HEIGHT - 164, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('P')}album: ${prints.taken} of ${prints.total} prints`),
-        showAlbum,
-      ),
-      tappable(centred(VIEW_HEIGHT - 146, { font: `12px ${MONO}`, color: '#6f777c' }, `${key('I')}intro`), () =>
-        this.playIntro(game),
+      centred(
+        VIEW_HEIGHT - 110,
+        { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.04em' },
+        touch ? 'TAP a chapter to begin' : '← →  choose        ENTER  begin',
       ),
     );
 
@@ -284,8 +315,10 @@ export class MenuScreen implements Screen {
     g.contrast += ((target.contrast ?? 1) - g.contrast) * k;
     // The menu keeps some vignette whatever is chosen: it frames the title.
     g.vignette += (Math.max(0.35, target.vignette ?? 0) - g.vignette) * k;
-    g.grain += ((target.grain ?? 0) - g.grain) * k;
-    g.bloom += (Math.max(0.6, target.bloom ?? 0) - g.bloom) * k;
+    // No grain and a little bloom, whatever is chosen: film grain behind
+    // small type is noise in the type.
+    g.grain += (0 - g.grain) * k;
+    g.bloom += (0.4 - g.bloom) * k;
     g.tint = mixColour(g.tint, target.tint ?? 0xffffff, k);
   }
 
@@ -312,71 +345,32 @@ export class MenuScreen implements Screen {
     /** The chapter's accent, on the one to start with. */
     startHere: number | undefined,
   ): HTMLElement {
+    // Solid rather than frosted: a blurred building behind blurred glass was
+    // most of what made the menu look soft.
     const card = el('div', {
       position: 'absolute',
       width: `${CARD_WIDTH}px`,
       height: `${CARD_HEIGHT}px`,
       boxSizing: 'border-box',
-      background: 'rgba(12, 16, 19, 0.62)',
-      border: '1px solid rgba(60, 70, 77, 0.6)',
-      borderRadius: '4px',
-      // The building shows through, softened, rather than being covered up.
-      backdropFilter: 'blur(6px)',
+      padding: '22px 24px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'rgba(10, 13, 16, 0.92)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: '6px',
       cursor: 'pointer',
-      transition: 'transform 180ms ease-out, background 180ms, border-color 180ms',
+      overflow: 'hidden',
+      transition: 'background 160ms, border-color 160ms, box-shadow 160ms',
     });
 
-    card.append(
-      el(
-        'div',
-        {
-          position: 'absolute',
-          left: '24px',
-          top: '20px',
-          font: `38px ${SERIF}`,
-          color: '#3d464c',
-        },
-        numeral,
-      ),
-      el(
-        'div',
-        { position: 'absolute', left: '24px', top: '92px', font: `24px ${SANS}`, color: '#e6ebee' },
-        title,
-      ),
-      el(
-        'div',
-        {
-          position: 'absolute',
-          left: '24px',
-          top: '130px',
-          font: `11px ${MONO}`,
-          color: '#6f777c',
-          letterSpacing: '0.08em',
-        },
-        era.toUpperCase(),
-      ),
-      el(
-        'div',
-        {
-          position: 'absolute',
-          left: '24px',
-          top: '164px',
-          width: `${CARD_WIDTH - 48}px`,
-          font: `13px ${SANS}`,
-          lineHeight: '1.45',
-          color: '#8b9398',
-        },
-        tagline,
-      ),
-    );
+    // The numeral, and on the first card what it is for, on one line.
+    const head = el('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '44px' });
+    head.append(el('div', { font: `38px ${SERIF}`, color: '#4a535a', lineHeight: '1' }, numeral));
     if (startHere !== undefined) {
-      card.append(
+      head.append(
         el(
           'div',
           {
-            position: 'absolute',
-            right: '20px',
-            top: '28px',
             padding: '4px 9px',
             borderRadius: '3px',
             background: `#${startHere.toString(16).padStart(6, '0')}`,
@@ -388,19 +382,24 @@ export class MenuScreen implements Screen {
         ),
       );
     }
+    card.append(
+      head,
+      el('div', { font: `24px ${SANS}`, color: '#eef2f4', marginTop: '26px' }, title),
+      el('div', { font: `11px ${MONO}`, color: '#7d868b', letterSpacing: '0.1em', marginTop: '8px' }, era.toUpperCase()),
+      el('div', { font: `14px ${SANS}`, lineHeight: '1.45', color: '#aab2b8', marginTop: '18px' }, tagline),
+    );
     if (recap) {
       card.append(
         el(
           'div',
           {
-            position: 'absolute',
-            left: '24px',
-            bottom: '18px',
-            width: `${CARD_WIDTH - 48}px`,
+            marginTop: 'auto',
+            paddingTop: '12px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
             font: `12px ${SANS}`,
             fontStyle: 'italic',
             lineHeight: '1.4',
-            color: '#6f777c',
+            color: '#7d868b',
           },
           recap,
         ),
@@ -416,12 +415,14 @@ export class MenuScreen implements Screen {
       // Each chapter's own accent: the ghost light, the tungsten lamp, the
       // Devoxx orange. The card is lit the colour of the era it opens.
       const accent = card.dataset.accent ?? '#ff7a1a';
-      card.style.background = active ? 'rgba(22, 28, 33, 0.78)' : 'rgba(12, 16, 19, 0.62)';
-      card.style.borderColor = active ? accent : 'rgba(60, 70, 77, 0.6)';
-      card.style.transform = active ? 'translateY(-4px)' : 'none';
-      card.style.boxShadow = active ? `0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px ${accent}33` : 'none';
-      const numeral = card.firstElementChild as HTMLElement | null;
-      if (numeral) numeral.style.color = active ? accent : '#3d464c';
+      // Lit in place rather than lifted: a card that jumps 4 px left the row
+      // ragged. The border and the numeral take the accent, and an inset bar
+      // along the top says which one ENTER opens.
+      card.style.background = active ? 'rgba(16, 20, 24, 0.96)' : 'rgba(10, 13, 16, 0.92)';
+      card.style.borderColor = active ? accent : 'rgba(255, 255, 255, 0.08)';
+      card.style.boxShadow = active ? `inset 0 3px 0 ${accent}, 0 12px 32px rgba(0, 0, 0, 0.55)` : 'none';
+      const numeral = card.firstElementChild?.firstElementChild as HTMLElement | null | undefined;
+      if (numeral) numeral.style.color = active ? accent : '#4a535a';
     });
   }
 }

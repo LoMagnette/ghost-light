@@ -5923,6 +5923,19 @@ are nobody in particular wear their hair long — standing, walking or seated
 shade darker than their clothes. It stays in the era's one colour, so a
 full room still photographs as one mass.
 
+> the main menu is a bit fuzzy not really clean compare to the rest can we
+> clean it up a bit.
+
+**Done** on `menu-clean`, on `crowd-mix`. What made it soft: frosted,
+translucent cards over a blurred building with film grain and bloom, a
+glow around the title, and five stacked lines of grey monospace. Now: solid
+cards with a flex layout and a hairline over the recap, lit in place (accent
+border, numeral, a bar along the top) instead of lifted 4 px out of the row;
+a darker wash over the backdrop and no grain, less bloom on the menu's grade;
+a tight shadow on the title; one row of keycap buttons for Who's who, Album,
+Intro, Graphics and Sound; one hint line. The dev line is gone (L still
+works). Checked on desktop and phone size.
+
 ---
 
 ## Audio
