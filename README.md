@@ -42,6 +42,7 @@ no account, no build step to run by hand.
 | `ESC` | Pause: resume, restart or go to chapter select. The run is kept |
 | `R` | Restart the chapter (asks first, through the pause menu) |
 | `M` | Sound on or off |
+| `P` *(menu, end of a chapter)* | The album: every photograph you have taken, kept between visits |
 | `F1` | Debug readout: mass, speed, momentum, stopping distance |
 | `L` *(menu)* | Movement lab — all three robots in one lit hall |
 

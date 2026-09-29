@@ -5636,6 +5636,28 @@ reading has no reason to want the clock running.
   `shoot`, `objectives` and `physics` pass. The photograph case uses the same
   rule (`printFor > 0`) and was not photographed.
 
+> Turn photographs into a lasting reward. Photos currently appear temporarily;
+> there is no saved collection. Add a small album accessible from the menu and
+> end screen, remembering unlocked pictures across visits.
+
+**Done** on `photo-album`:
+- **`src/app/album.ts`**: the pages are read off the chapters (every activity
+  with a `photo`), so a new print on the shot list is a new page. Kept in
+  `localStorage` under `ghost-light:album`; a print from a file by its id,
+  the selfie as a 360 × 240 JPEG, since it exists nowhere else. Storage that
+  refuses leaves an album that lasts the visit.
+- **Open from the menu** (P, or tap "album: 2 of 5 prints") **and from the
+  end card** (P, or ALBUM). Taken prints are shown leaning, as on screen, and
+  a click holds one up large; the ones still to find are dashed blanks that
+  say where: "III. At Capacity — Pose with Josh Long".
+- **It takes every key while open**, so ENTER behind it cannot start a
+  chapter. ESC goes back from a large print, then closes.
+- P rather than A, since A drives.
+- **Checked** in the browser: the empty album, then two prints seeded in
+  storage and the page reloaded, the large view, and ESC back to the menu.
+  **Not checked**: earning a print in play and finding it in the album, and
+  the selfie's JPEG.
+
 ---
 
 ## Audio

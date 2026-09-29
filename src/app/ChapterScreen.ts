@@ -41,6 +41,7 @@ import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCam
 import { playAmbience, playMusic } from './audio';
 import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
+import { keepPhoto, openAlbum } from './album';
 import type { TouchControls } from '@/input/Touch';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
@@ -217,6 +218,8 @@ export class ChapterScreen implements Screen {
    * drawn again, so the building stays on screen behind the menu.
    */
   private paused = false;
+  /** Opens the album over the end card, once there is one. */
+  private openEndAlbum: (() => void) | undefined;
   private pauseMenu!: HTMLDivElement;
   private pauseItems: { node: HTMLElement; act: () => void }[] = [];
   private pauseAt = 0;
@@ -562,6 +565,10 @@ export class ChapterScreen implements Screen {
     game.keyboard.on('Enter', () => {
       if (this.paused) this.choosePause();
     });
+    // The album, from the end card only: mid-run the prints are still to take.
+    game.keyboard.on('KeyP', () => {
+      if (this.endCard && !this.paused) this.openEndAlbum?.();
+    });
     for (const [code, step] of [['ArrowUp', -1], ['KeyW', -1], ['ArrowDown', 1], ['KeyS', 1]] as const) {
       game.keyboard.on(code, () => {
         if (this.paused) this.movePause(step);
@@ -712,7 +719,9 @@ export class ChapterScreen implements Screen {
     // After the scene is dressed for this frame and not before, or the
     // selfie is of the frame BEFORE the one in which it was taken.
     if (this.selfie) {
-      this.showPrint(this.selfie, this.takeSelfie(this.selfie));
+      const taken = this.takeSelfie(this.selfie);
+      this.showPrint(this.selfie, taken);
+      keepPhoto(this.selfie, taken);
       this.selfie = undefined;
     }
 
@@ -1166,7 +1175,10 @@ export class ChapterScreen implements Screen {
       // A selfie is taken from the frame about to be drawn, which does not
       // exist yet. `update` develops it once the scene is dressed.
       if (photo.selfie) this.selfie = photo;
-      else this.showPrint(photo);
+      else {
+        this.showPrint(photo);
+        keepPhoto(photo);
+      }
       photos.length = 0;
     }
 
@@ -2556,10 +2568,16 @@ export class ChapterScreen implements Screen {
     };
     const touch = this.touch;
     const row = el('div', { font: `12px ${MONO}`, color: '#5c6368', marginTop: '10px', display: 'flex', gap: '28px' });
+    const album = (): void => {
+      const host = this.hud.parentElement;
+      if (host) openAlbum(host, touch);
+    };
     row.append(
       choice(touch ? 'AGAIN' : 'R again', () => this.restart()),
+      choice(touch ? 'ALBUM' : 'P album', album),
       choice(touch ? 'CHAPTER SELECT' : 'ESC chapter select', () => this.routes.menu()),
     );
+    this.openEndAlbum = album;
     panel.append(row);
 
     this.endCard = panel;
