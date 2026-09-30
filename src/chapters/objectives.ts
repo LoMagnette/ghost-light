@@ -1380,10 +1380,26 @@ export const CAPACITY_OBJECTIVE: Objective = {
 export const HOMECOMING_OBJECTIVE: Objective = {
   line: '',
   activities: [],
+  /*
+   * What Voxxy switched on in Chapter I, at the levels Chapter I left it,
+   * coming back up as the robots land. Plus a little on the forecourt, which
+   * Chapter I never lit, so the three of them are seen standing somewhere
+   * lit rather than as a lamp in the dark.
+   *
+   * Without this the epilogue was the Chapter I dark exactly, and the
+   * ending read as "none of it happened". The closing words say the temple
+   * "remembers now", and this is where the building shows it.
+   */
+  lit: [
+    { ...roomBounds('hall'), to: 0.42 },
+    { ...roomBounds('reception'), to: 0.5 },
+    { ...roomBounds('aud-8'), to: 0.62 },
+    { ...roomBounds('forecourt'), to: 0.34 },
+  ],
   arrival: {
     kind: 'return',
     lines: [
-      { who: 'droid', text: 'The forecourt. The dark. This is where the ship came down.' },
+      { who: 'droid', text: 'The forecourt. This is where the ship came down. And look: the lights you switched on are still burning.' },
       { who: 'biggy', text: 'It is so quiet. Yesterday there were three thousand of them in there.' },
       { who: 'voxxy', text: 'Not yesterday. A hundred years ago. We came to find out what this temple was, and it showed us.' },
       { who: 'droid', text: 'The scriptures never said it was the only one. They name others. Paris. London. Kraków. Further still.' },

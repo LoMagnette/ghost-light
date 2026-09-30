@@ -78,6 +78,12 @@ export interface Objective {
    */
   closing?: Caption[];
   /**
+   * Zones that come on by themselves once the arrival has landed, and stay
+   * on. Only the epilogue has them: the building in 2126 keeps the power
+   * Chapter I gave it, so coming back does not mean coming back to nothing.
+   */
+  lit?: Reveal[];
+  /**
    * Chapter I's cats, since 28 Sep: one every so often from the start, at
    * random, up to a limit; carried by the objective because what they DO
    * is decided by two of its activities. See `Swarm`.

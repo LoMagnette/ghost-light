@@ -6328,6 +6328,24 @@ the closing words: the E presses that paged the robots' lines carried on
 into the title-sequence player, which treats any key as a skip. The closing
 words now skip on ESC only.
 
+> Do you think this ending improve the game ?
+
+Claude's answer was yes, with one reservation. The epilogue closes the
+title sequence's frame, and the one-robot-in, three-out line only works
+because of the splits. But it went from Chapter III's full house straight
+back to the exact Chapter I dark, which reads as nothing having changed.
+The suggestion was to leave a trace of what the robots did, and the author
+said yes.
+
+**Done** as `Objective.lit`: zones that come up by themselves over 3.5 s,
+starting once the last robot has landed. They are Chapter I's three zones
+at Chapter I's levels, plus the forecourt at 0.34. At 0.22 the forecourt
+was only a slight lift when compared side by side with the dark version.
+Droid's first line now points it out. The lights are built dark at load
+like every other rig, so they do not stutter the shaders as they come on.
+Headless, the arrival runs slower than real time, and the first "lit" frame
+at 8 s was still mid-wormhole. It needed 25 s.
+
 ---
 
 ## Audio

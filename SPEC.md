@@ -232,6 +232,14 @@ Then come the closing words, set like the title sequence and answering it:
 *Paris. London. Kraków. Marrakesh. Athens.* and *The journey has only just
 begun.* Then the menu.
 
+It is not the same dark it was. As the robots land, the zones Voxxy powered
+in Chapter I come back up to the levels Chapter I left them at: the hall,
+the concourse and Room 8. The forecourt, which Chapter I never lit, gets a
+little light too (`objective.lit`). Without that, coming back to the
+Chapter I dark reads as "none of it happened", after the warmest moment in
+the game. The closing words say the temple "remembers now", and the lit
+building is where that shows.
+
 The epilogue is a chapter in data (`EPILOGUE` in `registry.ts`: Chapter I's
 palette and light, the whole cast, and an objective with nothing to do).
 It is not on the menu, and it is reached only through Chapter III's

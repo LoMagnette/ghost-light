@@ -247,6 +247,13 @@ const ARRIVE_FADE = 1.0;
 const ARRIVE_LAND = 1.75;
 const ARRIVE_SPLIT_AT = 2.5;
 const ARRIVE_SPLIT = 1.3;
+/**
+ * The epilogue's lights (`Objective.lit`): seconds from the chapter opening
+ * until they start to come up, which is after the last robot has landed,
+ * and how long they take.
+ */
+const LIT_FROM = 3.0;
+const LIT_RISE = 3.5;
 /** Chapter I: how long the forecourt is seen before Voxxy speaks, seconds. */
 const LANDING_PAUSE = 1.2;
 /** How far above the floor the arrival opens, metres. Under any ceiling. */
@@ -399,6 +406,8 @@ export class ChapterScreen implements Screen {
    */
   private closing: Intro | undefined;
   private closed = false;
+  /** Seconds since the chapter opened, for `Objective.lit` coming up. */
+  private litFor = 0;
   private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
 
@@ -605,6 +614,7 @@ export class ChapterScreen implements Screen {
       if (a.reveal) this.blockout.prepareZone(a.id, a.reveal.bounds, a.reveal.floor);
     }
     for (const room of this.sessionRooms) this.blockout.prepareZone(`room:${room.id}`, room.bounds, room.floor);
+    (chapter.objective.lit ?? []).forEach((z, i) => this.blockout.prepareZone(`lit:${i}`, z.bounds, z.floor));
 
     // A building this dark is unplayable without something to see by, and a
     // lamp on the robot is both the cheapest answer and the right one: it
@@ -852,6 +862,7 @@ export class ChapterScreen implements Screen {
     // The epilogue's last words, once its robots have said theirs.
     if (!this.story && !this.closed && this.chapter.objective.closing) this.startClosing();
     this.closing?.update(dt);
+    this.raiseLit(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
     // is modelled from its own datum, so the world it is standing in moves 6.2
@@ -1088,6 +1099,7 @@ export class ChapterScreen implements Screen {
     // Put the building back in the dark and the card back to empty. A restart
     // that kept the lights on would hand the player the answer to Chapter I.
     this.blockout.clearReveals();
+    this.litFor = 0;
     // And put the audiences back in the rooms they walked out of — the seats
     // in the renderer, the people who left in the crowd.
     this.blockout.refillSeats();
@@ -1381,6 +1393,19 @@ export class ChapterScreen implements Screen {
       },
       lines,
     );
+  }
+
+  /**
+   * Bring `Objective.lit` up: after the robots have landed, over a few
+   * seconds, as if the building had noticed them. Held at full once it is
+   * there, and it costs nothing then.
+   */
+  private raiseLit(dt: number): void {
+    const lit = this.chapter.objective.lit;
+    if (!lit || this.litFor >= LIT_FROM + LIT_RISE) return;
+    this.litFor += dt;
+    const k = smooth((this.litFor - LIT_FROM) / LIT_RISE);
+    lit.forEach((z, i) => this.blockout.lightZone(`lit:${i}`, z.bounds, z.floor, z.to * k));
   }
 
   private endStory(): void {
