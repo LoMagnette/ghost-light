@@ -6370,7 +6370,7 @@ at 8 s was still mid-wormhole. It needed 25 s.
 `vite-plugin-pwa` writes the manifest and a service worker that stores the
 whole build on the first visit, about 16.6 MB and 46 files, source maps
 left out. Every icon is cut at build time from one square `public/icon.png`.
-A stand-in lamp is there until the author's icon arrives. The manifest asks
+It is now `public/icon.svg`. The manifest asks
 for full screen and landscape, and `index.html` has the Apple tags, since
 an iPhone ignores the manifest's display mode and Safari there has no
 fullscreen API.
@@ -6386,6 +6386,16 @@ was not yet controlled: without `clientsClaim` the first visit stays
 uncontrolled until a reload. `npm run offline` now serves a build from
 `/ghost-light/` as Pages does, shuts the server down, and fetches every
 emitted file and boots every chapter.
+
+> Can you create the icon based on voxxy image
+
+**Done**, as Voxxy's head front on, drawn as an SVG. Claude did not crop the
+model sheet, which is Devoxx's and is kept out of the MIT repo. The first try
+was the game's own Voxxy rendered close up with `?face&zoom=8`. The fixed view
+looks down on the head, so at icon size the visor read as a gash. **Fixed on
+the way:** the generator's default PNG quality of 60 quantised the icons to a
+palette and banded the glow under the head. That only showed in a preview of
+the iPhone icon cropped the way the home screen crops it.
 
 ---
 
