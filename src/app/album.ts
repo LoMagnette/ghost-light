@@ -20,6 +20,7 @@
 import { CHAPTERS } from '@/chapters/registry';
 import type { Photo } from '@/core/Activity';
 import { el, MONO, SANS } from './dom';
+import { tabForKey, tabHeader, type Tab, type Tabs } from './tabs';
 
 export interface Page {
   id: string;
@@ -136,7 +137,7 @@ function measures(touch: boolean) {
  * not start a chapter: ESC (or a click outside, or CLOSE) shuts it, and
  * from a print held up large goes back to the pages first.
  */
-export function openAlbum(host: HTMLElement, touch: boolean): void {
+export function openAlbum(host: HTMLElement, touch: boolean, tabs?: Tabs): void {
   const m = measures(touch);
   // Opaque: a collection is read, and the menu showing through it is noise.
   const root = el('div', {
@@ -163,11 +164,19 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
   root.append(page);
 
   const { taken, total } = albumCount();
-  page.append(
-    el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
-    el('div', { font: `${m.title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, 'Album'),
-    el('div', { font: `${m.count}px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${taken} of ${total} prints`),
-  );
+  // In the souvenir album, the book's tabs; on its own, its own title.
+  const turn = (tab: Tab): void => {
+    shut();
+    tabs?.go(tab);
+  };
+  if (tabs) page.append(...tabHeader(tabs, touch, m.title, turn));
+  else {
+    page.append(
+      el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
+      el('div', { font: `${m.title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, 'Album'),
+      el('div', { font: `${m.count}px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${taken} of ${total} prints`),
+    );
+  }
 
   const grid = el('div', {
     display: 'grid',
@@ -323,6 +332,11 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
       }
       return;
     }
+    const tab = tabs ? tabForKey(code) : undefined;
+    if (tab && tab !== tabs?.active && !event.repeat) {
+      turn(tab);
+      return;
+    }
     if (code === 'Escape') {
       if (!event.repeat) shut();
       return;
@@ -346,7 +360,11 @@ export function openAlbum(host: HTMLElement, touch: boolean): void {
   });
   host.append(root);
   // Start on the first print taken, or on CLOSE when there is none.
-  focusAt(earned.length > 0 ? earned[0].cell : cells.length);
+  // Focus without scrolling to it, and start the page at the top: on a
+  // phone focusing CLOSE scrolled the tabs out of sight.
+  const first = earned.length > 0 ? earned[0].cell : cells.length;
+  (first >= cells.length ? close : cells[first].node).focus({ preventScroll: true });
+  root.scrollTop = 0;
 }
 
 /** A bare button: focusable and announced, and drawn by what is put in it. */

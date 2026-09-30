@@ -33,8 +33,7 @@ import { el, MONO, SANS, SERIF } from './dom';
 import { currentQuality, setQuality } from './quality';
 import { audioUnlocked, isMuted, onMuteChange, playAmbience, playMusic, toggleMuted } from './audio';
 import { Intro, introWanted } from './Intro';
-import { albumCount, openAlbum } from './album';
-import { castCount, openCast } from './cast';
+import { openSouvenirs, souvenirTotal } from './souvenirs';
 
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 280;
@@ -212,13 +211,11 @@ export class MenuScreen implements Screen {
     };
     const dim = (words: string): HTMLElement => el('span', { color: '#6f777c' }, words);
 
-    // Everybody met so far, on their cards, and the prints taken so far.
-    const cast = castCount();
-    const showCast = (): void => openCast(game.ui, touch);
-    option('C', showCast).append("Who's who ", dim(`${cast.met}/${cast.total}`));
-    const prints = albumCount();
-    const showAlbum = (): void => openAlbum(game.ui, touch);
-    option('P', showAlbum).append('Album ', dim(`${prints.taken}/${prints.total}`));
+    // The souvenir album: prints, people and stickers, one book. C still
+    // opens it on the people, where it used to open the who's who.
+    const showAlbum = (): void => openSouvenirs(game.ui, touch, 'prints');
+    const showCast = (): void => openSouvenirs(game.ui, touch, 'people');
+    option('P', showAlbum).append('Album ', dim(souvenirTotal()));
     option('I', () => this.playIntro(game)).append('Intro');
 
     /*
