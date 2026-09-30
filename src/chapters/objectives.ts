@@ -573,15 +573,14 @@ function speaker(
  * driving past; the talk prompt comes up in range, and meeting them puts
  * their card in the who's who.
  *
- * They are real people, and nobody has written words for them, so they are
- * given none: the one line is narration, the robot stopping to say hello
- * and who they are, in italics and without a voice. What it says about them
- * is from their public work, sourced in `docs/PROMPTS.md` (29 Sep): in
- * Chapter II as of JavaPolis 2006, in Chapter III as of Devoxx 2026. Their
- * looks are from the author's portraits of them (30 Sep): shirt, hair,
- * beard and glasses, and for Alina, Ana-Maria and Holly long hair.
+ * They are real people, and they talk as themselves (the author, 30 Sep:
+ * "a real chat, not a description of the person"). So every line is plainly
+ * true of their public work, sourced in `docs/PROMPTS.md`: in Chapter II as
+ * of JavaPolis, December 2006, in Chapter III as of Devoxx, October 2026.
+ * Where they have said something close in public, it is close to what they
+ * said. Their looks are from the author's portraits of them (30 Sep).
  */
-function passerby(id: string, who: string, look: Look, at: Zone, about: { bio: string; line: string; more?: string[] }): Activity {
+function passerby(id: string, who: string, look: Look, at: Zone, about: { bio: string; lines: string[] }): Activity {
   return {
     kind: 'talk',
     id: `hello-${id}`,
@@ -591,9 +590,8 @@ function passerby(id: string, who: string, look: Look, at: Zone, about: { bio: s
     at,
     aside: true,
     optional: true,
-    narrated: true,
     bio: about.bio,
-    lines: [about.line, ...(about.more ?? [])],
+    lines: about.lines,
   };
 }
 
@@ -837,9 +835,9 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
      * People to meet, and nothing to do with them. See `passerby`. The
      * corridor's east side, across from the speakers Stephan sends you to.
      */
-    passerby('souza', 'Bruno Souza', { shirt: 0x1c1d20, hair: 0x3a2e26, hairline: 'receding', scale: 1.02 }, spot(1, 2.4, -24.0, 2.4), { bio: 'Founder of SouJava, Brazil\'s Java user group, and newly NetBeans community manager at Sun.', line: 'You stop to say hello to Bruno Souza, who founded SouJava in Brazil and has just joined Sun to look after the NetBeans community.', more: ['He co-founded SouJava in 1999, and helped start Apache Harmony, an open-source Java runtime.'] }),
-    passerby('laforge', 'Guillaume Laforge', { shirt: 0xe4e4e2, collar: 0x2f4f9e, hair: 0x3a2e26, glasses: 0x2a2a2c }, spot(1, 2.4, -4.0, 2.4), { bio: 'Groovy project manager and JSR 241 spec lead; architect at OCTO Technology in Paris.', line: 'You stop to say hello to Guillaume Laforge, who leads the Groovy project. Groovy 1.0 is a few weeks away.', more: ['He is co-writing Groovy in Action with Dierk König, and he started Grails too.'] }),
-    passerby('goncalves', 'Antonio Goncalves', { shirt: 0x1c1d20, hair: 0x241e1a, long: true, beard: 'goatee' }, spot(1, 2.4, 12.0, 2.4), { bio: 'Paris Java developer and writer, speaking about JUnit 4 at JavaPolis 2006.', line: 'You stop to say hello to Antonio Goncalves, in from Paris to give a talk on JUnit 4.', more: ['His first book, on Java EE 5, is on its way. In French.'] }),
+    passerby('souza', 'Bruno Souza', { shirt: 0x1c1d20, hair: 0x3a2e26, hairline: 'receding', scale: 1.02 }, spot(1, 2.4, -24.0, 2.4), { bio: 'Founder of SouJava, Brazil\'s Java user group, and newly NetBeans community manager at Sun.', lines: ['Olá, robots! Bruno, from Brazil. We started SouJava there in 1999: the Java user group.', 'I have just joined Sun, to look after the NetBeans community.', 'And I helped start Apache Harmony. An open-source Java, from the ground up.'] }),
+    passerby('laforge', 'Guillaume Laforge', { shirt: 0xe4e4e2, collar: 0x2f4f9e, hair: 0x3a2e26, glasses: 0x2a2a2c }, spot(1, 2.4, -4.0, 2.4), { bio: 'Groovy project manager and JSR 241 spec lead; architect at OCTO Technology in Paris.', lines: ['Bonjour! Guillaume. I lead the Groovy project, JSR 241.', 'Groovy 1.0 is a few weeks away. A real 1.0, at last.', 'Dierk König and I are writing Groovy in Action. And there is Grails, if you want Groovy on the web.'] }),
+    passerby('goncalves', 'Antonio Goncalves', { shirt: 0x1c1d20, hair: 0x241e1a, long: true, beard: 'goatee' }, spot(1, 2.4, 12.0, 2.4), { bio: 'Paris Java developer and writer, speaking about JUnit 4 at JavaPolis 2006.', lines: ['Salut. Antonio, from Paris. I am giving a talk here on JUnit 4.', 'An @Test annotation instead of a method called testSomething. A small change, and it makes tests read better.', 'I am writing a book too, on Java EE 5. In French.'] }),
   ],
 };
 
@@ -1335,12 +1333,12 @@ export const CAPACITY_OBJECTIVE: Objective = {
      * People to meet, and nothing to do with them. See `passerby`.
      * Spread over both storeys, where the day takes a robot anyway.
      */
-    passerby('cools', 'Tom Cools', { shirt: 0x1c1d20, print: 0xb03a2e, hair: 0x2a221c, glasses: 0x3a3a3c, beard: 'stubble' }, spot(0, 8.0, 12.0, 2.4), { bio: 'Developer Relations Engineer at Timefold, Java Champion, and leader of the Belgian Java User Group.', line: 'You stop to say hello to Tom Cools, who leads the Belgian Java User Group: the group this conference grew out of.', more: ['He works on Timefold, on planning and scheduling problems, and became a Java Champion in 2023.'] }),
-    passerby('vermeer', 'Brian Vermeer', { shirt: 0x2c3a52, hair: 0x6b4e33, beard: 'full' }, spot(0, -8.0, 4.0, 2.4), { bio: 'Staff Developer Advocate at Snyk and Java Champion; leads the Virtual JUG and NLJUG.', line: 'You stop to say hello to Brian Vermeer, who works on keeping Java applications secure, and runs the Virtual JUG.', more: ['He co-leads the DevSecCon community too, and helps run NLJUG, the Dutch Java user group.'] }),
-    passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x1c1d20, hair: 0x221c18, glasses: 0x1a1a1c }, spot(0, 15.0, -45.0, 2.4), { bio: 'Software engineer at JDriven with a master\'s in Game Studies, bringing game development and software engineering together.', line: 'You stop to say hello to Alexander Chatzizacharias, who once turned IntelliJ into a game engine, just because he could.', more: ['He has a master\'s in Game Studies. His talks here have gone from Unity machine-learning agents to a game of conquest and time travel played in Git.'] }),
-    passerby('yurenko', 'Alina Yurenko', { shirt: 0x1c1d20, hair: 0xc9a86a, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4), { bio: 'Developer Advocate for GraalVM at Oracle, who loves open source and compilers.', line: 'You stop to say hello to Alina Yurenko, here to talk about GraalVM and Java compiled ahead of time.', more: ['She is Ukrainian, lives in Zurich, and is a big believer in open source and in communities.'] }),
-    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', line: 'You stop to say hello to Ana-Maria Mihalceanu, of the Java Platform Group, here to talk about JFR and Project Leyden.', more: ['She contributed to DevOps Tools for Java Developers, and writes for Inside.java on what is new in the JDK.'] }),
-    passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, print: 0x4695eb, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', line: 'You stop to say hello to Holly Cummins, of the Quarkus team, here to talk about what happens when benchmarks go wrong.', more: ['Before Quarkus she was a JVM performance engineer. She has also led projects to count fish, and to help a blind athlete run ultra-marathons in the desert, solo.'] }),
-    passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, print: 0xcc2a2a, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', line: 'You stop to say hello to Kevin Dubois, here to talk about building AI agents in Java with LangChain4j and Quarkus.', more: ['He lives in Switzerland now, and has lived in Belgium, Italy, Montana and Utah. He speaks English, Dutch, French and Italian.'] }),
+    passerby('cools', 'Tom Cools', { shirt: 0x1c1d20, print: 0xb03a2e, hair: 0x2a221c, glasses: 0x3a3a3c, beard: 'stubble' }, spot(0, 8.0, 12.0, 2.4), { bio: 'Developer Relations Engineer at Timefold, Java Champion, and leader of the Belgian Java User Group.', lines: ['Hey, robots! Tom. I lead BeJUG, the Belgian Java User Group. This whole conference grew out of a user group.', 'By day I work at Timefold, on planning and scheduling: rosters, routes, who goes where and when.', 'Your day here is a planning problem, you know. Nine things, one clock, three of you.'] }),
+    passerby('vermeer', 'Brian Vermeer', { shirt: 0x2c3a52, hair: 0x6b4e33, beard: 'full' }, spot(0, -8.0, 4.0, 2.4), { bio: 'Staff Developer Advocate at Snyk and Java Champion; leads the Virtual JUG and NLJUG.', lines: ['Hi. Brian, from Snyk. I work on keeping Java applications secure.', 'Your dependencies are part of your application. Know what you pull in.', 'I run the Virtual JUG as well, and help run NLJUG, back home in the Netherlands.'] }),
+    passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x1c1d20, hair: 0x221c18, glasses: 0x1a1a1c }, spot(0, 15.0, -45.0, 2.4), { bio: 'Software engineer at JDriven with a master\'s in Game Studies, bringing game development and software engineering together.', lines: ['Alexander. I studied games, so I see them everywhere. I once turned IntelliJ into a game engine, just because I could.', 'This year it is Git: conquest, time travel and explosions.', 'You three would make a good game, by the way.'] }),
+    passerby('yurenko', 'Alina Yurenko', { shirt: 0x1c1d20, hair: 0xc9a86a, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4), { bio: 'Developer Advocate for GraalVM at Oracle, who loves open source and compilers.', lines: ['Hi! Alina. I work on GraalVM, at Oracle.', 'Compile your Java ahead of time and it starts in a blink, and uses far less memory.', 'Come to the GraalVM talk. Or to the BOF tonight, if your rooms let you.'] }),
+    passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', lines: ['Hello! Ana-Maria, from the Java Platform Group at Oracle.', 'Today I am talking JFR and Project Leyden: seeing what your application really does, and making it start faster.', 'And all of it is already in the JDK. Nothing to install.'] }),
+    passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, print: 0x4695eb, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', lines: ['Hello! Holly, from the Quarkus team at IBM.', 'My talk is about benchmarks that go bad: what we learned from measuring performance wrong.', 'Efficiency is ruining our happiness, and, weirdly, it is also ruining our efficiency.'] }),
+    passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, print: 0xcc2a2a, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', lines: ['Hi! Kevin, developer advocate at IBM. I lived in Belgium once; these days it is Switzerland.', 'My talks this year are about AI agents in Java.', 'LangChain4j and Quarkus. In my opinion, the easiest tools to work with in this space.'] }),
   ],
 };

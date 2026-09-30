@@ -48,6 +48,8 @@ export const CHAPTER_ONE: Chapter = {
   numeral: 'I',
   title: 'The Silence',
   era: 'later',
+  // The title sequence's frame (28 Sep): a robot comes down in 2126.
+  when: { year: 2126 },
   tagline: 'Something is still walking the building.',
   brief:
     'The hall is dark and the chairs are empty. You do not know where you are yet. ' +
@@ -120,6 +122,8 @@ export const CHAPTER_TWO: Chapter = {
   numeral: 'II',
   title: 'JavaPolis',
   era: 'the early years',
+  // JavaPolis 2006, in the Kinepolis in December: the edition the speakers' lines are true of.
+  when: { year: 2006, month: 'December' },
   tagline: 'Half a building, and more people than anyone expected.',
   recap: 'After I: Voxxy switched on the last rack, and the building folded back to its first years.',
   brief:
@@ -195,6 +199,8 @@ export const CHAPTER_THREE: Chapter = {
   numeral: 'III',
   title: 'At Capacity',
   era: 'the full house',
+  // Devoxx Belgium 2026, 5–9 October.
+  when: { year: 2026, month: 'October' },
   tagline: 'More conference than one day can hold.',
   recap: 'After II: Voxxy and Droid kept JavaPolis running, and the building folded again.',
   brief:

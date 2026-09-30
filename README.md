@@ -93,7 +93,9 @@ offers it ("[E] Talk to Stephan Janssen") once you are in range.
 
 **Two collections**, kept in the browser between visits: the **album**, a print
 for every photograph earned, and the **who's who**, a card for each of the 23
-people in the building, a silhouette until you have met them.
+people in the building, a silhouette until you have met them, and then their
+portrait, who they are, and the year you met them. Each chapter opens on its
+year: 2126, December 2006, October 2026.
 
 ## What to look at
 
@@ -188,9 +190,10 @@ Generative AI use is documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 Chapter II and III are a conference, and a conference is its people. The
 people who built Devoxx and JavaPolis, and some who speak at it, stand in the
 building as themselves, as a tribute. Photographs of real people go in only
-with their agreement. Where nobody has agreed words for someone, they are
-given none: the game narrates the robot stopping to say hello instead. The
-crowd around them is nobody in particular.
+with their agreement. What they say is only what is plainly true of their
+public work, researched and sourced in `docs/PROMPTS.md`: in Chapter II as
+of JavaPolis in December 2006, in Chapter III as of Devoxx in October 2026.
+The crowd around them is nobody in particular.
 
 ## Status
 
