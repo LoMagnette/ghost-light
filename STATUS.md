@@ -39,7 +39,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 89
+    "Done" : 91
     "Parked" : 5
 ```
 
@@ -133,6 +133,8 @@ pie showData
 | **The evening's changes, tried on a real phone** | — | 30 Sep, the author: the install, offline play, INTERACT and HOLD STILL |
 | **The real people's lines and cards, read** | — | 30 Sep, the author. Bios and lines are from sourced research (`docs/PROMPTS.md`) |
 | **Better story content for Chapter II** | — | 30 Sep, done on the author's word. The other three design follow-ups of 27 Sep are parked for after the deadline |
+| **Arrows in Chapter I: always** | — | 30 Sep, the author kept the default. Chapter I is about finding your way in the dark, and they point at every board and every ticking cat |
+| **Skin in the crowd: the stylised warm band** | — | 30 Sep, the author kept the default. A real range on the named people was out either way |
 
 ---
 
@@ -148,12 +150,8 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 
 ## ⬜ To do
 
-### Open decisions
-
-| Decision | Default if unanswered |
-|---|---|
-| Arrows in Chapter I: always, off, or only after 30 s without progress? | Always (current). Chapter I is about finding your way in the dark, and they point at every board — and now at every ticking cat |
-| Skin in the crowd: the stylised warm band, or a real range for the anonymous crowd only? | Stylised band (current). A real range on the named people is out either way |
+Nothing. The two open decisions were settled on 30 Sep by keeping their
+defaults; see Done.
 
 ### If behind, cut in this order (from `ROADMAP.md`)
 
