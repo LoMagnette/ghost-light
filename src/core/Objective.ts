@@ -252,7 +252,7 @@ export interface ObjectiveEvent {
 const PICKUP_RANGE = 2.2;
 
 /** Slow enough to count as standing still, m/s. */
-const STILL = 0.25;
+export const STILL = 0.25;
 
 /**
  * Slow enough to put something down safely, m/s.

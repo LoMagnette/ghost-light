@@ -6382,6 +6382,20 @@ now remembers who put a thing down and does not hand it back to them until
 they have moved out of reach. The same robot can still pick it up again
 after that.
 
+> the long objective such as the picture with dimitris and fixing the
+> projector should have a clear indicator that the user have to wait
+
+**Done** on `wait-indicator`. Dwell and attend jobs have no key: the robot
+stands in the zone and the job fills. Until now the only sign was a
+percentage on the card, in the corner. Now a chip over the driven robot's
+head says what to do: HOLD STILL, STOP HERE while it is still rolling, STAY
+for a talk, or WAITING FOR EVERYONE with how many robots are there for the
+group photo. It has the job's name, a bar, and the seconds left. The job's
+own badge is not drawn under it but keeps its place as NEXT. **Checked
+headless:** the Room 5 talk on desktop and at phone size, and the badge
+scan's countdown logged from inside the page. Its 2 s ran out before a
+headless screenshot could land.
+
 ---
 
 ## The other tools
