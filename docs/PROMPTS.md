@@ -6363,6 +6363,25 @@ the ending the next time a Devoxx moves; a country stays true.
 Headless, the arrival runs slower than real time, and the first "lit" frame
 at 8 s was still mid-wormhole. It needed 25 s.
 
+> Ok because I don't think the drop button and even command on a desktop are
+> that useful. In my playtest I never really used it. I think we could merge
+> it with the talk into an interact button
+
+**Done** on `interact`. E, and INTERACT on a phone, talks when someone is in
+range or a box is up. With nobody to talk to, it puts down what the driven
+robot is carrying, so talking always wins. SPACE only pages boxes and picks
+in the pause menu now. The phone's DROP button is gone, and its slot in the
+diamond is left empty so the other three stay where the thumb learned them.
+
+**What headless testing found:** putting something down had never worked.
+Picking up is automatic, and the robot that put a thing down was still
+standing within reach of it with empty hands. So on the next frame it took
+it back: "Put the coffee down", then "Voxxy has the coffee" half a second
+later. That is a likely reason the author never used DROP. `ObjectiveRun`
+now remembers who put a thing down and does not hand it back to them until
+they have moved out of reach. The same robot can still pick it up again
+after that.
+
 ---
 
 ## The other tools

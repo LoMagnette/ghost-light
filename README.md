@@ -35,9 +35,8 @@ no account, no build step to run by hand.
 |---|---|
 | `W` `A` `S` `D` / arrows | Move (screen-relative) |
 | `SHIFT` | Brake — a real brake, not just letting go |
-| `E` | Talk to whoever the prompt names, and page through what is said (`SPACE` and `ENTER` page too) |
+| `E` | Interact: talk to whoever the prompt names and page through what is said (`SPACE` and `ENTER` page too); with nobody to talk to, put down what you are carrying. Picking up and delivering happen on their own |
 | `TAB` | Switch robot *(chapters II and III)* |
-| `SPACE` | Put down what you are carrying *(chapters II and III)* |
 | `1` `2` `3` | Take control of a robot, where more than one is present |
 | `ESC` | Pause: Resume, Collectables, Restart, or Leave run (the last two lose the run) |
 | `R` | Restart the chapter (asks first) |
@@ -57,9 +56,8 @@ On the menu, and on the card at the end of a chapter:
 
 **On a phone**, held sideways: drag anywhere on the left to move (a
 "Drag here to move" ghost shows where, until the first time). On the right,
-the buttons sit where a controller's face buttons do: TALK at the bottom,
-BRAKE on the right, and in chapters II and III DROP on the left and ROBOT on
-top. SOUND and PAUSE are at the top. Tap a dialogue box to page it. Turning
+the buttons sit where a controller's face buttons do: INTERACT at the
+bottom, BRAKE on the right, and in chapters II and III ROBOT on top. SOUND and PAUSE are at the top. Tap a dialogue box to page it. Turning
 the phone upright pauses the game.
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
