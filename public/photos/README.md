@@ -1,6 +1,6 @@
 # Photographs
 
-Drop the four prints in here. Vite copies `public/` to the site root, so a
+Drop the prints in here. Vite copies `public/` to the site root, so a
 file called `room-8.png` is served at `photos/room-8.png` and the game builds
 that path off `import.meta.env.BASE_URL` — which is what makes it survive
 GitHub Pages serving the whole thing from a subdirectory.
@@ -28,11 +28,12 @@ player did not bring. Shoot them that way.
 | `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.png` |
 | `photo-josh` | **Biggy**, shaking hands with Josh | Exhibition hall — Josh Long shakes hands with Biggy | `josh-long.png` |
 | `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.png` |
+| `selfie-dimitris` | **Voxxy**, with Dimitris | Central aisle — a selfie with Dimitris and Voxxy | `dimitris-selfie.jpeg` |
 
-The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
-no file: it is `selfie: true`, and the screen takes it off the game's own
-canvas the moment it is finished. It is always Voxxy, framed on Dimitris,
-with only the top of Voxxy's head along the bottom edge.
+The selfie with Dimitris was `selfie: true` until 30 Sep, taken off the
+game's own canvas the moment it was finished; it is the author's picture
+now. It is 1024 × 571, so the frame crops its sides to 3:2 and it is a
+little soft held up in the album on a high-density screen.
 
 ## What the frame wants
 

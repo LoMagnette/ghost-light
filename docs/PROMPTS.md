@@ -6396,6 +6396,17 @@ headless:** the Room 5 talk on desktop and at phone size, and the badge
 scan's countdown logged from inside the page. Its 2 s ran out before a
 headless screenshot could land.
 
+> I would like to replace the picture of the robot with dimitris with an
+> actual asset instead of an in game capture
+
+**Done** on `dimitris-print`. The selfie is now the author's picture,
+`public/photos/dimitris-selfie.jpeg` (1024 × 571, cropped to 3:2 by the
+frame), instead of a capture of the game's own canvas. _Tool used to make
+the picture: not recorded yet._ **Caught on the way:** a browser that had
+taken the old selfie kept the capture as a data URL, and the album showed
+that ahead of any file. A capture now stands in only for a print that is
+still a selfie. Checked by seeding an old capture and opening Collectables.
+
 ---
 
 ## The other tools

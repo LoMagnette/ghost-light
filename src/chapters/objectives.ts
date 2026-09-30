@@ -1219,15 +1219,16 @@ export const CAPACITY_OBJECTIVE: Objective = {
        */
       at: spot(0, -0.6, -19.7, 3.2),
       /*
-       * Voxxy's, BECAUSE it is small. He frames the selfie the way he frames
-       * everything — himself, properly, chest up — and at 1.15 m beside a
-       * 1.72 m man that leaves the top of Voxxy's head along the bottom edge
-       * and nothing more. Droid would be a second person in the picture and
-       * Biggy would be a wall; only the smallest robot is the joke.
+       * Voxxy's: the author's picture is Dimitris at arm's length with Voxxy
+       * at his shoulder, so only Voxxy can earn it. Droid would be a second
+       * person in the frame and Biggy would be a wall.
+       *
+       * A file since 30 Sep. It was `selfie: true`, taken off the game's own
+       * canvas, and the author wanted a real picture in its place.
        */
       gates: { maxRadius: 0.4 },
       seconds: 2.0,
-      photo: { caption: 'Central aisle — Dimitris, and the top of Voxxy', selfie: true },
+      photo: { caption: 'Central aisle — a selfie with Dimitris and Voxxy', file: 'dimitris-selfie.jpeg' },
     },
     {
       kind: 'dwell',
