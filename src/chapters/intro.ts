@@ -18,15 +18,15 @@
  * conference — that thousands gathered to talk about code — is plainly true.
  */
 
-export interface IntroLine {
-  text: string;
-  /**
-   * How it is set. `date` and `place` are the two words the whole premise
-   * hangs on, so they get a frame of their own; `light` is the ghost light's
-   * colour, Chapter I's accent.
-   */
-  look?: 'date' | 'place' | 'light';
-}
+import type { Caption } from '@/core/Objective';
+
+/**
+ * How a line is set. `date` and `place` are the two words the whole premise
+ * hangs on, so they get a frame of their own; `light` is the ghost light's
+ * colour, Chapter I's accent. The epilogue's closing words are set the same
+ * way, which is why the shape lives in `core/Objective.ts`.
+ */
+export type IntroLine = Caption;
 
 export const INTRO_LINES: readonly IntroLine[] = [
   { text: '2126', look: 'date' },

@@ -72,7 +72,7 @@ building, and this answers those in a single build.
 afternoon on 28 Sep: a dozen frames of the stair cores and the grand-stair
 terrace were of the build before, and the new walls looked invisible.
 
-Nine query parameters exist for looking at the game rather than playing it,
+Ten query parameters exist for looking at the game rather than playing it,
 and none is reachable from inside it:
 
 | | |
@@ -82,6 +82,7 @@ and none is reachable from inside it:
 | `?at=x,y` or `?at=x,y,floor` | start the cast anywhere in the building |
 | `?intro` / `?nointro` | force the title sequence before the menu, or skip it (it otherwise plays once per browser; `shoot` and `peek` mark it seen) |
 | `?exit` | with `?chapter`, open that chapter's wormhole at once, if it has one |
+| `?ending` | with `?chapter=capacity`, skip to the end card, whose Continue leaves for the epilogue. `?chapter=homecoming` opens the epilogue itself |
 | `?high` / `?low` | force the graphics quality: shadows and mood, or the flat blockout |
 | `?zoom=n` | look n times closer — for holding a robot against its model sheet |
 | `?face` | turn the cast to face the camera, as on the sheets' front views |

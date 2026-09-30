@@ -156,8 +156,9 @@ The tone lands better too. Chapter I is melancholy and Chapter II is stressed;
 without this the game never gets to be fun, and a conference is fun.
 
 Biggy cannot climb a staircase, so **Biggy cannot attend the keynote.** The
-game ends with two robots going up into a full room and the heavy one waiting
-in the hall it worked all day.
+day ends with two robots going up into a full room and the heavy one waiting
+in the hall it worked all day. The game does not end there: see the epilogue
+below.
 
 ### Why crowd density still carries the arc
 
@@ -213,6 +214,38 @@ fall through a wormhole for failing.
 Declared on the objectives as `exit` and `arrival` (`core/Objective.ts`), so
 it costs no fifth chapter field and no second screen, and everything the
 player sees is a render-only pose: the simulation never hears of it.
+
+### Epilogue — Homecoming
+
+**The author, 30 Sep.** At the end all three robots are sent back to 2126,
+and their journey has only just started: there are other temples, meaning
+the other Devoxxes, still to find.
+
+Chapter III's day ends on its card as it always did, since the card is the
+only record of what the player chose to do. The card's first button is now
+**Continue**. It opens the floor under all three robots, and they drop out
+of the air onto the dark forecourt where Voxxy first came down. There is no
+split this time (`arrival.kind: 'return'`). Three went through, and three
+come out. They say six lines between them. Voxxy speaks again for the first
+time since the forecourt, and Droid says the scriptures name other temples.
+Then come the closing words, set like the title sequence and answering it:
+*Paris. London. Kraków. Marrakesh. Athens.* and *The journey has only just
+begun.* Then the menu.
+
+It is not the same dark it was. As the robots land, the zones Voxxy powered
+in Chapter I come back up to the levels Chapter I left them at: the hall,
+the concourse and Room 8. The forecourt, which Chapter I never lit, gets a
+little light too (`objective.lit`). Without that, coming back to the
+Chapter I dark reads as "none of it happened", after the warmest moment in
+the game. The closing words say the temple "remembers now", and the lit
+building is where that shows.
+
+The epilogue is a chapter in data (`EPILOGUE` in `registry.ts`: Chapter I's
+palette and light, the whole cast, and an objective with nothing to do).
+It is not on the menu, and it is reached only through Chapter III's
+wormhole (`exit.afterCard`). The closing words are `objective.closing`.
+This still follows the one-screen rule: the epilogue runs in
+`ChapterScreen` like every other chapter.
 
 ## 5. The robots
 

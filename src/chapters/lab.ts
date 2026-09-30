@@ -72,8 +72,8 @@ export const MOVEMENT_LAB: Chapter = {
 /**
  * Chapter lookup that also knows about the lab.
  *
- * `chapterById` deliberately only sees the three real chapters, because that
- * list is what the menu renders and what a judge is offered. The lab is
+ * `chapterById` deliberately only sees the three real chapters and the
+ * epilogue they lead to: that is what a judge can reach. The lab is
  * reachable only by asking for it by name.
  */
 export function chapterOrLab(id: string): Chapter | undefined {

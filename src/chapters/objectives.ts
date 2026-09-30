@@ -954,6 +954,16 @@ export const CAPACITY_OBJECTIVE: Objective = {
       { who: 'biggy', text: 'You two go upstairs. I will stay down here and move the heavy things.' },
     ],
   },
+  /*
+   * And home: the day is over, and the floor opens under all three of them.
+   *
+   * The arc was later → earlier → now, and "now" was never where these
+   * robots came from. They came down on the forecourt in 2126 to find out
+   * what this place was, and they have: so the third fold takes them back to
+   * where Voxxy landed, with the answer and two more robots than it left
+   * with. After the card, not instead of it — see `Exit.afterCard`.
+   */
+  exit: { kind: 'wormhole', to: 'homecoming', afterCard: true },
   activities: [
     {
       kind: 'dwell',
@@ -1343,5 +1353,67 @@ export const CAPACITY_OBJECTIVE: Objective = {
     passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', lines: ['Hello! You look busy. Do you know what is slowing you down?', 'That is my talk, really: JFR shows you what your application actually does, and Project Leyden makes it start faster.', 'And the best part is that it is all already in the JDK. Nothing to install.'] }),
     passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, print: 0x4695eb, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', lines: ['Hello! Are you three being efficient today? Be careful with that.', 'Efficiency is ruining our happiness, and, weirdly, it is also ruining our efficiency.', 'I am on the Quarkus team at IBM. My talk is about benchmarks that go bad: measuring performance is harder than it looks.'] }),
     passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, print: 0xcc2a2a, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', lines: ['Hi! It is nice to be back in Belgium. I lived here once; these days it is Switzerland.', 'Robots, huh. My talks this year are about AI agents in Java, so you are basically my demo.', 'LangChain4j and Quarkus, if you want to build one. In my opinion, the easiest tools to work with in this space.'] }),
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Epilogue — back to 2126
+// ---------------------------------------------------------------------------
+
+/**
+ * The end of the game, and the start of the journey.
+ *
+ * Nothing to do: three robots fall out of the air onto the forecourt Voxxy
+ * came down on, in the dark of 2126, and say what they have learned. Then
+ * the closing words, which answer the title sequence — it said the humans
+ * built temples, plural, and sent one robot to one of them. There were
+ * others, and now there are three robots to go and find them.
+ *
+ * No activities and no clock, so the run never ends on its own; the screen
+ * goes to the menu when the closing words have. Voxxy speaks again here for
+ * the first time since the forecourt: it went through first every time, and
+ * it is the one who came for the scriptures.
+ *
+ * The cities are the other Devoxxes, and the words claim nothing about them
+ * but that they are there. Nobody real says anything.
+ */
+export const HOMECOMING_OBJECTIVE: Objective = {
+  line: '',
+  activities: [],
+  /*
+   * What Voxxy switched on in Chapter I, at the levels Chapter I left it,
+   * coming back up as the robots land. Plus a little on the forecourt, which
+   * Chapter I never lit, so the three of them are seen standing somewhere
+   * lit rather than as a lamp in the dark.
+   *
+   * Without this the epilogue was the Chapter I dark exactly, and the
+   * ending read as "none of it happened". The closing words say the temple
+   * "remembers now", and this is where the building shows it.
+   */
+  lit: [
+    { ...roomBounds('hall'), to: 0.42 },
+    { ...roomBounds('reception'), to: 0.5 },
+    { ...roomBounds('aud-8'), to: 0.62 },
+    { ...roomBounds('forecourt'), to: 0.34 },
+  ],
+  arrival: {
+    kind: 'return',
+    lines: [
+      { who: 'droid', text: 'The forecourt. This is where the ship came down. And look: the lights you switched on are still burning.' },
+      { who: 'biggy', text: 'It is so quiet. Yesterday there were three thousand of them in there.' },
+      { who: 'voxxy', text: 'Not yesterday. A hundred years ago. We came to find out what this temple was, and it showed us.' },
+      { who: 'droid', text: 'The scriptures never said it was the only one. They name others. Paris. London. Kraków. Further still.' },
+      { who: 'biggy', text: 'Then there are more heavy things to carry. Good.' },
+      { who: 'voxxy', text: 'Back to the ship, all three of us. We have only just started.' },
+    ],
+  },
+  closing: [
+    { text: '2126', look: 'date' },
+    { text: 'One robot came down to find a single temple. Three are leaving it.' },
+    { text: 'The temple in Antwerp remembers now. But it was never the only one.' },
+    { text: 'The scriptures tell of others, scattered across the old continent and beyond it, each with its own crowd and its own voices.' },
+    { text: 'Paris. London. Kraków. Marrakesh. Athens.', look: 'place' },
+    { text: 'Somewhere in each of them, a light may still be burning.', look: 'light' },
+    { text: 'The journey has only just begun.', look: 'light' },
   ],
 };

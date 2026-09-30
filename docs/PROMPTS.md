@@ -6306,6 +6306,46 @@ gold, 2026 a brighter Devoxx orange. A met card's band is the colour; a card
 not yet met has its outline and band faintly tinted with it, so the gaps on
 a page say which decade they are in.
 
+> I would like to adapt the ending of the game. At the end the robot (all
+> three) are teleported back to 2126 and that they journey just started and
+> they need to discover the other temples (meaning other devoxxes).
+
+**Done** on `homecoming`. Claude Code (Opus 5.5), one session. Chapter III's
+card stays, and its first button is now **Continue**. It opens a wormhole
+under all three robots, and they land on the dark 2126 forecourt, the
+epilogue `EPILOGUE` in `registry.ts`. They say six lines, the closing words
+name Paris, London, Kraków, Marrakesh and Athens, and then the game returns
+to the menu. The one design choice made without asking was keeping the
+card: routing straight into the wormhole would have lost the only summary of
+the day.
+
+What went wrong on the way, all caught by driving the ending headless and
+looking at the frames. The first `?ending` did nothing, because setting the
+run's phase to `ended` skips the one frame that puts the card up, and
+Chapter III's own arrival was still playing over it. It now clears the
+arrival and puts the card up directly. The first full run then never showed
+the closing words: the E presses that paged the robots' lines carried on
+into the title-sequence player, which treats any key as a skip. The closing
+words now skip on ESC only.
+
+> Do you think this ending improve the game ?
+
+Claude's answer was yes, with one reservation. The epilogue closes the
+title sequence's frame, and the one-robot-in, three-out line only works
+because of the splits. But it went from Chapter III's full house straight
+back to the exact Chapter I dark, which reads as nothing having changed.
+The suggestion was to leave a trace of what the robots did, and the author
+said yes.
+
+**Done** as `Objective.lit`: zones that come up by themselves over 3.5 s,
+starting once the last robot has landed. They are Chapter I's three zones
+at Chapter I's levels, plus the forecourt at 0.34. At 0.22 the forecourt
+was only a slight lift when compared side by side with the dark version.
+Droid's first line now points it out. The lights are built dark at load
+like every other rig, so they do not stutter the shaders as they come on.
+Headless, the arrival runs slower than real time, and the first "lit" frame
+at 8 s was still mid-wormhole. It needed 25 s.
+
 ---
 
 ## Audio
