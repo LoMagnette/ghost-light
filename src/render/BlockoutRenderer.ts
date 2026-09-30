@@ -337,6 +337,8 @@ function tone(x: number, y: number, z: number): number {
 
 /** Most movers a chapter may have on one storey. Sized for capacity. */
 const MAX_MOVERS = 400;
+/** The light a projector throws on a screen: a cool white, whatever the room. */
+const PROJECTED = 0xdce8ff;
 /**
  * How many of the people who are nobody in particular wear their hair long,
  * and of those how many a skirt or a dress. A conference crowd drawn as one
@@ -2214,6 +2216,8 @@ export class BlockoutRenderer {
     const boxes: Box[] = [];
     // The glass front, kept apart: it is the one thing here that is not opaque.
     const glass: Box[] = [];
+    // Projection screens with a session on: drawn unlit. See the decor loop.
+    const litScreens: Box[] = [];
     const seams: number[] = [];
 
     for (const room of this.venue.rooms) {
@@ -2273,8 +2277,32 @@ export class BlockoutRenderer {
     // is that nothing collides with it.
     for (const piece of this.venue.decor) {
       if (piece.floor !== floor) continue;
+      // The other era's word on the keynote stage. See `Palette.wordmark`.
+      if (piece.wordmark !== undefined && piece.wordmark !== (this.palette.wordmark ?? 'devoxx')) continue;
       const { bounds } = piece;
       const datum = this.datumFor(floor, piece);
+      /*
+       * A projection screen, lit when its room has a session on and dark
+       * when it has none. It used to be the palette's screen colour either
+       * way, a pale grey a step off the walls, and in a review of the rooms
+       * it read as one more wall: the one thing that says "cinema" was not
+       * there. Lit, it is drawn unlit (full brightness, no shading) in a
+       * colour lifted toward white; dark, it is near black, which in
+       * Chapter I is every screen in the building.
+       */
+      if (piece.material === 'screen' && piece.room !== undefined) {
+        const on = this.crowd.activeRooms.includes(piece.room);
+        const top = Math.min(datum + piece.height, cutAt(datum));
+        (on ? litScreens : boxes).push({
+          bounds,
+          bottom: datum + (piece.base ?? 0),
+          top,
+          // A projector's light is cooler than the room's: a screen the colour
+          // of the walls, however bright, read as more wall.
+          colour: on ? mix(this.palette.screen, PROJECTED, 0.6) : shade(this.palette.screen, 0.22),
+        });
+        continue;
+      }
       // Signage high on an elevation starts above the cutaway plane, and
       // clamping its top to the cut while its bottom stayed put drew a
       // sliver of it upside down at the wrong height. Above the cut is the
@@ -2418,6 +2446,27 @@ export class BlockoutRenderer {
     // standing in front of it. Marks are 1, the contact shadow 2, the ring 3.
     ghost.renderOrder = 4;
     group.add(solid, ghost);
+
+    /*
+     * The lit screens, the same two passes so they fade with the walls in
+     * front of a robot, but glowing: an emissive colour carries them to full
+     * brightness whatever the key light is doing, which is what a projection
+     * does to a dark room.
+     */
+    if (litScreens.length > 0) {
+      // Enough to glow against the room and not so much that the bloom takes
+      // the stage with it: at 0.8 the screen was a white-out over the letters.
+      const litSolid = cutawayMaterial(this.cutaway, false);
+      const litGhost = cutawayMaterial(this.cutaway, true);
+      for (const m of [litSolid, litGhost]) m.emissive.setHex(shade(PROJECTED, 0.5));
+      const screens = instanceBoxes(litScreens, litSolid);
+      const screensGhost = new InstancedMesh(screens.geometry, litGhost, screens.count);
+      screensGhost.instanceMatrix = screens.instanceMatrix;
+      screensGhost.instanceColor = screens.instanceColor;
+      screensGhost.count = screens.count;
+      screensGhost.renderOrder = 4;
+      group.add(screens, screensGhost);
+    }
 
     if (seams.length) {
       const geometry = new BufferGeometry();

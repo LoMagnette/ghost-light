@@ -493,6 +493,9 @@ export class Crowd {
   /** How many have already walked out of each room. See `evacuate`. */
   private readonly gone = new Map<string, number>();
 
+  /** The rooms with a session on, for the renderer: their screens are lit. */
+  readonly activeRooms: readonly string[];
+
   constructor(
     venue: Venue,
     density: number,
@@ -501,6 +504,7 @@ export class Crowd {
     seed = 0x5eed,
   ) {
     this.venue = venue;
+    this.activeRooms = activeRooms;
     this.random = mulberry32(seed);
 
     // Before the density gate, on purpose. An attendant is not part of the

@@ -6265,6 +6265,25 @@ over 1000 real pixels on a high-density screen).
 copy, as the portraits are, banded visibly on Biggy, and lossless
 optimisation saved only 3%, so the files are as the author made them (about
 6 MB for the four). `public/photos/README.md` says 1500 × 1000 PNG.
+> Ok everything has been merged ... One optional thing left could review the
+> cinema rooms. / Ok fix 1 and 2
+
+Reviewed five rooms across the chapters; found (1) `#DEVOXX` on the keynote
+stages in December 2006, when the conference was JavaPolis until 2008, and
+(2) projection screens the colour of the walls, so a cinema room did not
+read as one. **Both fixed** on `cinema-rooms`:
+
+1. The venue builds both words once, `#DEVOXX` and `#JAVAPOLIS` (new J and
+   A glyphs), in the same length over ONE collision block, so nothing a
+   robot touches differs between chapters; `Palette.wordmark` says which is
+   drawn, and Chapter II's is `javapolis`.
+2. Screens are tagged with their room; in a room with a session on they
+   glow a cool projector white (emissive, through the cutaway material so
+   they still fade in front of a robot), and elsewhere, which is all of
+   Chapter I, they are near black. A first strength whited the stage out
+   under the bloom and was halved.
+
+`objectives`, `traverse`, `venue`, `crowd`, `physics` and `shoot` pass.
 
 ---
 
