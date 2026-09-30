@@ -62,6 +62,12 @@ BRAKE on the right, and in chapters II and III DROP on the left and ROBOT on
 top. SOUND and PAUSE are at the top. Tap a dialogue box to page it. Turning
 the phone upright pauses the game.
 
+**Install it** to play offline: *Add to Home Screen* from Safari's share
+menu on an iPhone, or *Install app* in Chrome on Android or a desktop. The
+first visit stores the whole game, about 17 MB, so it plays with no
+network after that. An installed game opens full screen and sideways, and
+a new version takes over the next time it is opened after being closed.
+
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.
 

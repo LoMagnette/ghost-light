@@ -6363,6 +6363,30 @@ the ending the next time a Devoxx moves; a country stays true.
 Headless, the arrival runs slower than real time, and the first "lit" frame
 at 8 s was still mid-wormhole. It needed 25 s.
 
+> Can we make the game a pwa and what do you need ? / let's do it. I would
+> try full offline. I will provide the icon in a bit let's do the rest now
+
+**Done** on `pwa`, after the submission. Claude Code (Opus 5.5), one session.
+`vite-plugin-pwa` writes the manifest and a service worker that stores the
+whole build on the first visit, about 16.6 MB and 46 files, source maps
+left out. Every icon is cut at build time from one square `public/icon.png`.
+A stand-in lamp is there until the author's icon arrives. The manifest asks
+for full screen and landscape, and `index.html` has the Apple tags, since
+an iPhone ignores the manifest's display mode and Safari there has no
+fullscreen API.
+
+What went wrong on the way. The icon source first sat in `src/icon/`, and
+the generator wrote its icons back into `src/icon/`: it places them at the
+source's path relative to `public/`. The plugin's default of `autoUpdate`
+was dropped for `prompt` with no prompt shown. `autoUpdate` swaps the worker
+under a running game, and the old build's hashed files (a track or portrait
+not loaded yet) go with the old cache. Now a new build waits until the game
+is closed. The first offline check failed on every file because the page
+was not yet controlled: without `clientsClaim` the first visit stays
+uncontrolled until a reload. `npm run offline` now serves a build from
+`/ghost-light/` as Pages does, shuts the server down, and fetches every
+emitted file and boots every chapter.
+
 ---
 
 ## The other tools
