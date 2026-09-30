@@ -100,7 +100,8 @@ II crossfades to its own, and mute survives a reload. Not yet built:
 everything synthesised, and the Chapter III tension layer.
 
 **The three tracks, 28 Sep.** Supplied by the author as `.mp3`, made with
-Suno (the files' own tags say so):
+Suno (the files' own tags say so). The author checked Suno's terms for shipping
+them in this MIT repository on 30 Sep:
 
 | File | Title | Length | At the loop |
 |---|---|---|---|

@@ -38,24 +38,24 @@ being in the game.
 
 | Person | Where | File | Agreed |
 |---|---|---|---|
-| Stephan Janssen | Chapter II, the host | `stephan-janssen.png` | ☐ |
-| James Gosling | Chapter II, a speaker in the corridor | `james-gosling.png` | ☐ |
-| Brian Goetz | Chapter II, a speaker in the corridor | `brian-goetz.png` | ☐ |
-| Chet Haase | Chapter II, a speaker in the corridor | `chet-haase.png` | ☐ |
-| Rod Johnson | Chapter II, a speaker in the corridor | `rod-johnson.png` | ☐ |
-| Bruno Souza | Chapter II, to meet in the corridor | `bruno-souza.png` | ☐ |
-| Guillaume Laforge | Chapter II, to meet in the corridor | `guillaume-laforge.png` | ☐ |
-| Antonio Goncalves | Chapter II, to meet in the corridor | `antonio-goncalves.png` | ☐ |
-| Dimitris | Chapter III, the photographer | `dimitris.png` | ☐ |
-| Josh Long | Chapter III, the shot list | `josh-long.png` | ☐ |
-| Venkat Subramaniam | Chapter III, the group photo | `venkat-subramaniam.png` | ☐ |
-| Tom Cools | Chapter III, to meet in the hall | `tom-cools.png` | ☐ |
-| Brian Vermeer | Chapter III, to meet in the hall | `brian-vermeer.png` | ☐ |
-| Kevin Dubois | Chapter III, to meet in the hall | `kevin-dubois.png` | ☐ |
-| Alexander Chatzizacharias | Chapter III, to meet in reception | `alexander-chatzizacharias.png` | ☐ |
-| Alina Yurenko | Chapter III, to meet upstairs | `alina-yurenko.png` | ☐ |
-| Ana-Maria Mihalceanu | Chapter III, to meet upstairs | `ana-maria-mihalceanu.png` | ☐ |
-| Holly Cummins | Chapter III, to meet upstairs | `holly-cummins.png` | ☐ |
+| Stephan Janssen | Chapter II, the host | `stephan-janssen.png` | ☑ |
+| James Gosling | Chapter II, a speaker in the corridor | `james-gosling.png` | ☑ |
+| Brian Goetz | Chapter II, a speaker in the corridor | `brian-goetz.png` | ☑ |
+| Chet Haase | Chapter II, a speaker in the corridor | `chet-haase.png` | ☑ |
+| Rod Johnson | Chapter II, a speaker in the corridor | `rod-johnson.png` | ☑ |
+| Bruno Souza | Chapter II, to meet in the corridor | `bruno-souza.png` | ☑ |
+| Guillaume Laforge | Chapter II, to meet in the corridor | `guillaume-laforge.png` | ☑ |
+| Antonio Goncalves | Chapter II, to meet in the corridor | `antonio-goncalves.png` | ☑ |
+| Dimitris | Chapter III, the photographer | `dimitris.png` | ☑ |
+| Josh Long | Chapter III, the shot list | `josh-long.png` | ☑ |
+| Venkat Subramaniam | Chapter III, the group photo | `venkat-subramaniam.png` | ☑ |
+| Tom Cools | Chapter III, to meet in the hall | `tom-cools.png` | ☑ |
+| Brian Vermeer | Chapter III, to meet in the hall | `brian-vermeer.png` | ☑ |
+| Kevin Dubois | Chapter III, to meet in the hall | `kevin-dubois.png` | ☑ |
+| Alexander Chatzizacharias | Chapter III, to meet in reception | `alexander-chatzizacharias.png` | ☑ |
+| Alina Yurenko | Chapter III, to meet upstairs | `alina-yurenko.png` | ☑ |
+| Ana-Maria Mihalceanu | Chapter III, to meet upstairs | `ana-maria-mihalceanu.png` | ☑ |
+| Holly Cummins | Chapter III, to meet upstairs | `holly-cummins.png` | ☑ |
 
 `josh-long.png` here is his face; the print of him with Biggy is a different
 file, `public/photos/josh-long.png`.
