@@ -14,14 +14,16 @@ export default defineConfig({
     // at the venue and opens Chapter III on the train must not find its
     // music or its portraits missing.
     VitePWA({
-      // A new build is fetched in the background and WAITS: it takes over
-      // once every window of the game is closed, so the next launch is the
-      // new one. 'autoUpdate' would switch workers under a running game,
-      // and the old build's hashed files (a chapter's track, a portrait not
-      // shown yet) go with the old precache. 'prompt' only names the
-      // waiting; there is no prompt to answer.
+      // A new build is fetched in the background and WAITS, and
+      // `src/app/update.ts` tells the player: UPDATE takes it at once, and
+      // otherwise it takes over once every window of the game is closed.
+      // 'autoUpdate' would switch workers under a running game, and the old
+      // build's hashed files (a chapter's track, a portrait not shown yet)
+      // go with the old precache.
       registerType: 'prompt',
-      injectRegister: 'script-defer',
+      // Registered by update.ts through `virtual:pwa-register`, not by an
+      // injected script, so the notice hears about the waiting worker.
+      injectRegister: false,
       pwaAssets: { config: true, overrideManifestIcons: true },
       manifest: {
         id: './',
