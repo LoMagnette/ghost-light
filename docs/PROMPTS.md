@@ -9,6 +9,17 @@ time is less convincing than an honest account of what failed. Keep this file
 current as you go; reconstructing it on day twelve produces a worse document
 and wastes a day.
 
+## The tools at a glance
+
+| Tool | What it was used for |
+|---|---|
+| **Claude Opus 5, in Claude Code** | Design and nearly all the code, working from the specs (`SPEC.md`, `docs/MECHANICS.md`, `CLAUDE.md`) written first; the verification harnesses; the docs. Most of this file |
+| **Context7**, as an MCP server for Claude | Current three.js and Vite documentation, so Claude worked from the docs rather than from memory |
+| **Codex**, driving a browser | The playtester: played the live build as a stranger and reported what it fumbled. Its rounds are the "test player" notes below |
+| **ChatGPT's image model** | The painted portraits of the eighteen real people |
+| **Nano Banana** | The four photographs on the photographer's shot list |
+| **Suno** | The three music tracks, one per chapter. Every sound effect is synthesised in code |
+
 ## Format
 
 Append an entry per meaningful piece of directed work.
@@ -6351,6 +6362,85 @@ France, the United Kingdom, Poland, Morocco and Greece. A city would date
 the ending the next time a Devoxx moves; a country stays true.
 Headless, the arrival runs slower than real time, and the first "lit" frame
 at 8 s was still mid-wormhole. It needed 25 s.
+
+---
+
+## The other tools
+
+### Context7 — the three.js documentation, not the model's memory
+**Tool:** Context7, as an MCP server for Claude Code
+**Date:** 2026-09-18 onwards
+
+Set up by the author so Claude could look up the libraries it was writing
+against. It mattered most on 19 Sep, when the renderer moved from Phaser 4 to
+three.js 0.186: three.js changes between releases (physically scaled lights,
+colour management), and code written from a model's memory of an older
+version compiles and then looks wrong. The two three.js facts in `CLAUDE.md`
+that cost time, lights reflecting `intensity / π` and `onBeforeCompile` not
+changing the program cache key, are the kind of thing the docs answer and
+memory does not.
+
+### Codex — a playtester who had never seen the game
+**Tool:** Codex, with a browser
+**Date:** 2026-09-29
+
+**Prompt:** play the live build as a first-time player, with no explanation,
+and report what was confusing, ranked by severity with a suggested fix.
+
+**Iterations:** three rounds: five rows, five rows, then the phone at
+844 × 390. They are the "test user" / "test player" notes further up, quoted
+as they came.
+
+**What it found:** things Claude could not, because Claude built the game and
+knew where everything was. The dialogue waited on E while the tester pressed
+SPACE; identical markers could not be matched to the task list; the control
+hints were unreadable in the dark; Chapter II's first conversation stayed the
+highlighted task while two rooms emptied; phone text was too small and the
+touch stick invisible until dragged.
+
+**What happened with it:** Claude fixed each row on its own branch (#47–#57,
+#64, #66). The author decided which rows to take as written and which to
+reshape. For Chapter II's first conversation it offered two fixes, a
+protected tutorial phase or letting urgent repairs take over; the second was
+taken, so a breakdown takes the NEXT and the clock never stops for a tutorial.
+Codex could press keys and read the screen but could not say whether a robot
+felt heavy, so that stayed with the author.
+
+### ChatGPT image — the portraits
+**Tool:** ChatGPT's image model
+**Date:** 2026-09-29 to 2026-09-30
+
+**Brief:** one treatment for every face, settled with Claude first (the
+"design style for the portrait" question above): lit by the ghost light. A
+face out of near-black, one warm key light from the side, a rim in the
+person's own colour, head and shoulders, big shapes with no fine detail at
+92 px. For the eighteen real people it worked from their photographs, and each
+of them agreed to appear. The cat and the dog in the same light.
+
+**Iterations:** at least two rounds; the superseded drafts are kept in the
+git-ignored `portrait-sources/superseded/`.
+
+**Fixed by hand:** the originals arrived at 1254 × 1254 and 1.3–1.9 MB each,
+about 30 MB in the download. `tools/portraits.py` cuts them to 512 × 512 and
+256 colours, 3.2 MB in all. The dithering does not show in the painted style.
+Two draft files had misspelled names and were moved aside rather than wired
+in. The in-game looks of the people to meet (shirt, hair, beard, glasses)
+were then set from the portraits, so the face in the dialogue box and the
+figure in the hall agree.
+
+### Nano Banana — the photographer's prints
+**Tool:** Nano Banana (Google Gemini)
+**Date:** 2026-09-28 to 2026-09-30
+
+**Brief:** the four photographs on Chapter III's shot list (Room 8, BeJUG,
+Josh Long with Biggy, the group with Venkat), each with **exactly one** robot
+in the frame. The activity that earns a print can only be done by that robot,
+so the picture never shows a machine the player did not bring.
+
+**Fixed by hand:** the game was built to work with no pictures at all, drawing
+its own frame and caption, so the timing and interruption were judged before
+the art existed. The prints went in as the author's 1500 × 1000 PNGs, all
+shown at the same 3:2 frame.
 
 ---
 
