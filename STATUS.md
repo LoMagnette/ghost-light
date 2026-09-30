@@ -27,7 +27,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Collections | ✅ | One souvenir album on `souvenir-album`: prints (#40, #42, #45), the who's who with portraits and bios (#59, #68), and stickers from Chapter III's stands, one tab each |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. Agreement boxes still to tick |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); on `cinema-rooms`, `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Phone | 🔄 | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). All checked in a headless 844 × 390 browser; still to try on a real phone |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |

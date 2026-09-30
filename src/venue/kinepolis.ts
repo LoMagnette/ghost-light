@@ -1533,7 +1533,7 @@ function auditoriums(): {
         riser: RISER,
       });
 
-      decor.push(projectionScreen(bounds, side, rake));
+      decor.push(projectionScreen(bounds, side, rake, `aud-${aud.number}`));
 
       const fitOut = seatingFor(bounds, side, doorSide);
       solids.push(...fitOut.banks);
@@ -1708,7 +1708,7 @@ const SCREEN_RISE = 2;
 /** Tallest a screen is drawn above its stage, whatever the room. */
 const SCREEN_MAX_HEIGHT = 7.2;
 
-function projectionScreen(room: Rect, side: -1 | 1, rake: number): Decor {
+function projectionScreen(room: Rect, side: -1 | 1, rake: number, id: string): Decor {
   const x = side === -1 ? room.x + SCREEN_OFFSET : room.x + room.w - SCREEN_OFFSET - SCREEN_THICKNESS;
   const top =
     SCREEN_SILL +
@@ -1719,6 +1719,7 @@ function projectionScreen(room: Rect, side: -1 | 1, rake: number): Decor {
     base: SCREEN_SILL,
     height: top,
     material: 'screen',
+    room: id,
   };
 }
 
@@ -1943,13 +1944,16 @@ function seatingFor(
  * column grid, and it is the object that tells a judge which conference this
  * is without a line of text on the HUD.
  *
- * ANACHRONISM, deliberate and flagged: the venue is defined once and the
- * chapters may only re-dress it, so the letters stand in Chapter II as well,
- * where the conference was still called JavaPolis. The alternative is
- * chapter-dependent geometry, which rule 2 forbids and which would cost far
- * more than this costs.
+ * And `#JAVAPOLIS` in the same place, for Chapter II: the conference was
+ * JavaPolis until 2008 (the author, 30 Sep, after this was flagged as the
+ * one anachronism in a chapter whose every line is now sourced). The venue
+ * still defines the building once: both words are built here, the same
+ * length, over one block a robot meets, and a chapter's palette says which
+ * of the two is drawn (`Palette.wordmark`). Nothing a robot can touch
+ * changes between chapters.
  */
 const SIGN_TEXT = '#DEVOXX';
+const SIGN_TEXT_JAVAPOLIS = '#JAVAPOLIS';
 
 /** Rooms 5 and 8 — the two biggest, and the only two with a keynote stage. */
 const SIGNED_ROOMS = new Set([5, 8]);
@@ -2069,6 +2073,16 @@ function glyph(character: string): Bar[] {
         { u0: 1 - su, u1: 1, v0: 0, v1: 1 },
         ...diagonal(su, 1, 1 - su, 0, 9),
       ];
+    // J and A, for `#JAVAPOLIS` on the early years' stage.
+    case 'J':
+      return [
+        { u0: 0.72, u1: 0.72 + su, v0: sv, v1: 1 },
+        { u0: 0.3, u1: 0.95, v0: 1 - sv, v1: 1 },
+        { u0: 0.08, u1: 0.72 + su, v0: 0, v1: sv },
+        { u0: 0.08, u1: 0.08 + su, v0: sv, v1: 0.34 },
+      ];
+    case 'A':
+      return [...diagonal(0.04, 0, 0.5, 1, 9), ...diagonal(0.5, 1, 0.96, 0, 9), { u0: 0.26, u1: 0.74, v0: 0.3, v1: 0.3 + sv }];
     case 'P':
       return [
         { u0: 0, u1: su, v0: 0, v1: 1 },
@@ -2340,8 +2354,8 @@ function devoxxSign(room: Rect, side: -1 | 1): { solids: Obstacle[]; decor: Deco
   const solids: Obstacle[] = [];
   const decor: Decor[] = [];
 
-  const glyphs = [...SIGN_TEXT];
-  const length = glyphs.length * GLYPH_WIDTH + (glyphs.length - 1) * GLYPH_GAP;
+  // The length of `#DEVOXX`, which both words share. See `SIGN_TEXT_JAVAPOLIS`.
+  const length = SIGN_TEXT.length * GLYPH_WIDTH + (SIGN_TEXT.length - 1) * GLYPH_GAP;
 
   // The screen end of the room, a metre off the wall, standing on the 2 m of
   // stage the seating leaves in front of it.
@@ -2367,31 +2381,41 @@ function devoxxSign(room: Rect, side: -1 | 1): { solids: Obstacle[]; decor: Deco
   const run = -1;
   const start = room.y + room.h / 2 - (run * length) / 2;
 
-  glyphs.forEach((character, index) => {
-    const at = start + run * (index * (GLYPH_WIDTH + GLYPH_GAP));
-    const uOf = (u: number): number => at + run * u * GLYPH_WIDTH;
-    // The last X is the one in the accent colour — the X of the wordmark.
-    const material = index === glyphs.length - 1 ? 'signAccent' : 'sign';
-
-    solids.push({
-      floor: 1,
-      bounds: rect(x, Math.min(at, uOf(1)), SIGN_DEPTH, GLYPH_WIDTH),
-      height: GLYPH_HEIGHT,
-      hidden: true,
-    });
-
-    for (const bar of glyph(character)) {
-      const y0 = Math.min(uOf(bar.u0), uOf(bar.u1));
-      const y1 = Math.max(uOf(bar.u0), uOf(bar.u1));
-      decor.push({
-        floor: 1,
-        bounds: rect(x, y0, SIGN_DEPTH, y1 - y0),
-        base: bar.v0 * GLYPH_HEIGHT,
-        height: bar.v1 * GLYPH_HEIGHT,
-        material,
-      });
-    }
+  // One block for the whole word, the same for both: what a robot meets on
+  // this stage does not depend on which name is on it.
+  solids.push({
+    floor: 1,
+    bounds: rect(x, Math.min(start, start + run * length), SIGN_DEPTH, length),
+    height: GLYPH_HEIGHT,
+    hidden: true,
   });
+
+  for (const [text, wordmark] of [[SIGN_TEXT, 'devoxx'], [SIGN_TEXT_JAVAPOLIS, 'javapolis']] as const) {
+    const glyphs = [...text];
+    // A longer word, smaller letters, in the same length.
+    const k = length / (glyphs.length * GLYPH_WIDTH + (glyphs.length - 1) * GLYPH_GAP);
+    const w = GLYPH_WIDTH * k;
+    const h = GLYPH_HEIGHT * Math.min(1, k * 1.1);
+    glyphs.forEach((character, index) => {
+      const at = start + run * (index * (w + GLYPH_GAP * k));
+      const uOf = (u: number): number => at + run * u * w;
+      // `#DEVOXX`'s last X is the one in the accent colour, the X of the
+      // wordmark. `#JAVAPOLIS` is all one colour, as it was.
+      const material = wordmark === 'devoxx' && index === glyphs.length - 1 ? 'signAccent' : 'sign';
+      for (const bar of glyph(character)) {
+        const y0 = Math.min(uOf(bar.u0), uOf(bar.u1));
+        const y1 = Math.max(uOf(bar.u0), uOf(bar.u1));
+        decor.push({
+          floor: 1,
+          bounds: rect(x, y0, SIGN_DEPTH, y1 - y0),
+          base: bar.v0 * h,
+          height: bar.v1 * h,
+          material,
+          wordmark,
+        });
+      }
+    });
+  }
 
   return { solids, decor };
 }

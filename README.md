@@ -39,7 +39,7 @@ no account, no build step to run by hand.
 | `TAB` | Switch robot *(chapters II and III)* |
 | `SPACE` | Put down what you are carrying *(chapters II and III)* |
 | `1` `2` `3` | Take control of a robot, where more than one is present |
-| `ESC` | Pause: Resume, Album, Restart, or Leave run (the last two lose the run) |
+| `ESC` | Pause: Resume, Collectables, Restart, or Leave run (the last two lose the run) |
 | `R` | Restart the chapter (asks first) |
 | `M` | Sound on or off |
 | `F1` | Debug readout: mass, speed, momentum, stopping distance |
@@ -49,8 +49,8 @@ On the menu, and on the card at the end of a chapter:
 | Key | Action |
 |---|---|
 | `←` `→`, `ENTER` | Choose a chapter, and begin. Start with Chapter I |
-| `P` | The album: prints, the who's who and stickers, one tab each (`1` `2` `3` turn the tab) |
-| `C` | The album, open on the who's who |
+| `P` | Collectables: prints, the who's who and stickers, one tab each (`1` `2` `3` turn the tab) |
+| `C` | Collectables, open on the who's who |
 | `I` | Replay the title sequence |
 | `G` | Graphics: high (shadows, mood) or low (flat, fastest) |
 | `L` | Movement lab: all three robots in one lit hall |
@@ -91,7 +91,7 @@ The card starts with that one job and opens out once you act. A finished job
 says what it did ("✓ Concourse power restored"); anybody you can talk to
 offers it ("[E] Talk to Stephan Janssen") once you are in range.
 
-**The album**, kept in the browser between visits, in three tabs: **prints**,
+**Collectables**, kept in the browser between visits, in three tabs: **prints**,
 one for every photograph earned; the **who's who**, a card for each of the 23
 people in the building, a silhouette until you have met them, and then their
 portrait, who they are, and the year you met them; and **stickers**, one from

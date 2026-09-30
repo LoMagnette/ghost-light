@@ -215,7 +215,7 @@ export class MenuScreen implements Screen {
     // opens it on the people, where it used to open the who's who.
     const showAlbum = (): void => openSouvenirs(game.ui, touch, 'prints');
     const showCast = (): void => openSouvenirs(game.ui, touch, 'people');
-    option('P', showAlbum).append('Album ', dim(souvenirTotal()));
+    option('P', showAlbum).append('Collectables ', dim(souvenirTotal()));
     option('I', () => this.playIntro(game)).append('Intro');
 
     /*

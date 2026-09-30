@@ -272,6 +272,14 @@ export interface Decor {
    * the flight, have no surface of their own, and leave this unset.
    */
   linkId?: string;
+  /**
+   * For a word that changed with the conference's name: which name. Drawn
+   * only in a chapter whose palette asks for it (`Palette.wordmark`). The
+   * building keeps both words, once, in the same place.
+   */
+  wordmark?: 'devoxx' | 'javapolis';
+  /** The room a projection screen belongs to, so it is lit when a session is on. */
+  room?: string;
 }
 
 /** A walkable link between floors. Robots climb it; Biggy climbs it slowly. */

@@ -69,7 +69,7 @@ export function tabHeader(tabs: Tabs, touch: boolean, title: number, turn: (tab:
   });
   return [
     el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
-    el('div', { font: `${title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 0' }, 'Album'),
+    el('div', { font: `${title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 0' }, 'Collectables'),
     row,
   ];
 }

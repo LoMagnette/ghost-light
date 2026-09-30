@@ -164,6 +164,8 @@ export const CHAPTER_TWO: Chapter = {
     // A trestle and a green baize, before anyone thought to brand the table.
     desk: 0x5d5236,
     sign: 0xefe2cc,
+    // JavaPolis in 2006: it was renamed Devoxx in 2008.
+    wordmark: 'javapolis',
     // Painted board under tungsten, and still the darkest thing on the wall.
     signPlate: 0x3b2c1d,
     // Tungsten on the same cloth. The screens of this era were smaller and

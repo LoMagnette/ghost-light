@@ -63,6 +63,12 @@ export interface Palette {
   /** The body of the letters on the keynote stages. */
   sign: number;
   /**
+   * The word on the keynote stages: `#DEVOXX`, or in the early years
+   * `#JAVAPOLIS`, the conference's name until 2008. How the era is dressed,
+   * like its colours; the letters' footprint is the same either way.
+   */
+  wordmark?: 'devoxx' | 'javapolis';
+  /**
    * The plate a sign's characters are mounted on. DARK, in every era.
    *
    * Not a taste: the key light comes from almost overhead, so a face
