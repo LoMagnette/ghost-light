@@ -16,6 +16,7 @@
     "traverse": "node tools/traverse.mjs",
     "objectives": "node tools/objectives.mjs",
     "crowd": "node tools/crowd.mjs",
+    "offline": "VITE_BASE=/ghost-light/ vite build --outDir dist-offline && node tools/offline.mjs",
     "peek": "node tools/peek.mjs"
   },
   "dependencies": {
