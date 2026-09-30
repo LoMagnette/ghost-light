@@ -33,7 +33,7 @@ import {
 } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
-import { ObjectiveRun, roomName, type ActivityState, type Exit, type Landing, type Return, type Split } from '@/core/Objective';
+import { ObjectiveRun, roomName, STILL, type ActivityState, type Exit, type Landing, type Return, type Split } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
@@ -352,7 +352,20 @@ export class ChapterScreen implements Screen {
   private talkPrompt!: HTMLElement;
   /** What the prompt last drew, so it is rebuilt only on a change. See `showPrompt`. */
   private promptKey = '';
-  /** Edge-triggered, exactly like `dropRequested`. */
+  /** "Hold still", over the robot, while a job that takes time is under way. See `updateWait`. */
+  private waitChip!: HTMLElement;
+  private waitHead!: HTMLElement;
+  private waitLabel!: HTMLElement;
+  private waitFill!: HTMLElement;
+  private waitLeft!: HTMLElement;
+  /**
+   * E, the one action key, this frame only: talk, or put down.
+   *
+   * An edge rather than a held state: a held key would page through a whole
+   * conversation in a fifth of a second, or drop and re-take a load sixty
+   * times a second. What it does is decided where it is spent; see
+   * `interactDrops`.
+   */
   private talkRequested = false;
   /**
    * How much of the current line has been typed out, in characters.
@@ -415,13 +428,6 @@ export class ChapterScreen implements Screen {
   private run!: ObjectiveRun;
   /** The people. Empty in Chapter I, and that is the whole of Chapter I. */
   private crowd!: Crowd;
-  /**
-   * Set by SPACE and cleared by the objective the same frame.
-   *
-   * An edge rather than a held state: putting something down is a decision,
-   * and a held key would drop and re-take it sixty times a second.
-   */
-  private dropRequested = false;
   /** Seconds left on the current notification. */
   private toastFor = 0;
   /** The photograph on screen, and how long it has left. */
@@ -693,12 +699,12 @@ export class ChapterScreen implements Screen {
       else this.setPaused(true, 1);
     });
     // SPACE and ENTER turn a page too, while a box is up: they are what a
-    // player who has not read the box presses first. Otherwise SPACE drops.
+    // player who has not read the box presses first. SPACE was DROP as well
+    // until E took that over; see `interactDrops`.
     const reading = (): boolean => this.story !== undefined || this.talkBox.style.display !== 'none';
     game.keyboard.on('Space', () => {
       if (this.paused) this.choosePause();
       else if (reading()) this.talkRequested = true;
-      else this.dropRequested = true;
     });
     game.keyboard.on('Enter', () => {
       if (this.paused) this.choosePause();
@@ -717,8 +723,9 @@ export class ChapterScreen implements Screen {
         if (this.paused) this.movePause(step);
       });
     }
-    // E rather than SPACE or ENTER: SPACE is already the drop, and ENTER is
-    // the one key a browser is liable to hand to something else on the page.
+    // E, INTERACT on a phone: talk to whoever is in range, and with nobody
+    // in range put down what the robot is carrying. Not ENTER, the one key
+    // a browser is liable to hand to something else on the page.
     game.keyboard.on('KeyE', () => {
       if (this.paused) this.choosePause();
       else this.talkRequested = true;
@@ -840,7 +847,8 @@ export class ChapterScreen implements Screen {
       }
       this.driveSwarm();
       // A held frame still pages a conversation: that is a press, not time.
-      this.run.update(step, this.actors, this.dropRequested, this.talkRequested);
+      const drop = this.interactDrops();
+      this.run.update(step, this.actors, drop, this.talkRequested && !drop);
       this.evaluated = true;
       this.consumeObjective();
       this.hearObjective();
@@ -854,7 +862,6 @@ export class ChapterScreen implements Screen {
         else this.showEndCard();
       }
     }
-    this.dropRequested = false;
     this.talkRequested = false;
     this.showSessions(dt);
     if (this.story) this.updateStory(dt, talkPressed);
@@ -887,6 +894,7 @@ export class ChapterScreen implements Screen {
     this.blockout.setMarkers(markers, this.floor);
     this.blockout.setProps(this.props(), this.floor);
     this.pointAt(markers);
+    this.updateWait();
     this.blockout.moveLamp(this.controlled.body.x, this.controlled.body.y, this.controlled.body.z);
     this.blockout.focus(this.cameraX, this.cameraY, this.cameraZ);
     // One robot needs no telling apart; two or three do.
@@ -1041,7 +1049,6 @@ export class ChapterScreen implements Screen {
     // the tap that closed the menu, is the pause leaking.
     Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
     this.talkRequested = false;
-    this.dropRequested = false;
   }
 
   private movePause(step: number): void {
@@ -2139,8 +2146,14 @@ export class ChapterScreen implements Screen {
     // What a badge must not land on: the HUD's panels, and the badges already placed.
     const taken = this.hudBoxes();
     let used = 0;
+    // The job being waited on has the chip over the robot, which says more
+    // than its badge would, and the badge sat under the chip. Still chosen
+    // above, so NEXT stays where it was; just not drawn.
+    const waiting = this.waitShown();
+    const busy = waiting ? cardKey(waiting.activity) : undefined;
     for (const c of picked) {
       if (used >= pool.length) break;
+      if (c.m.key === busy) continue;
       const m = c.m;
       const isNext = m.key === next;
       const sameFloor = m.floor === this.floor;
@@ -2772,11 +2785,12 @@ export class ChapterScreen implements Screen {
     // engine and none of them is true of the chapter, and a control list with
     // three dead keys on it is how a player decides the game is broken.
     const talks = chapter.objective.activities.some((a) => a.kind === 'talk');
+    const hauls = chapter.objective.activities.some((a) => a.kind === 'haul');
     const keys: [string, string][] = [
       ['WASD', 'move'],
       ['SHIFT', 'brake'],
-      ...(chapter.cast.length > 1 ? ([['TAB', 'robot'], ['SPACE', 'drop']] as [string, string][]) : []),
-      ...(talks ? ([['E', 'talk']] as [string, string][]) : []),
+      ...(chapter.cast.length > 1 ? ([['TAB', 'robot']] as [string, string][]) : []),
+      ...(talks || hauls ? ([['E', 'interact']] as [string, string][]) : []),
       ['R', 'restart'],
       ['M', 'sound'],
       ['ESC', 'pause'],
@@ -2906,6 +2920,34 @@ export class ChapterScreen implements Screen {
     this.talkPrompt.classList.add('touch-zoom');
     game.ui.append(this.talkPrompt);
 
+    // Over the driven robot's head, moved there every frame. See `updateWait`.
+    this.waitChip = el('div', {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      display: 'none',
+      minWidth: '150px',
+      padding: '7px 11px 8px',
+      background: 'rgba(8, 11, 14, 0.97)',
+      border: `1px solid ${css(chapter.palette.accent)}`,
+      borderRadius: '4px',
+      color: '#eef2f4',
+      font: `13px ${SANS}`,
+      pointerEvents: 'none',
+      whiteSpace: 'nowrap',
+      zIndex: '4',
+    });
+    const top = el('div', { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'baseline' });
+    this.waitHead = el('span', { font: `bold 11px ${MONO}`, letterSpacing: '0.1em', color: css(chapter.palette.accent) });
+    this.waitLeft = el('span', { font: `11px ${MONO}`, color: '#aab2b8' });
+    top.append(this.waitHead, this.waitLeft);
+    this.waitLabel = el('div', { margin: '3px 0 6px' });
+    const track = el('div', { height: '5px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.14)', overflow: 'hidden' });
+    this.waitFill = el('div', { height: '100%', width: '0%', background: css(chapter.palette.accent) });
+    track.append(this.waitFill);
+    this.waitChip.append(top, this.waitLabel, track);
+    game.ui.append(this.waitChip);
+
     this.debugText = label(0, 24, {
       font: `12px ${MONO}`,
       color: '#6f777c',
@@ -2933,6 +2975,89 @@ export class ChapterScreen implements Screen {
    * with three machines in the building, "somebody is standing in the zone"
    * would open a box about a conversation the player is not watching.
    */
+  /**
+   * "Hold still": a job that is done by staying, said while it is being done.
+   *
+   * A dwell or an attend has no key: the robot stands in the zone and the
+   * job fills. The only sign of it was a percentage on the card, in the
+   * corner, and the author, 30 Sep: the long ones, the selfie with Dimitris
+   * and the projector bulb, "should have a clear indicator that the user
+   * have to wait". So a chip over the driven robot's head says what to do,
+   * HOLD STILL, STOP HERE while it is still rolling, STAY for a talk, or
+   * WAITING for the group photo's missing robots, with a bar and the
+   * seconds left. Over the robot because that is where the eye is while
+   * driving; the card stays as it was.
+   */
+  private updateWait(): void {
+    const found = this.waitShown();
+    if (!found) {
+      this.waitChip.style.display = 'none';
+      return;
+    }
+    const { state, activity } = found;
+    const body = this.controlled.body;
+    const left = Math.max(0, (1 - state.progress) * activity.seconds);
+    let head: string;
+    let note = `${left.toFixed(1)} s`;
+    if (activity.kind === 'attend') {
+      head = 'STAY';
+    } else if (activity.everybody) {
+      const there = this.actors.filter((a) => inZone(activity.at, a.floor, a.body.x, a.body.y)).length;
+      head = there < this.actors.length ? 'WAITING FOR EVERYONE' : 'HOLD STILL';
+      if (there < this.actors.length) note = `${there} of ${this.actors.length} here`;
+    } else {
+      head = body.speed < STILL ? 'HOLD STILL' : 'STOP HERE';
+    }
+    this.waitHead.textContent = head;
+    this.waitLeft.textContent = note;
+    this.waitLabel.textContent = activity.label;
+    this.waitFill.style.width = `${(Math.min(1, state.progress) * 100).toFixed(1)}%`;
+
+    // Above the head, in stage pixels, like a marker's badge.
+    const v = new Vector3(body.x, body.y, body.z + body.spec.height + 0.5).project(this.isoCamera);
+    const x = ((v.x + 1) / 2) * VIEW_WIDTH;
+    const y = ((1 - v.y) / 2) * VIEW_HEIGHT;
+    // Drawn bigger on a phone, like the HUD, from the bottom middle so it
+    // grows up and away from the robot rather than over it.
+    const zoom = this.touch ? Number(document.documentElement.style.getPropertyValue('--hud-zoom')) || 1.3 : 1;
+    this.waitChip.style.display = 'block';
+    this.waitChip.style.transformOrigin = '50% 100%';
+    this.waitChip.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%) scale(${zoom})`;
+  }
+
+  /** `waitHere`, when nothing else is on screen that the chip would sit on or talk over. */
+  private waitShown(): ReturnType<ChapterScreen['waitHere']> {
+    if (this.paused || this.story || this.closing || this.endCard || this.talkBox.style.display !== 'none') return undefined;
+    return this.waitHere();
+  }
+
+  /** The job the driven robot is doing by being where it is, if any. */
+  private waitHere(): { state: ActivityState; activity: Extract<Activity, { kind: 'dwell' | 'attend' }> } | undefined {
+    const robot = this.controlled;
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if ((a.kind !== 'dwell' && a.kind !== 'attend') || state.status !== 'open') continue;
+      if (!admits(a, robot.body.spec) || !inZone(a.at, robot.floor, robot.body.x, robot.body.y)) continue;
+      return { state, activity: a };
+    }
+    return undefined;
+  }
+
+  /**
+   * Whether this frame's E puts a load down rather than talking.
+   *
+   * DROP had a key and a button of its own, and the author never used
+   * either in a whole playtest: picking up and delivering are automatic, so
+   * putting something down part way is rare. So it is E's second meaning,
+   * and talking always wins. A robot in range of a conversation, or with a
+   * box up, talks; only a robot with nobody to talk to and something on its
+   * back puts it down.
+   */
+  private interactDrops(): boolean {
+    if (!this.talkRequested || this.controlled.body.payload === 0) return false;
+    return this.talkHere() === undefined && this.talkBox.style.display === 'none';
+  }
+
   private talkHere(): { state: ActivityState; activity: TalkActivity } | undefined {
     const body = this.controlled.body;
     for (const state of this.run.states) {
@@ -3006,7 +3131,7 @@ export class ChapterScreen implements Screen {
           color: here ? accent : '#7d868b',
           font: `bold 13px ${MONO}`,
         },
-        this.touch ? 'TALK' : 'E',
+        this.touch ? 'INTERACT' : 'E',
       ),
       el('span', {}, here ? `Talk to ${who}` : `Closer to talk to ${who}`),
     );

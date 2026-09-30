@@ -6411,6 +6411,39 @@ fixed to the window above them. `npm run offline` now also serves a changed
 `sw.js`, waits for the notice, presses UPDATE, and checks the new worker is
 in charge.
 
+> Ok because I don't think the drop button and even command on a desktop are
+> that useful. In my playtest I never really used it. I think we could merge
+> it with the talk into an interact button
+
+**Done** on `interact`. E, and INTERACT on a phone, talks when someone is in
+range or a box is up. With nobody to talk to, it puts down what the driven
+robot is carrying, so talking always wins. SPACE only pages boxes and picks
+in the pause menu now. The phone's DROP button is gone, and its slot in the
+diamond is left empty so the other three stay where the thumb learned them.
+
+**What headless testing found:** putting something down had never worked.
+Picking up is automatic, and the robot that put a thing down was still
+standing within reach of it with empty hands. So on the next frame it took
+it back: "Put the coffee down", then "Voxxy has the coffee" half a second
+later. That is a likely reason the author never used DROP. `ObjectiveRun`
+now remembers who put a thing down and does not hand it back to them until
+they have moved out of reach. The same robot can still pick it up again
+after that.
+
+> the long objective such as the picture with dimitris and fixing the
+> projector should have a clear indicator that the user have to wait
+
+**Done** on `wait-indicator`. Dwell and attend jobs have no key: the robot
+stands in the zone and the job fills. Until now the only sign was a
+percentage on the card, in the corner. Now a chip over the driven robot's
+head says what to do: HOLD STILL, STOP HERE while it is still rolling, STAY
+for a talk, or WAITING FOR EVERYONE with how many robots are there for the
+group photo. It has the job's name, a bar, and the seconds left. The job's
+own badge is not drawn under it but keeps its place as NEXT. **Checked
+headless:** the Room 5 talk on desktop and at phone size, and the badge
+scan's countdown logged from inside the page. Its 2 s ran out before a
+headless screenshot could land.
+
 ---
 
 ## The other tools
