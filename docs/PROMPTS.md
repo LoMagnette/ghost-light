@@ -6240,6 +6240,18 @@ and shadow. Originals go in the git-ignored `sticker-sources/`;
 `tools/stickers.py` fits each onto a transparent square and writes a
 384 × 384 copy. Checked with a throwaway test sticker, then removed.
 
+> Can you add a description for each stickers. You can rephrase the
+> description I provide here after: (eight notes, stand-1 … stand-8)
+
+**Done** on `sticker-files`: the author's eight stickers (added to
+`src/stickers/`, 384 × 384 transparent PNG) are committed, each with a line
+from the author's notes, lightly rephrased and shown under it once
+collected: a speaker's dog sticker; a 2023 company sticker; the original
+BeJUG logo, a coffee grinder; an unreleased black sheep with a nod to The
+Terminator; a 2024 stand giveaway; the BeJUG logo today; a 2025 nod to The
+Matrix and its agents; the brand-new 2023 BeJUG logo. Blanks still say only
+where to find them.
+
 ---
 
 ## Audio
