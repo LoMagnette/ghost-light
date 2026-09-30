@@ -6397,6 +6397,20 @@ the way:** the generator's default PNG quality of 60 quantised the icons to a
 palette and banded the glow under the head. That only showed in a preview of
 the iPhone icon cropped the way the home screen crops it.
 
+> Can we add a update notification to notify the user there's a new version
+> and allow him to update directly ?
+
+**Done** as `src/app/update.ts`. It came from Claude's own review of the
+deploy: holding the new build back, which is right mid-chapter, meant a fix
+reached a player one launch late. The notice sits in the top right, with
+UPDATE (reload into it) and LATER. The page checks again when it comes back
+from the background and every 30 minutes. **Caught on the way:** the first
+draft put the notice in the stage. On a phone the touch controls are a
+full-screen layer above the stage and would have taken its taps, so it is
+fixed to the window above them. `npm run offline` now also serves a changed
+`sw.js`, waits for the notice, presses UPDATE, and checks the new worker is
+in charge.
+
 ---
 
 ## The other tools

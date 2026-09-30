@@ -65,8 +65,9 @@ the phone upright pauses the game.
 **Install it** to play offline: *Add to Home Screen* from Safari's share
 menu on an iPhone, or *Install app* in Chrome on Android or a desktop. The
 first visit stores the whole game, about 17 MB, so it plays with no
-network after that. An installed game opens full screen and sideways, and
-a new version takes over the next time it is opened after being closed.
+network after that. An installed game opens full screen and sideways.
+When a new version is out, a notice in the top right says so: **Update**
+reloads into it, and **Later** leaves it for the next launch.
 
 Movement is screen-relative: `W` moves the robot up the screen. Hold `SHIFT` to
 brake — and notice that Biggy does not stop when you ask it to.
