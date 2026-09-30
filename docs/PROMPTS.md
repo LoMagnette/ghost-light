@@ -6449,8 +6449,9 @@ headless screenshot could land.
 
 **Done** on `dimitris-print`. The selfie is now the author's picture,
 `public/photos/dimitris-selfie.jpeg` (1024 × 571, cropped to 3:2 by the
-frame), instead of a capture of the game's own canvas. _Tool used to make
-the picture: not recorded yet._ **Caught on the way:** a browser that had
+frame), instead of a capture of the game's own canvas. The picture was made
+with Nano Banana (Google Gemini), like the other prints; see "Nano Banana —
+the photographer's prints" below. **Caught on the way:** a browser that had
 taken the old selfie kept the capture as a data URL, and the album showed
 that ahead of any file. A capture now stands in only for a print that is
 still a selfie. Checked by seeding an old capture and opening Collectables.
@@ -6557,6 +6558,11 @@ so the picture never shows a machine the player did not bring.
 its own frame and caption, so the timing and interruption were judged before
 the art existed. The prints went in as the author's 1500 × 1000 PNGs, all
 shown at the same 3:2 frame.
+
+**And the selfie with Dimitris** (30 Sep): made with Nano Banana too, to
+replace the capture the game used to take of its own canvas. Dimitris holds
+the camera at arm's length with Voxxy at his shoulder, in front of a Devoxx
+stand. It arrived as a 1024 × 571 JPEG, and the 3:2 frame crops its sides.
 
 ---
 

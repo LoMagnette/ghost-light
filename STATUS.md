@@ -40,7 +40,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 86
-    "To do" : 9
+    "To do" : 8
 ```
 
 ---
@@ -127,7 +127,7 @@ pie showData
 | **Installable, and plays offline** | #80 `pwa` | Manifest, Voxxy icon, every file stored on the first visit (about 16.7 MB); a new build waits, and a notice offers UPDATE; `npm run offline` cuts the network and checks every file, every chapter and the update |
 | **One INTERACT** | #82 `interact` | E talks when someone is in range, and otherwise puts down what the robot carries; SPACE no longer drops; the phone's DROP button is gone. Putting something down had never worked: the robot took it straight back. Fixed |
 | **HOLD STILL over the robot** | #82 `wait-indicator` | While a job that takes time fills: HOLD STILL, STOP HERE, STAY, or WAITING FOR EVERYONE, with a bar and the seconds left |
-| **The selfie with Dimitris is the author's picture** | #83 `dimitris-print` | Was a capture of the game's own canvas; an old capture no longer stands in for it |
+| **The selfie with Dimitris is the author's picture** | #83 `dimitris-print` | Made with Nano Banana, like the other prints. Was a capture of the game's own canvas; an old capture no longer stands in for it |
 | **The robots' portraits** | #83 `robot-portraits`, `polish` | Crops of the model sheets, on a dark ground |
 | Polish | `polish` | Haul notices name the thing ("Put the keg down"); a spill costs a trip back, as a put-down does |
 
@@ -150,7 +150,6 @@ pie showData
 | What | Owner | Notes |
 |---|---|---|
 | **Try the evening's changes on a real phone** | Human | Install it to the home screen and open it in airplane mode; INTERACT; the HOLD STILL chip. All checked headless only |
-| Name the tool behind the Dimitris picture | Human | `docs/PROMPTS.md` says "not recorded yet" |
 | Read the real people's lines and cards ❓ | Human | Not recorded either way. Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
 
 ### Design follow-ups, added 27 Sep
