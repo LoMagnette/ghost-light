@@ -6466,6 +6466,19 @@ crop.** Voxxy's front view, Droid's close-up and Biggy's front view, cut
 square, at 512 × 512 and 256 colours like the others. The first Biggy crop
 had a sliver of the panel above it along the top edge, and was moved down.
 
+> Can you refresh the status and take care of the small things
+
+**Done** on `polish`, the last half hour before the deadline. The haul
+notices named the job rather than the thing ("Put the coffee, and get it
+there down"), and a haul now has a `thing` for them. A spill had the same
+instant pick-back-up a put-down had, so it now counts as put down by that
+robot. The robots' portraits went onto a dark ground. The fill works in
+from the corners so Voxxy's white earpieces, which touch the background,
+are left alone. It took three passes: a halo round Voxxy's ears, then
+Biggy's floor shadow, then Droid's lower corners. A thin trace of Biggy's
+floor is left, invisible at the box's size. `STATUS.md` is brought up to
+#83.
+
 ---
 
 ## The other tools

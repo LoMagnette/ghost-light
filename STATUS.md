@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 21:15: submitted.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 23:30: submitted, and the evening's changes live.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -20,26 +20,27 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
 | Epilogue: back to 2126 | ✅ | Merged (#77, #78) and played by the author. After Chapter III's card, all three robots go back to the 2126 forecourt, the lights Chapter I restored come back on, and the closing words name the other temples |
 | Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
-| HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
+| HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57); HOLD STILL / STAY over the robot while a job that takes time fills (#82) |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
 | People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60); their lines and bios from sourced research, Chet Haase in Gavin King's place, and looks set from the portraits (#68, #69); the people you meet now talk like people, not like a bio (#70–#72) |
-| Collections | ✅ | One book called **Collectables** (#73, #75): prints (#40, #42, #45) as the author's PNGs (#74), the who's who with portraits, bios and one colour per era (#59, #68, #76), and the author's eight stickers from Chapter III's stands (#74) |
+| Collections | ✅ | One book called **Collectables** (#73, #75): prints (#40, #42, #45) as the author's PNGs (#74), the selfie with Dimitris the author's picture too (#83), the who's who with portraits, bios and one colour per era (#59, #68, #76), and the author's eight stickers from Chapter III's stands (#74) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
-| Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. All eighteen agreed (30 Sep) |
+| Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. All eighteen agreed (30 Sep). And the three robots, cropped from their model sheets on the author's call (#83) |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on (#75) |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | ✅ | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). Played on a real phone by the author, 30 Sep: everything works |
+| Phone | ✅ | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). Played on a real phone by the author, 30 Sep: everything works. Since then: one INTERACT in place of TALK and DROP (#82), and installable, offline, with an update notice (#80), both headless only so far |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41); Chapter III's card now leads with **Continue** into the epilogue (#77) |
 | Playtest | ✅ | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66); the author's own final playtest, 30 Sep, on desktop and a real phone: everything works |
-| Submission | ✅ | **Submitted** on 30 Sep, before the 23:59 CEST deadline |
+| Submission | ✅ | **Submitted** on 30 Sep, before the 23:59 CEST deadline. The live build has moved on since (#79–#83), all before the deadline |
+| Installable, offline | ✅ | A PWA (#80): Voxxy as the icon, the whole game stored on the first visit, a notice when a new version is ready. `npm run offline` guards it |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 79
-    "To do" : 7
+    "Done" : 86
+    "To do" : 9
 ```
 
 ---
@@ -122,12 +123,19 @@ pie showData
 | Portrait agreements and Suno's terms checked | `rights-checked` | All eighteen agreed; Suno's terms fine for an MIT repo |
 | **The author's final playtest, desktop and a real phone** | — | 30 Sep: the whole game including the ending; everything works, phone included. Nothing to tune |
 | **Submitted** | — | 30 Sep, before 23:59 CEST |
+| Status update | #79 `status-submitted` | |
+| **Installable, and plays offline** | #80 `pwa` | Manifest, Voxxy icon, every file stored on the first visit (about 16.7 MB); a new build waits, and a notice offers UPDATE; `npm run offline` cuts the network and checks every file, every chapter and the update |
+| **One INTERACT** | #82 `interact` | E talks when someone is in range, and otherwise puts down what the robot carries; SPACE no longer drops; the phone's DROP button is gone. Putting something down had never worked: the robot took it straight back. Fixed |
+| **HOLD STILL over the robot** | #82 `wait-indicator` | While a job that takes time fills: HOLD STILL, STOP HERE, STAY, or WAITING FOR EVERYONE, with a bar and the seconds left |
+| **The selfie with Dimitris is the author's picture** | #83 `dimitris-print` | Was a capture of the game's own canvas; an old capture no longer stands in for it |
+| **The robots' portraits** | #83 `robot-portraits`, `polish` | Crops of the model sheets, on a dark ground |
+| Polish | `polish` | Haul notices name the thing ("Put the keg down"); a spill costs a trip back, as a put-down does |
 
 ---
 
 ## 🔄 In progress
 
-Nothing. Everything through #78 is on `main`, and the game is submitted.
+`polish`: this update, the haul notices, spills, and the robots' portraits on a dark ground. Everything through #83 is on `main`.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -141,6 +149,8 @@ Nothing. Everything through #78 is on `main`, and the game is submitted.
 
 | What | Owner | Notes |
 |---|---|---|
+| **Try the evening's changes on a real phone** | Human | Install it to the home screen and open it in airplane mode; INTERACT; the HOLD STILL chip. All checked headless only |
+| Name the tool behind the Dimitris picture | Human | `docs/PROMPTS.md` says "not recorded yet" |
 | Read the real people's lines and cards ❓ | Human | Not recorded either way. Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
 
 ### Design follow-ups, added 27 Sep
