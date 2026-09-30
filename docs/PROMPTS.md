@@ -6156,6 +6156,26 @@ decision. At this camera a head is about nine pixels, so what carries is
 the silhouette (hair, beard, glasses, shirt), and a print shows only when
 the person faces the camera.
 
+> Based on the data you collected on those npc can you enrich the chat
+
+**Done** on `richer-talk`, on `npc-looks`, from the research of 29 Sep only
+(sources listed under that entry). The ten people to meet each get a second
+narrated line, still never quoted: Souza (SouJava 1999, Apache Harmony),
+Laforge (co-writing *Groovy in Action*, started Grails), Goncalves (a first
+book, on Java EE 5, in French), Cools (Timefold, Java Champion 2023),
+Vermeer (DevSecCon, NLJUG), Chatzizacharias (Game Studies; his Devoxx talks,
+Unity agents to a game in Git), Yurenko (Ukrainian, Zurich, open source),
+Mihalceanu (*DevOps Tools for Java Developers*, Inside.java), Cummins (JVM
+performance engineer; counting fish, a blind ultra-runner), Dubois (Belgium,
+Italy, Montana, Utah; four languages). The Chapter II speakers each say one
+more thing true as of December 2006: Gosling (small devices first; Sun
+since 1984), Goetz (the JSR 166 expert group), Haase (graphics, Java 2D),
+Johnson (Interface21 is the company behind open-source Spring). Dimitris:
+four thousand pictures an edition and Stephan's face finder (Stephan's own
+2019 post). Checked line by line against the research; three drafts were
+corrected before commit (SouJava's year, a contributor not a co-author,
+Interface21's work).
+
 ---
 
 ## Audio
