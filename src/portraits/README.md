@@ -66,6 +66,13 @@ Not real people, so nothing to recognise and nobody to ask. Their initials
 already work; a picture, if one is made, can be a close-up rendered from the
 game's own model.
 
+The three robots' portraits (30 Sep) are square crops of Devoxx's model
+sheets in `references/robots/`, taken at 512 × 512 and brought to 256
+colours as `tools/portraits.py` does. That is the author's call. The sheets
+themselves stay git-ignored, as the note in `.gitignore` says, and these
+three crops are the only part of them in the repository: Voxxy's front
+view, Droid's close-up, and Biggy's front view.
+
 | Who | Where | File |
 |---|---|---|
 | Voxxy | Chapter I, the opening on the forecourt | `voxxy.png` |

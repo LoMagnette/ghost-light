@@ -109,7 +109,9 @@ export function keptPicture(photo: Photo): string | undefined {
 function pictureOf(page: Page): string | undefined {
   const entry = load()[page.id];
   if (!entry) return undefined;
-  if (entry.image) return entry.image;
+  // Only a selfie's own capture: a print that was a selfie once and is a
+  // file now must show the file, not the frame a browser kept from before.
+  if (entry.image && page.photo.selfie) return entry.image;
   return page.photo.file ? `${import.meta.env.BASE_URL}photos/${page.photo.file}` : undefined;
 }
 

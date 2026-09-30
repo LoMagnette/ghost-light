@@ -6444,6 +6444,28 @@ headless:** the Room 5 talk on desktop and at phone size, and the badge
 scan's countdown logged from inside the page. Its 2 s ran out before a
 headless screenshot could land.
 
+> I would like to replace the picture of the robot with dimitris with an
+> actual asset instead of an in game capture
+
+**Done** on `dimitris-print`. The selfie is now the author's picture,
+`public/photos/dimitris-selfie.jpeg` (1024 × 571, cropped to 3:2 by the
+frame), instead of a capture of the game's own canvas. _Tool used to make
+the picture: not recorded yet._ **Caught on the way:** a browser that had
+taken the old selfie kept the capture as a data URL, and the album showed
+that ahead of any file. A capture now stands in only for a print that is
+still a selfie. Checked by seeding an old capture and opening Collectables.
+
+> Ok can you use the reference image for the robot to create their portrait
+
+Claude raised a question before doing it. The model sheets are Devoxx's and
+kept out of the MIT repo on purpose, so a crop of them would put their art
+in it. A flat drawing would not match the twenty photographic portraits. It
+set out three options: the author makes them with an image tool from the
+sheets, crop the sheets, or Claude draws them flat. **The author chose the
+crop.** Voxxy's front view, Droid's close-up and Biggy's front view, cut
+square, at 512 × 512 and 256 colours like the others. The first Biggy crop
+had a sliver of the panel above it along the top edge, and was moved down.
+
 ---
 
 ## The other tools
