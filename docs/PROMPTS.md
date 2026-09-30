@@ -6140,6 +6140,22 @@ collections note the research, Chet Haase and the portraits; in progress is
 `npc-research` (pushed, #67 under it merged) and this; the to-do asks for
 the real people's lines to be read; the timeline is today's.
 
+> Can you adapt the human npc so they can look more like their picture
+
+**Done** on `npc-looks`, on `status-after-68`. Each figure checked against
+the author's portrait. Two new things a `Look` can have: `print`, a patch of
+colour on the chest under the lanyard (Duke for Gosling, the Spring leaf for
+Josh Long, the Rebel emblem for Tom Cools, Red Hat for Kevin Dubois, Quarkus
+for Holly Cummins), and `collar`, a polo's trim (Stephan's light tipped
+collar, Guillaume Laforge's blue). Updated: Stephan (dark brown polo, dark
+rectangular frames, salt-and-pepper hair), Goetz (light blue shirt, bald on
+top, thin frames, white-grey goatee), Johnson (grey t-shirt), Venkat (black
+hair and moustache), Josh (white t-shirt), Chet (lighter grey), Tom (stubble,
+not a full beard). Skin is left as the stylised band: that is still an open
+decision. At this camera a head is about nine pixels, so what carries is
+the silhouette (hair, beard, glasses, shirt), and a print shows only when
+the person faces the camera.
+
 ---
 
 ## Audio

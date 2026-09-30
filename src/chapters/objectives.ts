@@ -611,10 +611,13 @@ const STEPHAN_AT = spot(1, 0.0, -40.0, 3.2);
  * amber glasses, which are the single most recognisable thing about him and
  * cost one box.
  */
+// From the author's portrait (30 Sep): a dark brown polo with a light tipped
+// collar, salt-and-pepper hair, dark rectangular frames, clean-shaven.
 const STEPHAN_LOOK: Look = {
-  shirt: 0x333630,
-  hair: 0x55514b,
-  glasses: 0xb5822f,
+  shirt: 0x3e2c22,
+  collar: 0xd8c8a8,
+  hair: 0x5e5a55,
+  glasses: 0x2a2622,
   scale: 1.0,
 };
 
@@ -698,6 +701,8 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       // the glasses. Black t-shirt, which is the other half of it.
       {
         shirt: 0x1f2124,
+        // Duke, on the black t-shirt in the author's portrait.
+        print: 0xe6e4e0,
         hair: 0xd6d3cb,
         hairline: 'bald',
         long: true,
@@ -721,11 +726,14 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       // a different colour from the hair, and that is not a detail. Dark
       // hair plus dark beard is a different man. Pale striped shirt.
       {
-        shirt: 0x94a5b6,
-        hair: 0x4a3d33,
-        hairline: 'receding',
+        // Updated from the author's portrait (30 Sep): a light blue shirt,
+        // bald on top with grey at the sides, thin frames, a white-grey goatee.
+        shirt: 0xc9d7e8,
+        hair: 0x625b54,
+        hairline: 'bald',
         beard: 'goatee',
-        beardHair: 0x7c746a,
+        beardHair: 0xb4aea6,
+        glasses: 0x6e6256,
         scale: 1.02,
       },
       [
@@ -753,7 +761,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
     speaker(
       'haase',
       'Chet Haase',
-      { shirt: 0x1c1d20, hair: 0x9a948c, hairline: 'full', scale: 1.02 },
+      { shirt: 0x1c1d20, hair: 0xaaa59e, hairline: 'full', scale: 1.02 },
       [
         'Java SE 6 is out. On the desktop, we have been building a rock-solid release for Windows Vista.',
         'I work on the client side at Sun: Swing, Java 2D, everything that puts pixels on your screen.',
@@ -770,7 +778,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
       // olive-grey t-shirt. Nothing loud, which is its own silhouette next
       // to the white beard twenty metres up the corridor.
       {
-        shirt: 0x74766b,
+        shirt: 0x7c8187,
         hair: 0x6b5744,
         hairline: 'receding',
         beard: 'stubble',
@@ -826,7 +834,7 @@ export const JAVAPOLIS_OBJECTIVE: Objective = {
      * corridor's east side, across from the speakers Stephan sends you to.
      */
     passerby('souza', 'Bruno Souza', { shirt: 0x1c1d20, hair: 0x3a2e26, hairline: 'receding', scale: 1.02 }, spot(1, 2.4, -24.0, 2.4), { bio: 'Founder of SouJava, Brazil\'s Java user group, and newly NetBeans community manager at Sun.', line: 'You stop to say hello to Bruno Souza, who founded SouJava in Brazil and has just joined Sun to look after the NetBeans community.' }),
-    passerby('laforge', 'Guillaume Laforge', { shirt: 0xe4e4e2, hair: 0x3a2e26, glasses: 0x2a2a2c }, spot(1, 2.4, -4.0, 2.4), { bio: 'Groovy project manager and JSR 241 spec lead; architect at OCTO Technology in Paris.', line: 'You stop to say hello to Guillaume Laforge, who leads the Groovy project. Groovy 1.0 is a few weeks away.' }),
+    passerby('laforge', 'Guillaume Laforge', { shirt: 0xe4e4e2, collar: 0x2f4f9e, hair: 0x3a2e26, glasses: 0x2a2a2c }, spot(1, 2.4, -4.0, 2.4), { bio: 'Groovy project manager and JSR 241 spec lead; architect at OCTO Technology in Paris.', line: 'You stop to say hello to Guillaume Laforge, who leads the Groovy project. Groovy 1.0 is a few weeks away.' }),
     passerby('goncalves', 'Antonio Goncalves', { shirt: 0x1c1d20, hair: 0x241e1a, long: true, beard: 'goatee' }, spot(1, 2.4, 12.0, 2.4), { bio: 'Paris Java developer and writer, speaking about JUnit 4 at JavaPolis 2006.', line: 'You stop to say hello to Antonio Goncalves, in from Paris to give a talk on JUnit 4.' }),
   ],
 };
@@ -1257,7 +1265,9 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // Dark-rimmed glasses, short dark hair, a few days of stubble, dark
       // t-shirt. Off his Devoxx speaker photograph.
       look: {
-        shirt: 0x33363a,
+        // The author's portrait (30 Sep): a white t-shirt with the Spring leaf.
+        shirt: 0xe4e4e2,
+        print: 0x6db33f,
         hair: 0x2e2722,
         beard: 'stubble',
         glasses: 0x17181b,
@@ -1287,11 +1297,12 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // Dark hair going grey at the temples, thin frames, and the moustache,
       // which is the whole face: a bar above the mouth and nothing below it.
       look: {
-        shirt: 0x24262b,
-        hair: 0x3c3832,
+        // Black hair and moustache in the author's portrait (30 Sep).
+        shirt: 0x1f2023,
+        hair: 0x1f1c1a,
         beard: 'moustache',
-        beardHair: 0x2a2724,
-        glasses: 0x9a9289,
+        beardHair: 0x1f1c1a,
+        glasses: 0x4a423a,
         scale: 0.98,
       },
       group: 'the shot list',
@@ -1319,12 +1330,12 @@ export const CAPACITY_OBJECTIVE: Objective = {
      * People to meet, and nothing to do with them. See `passerby`.
      * Spread over both storeys, where the day takes a robot anyway.
      */
-    passerby('cools', 'Tom Cools', { shirt: 0x1c1d20, hair: 0x2a221c, glasses: 0x3a3a3c, beard: 'full' }, spot(0, 8.0, 12.0, 2.4), { bio: 'Developer Relations Engineer at Timefold, Java Champion, and leader of the Belgian Java User Group.', line: 'You stop to say hello to Tom Cools, who leads the Belgian Java User Group: the group this conference grew out of.' }),
+    passerby('cools', 'Tom Cools', { shirt: 0x1c1d20, print: 0xb03a2e, hair: 0x2a221c, glasses: 0x3a3a3c, beard: 'stubble' }, spot(0, 8.0, 12.0, 2.4), { bio: 'Developer Relations Engineer at Timefold, Java Champion, and leader of the Belgian Java User Group.', line: 'You stop to say hello to Tom Cools, who leads the Belgian Java User Group: the group this conference grew out of.' }),
     passerby('vermeer', 'Brian Vermeer', { shirt: 0x2c3a52, hair: 0x6b4e33, beard: 'full' }, spot(0, -8.0, 4.0, 2.4), { bio: 'Staff Developer Advocate at Snyk and Java Champion; leads the Virtual JUG and NLJUG.', line: 'You stop to say hello to Brian Vermeer, who works on keeping Java applications secure, and runs the Virtual JUG.' }),
     passerby('chatzizacharias', 'Alexander Chatzizacharias', { shirt: 0x1c1d20, hair: 0x221c18, glasses: 0x1a1a1c }, spot(0, 15.0, -45.0, 2.4), { bio: 'Software engineer at JDriven with a master\'s in Game Studies, bringing game development and software engineering together.', line: 'You stop to say hello to Alexander Chatzizacharias, who once turned IntelliJ into a game engine, just because he could.' }),
     passerby('yurenko', 'Alina Yurenko', { shirt: 0x1c1d20, hair: 0xc9a86a, long: true, scale: 0.96 }, spot(1, 2.4, -15.0, 2.4), { bio: 'Developer Advocate for GraalVM at Oracle, who loves open source and compilers.', line: 'You stop to say hello to Alina Yurenko, here to talk about GraalVM and Java compiled ahead of time.' }),
     passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', line: 'You stop to say hello to Ana-Maria Mihalceanu, of the Java Platform Group, here to talk about JFR and Project Leyden.' }),
-    passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', line: 'You stop to say hello to Holly Cummins, of the Quarkus team, here to talk about what happens when benchmarks go wrong.' }),
-    passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', line: 'You stop to say hello to Kevin Dubois, here to talk about building AI agents in Java with LangChain4j and Quarkus.' }),
+    passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, print: 0x4695eb, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', line: 'You stop to say hello to Holly Cummins, of the Quarkus team, here to talk about what happens when benchmarks go wrong.' }),
+    passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, print: 0xcc2a2a, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', line: 'You stop to say hello to Kevin Dubois, here to talk about building AI agents in Java with LangChain4j and Quarkus.' }),
   ],
 };

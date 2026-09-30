@@ -301,6 +301,16 @@ export interface Look {
    */
   camera?: boolean;
   /**
+   * A print on the front of the shirt, as a patch of this colour on the
+   * chest: Duke on a black t-shirt, the Spring leaf on a white one. The one
+   * thing on a shirt that survives nine pixels, and often the thing a
+   * person is recognised by across a hall. Under the lanyard, which is on
+   * everybody.
+   */
+  print?: number;
+  /** A collar, or the trim along one, in this colour: a polo's tipped edge. */
+  collar?: number;
+  /**
    * Multiplier on the whole figure. People differ by a head, which is 8% and
    * about five pixels — small, and the difference between five figures and
    * five of the same figure.

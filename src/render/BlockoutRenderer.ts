@@ -357,7 +357,7 @@ const SKIRT_SHARE = 0.45;
  */
 const PERSON_PARTS = 13;
 /** The most a named person's face adds on top: see `placeFace`. */
-const FACE_PARTS = 5;
+const FACE_PARTS = 7;
 /** One step, metres. The walk cycle is driven by distance, not by time. */
 const STEP_LENGTH = 0.36;
 /** How far a leg swings at a full walk, radians; arms swing against it. */
@@ -1255,6 +1255,14 @@ export class BlockoutRenderer {
        * the era's accent, as a conference's lanyards always are.
        */
       const chest = PERSON_THICK / 2 + 0.008;
+      // A shirt's print and a collar's trim, for the people who are somebody:
+      // behind the lanyard, which is on everybody. See `Look.print`.
+      if (look?.print !== undefined) {
+        i = this.placePart(i, person, up(1.19), up(1.35), 0.01, PERSON_TORSO_WIDE * 0.5, look.print, 0, PERSON_THICK / 2 + 0.004);
+      }
+      if (look?.collar !== undefined) {
+        i = this.placePart(i, person, up(PERSON_NECK - 0.045), up(PERSON_NECK - 0.005), PERSON_THICK * 1.04, PERSON_TORSO_WIDE * 0.62, look.collar);
+      }
       i = this.placePart(i, person, up(1.2), up(PERSON_NECK - 0.02), 0.012, 0.05, this.palette.accent, 0, chest);
       i = this.placePart(i, person, up(1.1), up(1.2), 0.014, 0.085, mix(LOGO, this.palette.crowd, 0.12), 0, chest);
 
