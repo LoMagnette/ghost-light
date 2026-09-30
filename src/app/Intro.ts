@@ -46,6 +46,9 @@ export class Intro {
   private readonly root: HTMLElement;
   private readonly line: HTMLElement;
   private readonly hint: HTMLElement;
+  private readonly lines: readonly IntroLine[];
+  /** The epilogue's words, not the title sequence. See the constructor. */
+  private readonly ending: boolean;
   private stage: 'lines' | 'closing' | 'done' = 'lines';
   /** No key yet: the next one is for sound, not for skipping. */
   private silent: boolean;
@@ -56,12 +59,17 @@ export class Intro {
    * `silent` true when the page has had no key or click yet, so there is no
    * sound, and the first press is spent on turning it on. `accent` is the last line's
    * colour: Chapter I's, which is the ghost light's.
+   *
+   * `ending` plays the epilogue's closing words through this instead: they
+   * do not count as the title sequence seen, and only ESC skips them, because
+   * the player arrives mashing the key that paged the robots' last lines.
    */
   constructor(
     ui: HTMLElement,
     silent: boolean,
     private readonly accent: string,
     private readonly onDone: () => void,
+    ending?: readonly IntroLine[],
   ) {
     this.root = el('div', {
       position: 'absolute',
@@ -71,6 +79,9 @@ export class Intro {
       alignItems: 'center',
       justifyContent: 'center',
       pointerEvents: 'none',
+      // Over a chapter's HUD when it closes one; the menu's layer has nothing
+      // this high.
+      zIndex: '8',
     });
     this.line = el('div', {
       maxWidth: '760px',
@@ -95,8 +106,14 @@ export class Intro {
     this.root.append(this.line, this.hint);
     ui.append(this.root);
 
+    this.lines = ending ?? INTRO_LINES;
+    this.ending = ending !== undefined;
     this.silent = silent;
-    this.hint.textContent = silent ? 'ANY KEY FOR SOUND  ·  ESC TO SKIP' : 'ANY KEY TO SKIP';
+    this.hint.textContent = this.ending
+      ? 'ESC TO SKIP'
+      : silent
+        ? 'ANY KEY FOR SOUND  ·  ESC TO SKIP'
+        : 'ANY KEY TO SKIP';
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('pointerdown', this.onKey, true);
   }
@@ -104,7 +121,7 @@ export class Intro {
   update(dt: number): void {
     this.t += dt;
     if (this.stage === 'lines') {
-      const said = INTRO_LINES[this.index];
+      const said = this.lines[this.index];
       const text = said.text;
       const hold = HOLD + text.length * PER_CHARACTER;
       const life = FADE_IN + hold + FADE_OUT;
@@ -119,7 +136,7 @@ export class Intro {
       if (t >= life + BETWEEN) {
         this.index += 1;
         this.t = 0;
-        if (this.index >= INTRO_LINES.length) this.close();
+        if (this.index >= this.lines.length) this.close();
       }
       return;
     }
@@ -159,6 +176,7 @@ export class Intro {
     if (event instanceof KeyboardEvent && event.repeat) return;
     if (this.stage !== 'lines') return;
     const escape = event instanceof KeyboardEvent && event.code === 'Escape';
+    if (this.ending && !escape) return;
     if (this.silent && !escape) {
       // This press unlocked the sound (see `installAudio`); it skips nothing.
       this.silent = false;
@@ -179,6 +197,7 @@ export class Intro {
     this.line.style.transition = 'opacity 400ms';
     this.line.style.opacity = '0';
     this.hint.textContent = '';
+    if (this.ending) return;
     try {
       window.localStorage.setItem(SEEN_KEY, '1');
     } catch {

@@ -96,7 +96,9 @@ one for every photograph earned; the **who's who**, a card for each of the 23
 people in the building, a silhouette until you have met them, and then their
 portrait, who they are, and the year you met them; and **stickers**, one from
 each stand on Chapter III's sticker round. Each chapter opens on its
-year: 2126, December 2006, October 2026.
+year: 2126, December 2006, October 2026. After Chapter III's card, the
+Continue button sends all three robots back to 2126 for the epilogue: there
+are other temples to find.
 
 ## What to look at
 

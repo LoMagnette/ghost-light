@@ -69,6 +69,15 @@ export interface Objective {
    */
   arrival?: Arrival;
   /**
+   * The words the game ends on, set like the title sequence's and played
+   * over the building once the arrival has had its say. Then the menu.
+   *
+   * Only the epilogue has them. They are the title sequence answered: it
+   * brought one robot down to one temple, and these send three of them on
+   * to the others.
+   */
+  closing?: Caption[];
+  /**
    * Chapter I's cats, since 28 Sep: one every so often from the start, at
    * random, up to a limit; carried by the objective because what they DO
    * is decided by two of its activities. See `Swarm`.
@@ -116,6 +125,26 @@ export interface Exit {
   kind: 'wormhole';
   /** The chapter on the far side, by id. `npm run objectives` checks it. */
   to: string;
+  /**
+   * Leave from the end card rather than instead of it.
+   *
+   * Chapter III's card is the only account of the day the player chose, and
+   * the wormhole home should not swallow it. So the card comes up as it
+   * always did, and its first button opens the floor.
+   */
+  afterCard?: boolean;
+}
+
+/**
+ * One line of words over the building, as the title sequence has them.
+ *
+ * `date` and `place` get a frame of their own; `light` is set in the ghost
+ * light's colour. Declared here rather than in `chapters/intro.ts` because
+ * `core/` imports nothing outside itself.
+ */
+export interface Caption {
+  text: string;
+  look?: 'date' | 'place' | 'light';
 }
 
 /**
@@ -124,7 +153,7 @@ export interface Exit {
  * A union, like `Exit`, so the first chapter's way in did not have to be a
  * flag on the other two's.
  */
-export type Arrival = Split | Landing;
+export type Arrival = Split | Landing | Return;
 
 /**
  * One robot in, and one more of it than went in.
@@ -155,6 +184,18 @@ export interface Split {
  */
 export interface Landing {
   kind: 'landing';
+  lines: { who: RobotId; text: string }[];
+}
+
+/**
+ * The epilogue: everybody out of the air at once, and nobody new.
+ *
+ * A wormhole arrival like `Split`, the same fall and the same landings, but
+ * the cast that comes out is the cast that went in. The splitting is over;
+ * three robots went home, and three arrive.
+ */
+export interface Return {
+  kind: 'return';
   lines: { who: RobotId; text: string }[];
 }
 

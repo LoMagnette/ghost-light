@@ -16,7 +16,7 @@
  */
 
 import type { Chapter } from './Chapter';
-import { CAPACITY_OBJECTIVE, JAVAPOLIS_OBJECTIVE, SILENCE_OBJECTIVE } from './objectives';
+import { CAPACITY_OBJECTIVE, HOMECOMING_OBJECTIVE, JAVAPOLIS_OBJECTIVE, SILENCE_OBJECTIVE } from './objectives';
 
 /**
  * Every colour below was measured off the competition photographs in
@@ -260,8 +260,31 @@ export const CHAPTER_THREE: Chapter = {
   objective: CAPACITY_OBJECTIVE,
 };
 
+/**
+ * The epilogue: Chapter I's building, dark again, with the whole cast in it.
+ *
+ * Not on the menu — it is reached only through Chapter III's last wormhole,
+ * and there is nothing in it to play. Chapter I's palette and light to the
+ * number, because it is the same night on the same forecourt: the only
+ * thing that has changed is how many robots are standing on it.
+ */
+export const EPILOGUE: Chapter = {
+  ...CHAPTER_ONE,
+  id: 'homecoming',
+  numeral: 'EPILOGUE',
+  title: 'Homecoming',
+  era: 'later, again',
+  tagline: 'Back where it started, and not the only temple.',
+  recap: 'After III: the day at capacity ended, and the building folded one last time.',
+  brief: 'Three robots, back in 2126, on the forecourt where one came down.',
+  controlMode: 'switch',
+  cast: ['voxxy', 'droid', 'biggy'],
+  objective: HOMECOMING_OBJECTIVE,
+};
+
+/** The menu's chapters, in play order. The epilogue is not one of them. */
 export const CHAPTERS: Chapter[] = [CHAPTER_ONE, CHAPTER_TWO, CHAPTER_THREE];
 
 export function chapterById(id: string): Chapter | undefined {
-  return CHAPTERS.find((c) => c.id === id);
+  return [...CHAPTERS, EPILOGUE].find((c) => c.id === id);
 }

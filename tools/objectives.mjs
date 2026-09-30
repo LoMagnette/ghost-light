@@ -66,7 +66,9 @@ Module._resolveFilename = function (request, ...rest) {
   return resolve.call(this, request.startsWith('@/') ? join(out, request.slice(2)) : request, ...rest);
 };
 
-const { CHAPTERS } = await import(pathToFileURL(join(out, 'chapters/registry.js')));
+const { CHAPTERS: MENU, EPILOGUE } = await import(pathToFileURL(join(out, 'chapters/registry.js')));
+// The epilogue is off the menu but on the way: it is held to the same rules.
+const CHAPTERS = [...MENU, EPILOGUE];
 const { KINEPOLIS, sessionLimits, corridorTables } = await import(pathToFileURL(join(out, 'venue/kinepolis.js')));
 const { ROBOTS } = await import(pathToFileURL(join(out, 'core/RobotSpec.js')));
 const { admits, zoneCentre } = await import(pathToFileURL(join(out, 'core/Activity.js')));

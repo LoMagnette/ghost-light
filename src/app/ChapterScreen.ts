@@ -33,12 +33,13 @@ import {
 } from '@/render/BlockoutRenderer';
 import { Wormhole } from '@/render/Wormhole';
 import type { Grade } from '@/render/Mood';
-import { ObjectiveRun, roomName, type ActivityState, type Exit, type Landing, type Split } from '@/core/Objective';
+import { ObjectiveRun, roomName, type ActivityState, type Exit, type Landing, type Return, type Split } from '@/core/Objective';
 import { Crowd, PERSON_HEIGHT } from '@/core/Crowd';
 import { Decay } from '@/core/Decay';
 import { admits, admittedBy, inZone, zoneCentre, type Activity, type Photo, type TalkActivity } from '@/core/Activity';
 import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCamera';
-import { playAmbience, playMusic } from './audio';
+import { audioUnlocked, playAmbience, playMusic } from './audio';
+import { Intro } from './Intro';
 import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
 import { albumCount, keepPhoto, keptPicture } from './album';
@@ -265,7 +266,7 @@ const WORMHOLE_COLOUR = CHAPTER_ONE.palette.accent;
 /** A story beat in progress. While there is one, nobody is driving. */
 type Story =
   | { kind: 'departure'; t: number; exit: Exit; holes: Hole[]; left: boolean }
-  | { kind: 'arrival'; t: number; arrival: Split; line: number; landed: Set<Actor>; shimmered?: boolean }
+  | { kind: 'arrival'; t: number; arrival: Split | Return; line: number; landed: Set<Actor>; shimmered?: boolean }
   | { kind: 'landing'; t: number; arrival: Landing; line: number };
 
 /** Where a robot went through, which is where it stood when the floor opened. */
@@ -390,6 +391,14 @@ export class ChapterScreen implements Screen {
   /** The whole card is showing, and stays so. See `firstJob`. */
   private revealed = false;
   private endCard: HTMLElement | undefined;
+  /** The end card's way on through the floor, when it has one. See `Exit.afterCard`. */
+  private onward: (() => void) | undefined;
+  /**
+   * The epilogue's closing words while they play, and whether they have
+   * started: they play once, then the menu. See `Objective.closing`.
+   */
+  private closing: Intro | undefined;
+  private closed = false;
   private debugText!: HTMLElement;
   private debug = DEBUG_DEFAULT;
 
@@ -469,7 +478,9 @@ export class ChapterScreen implements Screen {
     // Each era its own tune, by file name: `music-silence`, `music-javapolis`,
     // `music-capacity`. Crossfaded from whatever was playing, which through a
     // wormhole is the chapter before. See `app/audio.ts`.
-    playMusic(`music-${chapter.id}`);
+    // The epilogue has no tune of its own: an abandoned building without one
+    // plays Chapter I's, which is the same dark.
+    playMusic(`music-${chapter.id}`, ...(abandoned(chapter) ? ['music-silence'] : []));
     playAmbience(`ambience-${chapter.id}`);
 
     /*
@@ -627,7 +638,7 @@ export class ChapterScreen implements Screen {
     });
     game.ui.append(this.whiteout);
     const arrival = chapter.objective.arrival;
-    if (arrival?.kind === 'split') this.arrive(arrival);
+    if (arrival?.kind === 'split' || arrival?.kind === 'return') this.arrive(arrival);
     else if (arrival?.kind === 'landing') this.story = { kind: 'landing', t: 0, arrival, line: -1 };
     // `?exit` opens the way out at once, for looking at the wormhole without
     // playing a chapter to the end first. Like `?at`, unreachable in play.
@@ -637,11 +648,20 @@ export class ChapterScreen implements Screen {
     const exit = chapter.objective.exit;
     const query = new URLSearchParams(window.location.search);
     if (exit && query.has('exit') && query.get('chapter') === chapter.id) this.depart(exit);
+    // `?ending` puts the end card up at once, past the arrival, for looking
+    // at a way on that leaves from it. Unreachable in play, like `?exit`.
+    if (exit?.afterCard && query.has('ending') && query.get('chapter') === chapter.id) {
+      this.endStory();
+      this.run.phase = 'ended';
+      this.showEndCard();
+    }
 
     // ESC pauses rather than leaving: leaving threw the run away, and a
     // chapter reopened starts over. Only the end card, with no run left to
     // keep, still goes straight back to the chapters.
     game.keyboard.on('Escape', () => {
+      // The closing words take ESC as a skip, and have it to themselves.
+      if (this.closing) return;
       if (this.endCard && !this.paused) this.routes.menu();
       else this.setPaused(!this.paused);
     });
@@ -673,6 +693,7 @@ export class ChapterScreen implements Screen {
     game.keyboard.on('Enter', () => {
       if (this.paused) this.choosePause();
       else if (reading()) this.talkRequested = true;
+      else if (this.endCard) this.onward?.();
     });
     // The album, from the end card only: mid-run the prints are still to take.
     game.keyboard.on('KeyP', () => {
@@ -730,7 +751,11 @@ export class ChapterScreen implements Screen {
     // And the end card, whose buttons are the only way on and which the stick
     // and the action buttons would otherwise sit on top of.
     this.touchPad?.setTalking(
-      this.paused || this.story !== undefined || this.talkBox.style.display !== 'none' || this.endCard !== undefined,
+      this.paused ||
+        this.story !== undefined ||
+        this.closing !== undefined ||
+        this.talkBox.style.display !== 'none' ||
+        this.endCard !== undefined,
     );
     if (this.paused) {
       // Frozen, and quiet: a motor left running would hum under the menu.
@@ -746,7 +771,7 @@ export class ChapterScreen implements Screen {
     // Hands off once the round is over: the end card is up, and a robot still
     // answering the keyboard behind it reads as the game not having noticed.
     // And through a story beat, which is the wormhole's turn and not yours.
-    if (over || this.story) {
+    if (over || this.story || this.closing) {
       Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
     } else {
       this.controller.read(this.controlled.input);
@@ -815,7 +840,7 @@ export class ChapterScreen implements Screen {
         // card. A lost round still gets the card — you do not fall through
         // a wormhole for failing.
         const exit = this.chapter.objective.exit;
-        if (exit && !this.run.failed) this.depart(exit);
+        if (exit && !this.run.failed && !exit.afterCard) this.depart(exit);
         else this.showEndCard();
       }
     }
@@ -824,6 +849,9 @@ export class ChapterScreen implements Screen {
     this.showSessions(dt);
     if (this.story) this.updateStory(dt, talkPressed);
     else this.updateTalk(dt);
+    // The epilogue's last words, once its robots have said theirs.
+    if (!this.story && !this.closed && this.chapter.objective.closing) this.startClosing();
+    this.closing?.update(dt);
 
     // A robot that walks up a flight changes storey underneath us. Each storey
     // is modelled from its own datum, so the world it is standing in moves 6.2
@@ -893,6 +921,7 @@ export class ChapterScreen implements Screen {
     document.removeEventListener('visibilitychange', this.onHidden);
     for (const motor of this.motors.values()) motor.stop();
     for (const hole of this.wormholes) hole.dispose();
+    this.closing?.dispose();
     this.blockout.dispose();
   }
 
@@ -900,7 +929,7 @@ export class ChapterScreen implements Screen {
 
   private takeControl(index: number): void {
     const next = this.actors[index];
-    if (!next || next === this.controlled || this.story || this.paused) return;
+    if (!next || next === this.controlled || this.story || this.closing || this.paused) return;
 
     // Hand the old robot a neutral input or it keeps whatever the player was
     // holding at the moment they swapped and drives off on its own.
@@ -1071,6 +1100,7 @@ export class ChapterScreen implements Screen {
     this.revealed = false;
     this.endCard?.remove();
     this.endCard = undefined;
+    this.onward = undefined;
     this.toast.textContent = '';
     this.bannerFor = 0;
     this.banner.style.opacity = '0';
@@ -1104,7 +1134,7 @@ export class ChapterScreen implements Screen {
   }
 
   /** Start a chapter out of the white, with robots about to fall into it. */
-  private arrive(arrival: Split): void {
+  private arrive(arrival: Split | Return): void {
     this.story = { kind: 'arrival', t: 0, arrival, line: -1, landed: new Set() };
     this.whiteout.style.opacity = '1';
     this.openWormholes(this.actors.length);
@@ -1203,6 +1233,8 @@ export class ChapterScreen implements Screen {
    * The new machine is posed ON `from` — same place, a fifth of its size —
    * and grows out of it to its own spawn. Then they talk, one box at a time,
    * and only when the last line is paged past does the objective start.
+   *
+   * A `return` is the same fall with nobody coming apart: the epilogue.
    */
   private playArrival(
     story: Extract<Story, { kind: 'arrival' }>,
@@ -1210,9 +1242,10 @@ export class ChapterScreen implements Screen {
     pressed = false,
   ): void {
     const { arrival } = story;
-    const from = this.actors[this.chapter.cast.indexOf(arrival.from)];
-    const into = this.actors[this.chapter.cast.indexOf(arrival.into)];
-    if (!from || !into) {
+    const { cast } = this.chapter;
+    const from = arrival.kind === 'split' ? this.actors[cast.indexOf(arrival.from)] : undefined;
+    const into = arrival.kind === 'split' ? this.actors[cast.indexOf(arrival.into)] : undefined;
+    if (arrival.kind === 'split' && (!from || !into)) {
       this.endStory();
       return;
     }
@@ -1220,7 +1253,8 @@ export class ChapterScreen implements Screen {
     const fallers = this.actors.filter((a) => a !== into);
     const lag = (fallers.length - 1) * ARRIVE_STAGGER;
     const splitAt = ARRIVE_SPLIT_AT + lag;
-    const end = splitAt + ARRIVE_SPLIT;
+    // Nobody to come apart, and so no split to wait through.
+    const end = into ? splitAt + ARRIVE_SPLIT : splitAt;
 
     // Impatience is allowed. A press during the animation skips to the talk.
     if (pressed && story.t < end) {
@@ -1232,7 +1266,7 @@ export class ChapterScreen implements Screen {
     this.whiteout.style.opacity = String(1 - smooth(t / ARRIVE_FADE));
 
     const split = clamp01((t - splitAt) / ARRIVE_SPLIT);
-    if (split > 0 && !story.shimmered) {
+    if (into && split > 0 && !story.shimmered) {
       story.shimmered = true;
       sfx.shimmer();
     }
@@ -1269,6 +1303,7 @@ export class ChapterScreen implements Screen {
     });
 
     if (t < end) {
+      if (!from || !into) return;
       const fb = from.body;
       const ib = into.body;
       this.blockout.setPose(
@@ -1319,6 +1354,33 @@ export class ChapterScreen implements Screen {
     this.talkWho.textContent = spec.name;
     this.talkText.textContent = said.text.slice(0, Math.floor(this.typed));
     this.showMore(this.typed >= said.text.length ? (more ? 'more' : 'last') : 'typing');
+  }
+
+  /**
+   * The game's last words, over the dark forecourt, and then the menu.
+   *
+   * Played by the same `Intro` the title sequence is, so they look like its
+   * answer rather than like a second kind of screen, and skipped only by
+   * ESC (see `Intro`). The robots stay standing
+   * behind them, which is the point of playing them here and not on a card.
+   */
+  private startClosing(): void {
+    const lines = this.chapter.objective.closing;
+    const host = this.hud.parentElement;
+    this.closed = true;
+    if (!lines || !host) return;
+    this.hud.style.opacity = '0';
+    this.closing = new Intro(
+      host,
+      !audioUnlocked(),
+      css(this.chapter.palette.accent),
+      () => {
+        this.closing = undefined;
+        // Not from inside `update`, for the same reason as the wormhole.
+        queueMicrotask(() => this.routes.menu());
+      },
+      lines,
+    );
   }
 
   private endStory(): void {
@@ -3572,9 +3634,27 @@ export class ChapterScreen implements Screen {
       node.addEventListener('click', act);
       return node;
     };
+    /*
+     * A day that goes on somewhere (Chapter III's goes home) leads with the
+     * way on, and Retry steps back to an ordinary button beside it. The card
+     * is taken down first so the wormhole is seen opening, not guessed at
+     * behind a panel. See `Exit.afterCard`.
+     */
+    const exit = chapter.objective.exit;
+    const onward = exit?.afterCard && !run.failed ? exit : undefined;
     const buttons = el('div', { display: 'flex', gap: '14px', marginTop: '12px' });
+    if (onward) {
+      this.onward = () => {
+        if (this.story) return;
+        this.onward = undefined;
+        this.endCard?.remove();
+        this.endCard = undefined;
+        this.depart(onward);
+      };
+      buttons.append(button('Continue', 'ENTER', this.onward, true));
+    }
     buttons.append(
-      button('Retry', 'R', () => this.restart(), true),
+      button('Retry', 'R', () => this.restart(), !onward),
       button('Collectables', 'P', album),
       button('Chapter select', 'ESC', () => this.routes.menu()),
     );
@@ -3769,9 +3849,10 @@ function roomsInUse(chapter: Chapter): string[] {
  * more expensive than a query parameter.
  */
 function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
-  // Off the ship, a chapter starts outside: see `Landing`.
+  // Off the ship, a chapter starts outside: see `Landing`. And the epilogue
+  // comes back down where the ship is, outside: see `Return`.
   const spawn =
-    chapter.objective.arrival?.kind === 'landing'
+    chapter.objective.arrival?.kind === 'landing' || chapter.objective.arrival?.kind === 'return'
       ? SPAWNS.forecourt
       : chapter.startFloor === 0
         ? SPAWNS.hallCentre
