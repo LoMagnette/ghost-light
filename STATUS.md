@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 23:30: submitted, and the evening's changes live.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 23:35: submitted, the evening's changes live and tried on a phone.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -30,7 +30,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. All eighteen agreed (30 Sep). And the three robots, cropped from their model sheets on the author's call (#83) |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on (#75) |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | ✅ | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). Played on a real phone by the author, 30 Sep: everything works. Since then: one INTERACT in place of TALK and DROP (#82), and installable, offline, with an update notice (#80), both headless only so far |
+| Phone | ✅ | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). Played on a real phone by the author, 30 Sep: everything works. Since then: one INTERACT in place of TALK and DROP (#82), and installable, offline, with an update notice (#80), both tried on a real phone by the author, 30 Sep |
 | Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41); Chapter III's card now leads with **Continue** into the epilogue (#77) |
 | Playtest | ✅ | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66); the author's own final playtest, 30 Sep, on desktop and a real phone: everything works |
 | Submission | ✅ | **Submitted** on 30 Sep, before the 23:59 CEST deadline. The live build has moved on since (#79–#83), all before the deadline |
@@ -39,8 +39,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 86
-    "To do" : 8
+    "Done" : 88
+    "To do" : 6
 ```
 
 ---
@@ -130,12 +130,14 @@ pie showData
 | **The selfie with Dimitris is the author's picture** | #83 `dimitris-print` | Made with Nano Banana, like the other prints. Was a capture of the game's own canvas; an old capture no longer stands in for it |
 | **The robots' portraits** | #83 `robot-portraits`, `polish` | Crops of the model sheets, on a dark ground |
 | Polish | `polish` | Haul notices name the thing ("Put the keg down"); a spill costs a trip back, as a put-down does |
+| **The evening's changes, tried on a real phone** | — | 30 Sep, the author: the install, offline play, INTERACT and HOLD STILL |
+| **The real people's lines and cards, read** | — | 30 Sep, the author. Bios and lines are from sourced research (`docs/PROMPTS.md`) |
 
 ---
 
 ## 🔄 In progress
 
-Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. The one thing still moving is the author trying the evening's changes on a real phone.
+Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. Nothing else is left before the deadline; what remains below is for after it.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -144,13 +146,6 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 ---
 
 ## ⬜ To do
-
-### Left over from the last day
-
-| What | Owner | Notes |
-|---|---|---|
-| **Try the evening's changes on a real phone** | Human | Install it to the home screen and open it in airplane mode; INTERACT; the HOLD STILL chip. All checked headless only |
-| Read the real people's lines and cards ❓ | Human | Not recorded either way. Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
 
 ### Design follow-ups, added 27 Sep
 
@@ -207,7 +202,8 @@ gantt
     Play it all, desktop and phone    :done, h1, 2026-09-30, 1d
     Play the ending once              :done, h4, 2026-09-30, 1d
     Final submission                  :done, crit, s2, 2026-09-30, 1d
-    Try the evening's changes on a phone :active, h5, 2026-09-30, 1d
+    Try the evening's changes on a phone :done, h5, 2026-09-30, 1d
+    Read the real people's lines      :done, h6, 2026-09-30, 1d
     section Agent
     Epilogue, back to 2126            :done, g2, 2026-09-30, 1d
     Installable and offline (#80)     :done, g3, 2026-09-30, 1d
