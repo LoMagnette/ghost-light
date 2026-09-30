@@ -6228,6 +6228,18 @@ conference designs drawn in CSS (λ, JVM, { }, ☕, GC, </>, @Test, 2026) and
 no company's mark. Each page now opens at the top, which on a phone it did
 not when there was nothing collected yet.
 
+> How can I provide the stickers and in what format? / I was thinking to use
+> some stickers I've created
+
+**Done** on `sticker-files`, on `souvenir-album`. The author's own sticker
+art drops in like the portraits: `src/stickers/stand-1.png` … `stand-8.png`,
+found by name at build time, a stand without a file keeping its drawn
+placeholder. PNG with a transparent background, the die-cut shape and white
+edge in the picture, square with a little margin; the game adds the tilt
+and shadow. Originals go in the git-ignored `sticker-sources/`;
+`tools/stickers.py` fits each onto a transparent square and writes a
+384 × 384 copy. Checked with a throwaway test sticker, then removed.
+
 ---
 
 ## Audio

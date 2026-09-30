@@ -47,8 +47,40 @@ const ART: { text: string; shape: 'round' | 'hex' | 'tag' | 'pill'; ground: numb
 
 const hex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
+/*
+ * The author's own sticker art, by file name: `src/stickers/stand-3.png` is
+ * stand 3's. Found at build time, like the portraits, so adding one is
+ * dropping a file in; a stand with no file keeps its drawn one. See
+ * `src/stickers/README.md`.
+ */
+const files = import.meta.glob('../stickers/*.{png,webp}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const byName = new Map<string, string>();
+for (const [path, url] of Object.entries(files)) byName.set((path.split('/').pop() ?? '').replace(/\.[^.]+$/, ''), url);
+
+/** The file for this sticker, if the author has supplied one. */
+function stickerFile(sticker: Sticker): string | undefined {
+  return byName.get(`stand-${sticker.n}`);
+}
+
 /** A sticker, drawn: die-cut with a white edge, a little crooked, as stuck on by hand. */
 export function stickerArt(sticker: Sticker, size: number): HTMLElement {
+  const tilt = `rotate(${((sticker.n * 37) % 13) - 6}deg)`;
+  const file = stickerFile(sticker);
+  if (file) {
+    // The author's: its own shape and white edge are in the picture, so only
+    // the tilt and the shadow are added here.
+    const img = el('img', {
+      width: `${size}px`,
+      height: `${size}px`,
+      objectFit: 'contain',
+      transform: tilt,
+      filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
+      flex: '0 0 auto',
+    });
+    img.src = file;
+    img.alt = `Sticker, ${sticker.where}`;
+    return img;
+  }
   const art = ART[(sticker.n - 1) % ART.length];
   const shapes = {
     round: { w: size, h: size, radius: '50%', clip: 'none' },
@@ -68,7 +100,7 @@ export function stickerArt(sticker: Sticker, size: number): HTMLElement {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: `rotate(${((sticker.n * 37) % 13) - 6}deg)`,
+    transform: tilt,
     filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
     flex: '0 0 auto',
   });
