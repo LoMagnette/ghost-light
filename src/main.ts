@@ -15,6 +15,7 @@ import { ChapterScreen } from '@/app/ChapterScreen';
 import type { Routes } from '@/app/Routes';
 import { MOVEMENT_LAB } from '@/chapters/lab';
 import { installAudio } from '@/app/audio';
+import { installUpdateNotice } from '@/app/update';
 import { assertMatchesProjection, createIsoCamera } from '@/render/IsoCamera';
 
 const stage = document.getElementById('stage');
@@ -31,6 +32,7 @@ if (!(stage instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement) ||
 if (import.meta.env.DEV) assertMatchesProjection(createIsoCamera());
 
 installAudio();
+installUpdateNotice();
 
 const game = new Game(stage, canvas, ui);
 

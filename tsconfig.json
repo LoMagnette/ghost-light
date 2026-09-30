@@ -13,7 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     // import.meta.env — Vite injects it; this is where its type comes from.
-    "types": ["vite/client", "node"],
+    // vite-plugin-pwa/client types `virtual:pwa-register` (src/app/update.ts).
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

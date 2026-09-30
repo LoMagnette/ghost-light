@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Ghost Light</title>
+    <!--
+      Installed to an iPhone's home screen, open with no Safari bar: iOS
+      ignores the manifest's display mode and reads these instead, and
+      Safari on iPhone has no fullscreen API for Game.ts to ask. The status
+      bar goes translucent over the dark stage; viewport-fit=cover above
+      already lets the stage run under it.
+    -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ghost Light" />
     <meta
       name="description"
       content="Three robots walk the Kinepolis Antwerp across three eras. A Devoxx Belgium Robot Games entry."
