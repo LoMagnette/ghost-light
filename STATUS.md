@@ -135,7 +135,7 @@ pie showData
 
 ## 🔄 In progress
 
-`polish`: this update, the haul notices, spills, and the robots' portraits on a dark ground. Everything through #83 is on `main`.
+Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. The one thing still moving is the author trying the evening's changes on a real phone.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -207,6 +207,11 @@ gantt
     Play it all, desktop and phone    :done, h1, 2026-09-30, 1d
     Play the ending once              :done, h4, 2026-09-30, 1d
     Final submission                  :done, crit, s2, 2026-09-30, 1d
+    Try the evening's changes on a phone :active, h5, 2026-09-30, 1d
     section Agent
     Epilogue, back to 2126            :done, g2, 2026-09-30, 1d
+    Installable and offline (#80)     :done, g3, 2026-09-30, 1d
+    INTERACT, HOLD STILL (#82)        :done, g4, 2026-09-30, 1d
+    Dimitris print, robot portraits (#83) :done, g5, 2026-09-30, 1d
+    Polish                            :done, g6, 2026-09-30, 1d
 ```
