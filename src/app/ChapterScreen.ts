@@ -943,7 +943,7 @@ export class ChapterScreen implements Screen {
     const items: [string, string | undefined, () => void][] = [
       ['Resume', undefined, () => this.setPaused(false)],
       [
-        'Album',
+        'Collectables',
         undefined,
         () => {
           const host = this.hud.parentElement;
@@ -1406,7 +1406,7 @@ export class ChapterScreen implements Screen {
     words.append(
       el('span', { font: `bold 11px ${MONO}`, color: '#f2c230', letterSpacing: '0.12em' }, 'NEW STICKER'),
       el('span', { font: `15px ${SANS}`, color: '#eef2f4' }, sticker.where),
-      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${got} of ${total} stickers  ·  Album, in the pause menu`),
+      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${got} of ${total} stickers  ·  Collectables, in the pause menu`),
     );
     chip.append(stickerArt(sticker, 40), words);
     this.newCard.replaceChildren(chip);
@@ -1436,7 +1436,7 @@ export class ChapterScreen implements Screen {
     words.append(
       el('span', { font: `bold 11px ${MONO}`, color: tint, letterSpacing: '0.12em' }, `NEW CARD ${number(card)}`),
       el('span', { font: `15px ${SANS}`, color: '#eef2f4' }, card.who),
-      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${met} of ${total} people  ·  Album, in the pause menu`),
+      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${met} of ${total} people  ·  Collectables, in the pause menu`),
     );
     chip.append(face(card, 40), words);
     this.newCard.replaceChildren(chip);
@@ -3535,7 +3535,7 @@ export class ChapterScreen implements Screen {
         el(
           'div',
           { font: `12px ${MONO}`, color: '#6f777c' },
-          `${taken} of ${total} prints in the album${optionalLeft > 0 ? `   ·   ${optionalLeft} side quest${optionalLeft === 1 ? '' : 's'} still out there` : ''}`,
+          `${taken} of ${total} prints collected${optionalLeft > 0 ? `   ·   ${optionalLeft} side quest${optionalLeft === 1 ? '' : 's'} still out there` : ''}`,
         ),
       );
     }
@@ -3575,7 +3575,7 @@ export class ChapterScreen implements Screen {
     const buttons = el('div', { display: 'flex', gap: '14px', marginTop: '12px' });
     buttons.append(
       button('Retry', 'R', () => this.restart(), true),
-      button('Album', 'P', album),
+      button('Collectables', 'P', album),
       button('Chapter select', 'ESC', () => this.routes.menu()),
     );
     this.openEndAlbum = album;

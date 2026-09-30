@@ -6285,6 +6285,18 @@ read as one. **Both fixed** on `cinema-rooms`:
 
 `objectives`, `traverse`, `venue`, `crowd`, `physics` and `shoot` pass.
 
+> You forgot to remove the access to the photo album since everything is now
+> in one place. Btw the who's who should be maybe called collectables ?
+
+The separate Album and Who's who buttons came back because `cinema-rooms`
+had been branched from a copy of `main` older than #73 (the sandbox cannot
+fetch). Rebased onto #74, which restored the single entry point; the only
+conflict was this log, both entries kept. And the book is now
+**Collectables** (read as the book's name, since prints, people and
+stickers all are): the menu button, the pause menu item, the end card
+button, the book's title and the NEW CARD / NEW STICKER hints. Its tabs stay
+Prints, Who's who and Stickers. README updated.
+
 ---
 
 ## Audio
