@@ -6407,6 +6407,17 @@ taken the old selfie kept the capture as a data URL, and the album showed
 that ahead of any file. A capture now stands in only for a print that is
 still a selfie. Checked by seeding an old capture and opening Collectables.
 
+> Ok can you use the reference image for the robot to create their portrait
+
+Claude raised a question before doing it. The model sheets are Devoxx's and
+kept out of the MIT repo on purpose, so a crop of them would put their art
+in it. A flat drawing would not match the twenty photographic portraits. It
+set out three options: the author makes them with an image tool from the
+sheets, crop the sheets, or Claude draws them flat. **The author chose the
+crop.** Voxxy's front view, Droid's close-up and Biggy's front view, cut
+square, at 512 × 512 and 256 colours like the others. The first Biggy crop
+had a sliver of the panel above it along the top edge, and was moved down.
+
 ---
 
 ## The other tools
