@@ -6213,6 +6213,21 @@ the same sourced ones as before; what is new is only the framing around
 them. Alina's "There will be snacks" is a nod to her own speaker bio
 ("Ambassador of snacks").
 
+> Could we group the picture and the who's who into one souvenir album with
+> multiple tab. And maybe then we can use it to collect stickers too.
+
+**Done** on `souvenir-album`, from `main` (#72). One **Album** with three
+tabs, Prints, Who's who and Stickers, each showing its count; `1` `2` `3` or
+a click turn the tab. The menu, the pause menu and the end card each have
+one Album button (P; C still opens it on the who's who). The menu button
+shows the total ("Album 0/36"). **Stickers** are new: each of the eight
+stands on Chapter III's sticker round now gives a sticker that is kept in the
+browser, with a NEW STICKER notice when taken and a dashed blank for the
+rest. The stands are nobody in particular, so the stickers are generic
+conference designs drawn in CSS (λ, JVM, { }, ☕, GC, </>, @Test, 2026) and
+no company's mark. Each page now opens at the top, which on a phone it did
+not when there was nothing collected yet.
+
 ---
 
 ## Audio

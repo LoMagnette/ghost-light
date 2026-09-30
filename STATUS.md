@@ -24,7 +24,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
 | People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60); their lines and bios from sourced research, Chet Haase in Gavin King's place, and looks set from the portraits (#68) |
-| Collections | ✅ | The album of prints (#40, #42, #45) and the who's who, a card for all 23 people (#59); every real person's card has a bio and a portrait (#68) |
+| Collections | ✅ | One souvenir album on `souvenir-album`: prints (#40, #42, #45), the who's who with portraits and bios (#59, #68), and stickers from Chapter III's stands, one tab each |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. Agreement boxes still to tick |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46). One cinema-room improvement is noted for later |

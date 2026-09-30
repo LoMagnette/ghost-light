@@ -41,7 +41,9 @@ import { createIsoCamera, lookAtWorld, VIEW_WIDTH_METRES } from '@/render/IsoCam
 import { playAmbience, playMusic } from './audio';
 import * as sfx from './sfx';
 import { KeyboardController } from '@/input/KeyboardController';
-import { albumCount, keepPhoto, keptPicture, openAlbum } from './album';
+import { albumCount, keepPhoto, keptPicture } from './album';
+import { openSouvenirs } from './souvenirs';
+import { collectSticker, stickerArt, stickerCount, type Sticker } from './stickers';
 import type { TouchControls } from '@/input/Touch';
 import { CHAPTER_ONE } from '@/chapters/registry';
 import { chapterOrLab } from '@/chapters/lab';
@@ -52,7 +54,7 @@ import { css, el, label, MONO, SANS, SERIF } from './dom';
 import { currentQuality } from './quality';
 import { portraitOf } from './portraits';
 import { ink, lift } from './tint';
-import { castCount, face, meet, meets, number, openCast, tintOf, type Card } from './cast';
+import { castCount, face, meet, meets, number, tintOf, type Card } from './cast';
 import {
   CAMERA_LEAD_CAP,
   CAMERA_LERP,
@@ -941,11 +943,11 @@ export class ChapterScreen implements Screen {
     const items: [string, string | undefined, () => void][] = [
       ['Resume', undefined, () => this.setPaused(false)],
       [
-        "Who's who",
+        'Album',
         undefined,
         () => {
           const host = this.hud.parentElement;
-          if (host) openCast(host, this.touch);
+          if (host) openSouvenirs(host, this.touch, 'prints');
         },
       ],
       ['Restart', 'Start this chapter over. Progress is lost', () => this.restart()],
@@ -1379,6 +1381,37 @@ export class ChapterScreen implements Screen {
       const card = meet(a.who);
       if (card) this.showNewCard(card);
     }
+    // And any sticker just taken off a stand, into the album.
+    for (const state of this.run.states) {
+      if (state.activity.group !== 'stickers' || state.status !== 'done') continue;
+      const sticker = collectSticker(state.activity.id);
+      if (sticker) this.showNewSticker(sticker);
+    }
+  }
+
+  /** A sticker for the album, a moment, where a new card goes. See `showNewCard`. */
+  private showNewSticker(sticker: Sticker): void {
+    const { got, total } = stickerCount();
+    const chip = el('span', {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '14px',
+      padding: '7px 16px 7px 10px',
+      background: 'rgba(8, 11, 14, 0.9)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      borderRadius: '4px',
+      textAlign: 'left',
+    });
+    const words = el('span', { display: 'flex', flexDirection: 'column', gap: '2px' });
+    words.append(
+      el('span', { font: `bold 11px ${MONO}`, color: '#f2c230', letterSpacing: '0.12em' }, 'NEW STICKER'),
+      el('span', { font: `15px ${SANS}`, color: '#eef2f4' }, sticker.where),
+      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${got} of ${total} stickers  ·  Album, in the pause menu`),
+    );
+    chip.append(stickerArt(sticker, 40), words);
+    this.newCard.replaceChildren(chip);
+    this.newCard.style.opacity = '1';
+    this.newCardFor = 2.6;
   }
 
   /**
@@ -1403,7 +1436,7 @@ export class ChapterScreen implements Screen {
     words.append(
       el('span', { font: `bold 11px ${MONO}`, color: tint, letterSpacing: '0.12em' }, `NEW CARD ${number(card)}`),
       el('span', { font: `15px ${SANS}`, color: '#eef2f4' }, card.who),
-      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `Who's who: ${met} of ${total}  ·  in the pause menu`),
+      el('span', { font: `11px ${MONO}`, color: '#8d959b' }, `${met} of ${total} people  ·  Album, in the pause menu`),
     );
     chip.append(face(card, 40), words);
     this.newCard.replaceChildren(chip);
@@ -3514,11 +3547,11 @@ export class ChapterScreen implements Screen {
     const touch = this.touch;
     const album = (): void => {
       const host = this.hud.parentElement;
-      if (host) openAlbum(host, touch);
+      if (host) openSouvenirs(host, touch, 'prints');
     };
     const cast = (): void => {
       const host = this.hud.parentElement;
-      if (host) openCast(host, touch);
+      if (host) openSouvenirs(host, touch, 'people');
     };
     const button = (label: string, key: string, act: () => void, primary = false): HTMLElement => {
       const node = el('div', {
@@ -3543,7 +3576,6 @@ export class ChapterScreen implements Screen {
     buttons.append(
       button('Retry', 'R', () => this.restart(), true),
       button('Album', 'P', album),
-      button("Who's who", 'C', cast),
       button('Chapter select', 'ESC', () => this.routes.menu()),
     );
     this.openEndAlbum = album;

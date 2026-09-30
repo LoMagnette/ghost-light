@@ -29,6 +29,7 @@ import { button } from './album';
 import { css, el, MONO, SANS } from './dom';
 import { portraitOf } from './portraits';
 import { ink, lift } from './tint';
+import { tabForKey, tabHeader, type Tab, type Tabs } from './tabs';
 
 export interface Card {
   /** Their name, as the dialogue box prints it. The card's key. */
@@ -352,7 +353,7 @@ function badge(card: Card, met: boolean, m: ReturnType<typeof measures>, big: bo
  * walk the cards, ENTER holds a met one up large, LEFT and RIGHT turn to the
  * next met, ESC puts it down and then shuts the book.
  */
-export function openCast(host: HTMLElement, touch: boolean, onClose?: () => void): void {
+export function openCast(host: HTMLElement, touch: boolean, onClose?: () => void, tabs?: Tabs): void {
   const m = measures(touch);
   const root = el('div', {
     position: 'absolute',
@@ -375,11 +376,18 @@ export function openCast(host: HTMLElement, touch: boolean, onClose?: () => void
   root.append(page);
 
   const { met, total } = castCount();
-  page.append(
-    el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
-    el('div', { font: `${m.title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, "Who's who"),
-    el('div', { font: `${m.count}px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${met} of ${total} met`),
-  );
+  const turn = (tab: Tab): void => {
+    shut();
+    tabs?.go(tab);
+  };
+  if (tabs) page.append(...tabHeader(tabs, touch, m.title, turn));
+  else {
+    page.append(
+      el('div', { font: `12px ${MONO}`, color: '#6f777c', letterSpacing: '0.24em' }, 'GHOST LIGHT'),
+      el('div', { font: `${m.title}px ${SANS}`, color: '#f2f5f7', margin: '6px 0 4px' }, "Who's who"),
+      el('div', { font: `${m.count}px ${MONO}`, color: '#8d959b', marginBottom: '26px' }, `${met} of ${total} met`),
+    );
+  }
 
   const grid = el('div', { display: 'grid', gridTemplateColumns: `repeat(${m.columns}, ${m.w}px)`, gap: m.gap });
   page.append(grid);
@@ -495,6 +503,11 @@ export function openCast(host: HTMLElement, touch: boolean, onClose?: () => void
       }
       return;
     }
+    const tab = tabs ? tabForKey(code) : undefined;
+    if (tab && tab !== tabs?.active && !event.repeat) {
+      turn(tab);
+      return;
+    }
     if (code === 'Escape') {
       if (!event.repeat) shut();
       return;
@@ -517,5 +530,9 @@ export function openCast(host: HTMLElement, touch: boolean, onClose?: () => void
     if (event.target === root || event.target === page) shut();
   });
   host.append(root);
-  focusAt(earned.length > 0 ? earned[0].cell : cells.length);
+  // Focus without scrolling to it, and start the page at the top: on a
+  // phone focusing CLOSE scrolled the tabs out of sight.
+  const first = earned.length > 0 ? earned[0].cell : cells.length;
+  (first >= cells.length ? close : cells[first].node).focus({ preventScroll: true });
+  root.scrollTop = 0;
 }
