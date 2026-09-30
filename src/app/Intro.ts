@@ -87,6 +87,7 @@ export class Intro {
       maxWidth: '760px',
       padding: '0 40px',
       textAlign: 'center',
+      textWrap: 'balance',
       font: `24px ${SANS}`,
       lineHeight: '1.5',
       color: '#d4dade',

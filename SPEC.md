@@ -229,7 +229,7 @@ split this time (`arrival.kind: 'return'`). Three went through, and three
 come out. They say six lines between them. Voxxy speaks again for the first
 time since the forecourt, and Droid says the scriptures name other temples.
 Then come the closing words, set like the title sequence and answering it:
-*Paris. London. Kraków. Marrakesh. Athens.* and *The journey has only just
+*France. The United Kingdom. Poland. Morocco. Greece.* and *The journey has only just
 begun.* Then the menu.
 
 It is not the same dark it was. As the robots land, the zones Voxxy powered

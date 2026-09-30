@@ -6314,8 +6314,7 @@ a page say which decade they are in.
 card stays, and its first button is now **Continue**. It opens a wormhole
 under all three robots, and they land on the dark 2126 forecourt, the
 epilogue `EPILOGUE` in `registry.ts`. They say six lines, the closing words
-name Paris, London, Kraków, Marrakesh and Athens, and then the game returns
-to the menu. The one design choice made without asking was keeping the
+name five other Devoxx countries, and then the game returns to the menu. The one design choice made without asking was keeping the
 card: routing straight into the wormhole would have lost the only summary of
 the day.
 
@@ -6343,6 +6342,13 @@ at Chapter I's levels, plus the forecourt at 0.34. At 0.22 the forecourt
 was only a slight lift when compared side by side with the dark version.
 Droid's first line now points it out. The lights are built dark at load
 like every other rig, so they do not stutter the shaders as they come on.
+
+> Instead of naming cities in the epilogue name countries (because devoxx
+> morocco change city frequently)
+
+**Done** on `homecoming`. Droid's line and the closing words now name
+France, the United Kingdom, Poland, Morocco and Greece. A city would date
+the ending the next time a Devoxx moves; a country stays true.
 Headless, the arrival runs slower than real time, and the first "lit" frame
 at 8 s was still mid-wormhole. It needed 25 s.
 
