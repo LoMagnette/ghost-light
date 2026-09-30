@@ -31,6 +31,24 @@ import { portraitOf } from './portraits';
 import { ink, lift } from './tint';
 import { tabForKey, tabHeader, type Tab, type Tabs } from './tabs';
 
+/**
+ * One colour per era on the cards, so a page of the who's who reads as three
+ * decades at a glance (the author, 30 Sep). Not simply the chapters' accents:
+ * II's tungsten and III's Devoxx orange are two oranges a step apart, and
+ * side by side the two eras looked like one. 2126 keeps the ghost light's
+ * pink; 2006 is a vintage gold; 2026 is the Devoxx orange, brighter.
+ */
+const ERA_COLOUR: Record<string, number> = {
+  silence: 0xf24471,
+  javapolis: 0xe0b441,
+  capacity: 0xf37021,
+};
+
+/** A colour as rgba, for the faint tint on a card not yet met. */
+function tint(colour: number, alpha: number): string {
+  return `rgba(${(colour >> 16) & 0xff}, ${(colour >> 8) & 0xff}, ${colour & 0xff}, ${alpha})`;
+}
+
 export interface Card {
   /** Their name, as the dialogue box prints it. The card's key. */
   who: string;
@@ -42,7 +60,7 @@ export interface Card {
   when?: string;
   /** The year alone, for the small card. */
   year?: number;
-  /** The chapter's accent, for the card's band. */
+  /** The card's era colour, for its band. See `ERA_COLOUR`. */
   accent: number;
   /** The job on the card that puts you in front of them. */
   where: string;
@@ -76,7 +94,7 @@ export const CARDS: readonly Card[] = (() => {
         chapter: `${chapter.numeral}. ${chapter.title}`,
         when: chapter.when ? `${chapter.when.month ? `${chapter.when.month} ` : ''}${chapter.when.year}` : undefined,
         year: chapter.when?.year,
-        accent: chapter.palette.accent,
+        accent: ERA_COLOUR[chapter.id] ?? chapter.palette.accent,
         where: a.label,
         // Only what they say. Narration is the game describing them, not them.
         line: a.kind === 'talk' && !a.narrated ? a.lines[0] : undefined,
@@ -223,7 +241,9 @@ function badge(card: Card, met: boolean, m: ReturnType<typeof measures>, big: bo
     height: big ? 'auto' : '100%',
     boxSizing: 'border-box',
     background: met ? '#0f1316' : 'transparent',
-    border: met ? '1px solid rgba(255, 255, 255, 0.14)' : '1px dashed rgba(255, 255, 255, 0.16)',
+    // Not met: the badge's outline in its era's colour, faint, so the gaps
+    // on a page say which decade they are in.
+    border: met ? '1px solid rgba(255, 255, 255, 0.14)' : `1px dashed ${tint(card.accent, 0.4)}`,
     borderRadius: '8px',
     overflow: 'hidden',
     textAlign: 'center',
@@ -233,8 +253,8 @@ function badge(card: Card, met: boolean, m: ReturnType<typeof measures>, big: bo
   const band = el('div', {
     position: 'relative',
     padding: `${big ? 26 : 16}px 12px ${big ? 10 : 6}px`,
-    background: met ? accent : 'rgba(255, 255, 255, 0.04)',
-    color: met ? '#06080a' : '#6f777c',
+    background: met ? accent : tint(card.accent, 0.1),
+    color: met ? '#06080a' : tint(card.accent, 0.75),
     font: `bold ${small}px ${MONO}`,
     letterSpacing: '0.12em',
     display: 'flex',

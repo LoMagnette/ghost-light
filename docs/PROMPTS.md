@@ -6297,6 +6297,15 @@ stickers all are): the menu button, the pause menu item, the end card
 button, the book's title and the NEW CARD / NEW STICKER hints. Its tabs stay
 Prints, Who's who and Stickers. README updated.
 
+> Maybe use an different color per era in the who's who
+
+**Done** on `era-colours`, on `cinema-rooms`. The cards took the chapters'
+accents, and II's tungsten and III's Devoxx orange were two oranges a step
+apart. Now one colour per era: 2126 the ghost light's pink, 2006 a vintage
+gold, 2026 a brighter Devoxx orange. A met card's band is the colour; a card
+not yet met has its outline and band faintly tinted with it, so the gaps on
+a page say which decade they are in.
+
 ---
 
 ## Audio
