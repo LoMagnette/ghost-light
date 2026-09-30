@@ -6252,6 +6252,20 @@ Terminator; a 2024 stand giveaway; the BeJUG logo today; a 2025 nod to The
 Matrix and its agents; the brand-new 2023 BeJUG logo. Blanks still say only
 where to find them.
 
+> what was the ideal resolution for the picture taken by the photograph ?
+
+Answered: 3:2, 1500 × 1000 (the album holds a print up at 600 × 400, well
+over 1000 real pixels on a high-density screen).
+
+> I've update the picture you should now use the png version and drop the
+> jpeg
+
+**Done** on `sticker-files`: the four prints are the author's new
+1500 × 1000 PNGs and the JPEGs are removed. Kept full colour: a 256-colour
+copy, as the portraits are, banded visibly on Biggy, and lossless
+optimisation saved only 3%, so the files are as the author made them (about
+6 MB for the four). `public/photos/README.md` says 1500 × 1000 PNG.
+
 ---
 
 ## Audio
