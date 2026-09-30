@@ -216,6 +216,15 @@ export interface ActivityState {
   progress: number;
   /** Haul only: who has it. */
   carrier?: Actor;
+  /**
+   * Haul only: who just put it down, until they have moved off it.
+   *
+   * Picking up is automatic, so without this the robot that put a thing
+   * down was standing within reach of it, empty-handed, and took it back
+   * on the very next frame: "Put the keg down", then "Biggy has the keg"
+   * half a second later, and a put-down that did nothing at all.
+   */
+  putDownBy?: Actor;
   /** Chapter seconds at which this was completed. See `Activity.within`. */
   doneAt?: number;
   /** Where the thing is right now. Haul items move; everything else does not. */
@@ -571,13 +580,13 @@ export class ObjectiveRun {
     const carrier = state.carrier;
 
     if (!carrier) {
+      const within = (actor: Actor): boolean =>
+        actor.floor === state.floor && Math.hypot(actor.body.x - state.x, actor.body.y - state.y) <= PICKUP_RANGE;
+      if (state.putDownBy && !within(state.putDownBy)) state.putDownBy = undefined;
       // Pick up: close enough, able to lift it, and not already full.
       const taker = actors.find(
         (actor) =>
-          admits(a, actor.body.spec) &&
-          actor.floor === state.floor &&
-          Math.hypot(actor.body.x - state.x, actor.body.y - state.y) <= PICKUP_RANGE &&
-          actor.body.payload === 0,
+          actor !== state.putDownBy && admits(a, actor.body.spec) && within(actor) && actor.body.payload === 0,
       );
       if (taker) {
         taker.body.payload += a.mass;
@@ -616,6 +625,7 @@ export class ObjectiveRun {
     if (drop) {
       carrier.body.payload -= a.mass;
       state.carrier = undefined;
+      state.putDownBy = carrier;
       state.status = 'open';
       this.say(`Put the ${a.label.toLowerCase()} down`);
     }
