@@ -126,7 +126,7 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| **Epilogue: Homecoming** | `homecoming` | Built and pushed. The screenshot tour and `npm run objectives` pass with no console errors, and the whole ending has been driven headless: card, wormhole, landing, lights, closing words, menu | Open a PR, and the author plays it once. Check "Marrakesh" in the city list | Agent · Human |
+| **Epilogue: Homecoming** | `homecoming` | Built and pushed. The screenshot tour and `npm run objectives` pass with no console errors, and the whole ending has been driven headless: card, wormhole, landing, lights, closing words, menu | Open a PR, and the author plays it once. Check the list of countries | Agent · Human |
 
 Everything else through #76 is on `main`.
 
