@@ -352,7 +352,14 @@ export class ChapterScreen implements Screen {
   private talkPrompt!: HTMLElement;
   /** What the prompt last drew, so it is rebuilt only on a change. See `showPrompt`. */
   private promptKey = '';
-  /** Edge-triggered, exactly like `dropRequested`. */
+  /**
+   * E, the one action key, this frame only: talk, or put down.
+   *
+   * An edge rather than a held state: a held key would page through a whole
+   * conversation in a fifth of a second, or drop and re-take a load sixty
+   * times a second. What it does is decided where it is spent; see
+   * `interactDrops`.
+   */
   private talkRequested = false;
   /**
    * How much of the current line has been typed out, in characters.
@@ -415,13 +422,6 @@ export class ChapterScreen implements Screen {
   private run!: ObjectiveRun;
   /** The people. Empty in Chapter I, and that is the whole of Chapter I. */
   private crowd!: Crowd;
-  /**
-   * Set by SPACE and cleared by the objective the same frame.
-   *
-   * An edge rather than a held state: putting something down is a decision,
-   * and a held key would drop and re-take it sixty times a second.
-   */
-  private dropRequested = false;
   /** Seconds left on the current notification. */
   private toastFor = 0;
   /** The photograph on screen, and how long it has left. */
@@ -693,12 +693,12 @@ export class ChapterScreen implements Screen {
       else this.setPaused(true, 1);
     });
     // SPACE and ENTER turn a page too, while a box is up: they are what a
-    // player who has not read the box presses first. Otherwise SPACE drops.
+    // player who has not read the box presses first. SPACE was DROP as well
+    // until E took that over; see `interactDrops`.
     const reading = (): boolean => this.story !== undefined || this.talkBox.style.display !== 'none';
     game.keyboard.on('Space', () => {
       if (this.paused) this.choosePause();
       else if (reading()) this.talkRequested = true;
-      else this.dropRequested = true;
     });
     game.keyboard.on('Enter', () => {
       if (this.paused) this.choosePause();
@@ -717,8 +717,9 @@ export class ChapterScreen implements Screen {
         if (this.paused) this.movePause(step);
       });
     }
-    // E rather than SPACE or ENTER: SPACE is already the drop, and ENTER is
-    // the one key a browser is liable to hand to something else on the page.
+    // E, INTERACT on a phone: talk to whoever is in range, and with nobody
+    // in range put down what the robot is carrying. Not ENTER, the one key
+    // a browser is liable to hand to something else on the page.
     game.keyboard.on('KeyE', () => {
       if (this.paused) this.choosePause();
       else this.talkRequested = true;
@@ -840,7 +841,8 @@ export class ChapterScreen implements Screen {
       }
       this.driveSwarm();
       // A held frame still pages a conversation: that is a press, not time.
-      this.run.update(step, this.actors, this.dropRequested, this.talkRequested);
+      const drop = this.interactDrops();
+      this.run.update(step, this.actors, drop, this.talkRequested && !drop);
       this.evaluated = true;
       this.consumeObjective();
       this.hearObjective();
@@ -854,7 +856,6 @@ export class ChapterScreen implements Screen {
         else this.showEndCard();
       }
     }
-    this.dropRequested = false;
     this.talkRequested = false;
     this.showSessions(dt);
     if (this.story) this.updateStory(dt, talkPressed);
@@ -1041,7 +1042,6 @@ export class ChapterScreen implements Screen {
     // the tap that closed the menu, is the pause leaking.
     Object.assign(this.controlled.input, { dirX: 0, dirY: 0, throttle: 0, braking: false });
     this.talkRequested = false;
-    this.dropRequested = false;
   }
 
   private movePause(step: number): void {
@@ -2772,11 +2772,12 @@ export class ChapterScreen implements Screen {
     // engine and none of them is true of the chapter, and a control list with
     // three dead keys on it is how a player decides the game is broken.
     const talks = chapter.objective.activities.some((a) => a.kind === 'talk');
+    const hauls = chapter.objective.activities.some((a) => a.kind === 'haul');
     const keys: [string, string][] = [
       ['WASD', 'move'],
       ['SHIFT', 'brake'],
-      ...(chapter.cast.length > 1 ? ([['TAB', 'robot'], ['SPACE', 'drop']] as [string, string][]) : []),
-      ...(talks ? ([['E', 'talk']] as [string, string][]) : []),
+      ...(chapter.cast.length > 1 ? ([['TAB', 'robot']] as [string, string][]) : []),
+      ...(talks || hauls ? ([['E', 'interact']] as [string, string][]) : []),
       ['R', 'restart'],
       ['M', 'sound'],
       ['ESC', 'pause'],
@@ -2933,6 +2934,21 @@ export class ChapterScreen implements Screen {
    * with three machines in the building, "somebody is standing in the zone"
    * would open a box about a conversation the player is not watching.
    */
+  /**
+   * Whether this frame's E puts a load down rather than talking.
+   *
+   * DROP had a key and a button of its own, and the author never used
+   * either in a whole playtest: picking up and delivering are automatic, so
+   * putting something down part way is rare. So it is E's second meaning,
+   * and talking always wins. A robot in range of a conversation, or with a
+   * box up, talks; only a robot with nobody to talk to and something on its
+   * back puts it down.
+   */
+  private interactDrops(): boolean {
+    if (!this.talkRequested || this.controlled.body.payload === 0) return false;
+    return this.talkHere() === undefined && this.talkBox.style.display === 'none';
+  }
+
   private talkHere(): { state: ActivityState; activity: TalkActivity } | undefined {
     const body = this.controlled.body;
     for (const state of this.run.states) {
@@ -3006,7 +3022,7 @@ export class ChapterScreen implements Screen {
           color: here ? accent : '#7d868b',
           font: `bold 13px ${MONO}`,
         },
-        this.touch ? 'TALK' : 'E',
+        this.touch ? 'INTERACT' : 'E',
       ),
       el('span', {}, here ? `Talk to ${who}` : `Closer to talk to ${who}`),
     );

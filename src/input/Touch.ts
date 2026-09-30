@@ -33,7 +33,7 @@ const LEARNED = 'ghost-light:stick-learned';
 
 /** What a chapter uses, so only its buttons are shown. */
 export interface TouchLayout {
-  /** TAB and SPACE: more than one robot, so switching and dropping. */
+  /** TAB: more than one robot, so switching. */
   crew: boolean;
 }
 
@@ -50,15 +50,17 @@ interface Button {
 /**
  * Bottom right, under the right thumb: the ones used while driving, laid out
  * as a controller's four face buttons. The author, 29 Sep: "similar in terms
- * of positioning to a controller". So TALK is the bottom one, where a
+ * of positioning to a controller". So INTERACT is the bottom one, where a
  * controller's confirm is; BRAKE is on the right, where the other thumb-rest
- * button is; DROP on the left and ROBOT on top, the two a chapter with one
- * robot does not have. `at` is the button's place in the diamond.
+ * button is; ROBOT on top, which a chapter with one robot does not have.
+ * `at` is the button's place in the diamond. The left one was DROP, until
+ * the author's playtest never used it and INTERACT took it over (E; see
+ * `interactDrops` in ChapterScreen): the diamond keeps its place empty, so
+ * the other three stay where the thumb learned them.
  */
 const ACTIONS: (Button & { at: 'bottom' | 'right' | 'left' | 'top' })[] = [
-  { label: 'TALK', code: 'KeyE', size: 70, at: 'bottom' },
+  { label: 'INTERACT', code: 'KeyE', size: 70, at: 'bottom' },
   { label: 'BRAKE', code: 'ShiftLeft', hold: true, size: 60, at: 'right' },
-  { label: 'DROP', code: 'Space', size: 56, crew: true, at: 'left' },
   { label: 'ROBOT', code: 'Tab', size: 56, crew: true, at: 'top' },
 ];
 
@@ -208,7 +210,7 @@ export class TouchControls {
      * Right thumb: the diamond, its bottom button in the corner.
      *
      * Each button is placed by its centre around the diamond's middle, so a
-     * chapter without a crew keeps TALK and BRAKE exactly where they are in
+     * chapter without a crew keeps INTERACT and BRAKE exactly where they are in
      * one that has one: a thumb that learned them in Chapter I does not have
      * to learn them again.
      */
@@ -310,7 +312,8 @@ export class TouchControls {
         border: '2px solid rgba(255,255,255,0.35)',
         background: 'rgba(12,16,20,0.45)',
         color: 'rgba(255,255,255,0.8)',
-        font: `600 ${b.size >= 70 ? 13 : 11}px ui-monospace, Menlo, monospace`,
+        // INTERACT is eight letters in a 70 px circle: the small size.
+        font: `600 ${b.size >= 70 && b.label.length <= 6 ? 13 : 11}px ui-monospace, Menlo, monospace`,
         letterSpacing: '0.06em',
         display: 'flex',
         alignItems: 'center',
