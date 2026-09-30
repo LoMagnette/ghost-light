@@ -6363,6 +6363,54 @@ the ending the next time a Devoxx moves; a country stays true.
 Headless, the arrival runs slower than real time, and the first "lit" frame
 at 8 s was still mid-wormhole. It needed 25 s.
 
+> Can we make the game a pwa and what do you need ? / let's do it. I would
+> try full offline. I will provide the icon in a bit let's do the rest now
+
+**Done** on `pwa`, after the submission. Claude Code (Opus 5.5), one session.
+`vite-plugin-pwa` writes the manifest and a service worker that stores the
+whole build on the first visit, about 16.6 MB and 46 files, source maps
+left out. Every icon is cut at build time from one square `public/icon.png`.
+It is now `public/icon.svg`. The manifest asks
+for full screen and landscape, and `index.html` has the Apple tags, since
+an iPhone ignores the manifest's display mode and Safari there has no
+fullscreen API.
+
+What went wrong on the way. The icon source first sat in `src/icon/`, and
+the generator wrote its icons back into `src/icon/`: it places them at the
+source's path relative to `public/`. The plugin's default of `autoUpdate`
+was dropped for `prompt` with no prompt shown. `autoUpdate` swaps the worker
+under a running game, and the old build's hashed files (a track or portrait
+not loaded yet) go with the old cache. Now a new build waits until the game
+is closed. The first offline check failed on every file because the page
+was not yet controlled: without `clientsClaim` the first visit stays
+uncontrolled until a reload. `npm run offline` now serves a build from
+`/ghost-light/` as Pages does, shuts the server down, and fetches every
+emitted file and boots every chapter.
+
+> Can you create the icon based on voxxy image
+
+**Done**, as Voxxy's head front on, drawn as an SVG. Claude did not crop the
+model sheet, which is Devoxx's and is kept out of the MIT repo. The first try
+was the game's own Voxxy rendered close up with `?face&zoom=8`. The fixed view
+looks down on the head, so at icon size the visor read as a gash. **Fixed on
+the way:** the generator's default PNG quality of 60 quantised the icons to a
+palette and banded the glow under the head. That only showed in a preview of
+the iPhone icon cropped the way the home screen crops it.
+
+> Can we add a update notification to notify the user there's a new version
+> and allow him to update directly ?
+
+**Done** as `src/app/update.ts`. It came from Claude's own review of the
+deploy: holding the new build back, which is right mid-chapter, meant a fix
+reached a player one launch late. The notice sits in the top right, with
+UPDATE (reload into it) and LATER. The page checks again when it comes back
+from the background and every 30 minutes. **Caught on the way:** the first
+draft put the notice in the stage. On a phone the touch controls are a
+full-screen layer above the stage and would have taken its taps, so it is
+fixed to the window above them. `npm run offline` now also serves a changed
+`sw.js`, waits for the notice, presses UPDATE, and checks the new worker is
+in charge.
+
 > Ok because I don't think the drop button and even command on a desktop are
 > that useful. In my playtest I never really used it. I think we could merge
 > it with the talk into an interact button

@@ -56,6 +56,7 @@ npm run venue       # check the building against the plans and against itself
 npm run traverse    # drive real robots at real stairs; assert who gets where
 npm run objectives  # hold every chapter's activities against the building
 npm run crowd       # walk a full crowd for ten minutes; fail if people pile up
+npm run offline     # build for /ghost-light/, cut the network, check every file and chapter still load
 npm run venue -- --svg   # draw both floors as a plan, to hold against the real one
 npm run shoot       # build, drive the game headless, screenshot, fail on console errors
 npm run shoot -- --lab   # same, but the movement lab with telemetry on

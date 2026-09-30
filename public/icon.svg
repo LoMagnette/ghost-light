@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Voxxy's head, front on, drawn for the app icon: ours, not a crop of the model sheet. Everything sits inside the middle 80% so a maskable crop keeps it. -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="52%" r="50%">
+      <stop offset="0" stop-color="#f24471" stop-opacity="0.8"/>
+      <stop offset="0.55" stop-color="#f24471" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#f24471" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa03a"/>
+      <stop offset="0.6" stop-color="#f47c14"/>
+      <stop offset="1" stop-color="#d9620a"/>
+    </linearGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#23262b"/>
+      <stop offset="1" stop-color="#050607"/>
+    </linearGradient>
+    <radialGradient id="eye" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff1c9"/>
+      <stop offset="0.35" stop-color="#ffb13d"/>
+      <stop offset="1" stop-color="#ff7a00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="white" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfd3d6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#06080a"/>
+  <circle cx="512" cy="540" r="470" fill="url(#glow)"/>
+  <!-- ears -->
+  <circle cx="330" cy="318" r="68" fill="url(#shell)"/>
+  <circle cx="694" cy="318" r="68" fill="url(#shell)"/>
+  <!-- side earpieces -->
+  <rect x="186" y="430" width="90" height="190" rx="45" fill="url(#white)"/>
+  <rect x="748" y="430" width="90" height="190" rx="45" fill="url(#white)"/>
+  <rect x="178" y="480" width="30" height="90" rx="15" fill="#15171a"/>
+  <rect x="816" y="480" width="30" height="90" rx="15" fill="#15171a"/>
+  <!-- head -->
+  <ellipse cx="512" cy="530" rx="268" ry="230" fill="url(#shell)"/>
+  <ellipse cx="440" cy="380" rx="120" ry="40" fill="#ffffff" opacity="0.2"/>
+  <!-- visor -->
+  <rect x="300" y="420" width="424" height="210" rx="105" fill="url(#visor)"/>
+  <ellipse cx="420" cy="455" rx="80" ry="14" fill="#ffffff" opacity="0.12"/>
+  <!-- eyes -->
+  <ellipse cx="420" cy="528" rx="62" ry="40" fill="url(#eye)"/>
+  <ellipse cx="604" cy="528" rx="62" ry="40" fill="url(#eye)"/>
+</svg>
