@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, just after midnight: the last day.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 15:00: the last day.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -18,27 +18,28 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Chapter II: JavaPolis | ✅ | Eight breakdowns over a 330 s day (#37); a breakdown now takes the NEXT from any conversation (#53). Balance stands until the author's own cold play says otherwise |
 | Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); the count reads "0 of 9 jobs done" and side quests sit under their own heading (#56) |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
+| Epilogue: back to 2126 | 🔄 | Built and checked on `homecoming`, pushed, no PR yet. After Chapter III's card, all three robots go back to the 2126 forecourt, the lights Chapter I restored come back on, and the closing words name the other temples |
 | Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
 | HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
 | Robot models | ✅ | Rebuilt against the sheets, merged (#17, #18); the author calls them good |
 | Attendees | ✅ | Models merged (#17, #18), bunching fixed (#21); long hair and skirts on a third of the crowd (#61) |
-| People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60); their lines and bios from sourced research, Chet Haase in Gavin King's place, and looks set from the portraits (#68) |
-| Collections | ✅ | One souvenir album on `souvenir-album`: prints (#40, #42, #45), the who's who with portraits and bios (#59, #68), and stickers from Chapter III's stands, one tab each |
+| People in the building | ✅ | The speakers, Stephan, Dimitris, Josh and Venkat, and ten more to meet in II and III with no job attached (#60); their lines and bios from sourced research, Chet Haase in Gavin King's place, and looks set from the portraits (#68, #69); the people you meet now talk like people, not like a bio (#70–#72) |
+| Collections | ✅ | One book called **Collectables** (#73, #75): prints (#40, #42, #45) as the author's PNGs (#74), the who's who with portraits, bios and one colour per era (#59, #68, #76), and the author's eight stickers from Chapter III's stands (#74) |
 | Shot-list photographs | ✅ | **All four** in the game: Room 8, BeJUG, Josh and Biggy, the group with Venkat |
 | Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. Agreement boxes still to tick |
-| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); on `cinema-rooms`, `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on |
+| Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on (#75) |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
 | Phone | 🔄 | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). All checked in a headless 844 × 390 browser; still to try on a real phone |
-| Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41) |
+| Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41); Chapter III's card now leads with **Continue** into the epilogue (on `homecoming`) |
 | Playtest | 🔄 | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66). The author's own cold run of II, and a real phone, are still to do |
 | Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 65
-    "In progress" : 0
+    "Done" : 73
+    "In progress" : 1
     "To do" : 13
 ```
 
@@ -113,6 +114,11 @@ pie showData
 | **Chet Haase in Gavin King's place** | #68 `npc-research` | Swing, Java 2D, Java SE 6, Filthy Rich Clients; no JavaPolis talk found for either |
 | **All twenty portraits** | #68 `npc-research` | 512 × 512 PNG via `tools/portraits.py`; originals in the git-ignored `portrait-sources/`; looks set from them |
 | Status updates | #63, #67 `docs-refresh`, `status-after-66` | |
+| **The named people look like their portraits** | #69 `npc-looks` | |
+| **The people you meet talk** | #70 `richer-talk`, #71 `real-chat`, #72 `friendlier` | More to say, from the research; they talk like people rather than like a bio; each card records the year you met them, and each chapter opens on its year |
+| **One book for everything collected** | #73 `souvenir-album`, #74 `sticker-files`, #75 `cinema-rooms` | Prints, the who's who and stickers in one place, called Collectables; the prints are the author's 1500 × 1000 PNGs and the stickers the author's eight, each with its line |
+| **`#JAVAPOLIS` on the 2006 stages, screens that glow** | #75 `cinema-rooms` | A room's screen glows while a session is on in it |
+| **One colour per era on the who's who** | #76 `era-colours` | 2126 pink, 2006 gold, 2026 Devoxx orange; cards not yet met are faintly tinted |
 
 ---
 
@@ -120,7 +126,9 @@ pie showData
 
 | What | Branch | State | Next step | Owner |
 |---|---|---|---|---|
-| *Nothing in flight.* Everything through #68 is on `main` | | | | |
+| **Epilogue: Homecoming** | `homecoming` | Built and pushed. The screenshot tour and `npm run objectives` pass with no console errors, and the whole ending has been driven headless: card, wormhole, landing, lights, closing words, menu | Open a PR, and the author plays it once. Check "Marrakesh" in the city list | Agent · Human |
+
+Everything else through #76 is on `main`.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -135,6 +143,7 @@ pie showData
 | What | Owner | Planned | Notes |
 |---|---|---|---|
 | **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
+| Play the ending once: Chapter III's card → Continue → 2126 | Human | Wed 30 Sep | `?chapter=capacity&ending` jumps to the card. Read the robots' six lines and the closing words in `HOMECOMING_OBJECTIVE` |
 | The author plays Chapter II cold, on a phone too | Human | Wed 30 Sep | The tester's notes are answered; the question left is whether II is fair with the NEXT now following the breakdowns |
 | Try it on a real phone | Human | Wed 30 Sep | Frame rate, thumb reach to ROBOT at the top of the diamond, and whether the text now reads |
 | Tune from that play | Agent | Wed 30 Sep | Windows, clocks, anything that stuck |
@@ -197,6 +206,8 @@ gantt
     Read the real people's lines      :h3, 2026-09-30, 1d
     Play Chapter II cold, on a phone  :active, h1, 2026-09-30, 1d
     Final submission                  :crit, s2, 2026-09-30, 1d
+    Play the ending once              :h4, 2026-09-30, 1d
     section Agent
+    Epilogue, back to 2126            :active, g2, 2026-09-30, 1d
     Tune from play                    :g1, 2026-09-30, 1d
 ```
