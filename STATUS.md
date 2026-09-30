@@ -40,8 +40,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 pie showData
     title Work items by state
     "Done" : 89
-    "To do" : 2
-    "Parked" : 4
+    "Parked" : 5
 ```
 
 ---
@@ -139,7 +138,7 @@ pie showData
 
 ## 🔄 In progress
 
-Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. Nothing else is left before the deadline: the two small items below are for whenever there is a gap.
+Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. Nothing is left to do: what remains is parked for after the deadline, below.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -148,13 +147,6 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 ---
 
 ## ⬜ To do
-
-### Small, whenever there is a gap
-
-| What | Owner | Notes |
-|---|---|---|
-| Watch the four drone flights against the blockout | Human | Not blocking |
-| **One improvement to the cinema rooms**, for later | Human names it · agent builds | 28 Sep: the author has one in mind and hasn't said what it is yet. The rest of the venue is good enough for now |
 
 ### Open decisions
 
@@ -183,6 +175,7 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 | **Tune the dialogue against real transcripts** | The author, 30 Sep: after the deadline | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. Transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
 | **Words for the ten people to meet** | The author, 30 Sep: after the deadline | Each is narrated, saying who they are from their public work. Agreed first-person lines, if any, are one entry each in `src/chapters/objectives.ts` |
 | **Chet Haase and JavaPolis** | The author, 30 Sep: after the deadline | He replaces Gavin King (29 Sep); his lines are sourced to late 2006. No JavaPolis talk of his was found (nor of Gavin King's). Guillaume Laforge's JavaPolis evidence is 2007 only |
+| **One improvement to the cinema rooms** | The author, 30 Sep: for later | The author has one in mind and hasn't said what it is yet. The rest of the venue is good enough for now |
 
 ---
 
