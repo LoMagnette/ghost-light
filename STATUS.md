@@ -1,6 +1,6 @@
 # Status board
 
-**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 15:00: the last day.**
+**Deadline: Wed 30 September 2026, 23:59 CEST. Last updated Wed 30 Sep, 21:15: submitted.**
 
 `ROADMAP.md` is the plan and says who owns what. This file is the snapshot:
 what is finished, what is in flight, and what is still ahead. When something
@@ -18,7 +18,7 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Chapter II: JavaPolis | ✅ | Eight breakdowns over a 330 s day (#37); a breakdown now takes the NEXT from any conversation (#53). Balance stands until the author's own cold play says otherwise |
 | Chapter III: At Capacity | ✅ | Nine things in Rooms 3–10, merged (#9, #32); the count reads "0 of 9 jobs done" and side quests sit under their own heading (#56) |
 | Story between chapters | ✅ | Both wormholes merged (#7, #8), black-zone fix merged (#12); Chapter I opens outside with Voxxy talking (#35) |
-| Epilogue: back to 2126 | 🔄 | Built and checked on `homecoming`, pushed, no PR yet. After Chapter III's card, all three robots go back to the 2126 forecourt, the lights Chapter I restored come back on, and the closing words name the other temples |
+| Epilogue: back to 2126 | ✅ | Merged (#77, #78) and played by the author. After Chapter III's card, all three robots go back to the 2126 forecourt, the lights Chapter I restored come back on, and the closing words name the other temples |
 | Objective markers | ✅ | Numbered badges shared with the card, one filled NEXT (#49), kept off the HUD and the edge (#55) |
 | HUD and dialogue | ✅ | `[E] Continue` in the box (#47), a solid control strip (#48), a card that starts with one job (#51), a banner when a job is done (#54), a keycap talk prompt (#57) |
 | Graphics polish | ✅ | Gait and ring (#16), shadows (#14), mood (#13), HUD (#11); the menu cleaned up (#63) |
@@ -30,17 +30,16 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 | Portraits | ✅ | **All twenty** in (#68): the eighteen real people, the cat and the dog, 512 × 512 PNG, 3.4 MB in all. All eighteen agreed (30 Sep) |
 | Venue accuracy | ✅ | **Good enough for now** (the author, 28 Sep); the BOF rooms set out as labs (#46); `#JAVAPOLIS` on the stages in 2006 and screens that glow when a session is on (#75) |
 | Audio | ✅ | Music per chapter, robot and interaction sounds; signed off by the author 28 Sep and merged (#22) |
-| Phone | 🔄 | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). All checked in a headless 844 × 390 browser; still to try on a real phone |
-| Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41); Chapter III's card now leads with **Continue** into the epilogue (on `homecoming`) |
-| Playtest | 🔄 | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66). The author's own cold run of II, and a real phone, are still to do |
-| Submission | ❓ | First submission was planned for 25 Sep; not recorded here |
+| Phone | ✅ | Stick and buttons (#36); text sized from the real scale and a "Drag here to move" cue (#64); controller-style buttons (#65). Played on a real phone by the author, 30 Sep: everything works |
+| Pause and endings | ✅ | Pause menu (#38), the clock waits while you read (#39), an end card that says what you chose (#41); Chapter III's card now leads with **Continue** into the epilogue (#77) |
+| Playtest | ✅ | Three rounds of notes from test players, all answered and merged (#47–#57, #64, #66); the author's own final playtest, 30 Sep, on desktop and a real phone: everything works |
+| Submission | ✅ | **Submitted** on 30 Sep, before the 23:59 CEST deadline |
 
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 73
-    "In progress" : 1
-    "To do" : 13
+    "Done" : 79
+    "To do" : 7
 ```
 
 ---
@@ -93,7 +92,7 @@ pie showData
 | **Chapter II and III balance** | #32 `job-props` | 28 Sep: done for now, on the author's word. Chapter II has nine breakdowns with longer windows; Rooms 3–8 for JavaPolis, 3–10 for Devoxx. Reopen after the stranger playtest if it shows a wall |
 | **Performance checked on real hardware** | — | 27 Sep: the author reports the frame rate fine. The one stutter, a Chapter I light coming on, is fixed on `fix-light-stutter` (no shader recompile). Closed; reopen if anything shows up |
 | **Chapter I opens outside, with Voxxy talking** | #35 `chapter-one-landing` | The forecourt, four lines from Voxxy before the player drives |
-| **Plays on a phone** | #36 `touch-controls` | Stick, TALK / BRAKE / ROBOT / DROP, tap a box to page it, bigger text, rotate message, low graphics by default. Still to try on a real phone |
+| **Plays on a phone** | #36 `touch-controls` | Stick, TALK / BRAKE / ROBOT / DROP, tap a box to page it, bigger text, rotate message, low graphics by default. Played on a real phone, 30 Sep |
 | **Chapter II loosened again** | #37 `chapter-2-slack` | Eight breakdowns, windows about 40% longer, a 330 s day; the phone stick reaches full speed at 80% of its travel |
 | **Pause menu** | #38 `pause-menu` | ESC or PAUSE: Resume, Who's who, Restart, Leave run; R asks first; turning a phone upright or leaving the tab pauses |
 | **The clock waits while you read** | #39 `hold-for-story`, #43 `reading-hint` | A conversation or a print, with the robot not driving, holds the sim, crowd, cats and clock; "Time paused while reading" under the clock |
@@ -107,7 +106,7 @@ pie showData
 | **A mixed crowd** | #61 `crowd-mix` | A third of the crowd with long hair, a little under half of those in a skirt or dress; Alina blond, Ana-Maria dark brown, Holly black, as the author gave them |
 | Status updates | #52 `status-playtest`, #58 `status-playtest-2` | |
 | **The photographs needed, listed** | #64 (with `portrait-list`) | `src/portraits/README.md`: the eighteen real people, the exact file names, an Agreed box each; their actual photograph, 512 × 512. Collecting them is the to-do below |
-| **Phone text and the movement cue** | #64 `mobile-text` | Text sized from the stage's real scale (10.5 real px for a 12 px line); pause and end card fit; bigger menu cards; a "Drag here to move" ghost stick until the first drag. Headless 844 × 390 only so far |
+| **Phone text and the movement cue** | #64 `mobile-text` | Text sized from the stage's real scale (10.5 real px for a 12 px line); pause and end card fit; bigger menu cards; a "Drag here to move" ghost stick until the first drag. Checked headless at 844 × 390, then on a real phone, 30 Sep |
 | **Touch buttons as a controller's diamond** | #65 `pad-diamond` | TALK bottom, BRAKE right, DROP left, ROBOT top; the card steps left of them when it would reach them |
 | **The end card names what ended the run** | #66 `failure-advice` | "Out of time", what ran out, and a tip for it (the dog: north into the hall, follow its marker) |
 | **Research on every real person** | #68 `npc-research` | Sourced bios on every card; Chapter II lines true as of Dec 2006; the ten to meet narrated with who they are. Sources in `docs/PROMPTS.md` |
@@ -119,16 +118,16 @@ pie showData
 | **One book for everything collected** | #73 `souvenir-album`, #74 `sticker-files`, #75 `cinema-rooms` | Prints, the who's who and stickers in one place, called Collectables; the prints are the author's 1500 × 1000 PNGs and the stickers the author's eight, each with its line |
 | **`#JAVAPOLIS` on the 2006 stages, screens that glow** | #75 `cinema-rooms` | A room's screen glows while a session is on in it |
 | **One colour per era on the who's who** | #76 `era-colours` | 2126 pink, 2006 gold, 2026 Devoxx orange; cards not yet met are faintly tinted |
+| **Epilogue: Homecoming** | #77, #78 `homecoming` | Back to the 2126 forecourt, the lights restored, the other temples named by country. Played by the author, 30 Sep |
+| Portrait agreements and Suno's terms checked | `rights-checked` | All eighteen agreed; Suno's terms fine for an MIT repo |
+| **The author's final playtest, desktop and a real phone** | — | 30 Sep: the whole game including the ending; everything works, phone included. Nothing to tune |
+| **Submitted** | — | 30 Sep, before 23:59 CEST |
 
 ---
 
 ## 🔄 In progress
 
-| What | Branch | State | Next step | Owner |
-|---|---|---|---|---|
-| **Epilogue: Homecoming** | `homecoming` | Built and pushed. The screenshot tour and `npm run objectives` pass with no console errors, and the whole ending has been driven headless: card, wormhole, landing, lights, closing words, menu | Open a PR, and the author plays it once. Check the list of countries | Agent · Human |
-
-Everything else through #76 is on `main`.
+Nothing. Everything through #78 is on `main`, and the game is submitted.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -138,17 +137,11 @@ Everything else through #76 is on `main`.
 
 ## ⬜ To do
 
-### Before the deadline
+### Left over from the last day
 
-| What | Owner | Planned | Notes |
-|---|---|---|---|
-| **First submission** ❓ | Human | was Fri 25 Sep | Tick this if it went in. If not, submit today: the most recent entry is judged, so an early one is free insurance |
-| Play the ending once: Chapter III's card → Continue → 2126 | Human | Wed 30 Sep | `?chapter=capacity&ending` jumps to the card. Read the robots' six lines and the closing words in `HOMECOMING_OBJECTIVE` |
-| The author plays Chapter II cold, on a phone too | Human | Wed 30 Sep | The tester's notes are answered; the question left is whether II is fair with the NEXT now following the breakdowns |
-| Try it on a real phone | Human | Wed 30 Sep | Frame rate, thumb reach to ROBOT at the top of the diamond, and whether the text now reads |
-| Tune from that play | Agent | Wed 30 Sep | Windows, clocks, anything that stuck |
-| Read the real people's lines and cards | Human | Wed 30 Sep | Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
-| **Final submission** before 23:59 CEST | Human | Wed 30 Sep | |
+| What | Owner | Notes |
+|---|---|---|
+| Read the real people's lines and cards ❓ | Human | Not recorded either way. Bios and lines are from sourced research (`docs/PROMPTS.md`); a few Chapter II lines are interpretation rather than quotes, e.g. Goetz on concurrency and Stephan on why people come |
 
 ### Design follow-ups, added 27 Sep
 
@@ -202,11 +195,9 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %a %d
     section Human
-    Read the real people's lines      :h3, 2026-09-30, 1d
-    Play Chapter II cold, on a phone  :active, h1, 2026-09-30, 1d
-    Final submission                  :crit, s2, 2026-09-30, 1d
-    Play the ending once              :h4, 2026-09-30, 1d
+    Play it all, desktop and phone    :done, h1, 2026-09-30, 1d
+    Play the ending once              :done, h4, 2026-09-30, 1d
+    Final submission                  :done, crit, s2, 2026-09-30, 1d
     section Agent
-    Epilogue, back to 2126            :active, g2, 2026-09-30, 1d
-    Tune from play                    :g1, 2026-09-30, 1d
+    Epilogue, back to 2126            :done, g2, 2026-09-30, 1d
 ```
