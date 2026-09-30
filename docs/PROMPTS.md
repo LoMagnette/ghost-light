@@ -6200,6 +6200,19 @@ Interface21's work).
   the white a wormhole arrives in.
 - README: how real people speak, and the years.
 
+> Can the speaker be more friendly and less straight to hey my name is and
+> I speak about that
+
+**Done** on `friendlier`, on `real-chat`. The ten people to meet now open
+on the robots or the moment ("Robots at JavaPolis! Nobody back in Brazil
+is going to believe me." / "Hi! Oh, you are fast. Do you start up fast
+too?" / "Hey! Welcome to Antwerp, robots. First Devoxx?") and their work
+comes up the way it would in a conversation, as an answer or an aside. Gosling,
+Chet Haase and Rod Johnson get a friendlier first line too. The facts are
+the same sourced ones as before; what is new is only the framing around
+them. Alina's "There will be snacks" is a nod to her own speaker bio
+("Ambassador of snacks").
+
 ---
 
 ## Audio
