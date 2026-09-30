@@ -39,8 +39,8 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 88
-    "To do" : 6
+    "Done" : 92
+    "To do" : 2
 ```
 
 ---
@@ -132,12 +132,13 @@ pie showData
 | Polish | `polish` | Haul notices name the thing ("Put the keg down"); a spill costs a trip back, as a put-down does |
 | **The evening's changes, tried on a real phone** | — | 30 Sep, the author: the install, offline play, INTERACT and HOLD STILL |
 | **The real people's lines and cards, read** | — | 30 Sep, the author. Bios and lines are from sourced research (`docs/PROMPTS.md`) |
+| **The design follow-ups of 27 Sep, closed** | — | 30 Sep, on the author's word: Chapter II's story, the dialogue against real transcripts, words for the ten people to meet, and Chet Haase at JavaPolis |
 
 ---
 
 ## 🔄 In progress
 
-Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. Nothing else is left before the deadline; what remains below is for after it.
+Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a dark ground, and this update) is the last branch; once it is merged, everything is on `main`. Nothing else is left before the deadline: the two small items below are for whenever there is a gap.
 
 > **Pushing from the sandbox** still fails on credentials, so branches reach
 > GitHub from the host. To let the agent push and open PRs itself:
@@ -146,16 +147,6 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 ---
 
 ## ⬜ To do
-
-### Design follow-ups, added 27 Sep
-
-| What | Owner | Notes |
-|---|---|---|
-| **Better story content for Chapter II** | Human · agent | The corridor conversations and the breakdowns carry the chapter now, but not a story of their own. What is JavaPolis 2006 about, for the two robots who just fell into it? Worth deciding before the dialogue pass below, which would rewrite the same lines |
-| **Tune the dialogue against real transcripts** | Human supplies transcripts · agent rewrites | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. The sandbox cannot browse, so transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
-
-| **Words for the ten people to meet** | Human | Each is narrated, saying who they are from their public work; their looks are set from the portraits. Agreed first-person lines, if any, are one entry each in `src/chapters/objectives.ts` |
-| **Chet Haase and JavaPolis** | Human | He replaces Gavin King (29 Sep); his lines are sourced to late 2006, his look is from the portrait. No JavaPolis talk of his was found (nor of Gavin King's). Guillaume Laforge's JavaPolis evidence is 2007 only |
 
 ### Small, whenever there is a gap
 
