@@ -176,6 +176,12 @@ export interface Chapter {
    * thing a chapter changes about the game.
    */
   recap?: string;
+  /**
+   * When the robots have landed: shown big as the chapter opens, and on the
+   * cards of the people met in it. Words on a card, like the tagline. The
+   * movement lab has none.
+   */
+  when?: { year: number; month?: string };
   /** Two or three sentences shown on the loading card before play. */
   brief: string;
 

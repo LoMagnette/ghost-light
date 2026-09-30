@@ -6176,6 +6176,30 @@ four thousand pictures an edition and Stephan's face finder (Stephan's own
 corrected before commit (SouJava's year, a contributor not a co-author,
 Interface21's work).
 
+> When chatting with those npc I expect a real chat not a description of the
+> person. btw in the person card it would be good to see the year of the
+> meeting. and maybe at the start of the chapter show the year the robot
+> dropped in
+
+**Done** on `real-chat`, on `richer-talk`.
+
+- The ten people to meet now talk, in the first person, three lines each,
+  not narration. Every line is from the research of 29 Sep and true of its
+  chapter's date; two are close to their own public words (Holly Cummins,
+  "Efficiency is ruining our happiness, and weirdly, it's also ruining our
+  efficiency", 2025; Kevin Dubois, LangChain4j and Quarkus "in my opinion
+  the easiest tools to work with in this space", 2025). One draft line that
+  was an opinion of mine (Ana-Maria's "most people never open the box") was
+  replaced with a fact before commit. `narrated` is no longer used by anyone.
+- Each chapter has a `when`: I is 2126 (the title sequence's frame), II
+  December 2006 (JavaPolis), III October 2026 (Devoxx Belgium, 5–9 Oct).
+  A card reads "II. JavaPolis · 2006" in the grid and "Met in December 2006"
+  held up.
+- A chapter opens on its year, big, with "KINEPOLIS, ANTWERP · DECEMBER"
+  under it, on a dark band above the arrival, for about five seconds; above
+  the white a wormhole arrives in.
+- README: how real people speak, and the years.
+
 ---
 
 ## Audio

@@ -37,6 +37,10 @@ export interface Card {
   n: number;
   /** "II. JavaPolis". */
   chapter: string;
+  /** When they were met, in the story: "December 2006". See `Chapter.when`. */
+  when?: string;
+  /** The year alone, for the small card. */
+  year?: number;
   /** The chapter's accent, for the card's band. */
   accent: number;
   /** The job on the card that puts you in front of them. */
@@ -69,6 +73,8 @@ export const CARDS: readonly Card[] = (() => {
         who,
         n: cards.length + 1,
         chapter: `${chapter.numeral}. ${chapter.title}`,
+        when: chapter.when ? `${chapter.when.month ? `${chapter.when.month} ` : ''}${chapter.when.year}` : undefined,
+        year: chapter.when?.year,
         accent: chapter.palette.accent,
         where: a.label,
         // Only what they say. Narration is the game describing them, not them.
@@ -261,7 +267,13 @@ function badge(card: Card, met: boolean, m: ReturnType<typeof measures>, big: bo
     body.append(
       face(card, faceSize),
       el('div', { font: `bold ${nameSize}px ${SANS}`, color: '#f2f5f7', marginTop: big ? '16px' : '10px', lineHeight: '1.2' }, card.who),
-      el('div', { font: `${small}px ${MONO}`, color: '#8d959b', marginTop: '4px', letterSpacing: '0.04em' }, card.chapter),
+      el(
+        'div',
+        { font: `${small}px ${MONO}`, color: '#8d959b', marginTop: '4px', letterSpacing: '0.04em' },
+        // The year you met them in, which in this game is the point: the
+        // same corridor, twenty years apart.
+        big && card.when ? `Met in ${card.when} · ${card.chapter}` : card.year ? `${card.chapter} · ${card.year}` : card.chapter,
+      ),
     );
     if (big) {
       if (card.bio) {

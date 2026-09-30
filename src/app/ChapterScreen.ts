@@ -48,7 +48,7 @@ import { chapterOrLab } from '@/chapters/lab';
 import { abandoned, type Chapter } from '@/chapters/Chapter';
 import { touchZoom, type Game, type Screen } from './Game';
 import type { Routes } from './Routes';
-import { css, el, label, MONO, SANS } from './dom';
+import { css, el, label, MONO, SANS, SERIF } from './dom';
 import { currentQuality } from './quality';
 import { portraitOf } from './portraits';
 import { ink, lift } from './tint';
@@ -603,6 +603,7 @@ export class ChapterScreen implements Screen {
     }
 
     this.buildHud(game);
+    this.showDateline(game);
     // `?zoom=4` looks at the game four times closer, for comparing the robots
     // against their model sheets. Like `?at`, never reachable from the game.
     const zoom = Number(new URLSearchParams(window.location.search).get('zoom'));
@@ -2396,6 +2397,65 @@ export class ChapterScreen implements Screen {
       this.cameraY + offsetY,
       this.cameraZ,
     );
+  }
+
+  /**
+   * When the robots have landed, big, as the chapter opens: "2006", and
+   * under it where and which month.
+   *
+   * The three chapters are one building in three years, and until this the
+   * only place that said which was a word on the menu card. Up for five
+   * seconds over the arrival, then gone; it takes no input and blocks
+   * nothing. See `Chapter.when`.
+   */
+  private showDateline(game: Game): void {
+    const when = this.chapter.when;
+    if (!when) return;
+    const accent = css(this.chapter.palette.accent);
+    const card = el('div', {
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      // Above the arrival rather than on it: the wormhole lands mid-screen,
+      // and a year over a bloom of pink light is a year nobody reads.
+      top: '64px',
+      textAlign: 'center',
+      pointerEvents: 'none',
+      opacity: '0',
+      // Over the whiteout a wormhole arrives in (9): the year is what the
+      // white clears to.
+      zIndex: '10',
+      textShadow: '0 2px 12px rgba(0, 0, 0, 0.9)',
+    });
+    const band = el('div', {
+      display: 'inline-block',
+      padding: '14px 34px 16px',
+      borderRadius: '6px',
+      background: 'rgba(6, 8, 10, 0.72)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+    });
+    card.append(band);
+    band.append(
+      el('div', { font: `64px ${SERIF}`, color: '#f2f5f7', letterSpacing: '0.04em', lineHeight: '1' }, String(when.year)),
+      el(
+        'div',
+        { font: `14px ${MONO}`, color: accent, letterSpacing: '0.28em', marginTop: '12px' },
+        `KINEPOLIS, ANTWERP${when.month ? `  ·  ${when.month.toUpperCase()}` : ''}`,
+      ),
+    );
+    card.classList.add('touch-panel');
+    game.ui.append(card);
+    const fade = card.animate?.(
+      [
+        { opacity: 0, transform: 'translateY(6px)' },
+        { opacity: 1, transform: 'translateY(0)', offset: 0.14 },
+        { opacity: 1, offset: 0.78 },
+        { opacity: 0 },
+      ],
+      { duration: 5200, easing: 'ease-out', fill: 'forwards' },
+    );
+    if (fade) fade.onfinish = () => card.remove();
+    else window.setTimeout(() => card.remove(), 5200);
   }
 
   // -- hud ------------------------------------------------------------------
