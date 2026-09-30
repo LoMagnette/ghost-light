@@ -26,12 +26,26 @@ export interface Sticker {
   n: number;
   /** "Stand 3". */
   where: string;
+  /** What it is, once it is in the album. The author's, 30 Sep. See `ABOUT`. */
+  about?: string;
 }
+
+/** Each sticker's line, by stand, from the author's notes on the stickers they made. */
+const ABOUT: Record<number, string> = {
+  1: 'A fun dog sticker, handed out by a speaker.',
+  2: 'Vintage: a company sticker from 2023.',
+  3: 'Vintage: the original BeJUG logo, a coffee grinder.',
+  4: 'Never released: a black sheep, with a nod to The Terminator.',
+  5: 'Given away at a stand in 2024.',
+  6: 'The BeJUG logo today. Join them!',
+  7: 'From 2025, with a clear nod to The Matrix and its agents.',
+  8: '2023: the brand-new BeJUG logo.',
+};
 
 /** Every sticker in the game, in the order the stands are visited. */
 export const STICKERS: readonly Sticker[] = CHAPTERS.flatMap((chapter) =>
   chapter.objective.activities.filter((a) => a.group === 'stickers'),
-).map((a, i) => ({ id: a.id, n: i + 1, where: a.label.replace(/^Sticker, stand/i, 'Stand') }));
+).map((a, i) => ({ id: a.id, n: i + 1, where: a.label.replace(/^Sticker, stand/i, 'Stand'), about: ABOUT[i + 1] }));
 
 /** What each sticker looks like, by its place in the set. Round if there are more stickers than designs. */
 const ART: { text: string; shape: 'round' | 'hex' | 'tag' | 'pill'; ground: number; ink: number }[] = [
@@ -47,8 +61,40 @@ const ART: { text: string; shape: 'round' | 'hex' | 'tag' | 'pill'; ground: numb
 
 const hex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
+/*
+ * The author's own sticker art, by file name: `src/stickers/stand-3.png` is
+ * stand 3's. Found at build time, like the portraits, so adding one is
+ * dropping a file in; a stand with no file keeps its drawn one. See
+ * `src/stickers/README.md`.
+ */
+const files = import.meta.glob('../stickers/*.{png,webp}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const byName = new Map<string, string>();
+for (const [path, url] of Object.entries(files)) byName.set((path.split('/').pop() ?? '').replace(/\.[^.]+$/, ''), url);
+
+/** The file for this sticker, if the author has supplied one. */
+function stickerFile(sticker: Sticker): string | undefined {
+  return byName.get(`stand-${sticker.n}`);
+}
+
 /** A sticker, drawn: die-cut with a white edge, a little crooked, as stuck on by hand. */
 export function stickerArt(sticker: Sticker, size: number): HTMLElement {
+  const tilt = `rotate(${((sticker.n * 37) % 13) - 6}deg)`;
+  const file = stickerFile(sticker);
+  if (file) {
+    // The author's: its own shape and white edge are in the picture, so only
+    // the tilt and the shadow are added here.
+    const img = el('img', {
+      width: `${size}px`,
+      height: `${size}px`,
+      objectFit: 'contain',
+      transform: tilt,
+      filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
+      flex: '0 0 auto',
+    });
+    img.src = file;
+    img.alt = `Sticker, ${sticker.where}`;
+    return img;
+  }
   const art = ART[(sticker.n - 1) % ART.length];
   const shapes = {
     round: { w: size, h: size, radius: '50%', clip: 'none' },
@@ -68,7 +114,7 @@ export function stickerArt(sticker: Sticker, size: number): HTMLElement {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: `rotate(${((sticker.n * 37) % 13) - 6}deg)`,
+    transform: tilt,
     filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
     flex: '0 0 auto',
   });
@@ -143,7 +189,8 @@ export function collectSticker(id: string): Sticker | undefined {
  */
 export function openStickers(host: HTMLElement, touch: boolean, tabs: Tabs): void {
   const size = touch ? 150 : 110;
-  const cellW = size + 70;
+  // Wide enough for its line to sit in two rows under the sticker.
+  const cellW = size + (touch ? 110 : 90);
   const columns = touch ? 4 : 4;
   const root = el('div', {
     position: 'absolute',
@@ -182,12 +229,13 @@ export function openStickers(host: HTMLElement, touch: boolean, tabs: Tabs): voi
     node.style.cursor = 'default';
     const cell = el('div', {
       width: `${cellW}px`,
-      height: `${size + 64}px`,
+      height: `${size + (touch ? 118 : 92)}px`,
       boxSizing: 'border-box',
+      padding: '10px 10px 12px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       gap: '8px',
       border: got ? '1px solid transparent' : '1px dashed rgba(255, 255, 255, 0.16)',
       borderRadius: '8px',
@@ -197,9 +245,13 @@ export function openStickers(host: HTMLElement, touch: boolean, tabs: Tabs): voi
     if (got) slot.append(stickerArt(sticker, size));
     else slot.append(el('div', { font: `28px ${SANS}`, color: 'rgba(255, 255, 255, 0.18)' }, '?'));
     cell.append(slot);
-    cell.append(el('div', { font: `${touch ? 16 : 11}px ${MONO}`, color: got ? '#aab2b8' : '#6f777c' }, got ? sticker.where : `${sticker.where} · III. At Capacity`));
+    cell.append(el('div', { font: `${touch ? 16 : 11}px ${MONO}`, color: got ? '#8d959b' : '#6f777c' }, got ? sticker.where : `${sticker.where} · III. At Capacity`));
+    // What it is, once it is yours: the blank keeps only where to find it.
+    if (got && sticker.about) {
+      cell.append(el('div', { font: `${touch ? 17 : 12}px ${SANS}`, color: '#d4dade', lineHeight: '1.35', textAlign: 'center', whiteSpace: 'normal' }, sticker.about));
+    }
     node.append(cell);
-    node.setAttribute('aria-label', got ? `Sticker from ${sticker.where}` : `Not collected yet: ${sticker.where}`);
+    node.setAttribute('aria-label', got ? `Sticker from ${sticker.where}${sticker.about ? `: ${sticker.about}` : ''}` : `Not collected yet: ${sticker.where}`);
     node.addEventListener('click', (event) => event.stopPropagation());
     cells.push(node);
     grid.append(node);

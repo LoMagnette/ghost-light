@@ -1,7 +1,7 @@
 # Photographs
 
 Drop the four prints in here. Vite copies `public/` to the site root, so a
-file called `room-8.jpeg` is served at `photos/room-8.jpeg` and the game builds
+file called `room-8.png` is served at `photos/room-8.png` and the game builds
 that path off `import.meta.env.BASE_URL` — which is what makes it survive
 GitHub Pages serving the whole thing from a subdirectory.
 
@@ -15,7 +15,7 @@ could be judged before the art existed.
 To wire one up, add `file` beside the caption that is already there:
 
 ```ts
-photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpeg' },
+photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.png' },
 ```
 
 Each frame has exactly one robot in it, and only that robot can earn it —
@@ -24,10 +24,10 @@ player did not bring. Shoot them that way.
 
 | Activity | Robot in the frame | Caption | Suggested file |
 |---|---|---|---|
-| `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.jpeg` |
-| `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.jpeg` |
-| `photo-josh` | **Biggy**, shaking hands with Josh | Exhibition hall — Josh Long shakes hands with Biggy | `josh-long.jpeg` |
-| `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.jpeg` |
+| `photo-room8` | **Droid** | Room 8 — Droid, in front of the letters | `room-8.png` |
+| `photo-bejug` | **Voxxy** | BOF 1 — Voxxy under the BeJUG banner | `bejug-banner.png` |
+| `photo-josh` | **Biggy**, shaking hands with Josh | Exhibition hall — Josh Long shakes hands with Biggy | `josh-long.png` |
+| `photo-group` | **all three**, with Venkat | Exhibition hall — all three, with Venkat Subramaniam | `group.png` |
 
 The selfie with Dimitris (`selfie-dimitris`) is not in this table and needs
 no file: it is `selfie: true`, and the screen takes it off the game's own
@@ -36,13 +36,13 @@ with only the top of Voxxy's head along the bottom edge.
 
 ## What the frame wants
 
-- **340 px wide**, shown at 1× on a 1280 × 720 canvas. A 3:2 print at
-  1020 × 680 gives a clean 3× for a retina screen and nothing larger is worth
-  the bytes.
-- **3:2 landscape.** The placeholder is 340 × 226, and the real ones should
-  match it or the frame will jump between shots.
-- **JPEG**, quality ~82. These go in the bundle and the whole build is
-  currently 628 kB; four photographs should not be the largest thing in it.
+- **1500 × 1000, 3:2 landscape.** The print is 340 × 227 as it lands, and
+  600 × 400 held up in the album (840 × 560 on a phone), which on a
+  high-density screen is well over 1000 real pixels. 1500 × 1000 is sharp
+  everywhere. Another shape is cropped to 3:2 to fill the frame.
+- **PNG, full colour** (the author, 30 Sep). About 0.9–1.9 MB each, 6 MB for
+  the four, all in the download. Not reduced to 256 colours as the portraits
+  are: these are photographic, and a 256-colour Biggy bands visibly.
 - Anything in `public/` ships to a public repo under the MIT `LICENSE`. Only
   put pictures in here that are ours to license — which, for photographs of
   real people at a real conference, means asking first.

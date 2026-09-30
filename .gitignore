@@ -42,3 +42,6 @@ visual/
 
 # The author's full-size portrait originals; src/portraits/ holds the 512 px copies the game ships.
 portrait-sources/
+
+# The author's full-size sticker originals; src/stickers/ holds the copies the game ships.
+sticker-sources/

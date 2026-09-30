@@ -58,7 +58,7 @@ being in the game.
 | Holly Cummins | Chapter III, to meet upstairs | `holly-cummins.png` | ☐ |
 
 `josh-long.png` here is his face; the print of him with Biggy is a different
-file, `public/photos/josh-long.jpeg`.
+file, `public/photos/josh-long.png`.
 
 ## Everyone else: optional
 

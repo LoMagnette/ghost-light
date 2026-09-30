@@ -1242,7 +1242,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
        */
       gates: { reach: 2.0 },
       seconds: 2.5,
-      photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.jpeg' },
+      photo: { caption: 'Room 8 — Droid, in front of the letters', file: 'room-8.png' },
     },
     {
       kind: 'dwell',
@@ -1260,7 +1260,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // should cover as little of it as a robot can.
       gates: { maxRadius: 0.4 },
       seconds: 2.5,
-      photo: { caption: 'BOF 1 — Voxxy under the BeJUG banner', file: 'bejug-banner.jpeg' },
+      photo: { caption: 'BOF 1 — Voxxy under the BeJUG banner', file: 'bejug-banner.png' },
     },
     {
       kind: 'dwell',
@@ -1292,7 +1292,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       // print is the authority on what happened in it.
       gates: { carry: 100 },
       seconds: 2.5,
-      photo: { caption: 'Exhibition hall — Josh Long shakes hands with Biggy', file: 'josh-long.jpeg' },
+      photo: { caption: 'Exhibition hall — Josh Long shakes hands with Biggy', file: 'josh-long.png' },
     },
     {
       kind: 'dwell',
@@ -1330,7 +1330,7 @@ export const CAPACITY_OBJECTIVE: Objective = {
       at: spot(0, -2.0, 8.8, 5.0),
       seconds: 3.5,
       everybody: true,
-      photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam', file: 'group.jpeg' },
+      photo: { caption: 'Exhibition hall — all three, with Venkat Subramaniam', file: 'group.png' },
     },
     /*
      * People to meet, and nothing to do with them. See `passerby`.

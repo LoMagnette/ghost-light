@@ -6228,6 +6228,44 @@ conference designs drawn in CSS (λ, JVM, { }, ☕, GC, </>, @Test, 2026) and
 no company's mark. Each page now opens at the top, which on a phone it did
 not when there was nothing collected yet.
 
+> How can I provide the stickers and in what format? / I was thinking to use
+> some stickers I've created
+
+**Done** on `sticker-files`, on `souvenir-album`. The author's own sticker
+art drops in like the portraits: `src/stickers/stand-1.png` … `stand-8.png`,
+found by name at build time, a stand without a file keeping its drawn
+placeholder. PNG with a transparent background, the die-cut shape and white
+edge in the picture, square with a little margin; the game adds the tilt
+and shadow. Originals go in the git-ignored `sticker-sources/`;
+`tools/stickers.py` fits each onto a transparent square and writes a
+384 × 384 copy. Checked with a throwaway test sticker, then removed.
+
+> Can you add a description for each stickers. You can rephrase the
+> description I provide here after: (eight notes, stand-1 … stand-8)
+
+**Done** on `sticker-files`: the author's eight stickers (added to
+`src/stickers/`, 384 × 384 transparent PNG) are committed, each with a line
+from the author's notes, lightly rephrased and shown under it once
+collected: a speaker's dog sticker; a 2023 company sticker; the original
+BeJUG logo, a coffee grinder; an unreleased black sheep with a nod to The
+Terminator; a 2024 stand giveaway; the BeJUG logo today; a 2025 nod to The
+Matrix and its agents; the brand-new 2023 BeJUG logo. Blanks still say only
+where to find them.
+
+> what was the ideal resolution for the picture taken by the photograph ?
+
+Answered: 3:2, 1500 × 1000 (the album holds a print up at 600 × 400, well
+over 1000 real pixels on a high-density screen).
+
+> I've update the picture you should now use the png version and drop the
+> jpeg
+
+**Done** on `sticker-files`: the four prints are the author's new
+1500 × 1000 PNGs and the JPEGs are removed. Kept full colour: a 256-colour
+copy, as the portraits are, banded visibly on Biggy, and lossless
+optimisation saved only 3%, so the files are as the author made them (about
+6 MB for the four). `public/photos/README.md` says 1500 × 1000 PNG.
+
 ---
 
 ## Audio
