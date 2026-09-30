@@ -71,7 +71,9 @@ sheets in `references/robots/`, taken at 512 × 512 and brought to 256
 colours as `tools/portraits.py` does. That is the author's call. The sheets
 themselves stay git-ignored, as the note in `.gitignore` says, and these
 three crops are the only part of them in the repository: Voxxy's front
-view, Droid's close-up, and Biggy's front view.
+view, Droid's close-up, and Biggy's front view. The sheets' light grey
+behind them is filled in from the corners with the dark #161e28, so they
+sit in the dark box like the rest.
 
 | Who | Where | File |
 |---|---|---|
