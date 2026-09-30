@@ -39,8 +39,9 @@ moves, move its row. The legend is ✅ done · 🔄 in progress · ⬜ to do ·
 ```mermaid
 pie showData
     title Work items by state
-    "Done" : 92
+    "Done" : 89
     "To do" : 2
+    "Parked" : 4
 ```
 
 ---
@@ -132,7 +133,7 @@ pie showData
 | Polish | `polish` | Haul notices name the thing ("Put the keg down"); a spill costs a trip back, as a put-down does |
 | **The evening's changes, tried on a real phone** | — | 30 Sep, the author: the install, offline play, INTERACT and HOLD STILL |
 | **The real people's lines and cards, read** | — | 30 Sep, the author. Bios and lines are from sourced research (`docs/PROMPTS.md`) |
-| **The design follow-ups of 27 Sep, closed** | — | 30 Sep, on the author's word: Chapter II's story, the dialogue against real transcripts, words for the ten people to meet, and Chet Haase at JavaPolis |
+| **Better story content for Chapter II** | — | 30 Sep, done on the author's word. The other three design follow-ups of 27 Sep are parked for after the deadline |
 
 ---
 
@@ -179,6 +180,9 @@ Nothing in code. `polish` (the haul notices, spills, the robots' portraits on a 
 | What | Why parked | Notes |
 |---|---|---|
 | Voiced dialogue | Real people's voices; consent first | Default if it happens is a non-verbal blip per character. See `ROADMAP.md` |
+| **Tune the dialogue against real transcripts** | The author, 30 Sep: after the deadline | Make each speaker sound like themselves: cadence, phrasing, what they tend to talk about. The rules stay: nothing put in anyone's mouth that is not plainly true of their public work, and Chapter II stays era-locked around 2006. Transcripts or links come from the host; each source is logged in `docs/PROMPTS.md` |
+| **Words for the ten people to meet** | The author, 30 Sep: after the deadline | Each is narrated, saying who they are from their public work. Agreed first-person lines, if any, are one entry each in `src/chapters/objectives.ts` |
+| **Chet Haase and JavaPolis** | The author, 30 Sep: after the deadline | He replaces Gavin King (29 Sep); his lines are sourced to late 2006. No JavaPolis talk of his was found (nor of Gavin King's). Guillaume Laforge's JavaPolis evidence is 2007 only |
 
 ---
 
