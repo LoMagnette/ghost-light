@@ -217,7 +217,7 @@ export interface ActivityState {
   /** Haul only: who has it. */
   carrier?: Actor;
   /**
-   * Haul only: who just put it down, until they have moved off it.
+   * Haul only: who just put it down or spilled it, until they have moved off it.
    *
    * Picking up is automatic, so without this the robot that put a thing
    * down was standing within reach of it, empty-handed, and took it back
@@ -253,6 +253,11 @@ const PICKUP_RANGE = 2.2;
 
 /** Slow enough to count as standing still, m/s. */
 export const STILL = 0.25;
+
+/** What a haul's notices call the thing carried. See `HaulActivity.thing`. */
+function thingOf(a: Extract<Activity, { kind: 'haul' }>): string {
+  return a.thing ?? a.label.toLowerCase();
+}
 
 /**
  * Slow enough to put something down safely, m/s.
@@ -592,7 +597,7 @@ export class ObjectiveRun {
         taker.body.payload += a.mass;
         state.carrier = taker;
         state.status = 'carried';
-        this.say(`${taker.body.spec.name} has the ${a.label.toLowerCase()} — ${a.mass} kg`);
+        this.say(`${taker.body.spec.name} has the ${thingOf(a)} — ${a.mass} kg`);
       }
       return;
     }
@@ -617,8 +622,12 @@ export class ObjectiveRun {
     if (a.fragile && carrier.body.lastImpactSpeed > 1.2) {
       carrier.body.payload -= a.mass;
       state.carrier = undefined;
+      // As for a put-down: the robot that spilled it was taking it straight
+      // back the next frame, so a spill cost a notice and nothing else. Now
+      // it has to back off and come round for it again.
+      state.putDownBy = carrier;
       state.status = 'open';
-      this.say(`Spilled the ${a.label.toLowerCase()}`);
+      this.say(`Spilled the ${thingOf(a)}`);
       return;
     }
 
@@ -627,7 +636,7 @@ export class ObjectiveRun {
       state.carrier = undefined;
       state.putDownBy = carrier;
       state.status = 'open';
-      this.say(`Put the ${a.label.toLowerCase()} down`);
+      this.say(`Put the ${thingOf(a)} down`);
     }
   }
 

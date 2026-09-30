@@ -321,6 +321,12 @@ export interface HaulActivity extends Common {
   mass: number;
   to: Zone;
   /**
+   * The thing itself, for the notices: "Biggy has the keg". The label is the
+   * job ("The keg, to the party stage"), and built into a sentence it read
+   * "Put the coffee, and get it there down". Absent, the label is used.
+   */
+  thing?: string;
+  /**
    * Dropped by a hard enough collision. A tray of coffee is.
    *
    * Deliberately keyed to an IMPACT rather than to acceleration: braking hard
