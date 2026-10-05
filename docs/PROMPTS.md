@@ -6480,6 +6480,31 @@ Biggy's floor shadow, then Droid's lower corners. A thin trace of Biggy's
 floor is left, invisible at the box's size. `STATUS.md` is brought up to
 #83.
 
+> So I would like an hidden another non mandatory npc in room 10. This
+> speaker is me. When interracting with him the timer should stop. The
+> interraction after very short chat should start an almost full screen
+> slide deck that is interactive. I will then look to build the
+> presentation in it. It should allow background image in the slides but
+> also text.
+
+**Done** on `room-10-deck`, 5 Oct. Loïc stands on the stage of Room 10 in
+Chapter III as an `aside`: no marker, no row on the card. Two lines of
+hello, then the deck. A `talk` can now name a `deck`, and the screen opens
+it when the last line is closed and again on E afterwards. While it is up
+the screen holds the way the pause menu does, so the clock, crowd and robots
+all stop. Slides are data in `src/decks/`: a background picture by file
+name, a title, text, bullets that build one at a time, code, notes. The
+keys are a presentation program's, and PAGE UP / PAGE DOWN means a clicker
+works. The room's own anonymous speaker stands down when the objective has
+put somebody on its stage. Otherwise two people were giving one talk.
+
+**Checked headless:** the first scripted run pressed E one time too few
+(the first press opens a line, the next finishes its typing), so ESC opened
+the pause menu and the deck never showed. The next run pressed E until the
+deck was up. Then it measured the clock: stopped for 10 s with the deck up,
+running again after ESC, and E reopened the deck on the same slide. The
+starter deck's background is a frame of Room 10 from the game itself.
+
 ---
 
 ## The other tools

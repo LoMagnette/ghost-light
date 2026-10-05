@@ -22,6 +22,12 @@ function spot(floor: Level, x: number, y: number, size = 2.2): Zone {
   return { floor, bounds: rect(x - size / 2, y - size / 2, size, size) };
 }
 
+/** A square zone of this size in the middle of another. */
+function middleOf(zone: Zone, size: number): Zone {
+  const c = zoneCentre(zone);
+  return spot(zone.floor, c.x, c.y, size);
+}
+
 /** A room, as a zone — inset so the doorway itself does not count as inside. */
 function roomZone(id: string, inset = 1.0): Zone {
   const room = KINEPOLIS.rooms.find((r) => r.id === id);
@@ -1358,6 +1364,30 @@ export const CAPACITY_OBJECTIVE: Objective = {
     passerby('mihalceanu', 'Ana-Maria Mihalceanu', { shirt: 0xe2e2e0, hair: 0x3b2618, long: true, scale: 0.95 }, spot(1, 2.4, 0.0, 2.4), { bio: 'Senior Developer Advocate in Oracle\'s Java Platform Group and Java Champion alumna, focused on JDK tools and performance.', lines: ['Hello! You look busy. Do you know what is slowing you down?', 'That is my talk, really: JFR shows you what your application actually does, and Project Leyden makes it start faster.', 'And the best part is that it is all already in the JDK. Nothing to install.'] }),
     passerby('cummins', 'Holly Cummins', { shirt: 0x1c1d20, print: 0x4695eb, hair: 0x161412, long: true, scale: 0.96 }, spot(1, 2.4, 10.0, 2.4), { bio: 'Java Champion on IBM\'s Quarkus team, formerly a JVM performance engineer; speaks on sustainability and developer joy.', lines: ['Hello! Are you three being efficient today? Be careful with that.', 'Efficiency is ruining our happiness, and, weirdly, it is also ruining our efficiency.', 'I am on the Quarkus team at IBM. My talk is about benchmarks that go bad: measuring performance is harder than it looks.'] }),
     passerby('dubois', 'Kevin Dubois', { shirt: 0x1c1d20, print: 0xcc2a2a, hair: 0x5a4232, beard: 'stubble' }, spot(0, 12.0, -30.0, 2.4), { bio: 'Java Champion and IBM developer advocate for cloud-native and AI development in Java.', lines: ['Hi! It is nice to be back in Belgium. I lived here once; these days it is Switzerland.', 'Robots, huh. My talks this year are about AI agents in Java, so you are basically my demo.', 'LangChain4j and Quarkus, if you want to build one. In my opinion, the easiest tools to work with in this space.'] }),
+    /*
+     * Not on any card and not on the way to anything: the author, giving his
+     * talk on the stage of Room 10, for whoever wanders down the rake to
+     * find him. A short hello and then the talk itself, as a slide deck over
+     * the building (`deck`), and the day waits while it is up. He stands ON
+     * the stage, so the room's anonymous speaker stands down for him — see
+     * `placeSpeakers` in `Crowd`.
+     */
+    {
+      kind: 'talk',
+      id: 'hello-magnette',
+      label: 'Say hello to Loïc Magnette',
+      who: 'Loïc Magnette',
+      bio: 'Speaking in Room 10 at Devoxx Belgium 2026, and the author of this game.',
+      look: { shirt: 0x1c1d20, hair: 0x3a2e26, scale: 1.0 },
+      at: middleOf(roomZone('aud-10-stage', 0), 3.0),
+      aside: true,
+      optional: true,
+      deck: 'room-10',
+      lines: [
+        'Oh! Robots, in Room 10. Did you come for my talk?',
+        'Perfect timing, I was just about to start. Find a seat: the day can wait.',
+      ],
+    },
   ],
 };
 
