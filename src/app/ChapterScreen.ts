@@ -54,6 +54,8 @@ import type { Routes } from './Routes';
 import { css, el, label, MONO, SANS, SERIF } from './dom';
 import { currentQuality } from './quality';
 import { portraitOf } from './portraits';
+import { DeckView } from './Deck';
+import { DECKS } from '@/decks';
 import { ink, lift } from './tint';
 import { castCount, face, meet, meets, number, tintOf, type Card } from './cast';
 import {
@@ -323,6 +325,17 @@ export class ChapterScreen implements Screen {
   private readonly onHidden = (): void => {
     if (document.visibilityState === 'hidden') this.setPaused(true);
   };
+  /**
+   * A talk being given, over the building. While it is up the day holds the
+   * way it does for the pause menu: nothing advances. One per deck, made the
+   * first time it opens, so a talk closed and reopened is on the slide it
+   * was left on. See `TalkActivity.deck`.
+   */
+  private readonly decks = new Map<string, DeckView>();
+  /** Decks already opened once on their own, at the end of their conversation. */
+  private readonly decksGiven = new Set<string>();
+  /** Where decks go: the scaled stage. */
+  private ui!: HTMLElement;
   /** Played by touch: the prompts name the buttons, not the keys. */
   private touch = false;
   private touchPad: TouchControls | undefined;
@@ -487,6 +500,7 @@ export class ChapterScreen implements Screen {
 
   mount(game: Game): void {
     const { chapter } = this;
+    this.ui = game.ui;
 
     game.setBackground(chapter.palette.void);
     this.renderer = game.renderer;
@@ -772,9 +786,10 @@ export class ChapterScreen implements Screen {
         this.story !== undefined ||
         this.closing !== undefined ||
         this.talkBox.style.display !== 'none' ||
-        this.endCard !== undefined,
+        this.endCard !== undefined ||
+        this.presenting(),
     );
-    if (this.paused) {
+    if (this.paused || this.presenting()) {
       // Frozen, and quiet: a motor left running would hum under the menu.
       const ear = { x: this.cameraX, y: this.cameraY, floor: this.floor };
       for (const [actor, motor] of this.motors) {
@@ -846,6 +861,12 @@ export class ChapterScreen implements Screen {
         if (late > 0) this.run.elapsed += late;
       }
       this.driveSwarm();
+      // A talk already given is given again on the talk key.
+      const given = this.talkRequested ? this.talkHere() : undefined;
+      if (given?.state.status === 'done' && given.activity.deck) {
+        this.present(given.activity.deck);
+        this.talkRequested = false;
+      }
       // A held frame still pages a conversation: that is a press, not time.
       const drop = this.interactDrops();
       this.run.update(step, this.actors, drop, this.talkRequested && !drop);
@@ -853,6 +874,7 @@ export class ChapterScreen implements Screen {
       this.consumeObjective();
       this.hearObjective();
       this.meetCast();
+      this.giveTalks();
       if (this.run.phase === 'ended') {
         // Won, and the chapter goes somewhere: through the floor, not to a
         // card. A lost round still gets the card — you do not fall through
@@ -940,6 +962,7 @@ export class ChapterScreen implements Screen {
     document.removeEventListener('visibilitychange', this.onHidden);
     for (const motor of this.motors.values()) motor.stop();
     for (const hole of this.wormholes) hole.dispose();
+    for (const deck of this.decks.values()) deck.dispose();
     this.closing?.dispose();
     this.blockout.dispose();
   }
@@ -1481,6 +1504,38 @@ export class ChapterScreen implements Screen {
       const sticker = collectSticker(state.activity.id);
       if (sticker) this.showNewSticker(sticker);
     }
+  }
+
+  /** A conversation that ends in a talk, just ended: up goes the deck. */
+  private giveTalks(): void {
+    for (const state of this.run.states) {
+      const a = state.activity;
+      if (a.kind !== 'talk' || !a.deck || state.status !== 'done' || this.decksGiven.has(a.id)) continue;
+      this.decksGiven.add(a.id);
+      this.present(a.deck);
+    }
+  }
+
+  private present(key: string): void {
+    const deck = DECKS[key];
+    if (!deck) return;
+    let view = this.decks.get(key);
+    if (!view) {
+      view = new DeckView(this.ui, deck, {
+        blocked: () => this.paused,
+        onClose: () => {
+          // The press that closed it must not also page the next thing.
+          this.talkRequested = false;
+        },
+      });
+      this.decks.set(key, view);
+    }
+    view.open();
+  }
+
+  private presenting(): boolean {
+    for (const view of this.decks.values()) if (view.isOpen) return true;
+    return false;
   }
 
   /** A sticker for the album, a moment, where a new card goes. See `showNewCard`. */
@@ -3063,7 +3118,9 @@ export class ChapterScreen implements Screen {
     for (const state of this.run.states) {
       const a = state.activity;
       if (a.kind !== 'talk') continue;
-      if (state.status !== 'open') continue;
+      // A conversation with a deck at the end of it stays here once it is
+      // over: the talk can be watched again. See `TalkActivity.deck`.
+      if (state.status !== 'open' && !(state.status === 'done' && a.deck)) continue;
       if (!admits(a, body.spec)) continue;
       if (!inZone(a.at, this.controlled.floor, body.x, body.y)) continue;
       return { state, activity: a };
@@ -3100,8 +3157,8 @@ export class ChapterScreen implements Screen {
    * Stephan" in range, and a step before that, dimmer, "Closer to talk to
    * Stephan", so where the range begins can be seen rather than guessed.
    */
-  private showPrompt(state?: 'near' | 'here', who = ''): void {
-    const key = state ? `${state}|${who}|${this.touch ? 1 : 0}` : '';
+  private showPrompt(state?: 'near' | 'here', who = '', what = `Talk to ${who}`): void {
+    const key = state ? `${state}|${what}|${this.touch ? 1 : 0}` : '';
     if (key === this.promptKey) return;
     this.promptKey = key;
     if (!state) {
@@ -3133,7 +3190,7 @@ export class ChapterScreen implements Screen {
         },
         this.touch ? 'INTERACT' : 'E',
       ),
-      el('span', {}, here ? `Talk to ${who}` : `Closer to talk to ${who}`),
+      el('span', {}, here ? what : `Closer to talk to ${who}`),
     );
     this.talkPrompt.replaceChildren(chip);
   }
@@ -3227,6 +3284,13 @@ export class ChapterScreen implements Screen {
     }
 
     const { state, activity } = found;
+    if (state.status === 'done') {
+      this.talkBox.style.display = 'none';
+      this.showPrompt('here', activity.who, `Watch ${activity.who}'s talk`);
+      this.typingLine = '';
+      this.typed = 0;
+      return;
+    }
     const shown = Math.round(state.progress * activity.lines.length);
 
     // In range, nothing said yet: offer it rather than opening unasked. A box

@@ -400,6 +400,15 @@ export interface TalkActivity extends Common {
    * to YOU: Chapter I's cat, which is not waiting to be spoken to.
    */
   autoStart?: boolean;
+  /**
+   * A slide deck this conversation ends in, by its key in `src/decks/`.
+   *
+   * The screen opens it over the building when the last line is closed, and
+   * again each time the talk key is pressed in range afterwards — a talk can
+   * be given twice. The day holds while it is up. Only a key here: what a
+   * slide looks like is the screen's business, and `core/` imports nothing.
+   */
+  deck?: string;
 }
 
 export type Activity =
