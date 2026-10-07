@@ -219,11 +219,6 @@ export function stoppingDistance(spec: RobotSpec): number {
   return (spec.maxSpeed * spec.maxSpeed) / (2 * decel);
 }
 
-/** Derived: momentum at top speed in kg·m/s. The "weight" the player feels. */
-export function peakMomentum(spec: RobotSpec): number {
-  return spec.mass * spec.maxSpeed;
-}
-
 /**
  * What the simulation actually accelerates: the machine plus its load, kg.
  *

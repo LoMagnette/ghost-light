@@ -51,6 +51,7 @@ import { chapterOrLab } from '@/chapters/lab';
 import { abandoned, type Chapter } from '@/chapters/Chapter';
 import { touchZoom, type Game, type Screen } from './Game';
 import type { Routes } from './Routes';
+import { cardKey, cardLine, cardRows, cardSignature, DONE_GREEN, type CardLine } from './card';
 import { css, el, label, MONO, SANS, SERIF } from './dom';
 import { currentQuality } from './quality';
 import { portraitOf } from './portraits';
@@ -133,8 +134,6 @@ const BADGE_NUDGES = [0, 24, 48, 72, 100, 130, 170, 220, 280, 360, 460, 580];
 const LABEL_CHAR = 6.7;
 /** The same at the bottom, above the control strip and the label under a badge. */
 const ARROW_INSET_BOTTOM = 84;
-/** A finished job: its banner and its tick on the card. */
-const DONE_GREEN = '#8fd694';
 /** A deadline this close makes a job urgent: first in line for an arrow, and it pulses. */
 const URGENT_SECONDS = 20;
 /**
@@ -156,26 +155,6 @@ interface Box {
   y0: number;
   x1: number;
   y1: number;
-}
-
-/** One row of the card, and the robot it is for if only one can do it. */
-interface CardLine {
-  text: string;
-  who?: RobotSpec;
-  /** Its row key, while it is a job with a marker. See `cardKey`. */
-  key?: string;
-  /** The number its marker wears, once it has been listed. See `numberRows`. */
-  n?: number;
-  /** The one the screen recommends. See `chooseNext`. */
-  next?: boolean;
-  /** On a clock: a breakdown, or a job with a deadline. Never folded away. See `firstJob`. */
-  timed?: boolean;
-  /** Not a job, a note about the card. */
-  dim?: boolean;
-  /** A side quest: listed under the day's work, and not in the count. See `card`. */
-  optional?: boolean;
-  /** The heading over the side quests. */
-  heading?: boolean;
 }
 
 /**
@@ -826,16 +805,19 @@ export class ChapterScreen implements Screen {
     // said in words under it: a player still holding a direction through a
     // photograph would otherwise never find out that letting go stops time.
     // Only where there is a clock to stop.
-    this.clockText.style.opacity = held ? '0.45' : '1';
+    const dimmed = held ? '0.45' : '1';
+    if (this.clockText.style.opacity !== dimmed) this.clockText.style.opacity = dimmed;
     const timed = this.clockText.textContent !== '';
-    this.readingText.textContent =
+    setText(
+      this.readingText,
       !timed || over || this.story || !reading
         ? ''
         : held
           ? 'Time paused while reading'
           : this.touch
             ? 'Let go of the stick to pause the clock'
-            : 'Release movement to pause the clock';
+            : 'Release movement to pause the clock',
+    );
 
     this.sim.advance(step);
     this.crowd.advance(step, this.actors);
@@ -3577,72 +3559,10 @@ export class ChapterScreen implements Screen {
    * frames the card is identical to the last one.
    */
   private renderCard(lines: CardLine[]): void {
-    const key = lines
-      .map((l) => `${l.text}|${l.who?.id ?? ''}|${l.n ?? ''}|${l.next ? 1 : 0}|${l.dim ? 1 : 0}|${l.heading ? 1 : 0}`)
-      .join('\n');
+    const key = cardSignature(lines);
     if (key === this.cardKey) return;
     this.cardKey = key;
-    const accent = css(this.chapter.palette.accent);
-    this.cardText.replaceChildren(
-      ...lines.map((line) => {
-        if (line.heading) {
-          return el(
-            'div',
-            { color: '#7d868b', paddingRight: '25px', marginTop: '6px', fontSize: '10px', letterSpacing: '0.1em' },
-            line.text,
-          );
-        }
-        if (line.dim) return el('div', { color: '#7d868b', paddingRight: '25px' }, line.text);
-        // A finished row: the tick in green and the rest stepped back.
-        const ticked = line.text.startsWith('✓ ');
-        const row = el(
-          'div',
-          line.next ? { color: '#eef2f4', background: 'rgba(255, 255, 255, 0.07)', margin: '0 -6px', padding: '0 6px', borderRadius: '3px' } : {},
-          ticked ? '' : line.text,
-        );
-        if (ticked) row.append(el('span', { color: DONE_GREEN }, '✓'), el('span', { color: '#7d868b' }, line.text.slice(1)));
-        if (line.who) {
-          row.append(
-            el('span', { color: css(line.who.signal), marginLeft: '8px' }, '●'),
-            el('span', { color: css(line.who.signal), marginLeft: '4px' }, line.who.name),
-          );
-        }
-        /*
-         * The number its marker wears, at the end of the row, where the
-         * right-aligned card lines them up in a column. The next is filled,
-         * as its badge is.
-         */
-        if (line.n !== undefined) {
-          const colour = line.who ? css(line.who.signal) : accent;
-          row.append(
-            el(
-              'span',
-              {
-                display: 'inline-block',
-                minWidth: '17px',
-                height: '17px',
-                lineHeight: '15px',
-                marginLeft: '8px',
-                boxSizing: 'border-box',
-                borderRadius: '9px',
-                border: `1px solid ${colour}`,
-                background: line.next ? colour : 'transparent',
-                color: line.next ? '#06080a' : colour,
-                textAlign: 'center',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                verticalAlign: '1px',
-              },
-              String(line.n),
-            ),
-          );
-        } else {
-          // Unnumbered rows keep the column: a blank the width of a number.
-          row.append(el('span', { display: 'inline-block', width: '17px', marginLeft: '8px' }));
-        }
-        return row;
-      }),
-    );
+    this.cardText.replaceChildren(...cardRows(lines, css(this.chapter.palette.accent)));
   }
 
   /**
@@ -3930,7 +3850,7 @@ export class ChapterScreen implements Screen {
   }
 
   private updateHud(): void {
-    this.hud.textContent = this.run.objective.line;
+    setText(this.hud, this.run.objective.line);
 
     const remaining = this.run.remaining;
     /*
@@ -3948,7 +3868,7 @@ export class ChapterScreen implements Screen {
     const rooms = this.sessionRooms.length;
     const tally =
       rooms > 0 ? `${rooms - this.run.lost}/${rooms} running` : `${this.run.done} of ${this.run.total} jobs done`;
-    this.clockText.textContent = remaining === undefined ? '' : `${clock(remaining)}   ${tally}`;
+    setText(this.clockText, remaining === undefined ? '' : `${clock(remaining)}   ${tally}`);
 
     const lines = this.numberRows(this.firstJob(this.card()));
     this.renderCard(lines);
@@ -3963,7 +3883,9 @@ export class ChapterScreen implements Screen {
 
     const body = this.controlled.body;
     const spec = body.spec;
-    this.debugText.textContent = [
+    setText(
+      this.debugText,
+      [
       `${spec.name}`,
       body.payload > 0
         ? `mass       ${spec.mass} + ${body.payload} kg  = ${body.loadedMass}`
@@ -3985,8 +3907,20 @@ export class ChapterScreen implements Screen {
       `floor      ${this.floor}`,
       `sim        ${this.sim.elapsed.toFixed(1)} s`,
       `fps        ${this.fps.toFixed(0)}`,
-    ].join('\n');
+      ].join('\n'),
+    );
   }
+}
+
+/**
+ * Set an element's text only when it differs.
+ *
+ * Assigning `textContent` throws away the text node and makes a new one even
+ * when the string is identical, and the HUD says the same thing for seconds at
+ * a time while being asked every frame.
+ */
+function setText(target: HTMLElement, text: string): void {
+  if (target.textContent !== text) target.textContent = text;
 }
 
 /**
@@ -4079,30 +4013,6 @@ function startPoint(chapter: Chapter): { x: number; y: number; floor: Level } {
     return { x: spawn.x, y: spawn.y, floor: chapter.startFloor };
   }
   return { x, y, floor: Number.isFinite(floor) ? floor : chapter.startFloor };
-}
-
-/** A job's row on the card, which its marker shares: its sweep's, if it is one of many. */
-function cardKey(activity: Activity): string {
-  return activity.group === undefined ? activity.id : `group:${activity.group}`;
-}
-
-/** One card row: a glyph for the state, the label, and any live number. */
-function cardLine(state: ActivityState): string {
-  const { activity, status } = state;
-
-  const glyph =
-    status === 'done' ? '✓' : status === 'missed' ? '×' : status === 'carried' ? '»' : status === 'locked' ? ' ' : '›';
-  if ((activity.kind === 'dwell' || activity.kind === 'attend') && status === 'open' && state.progress > 0.02) {
-    return `${glyph} ${activity.label} ${Math.round(state.progress * 100)}%`;
-  }
-  // A conversation counts in LINES, not percent: "2/4" is a place in a
-  // conversation and "50%" is a progress bar on one, which is a strange
-  // thing to show somebody who is being spoken to.
-  if (activity.kind === 'talk' && status === 'open' && state.progress > 0) {
-    const shown = Math.round(state.progress * activity.lines.length);
-    return `${glyph} ${activity.label} ${shown}/${activity.lines.length}`;
-  }
-  return `${glyph} ${activity.label}`;
 }
 
 /** m:ss, because a conference day is read in minutes and a meter in seconds. */
