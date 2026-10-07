@@ -521,7 +521,7 @@ export class Crowd {
     // people in the seats. They are the same conference.
     const roamers = Math.round(density * ROAMERS_AT_CAPACITY);
     this.fillSeats(activeRooms, density, ATTENDANCE - roamers);
-    this.placeSpeakers(activeRooms);
+    this.placeSpeakers(activeRooms, posts);
     this.placeRoamers(roamers);
   }
 
@@ -1508,12 +1508,20 @@ export class Crowd {
     }
   }
 
-  /** One speaker on the stage of every room in use. */
-  private placeSpeakers(activeRooms: readonly string[]): void {
+  /**
+   * One speaker on the stage of every room in use — unless the objective has
+   * already stood somebody there. Then THEY are the speaker, and a second,
+   * anonymous one pacing round them would be two people giving one talk.
+   */
+  private placeSpeakers(activeRooms: readonly string[], posts: readonly Post[]): void {
     for (const id of activeRooms) {
       const stage = this.venue.rooms.find((r) => r.id === `${id}-stage`);
       if (!stage) continue;
       const b = stage.bounds;
+      const taken = posts.some(
+        (p) => p.floor === stage.floor && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h,
+      );
+      if (taken) continue;
       const mover: Mover = {
         // The stage is `<room>-stage`; the speaker belongs to the room, so
         // that when the room empties they walk off with everybody else.

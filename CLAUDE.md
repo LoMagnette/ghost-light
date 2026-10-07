@@ -309,3 +309,9 @@ sbx secret set github --sandbox devoxx-game -t "$(gh auth token)"
 
 `devoxx-game` is `$SANDBOX_VM_ID`. Do not push from the host terminal instead
 — pushing from in here is the supported path once the secret is set.
+
+<!-- groma:start -->
+## Groma
+
+This project uses Groma. Before you scan, inspect, or curate architecture, or change files for a Backlog task, run `groma agent-instructions` and read the guide it names for that job. When it reports a first scan, ask the user whether they want you to curate the architecture. Do not edit Groma-owned architecture files directly.
+<!-- groma:end -->

@@ -361,10 +361,6 @@ export function rectContains(r: Rect, x: number, y: number): boolean {
   return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 }
 
-export function rectCentre(r: Rect): { x: number; y: number } {
-  return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
-}
-
 /** Find the room containing a point, or undefined if the point is outside. */
 export function roomAt(venue: Venue, floor: Level, x: number, y: number): Room | undefined {
   return venue.rooms.find((r) => r.floor === floor && rectContains(r.bounds, x, y));

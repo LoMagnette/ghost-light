@@ -680,6 +680,8 @@ export class BlockoutRenderer {
   private sun: DirectionalLight | undefined;
   private readonly marks: SkidMark[] = [];
   private readonly markMesh: InstancedMesh;
+  /** Whether the mark buffer holds anything `writeMarks` has yet to blank. */
+  private marksDirty = true;
   private readonly markColour: Color;
   private readonly floorColour: Color;
   /** The chapter's light level as a plain multiplier, for the unlit decals. */
@@ -1301,13 +1303,8 @@ export class BlockoutRenderer {
       h = this.placeBlob(h, person, up(PERSON_NECK), up(PERSON_HEIGHT), PERSON_HEAD_WIDE, PERSON_HEAD_WIDE, head);
     }
 
-    this.moverMesh.count = i;
-    this.moverMesh.instanceMatrix.needsUpdate = true;
-    if (this.moverMesh.instanceColor) this.moverMesh.instanceColor.needsUpdate = true;
-
-    this.moverHeads.count = h;
-    this.moverHeads.instanceMatrix.needsUpdate = true;
-    if (this.moverHeads.instanceColor) this.moverHeads.instanceColor.needsUpdate = true;
+    uploadInstances(this.moverMesh, i);
+    uploadInstances(this.moverHeads, h);
   }
 
   /**
@@ -3247,6 +3244,10 @@ export class BlockoutRenderer {
   }
 
   private writeMarks(): void {
+    // An empty floor that was already written empty has nothing to say, and
+    // the buffer is the whole 320 marks wide.
+    if (this.marks.length === 0 && !this.marksDirty) return;
+    this.marksDirty = this.marks.length > 0;
     for (let i = 0; i < MAX_MARKS; i += 1) {
       const mark = this.marks[i];
       if (mark) {
@@ -3274,6 +3275,28 @@ export class BlockoutRenderer {
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * Draw the first `count` instances and upload only those.
+ *
+ * The buffers are sized for the fullest crowd there will ever be, and three.js
+ * sends the whole of one whenever it is flagged — about 400 KB a frame in
+ * Chapter I, where nobody is in the building at all. Instances past `count`
+ * are never drawn, so what is left in them does not matter.
+ */
+function uploadInstances(mesh: InstancedMesh, count: number): void {
+  mesh.count = count;
+  if (count === 0) return;
+  const { instanceMatrix, instanceColor } = mesh;
+  instanceMatrix.clearUpdateRanges();
+  instanceMatrix.addUpdateRange(0, count * 16);
+  instanceMatrix.needsUpdate = true;
+  if (instanceColor) {
+    instanceColor.clearUpdateRanges();
+    instanceColor.addUpdateRange(0, count * 3);
+    instanceColor.needsUpdate = true;
+  }
+}
 
 /** Which storeys the venue actually has anything on. */
 function storeysOf(venue: Venue): Level[] {
