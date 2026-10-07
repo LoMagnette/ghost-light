@@ -29,6 +29,12 @@ export interface Slide {
   shade?: number;
   /** The slide's own colour, behind or instead of a picture. CSS. Default near-black. */
   color?: string;
+  /**
+   * A second picture, over the background: a file name or URL, as for
+   * `background`. It takes the right two fifths of the slide, shown whole,
+   * and the words move into the left three fifths to make room for it.
+   */
+  image?: string;
   /** Where the words sit. `center` is the default. */
   layout?: 'center' | 'left' | 'bottom';
 

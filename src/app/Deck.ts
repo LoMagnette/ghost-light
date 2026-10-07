@@ -281,6 +281,7 @@ export class DeckView {
         if (url) {
           Object.assign(thumb.style, { backgroundImage: `url("${url}")`, backgroundSize: 'cover', backgroundPosition: 'center' });
         }
+        if (slide.image) thumb.append(sidePicture(slide.image, 4));
         thumb.append(
           el(
             'div',
@@ -404,7 +405,13 @@ export class DeckView {
       const shade = slide.shade ?? (words ? 0.45 : 0);
       if (shade > 0) page.append(el('div', { position: 'absolute', inset: '0', background: `rgba(0,0,0,${shade})` }));
     }
-    if (words) page.append(this.words(slide));
+    if (slide.image) page.append(sidePicture(slide.image));
+    if (words) {
+      const box = this.words(slide);
+      // Out of the picture's way rather than under it.
+      if (slide.image) box.style.right = `${IMAGE_SHARE * 100}%`;
+      page.append(box);
+    }
     this.surface.replaceChildren(page);
 
     if (fresh) {
@@ -412,9 +419,11 @@ export class DeckView {
       page.style.transition = 'opacity 220ms ease-out';
       requestAnimationFrame(() => (page.style.opacity = '1'));
       // The next picture, fetched while this slide is being talked over.
-      const after = this.slides[this.at + 1]?.background;
-      const url = after ? slideImage(after) : undefined;
-      if (url) new Image().src = url;
+      const after = this.slides[this.at + 1];
+      for (const name of [after?.background, after?.image]) {
+        const url = name ? slideImage(name) : undefined;
+        if (url) new Image().src = url;
+      }
     }
   }
 
@@ -475,6 +484,55 @@ export class DeckView {
     }
     return box;
   }
+}
+
+/** How much of the slide's width a slide's `image` takes, on the right. */
+const IMAGE_SHARE = 2 / 5;
+
+/**
+ * A slide's `image`: the right two fifths, the picture whole within it.
+ * `pad` is design pixels, smaller for the overview's thumbnails.
+ */
+function sidePicture(name: string, pad = 36): HTMLDivElement {
+  const url = slideImage(name);
+  const frame = el('div', {
+    position: 'absolute',
+    top: '0',
+    right: '0',
+    bottom: '0',
+    width: `${IMAGE_SHARE * 100}%`,
+    padding: `${pad}px`,
+    boxSizing: 'border-box',
+  });
+  frame.append(
+    url
+      ? el('div', {
+          width: '100%',
+          height: '100%',
+          backgroundImage: `url("${url}")`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          // Lifted off whatever background is behind it.
+          filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.6))',
+        })
+      : el(
+          'div',
+          {
+            width: '100%',
+            height: '100%',
+            boxSizing: 'border-box',
+            padding: '10px 14px',
+            border: '2px dashed #5d666c',
+            borderRadius: '6px',
+            font: `13px ${MONO}`,
+            color: '#8d959b',
+            overflowWrap: 'anywhere',
+          },
+          `missing picture: src/decks/images/${name}`,
+        ),
+  );
+  return frame;
 }
 
 const CENTRED: Style = {

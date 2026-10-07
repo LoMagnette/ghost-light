@@ -12,50 +12,28 @@ export const ROOM_10_DECK: Deck = {
   title: 'Room 10',
   slides: [
     {
-      background: 'room-10.jpg',
-      title: 'Ghost Light',
-      subtitle: 'Loïc Magnette · Room 10 · Devoxx Belgium 2026',
+      background: 'voxxy.png',
+      title: 'Getting started?',
     },
     {
-      title: 'A slide with words only',
-      text: [
-        'No picture behind this one, just the slide colour.',
-        'Paragraphs are one entry each in `text`.',
-      ],
+      title: 'It depends...',
+      background: 'biggy.png',
     },
     {
-      background: 'room-10.jpg',
+      background: 'droid.png',
+      title: 'Creativity?',
+    },
+    {
+      background: 'end.png',
+      title: 'Thank you!',
+      subtitle: '',
+    },
+    {
+      background: 'end.png',
+      title: 'Have fun!',
+      image: 'try-it.png',
       layout: 'left',
-      title: 'Bullets, one at a time',
-      bullets: ['`build: true` reveals them one press at a time', 'Back steps them away again', 'Useful for not reading ahead of yourself'],
-      build: true,
-      notes: 'Speaker notes: press N to show or hide them.',
-    },
-    {
-      layout: 'left',
-      title: 'Some code',
-      code: [
-        'export const ROOM_10_DECK: Deck = {',
-        "  title: 'Room 10',",
-        '  slides: [',
-        "    { background: 'room-10.jpg', title: 'Ghost Light' },",
-        '  ],',
-        '};',
-      ].join('\n'),
-    },
-    {
-      background: 'room-10.jpg',
-      layout: 'bottom',
-      title: 'A picture, captioned',
-      text: 'The `bottom` layout keeps the words out of the way of the picture.',
-    },
-    {
-      background: 'room-10.jpg',
-      fit: 'contain',
-    },
-    {
-      title: 'Thank you',
-      subtitle: 'ESC to go back to the conference',
+      subtitle: '',
     },
   ],
 };

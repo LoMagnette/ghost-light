@@ -18,6 +18,7 @@ any mix works; `Slide` in `index.ts` documents them.
 { background: 'diagram.png', fit: 'contain' },          // a picture, whole
 { background: 'crowd.jpg', layout: 'bottom', title: 'A caption' },
 { layout: 'left', title: 'Code', code: 'record Robot(String name) {}' },
+{ background: 'room-10.jpg', image: 'biggy.png', layout: 'left', title: 'Biggy' }, // a picture on the right 2/5
 ```
 
 Pictures go in `images/` and are named by file name. Any of jpg, png, webp,
